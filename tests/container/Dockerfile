@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pyside6.qttest qml6-module-qtquick qml6-module-qtquick-controls \
     qml6-module-qtquick-layouts qml6-module-qtquick-window qml6-module-qtquick-shapes \
     qml6-module-qtquick-templates qml6-module-qtqml-workerscript fonts-dejavu-core time \
-    accountsservice whois dbus polkitd pamtester xvfb xauth xdotool openbox wmctrl x11-utils \
+    accountsservice whois dbus systemd gnome-keyring libsecret-tools polkitd pamtester xvfb xauth xdotool openbox wmctrl x11-utils \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY client client
