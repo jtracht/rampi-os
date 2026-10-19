@@ -57,6 +57,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y shellcheck
       - run: find installer image system -type f \( -name '*.sh' -o -name rampi -o -name rampi-session -o -name rampi-health \) -print0 | xargs -0 shellcheck
       - run: bash -n setup.sh
+      - run: shellcheck setup.sh
       - run: python3 scripts/check-release.py --configuration-only
       - name: Validate real Trixie NetworkManager import (no network activation)
         run: |

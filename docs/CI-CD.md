@@ -13,5 +13,7 @@ keine vollständige juristische Drittanbieteranalyse.
 
 Image-Build ist separat manuell auslösbar und wird später vom Releaseworkflow
 verwendet. Fehlgeschlagene Images werden nicht veröffentlicht. Releasebereitschaft
-wird aus `packaging/readiness.json` gelesen. Offene Hardwareabnahme führt zu
-einer klaren Sperre, nicht zu einer vorgetäuschten erfolgreichen Freigabe.
+wird aus `packaging/readiness.json` gelesen. Die Nutzerentscheidung ersetzt die
+Hardwarepflicht durch Softwareabnahme: Trixie-ARM64-Docker, AccountsService/PAM,
+native Windows-SSH-Prüfungen und Image-/QEMU-Validierung. Fehlende physische Tests
+blockieren den vereinbarten Softwareumfang nicht.

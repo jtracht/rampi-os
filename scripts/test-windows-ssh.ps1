@@ -7,7 +7,7 @@ if ($env:GITHUB_ACTIONS -ne 'true') {
     throw 'This test creates temporary accounts and changes sshd only on a disposable GitHub runner.'
 }
 $suffix = [Guid]::NewGuid().ToString('N').Substring(0,8)
-$users = @("rampiA$suffix", "rampiB$suffix")
+$users = @("rampia$suffix", "rampib$suffix")
 $directory = Join-Path $env:ProgramData "RampiCiTest-$suffix"
 $testConfig = Join-Path $directory 'sshd_config'
 $taskName = "RampiSshTest-$suffix"

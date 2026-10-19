@@ -4,12 +4,12 @@ Native Remote-Arbeitsumgebung für Raspberry Pi 3 Model B+ und Windows 11 Pro.
 Eigenständige Qt-Quick-Oberfläche; vorhandene Systemdienste übernehmen Netzwerk,
 Login, Terminals, Remote Desktop und Browser. Eigenentwickelter Code: Apache-2.0.
 
-**Status: Entwicklungsstand, kein freigegebenes Betriebssystem.** Die Oberfläche
-startet, persönliche Konfigurationen und lokale Kanban-Dateien funktionieren,
-und der Windows-ConPTY-Persistenztest läuft mit psmux. Pi-Boot, Videodecodierung,
-SSH-Reconnect und vollständige Benutzerisolation sind noch nicht auf Zielhardware
-abgenommen. [Funktionsstand](docs/STATUS.md) und [Testnachweise](docs/TESTING.md)
-trennen Implementierung, lokale Tests und ausstehende Abnahmen.
+**Status: Entwicklungsstand.** Die native Oberfläche, persönliche Konfiguration,
+lokales Kanban und native Windows-ConPTY-Persistenz sind implementiert und getestet.
+Die Abnahme erfolgt auf ausdrücklichen Nutzerwunsch ausschließlich softwareseitig:
+ARM64-Docker, native Windows-CI und Image-/QEMU-Prüfungen. Physische Hardwaretests
+sind aus dem Umfang ausgeschlossen. [Funktionsstand](docs/STATUS.md) und
+[Testnachweise](docs/TESTING.md) nennen die tatsächlichen Ergebnisse und Grenzen.
 
 ## Start auf einem Entwicklungsrechner
 
@@ -33,6 +33,8 @@ Raspberry Pi OS Lite Trixie **arm64**, Ziel Pi 3 B+, 1 GB RAM:
 ```sh
 ./setup.sh --check
 sudo ./setup.sh --install
+# Optional vorhandene Tailscale-/Moonlight-Installationen erkennen, sonst ergänzen:
+sudo ./setup.sh --install --with-extras
 ```
 
 Im vorhandenen Anmeldebildschirm die Sitzung **Rampi** wählen. Das Skript prüft
@@ -74,7 +76,7 @@ python scripts/package.py
 
 GitHub Actions prüft Linux/Windows, Skripte, Sicherheit und die Paketierung.
 Der Image-Workflow verwendet einen festgelegten Commit des offiziellen pi-gen.
-Reguläre Releases bleiben bis zur dokumentierten Hardwareabnahme gesperrt;
+Reguläre Releases bleiben bis zur dokumentierten Softwareabnahme gesperrt;
 Release Please bereitet danach Versionen, Tags und zunächst unveröffentlichte
 Releases vor. Veröffentlichung erfolgt erst nach vollständigem Image-Build.
 

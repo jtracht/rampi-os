@@ -27,6 +27,14 @@ Geheimnisse mit dem bestehenden Secret Service speichern, zum Beispiel:
 `secret-tool store --label='Rampi GitHub read-only' application rampi profile github-work`.
 Die Eingabe erfolgt interaktiv. Token nicht in Shellargumente, Git oder JSON kopieren.
 
+Quellenformate: GitHub `organization/NAME/PROJEKTNUMMER` oder
+`user/NAME/PROJEKTNUMMER`; Trello Board-ID; Asana numerische Projekt-ID;
+Notion Data-Source-ID. Jira Cloud: `https://SITE.atlassian.net#PROJEKT`,
+mit Secret-Service-Wert `{"email":"…","token":"…"}`. OAuth verwendet stattdessen
+`https://api.atlassian.com/ex/jira/CLOUD-UUID#PROJEKT` und einen Bearer-Token.
+Trello speichert seinen Secret-Service-Wert als `{"key":"…","token":"…"}`.
+Die Beispiele enthalten keine echten Credentials.
+
 Kanban-Cache: `$XDG_CACHE_HOME/rampi/board-<SHA256>.json`, sonst `~/.cache/rampi/`.
 Der Hash trennt Anbieter, Quelle und Credential-Profil. Inhalte können vertraulich
 sein und gehören nur dem jeweiligen Linux-Benutzer. Cache kann manuell gelöscht

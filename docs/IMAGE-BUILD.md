@@ -11,14 +11,18 @@ pi-gen benötigt privilegierte Container für seine Loop-/Mount-Arbeit.
 
 Kein festes Kennwort, kein persönlicher SSH-Schlüssel, SSH beim Image deaktiviert.
 Der temporäre Benutzer ist gesperrt; die vorhandene Raspberry-Pi-Ersteinrichtung
-muss vor Nutzung ein eigenes Konto anlegen. Das Verhalten mit LightDM muss auf
-echter Hardware geprüft werden. Eine vollständig eigene grafische Erstkontoanlage
-ist noch nicht implementiert.
+muss vor Nutzung ein eigenes Konto anlegen. Alternativ das eigene Konto mit
+Raspberry Pi Imager vorkonfigurieren. Weitere Konten legt die grafische Rampi-
+Oberfläche über AccountsService/PAM an. Physische Hardwaretests sind gemäß
+`VALIDATION-SCOPE.md` ausgeschlossen.
 
 `verify-rootfs.sh` prüft Rampi-Dateien, arm64, Boot-Dateien, Pi-3-B+-DTB und
-grundlegende Dateirechte. pi-gen erstellt Partitionen und Dateisysteme. Eine
-separate automatische Prüfung des finalen Partitionslayouts sowie Flash-/Boottest
-fehlen noch. Das Image ist deshalb ein Kandidat, keine Hardwarefreigabe.
+grundlegende Dateirechte. pi-gen erstellt Partitionen und Dateisysteme.
+`test-image.sh` prüft das exportierte Partitionslayout, FAT und ext4 sowie
+Bootdateien und führt einen zeitbegrenzten QEMU-Startversuch durch. Erfolgsmarker
+ist `RAMPI_BOOT_OK` aus dem echten systemd-Healthcheck im Gast. Der getrennte
+Validierungsjob bewahrt Logs auf; fehlgeschlagene Validierung verhindert Releases.
+Ein Flash- oder physischer Pi-Boot wird nicht behauptet.
 
 Paketmanifest wird im Image unter `/opt/rampi/package-manifest.tsv` gespeichert.
 Der Buildpfad ist wiederholbar, aber wegen veränderlicher Paketquellen und

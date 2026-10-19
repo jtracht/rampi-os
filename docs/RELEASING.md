@@ -2,10 +2,11 @@
 
 Conventional Commits auf Feature-Branches, Pull Requests nach main.
 Reguläre Releases sind gesperrt, solange `regular_release` false ist oder
-Hardware-/Funktionsnachweise fehlen. Die Sperre nicht allein zur Veröffentlichung
+Software-/Funktionsnachweise fehlen. Physische Hardwaretests sind ausgenommen.
+Die Sperre nicht allein zur Veröffentlichung
 eines erfolgreichen Builds entfernen.
 
-Nach Abschluss sämtlicher Abnahmen konkrete Nachweisdateien in
+Nach Abschluss der vereinbarten Softwareabnahme konkrete Nachweisdateien in
 `packaging/readiness.json` eintragen. Release Please erstellt einen Versions-PR,
 aktualisiert Changelog/Version und erzeugt nach Merge ein vMAJOR.MINOR.PATCH-Tag
 mit einem zunächst unveröffentlichten Draft. Der Imagejob und die Paketierung
