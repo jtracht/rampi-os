@@ -15,7 +15,7 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: image-${{ github.ref }}
+  group: image-${{ github.ref }}-${{ inputs.image_run_id || 'build' }}
   cancel-in-progress: false
 jobs:
   image:
@@ -51,10 +51,13 @@ jobs:
           run-id: ${{ inputs.image_run_id || github.run_id }}
           github-token: ${{ github.token }}
       - name: Software image validation and QEMU boot
+        env:
+          IMAGE_PRODUCER_RUN: ${{ inputs.image_run_id || github.run_id }}
+          VALIDATOR_SHA: ${{ github.sha }}
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-arm dosfstools e2fsprogs device-tree-compiler file
-          echo 'Image producer run: ${{ inputs.image_run_id || github.run_id }}; validator revision: ${{ github.sha }}'
+          echo "Image producer run: $IMAGE_PRODUCER_RUN; validator revision: $VALIDATOR_SHA"
           bash image/test-image.sh artifacts/image/*.img.xz artifacts/image
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

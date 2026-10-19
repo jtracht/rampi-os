@@ -52,6 +52,9 @@ jobs:
   image:
     needs: version
     if: needs.version.outputs.created == 'true'
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/image.yml
     with:
       ref: ${{ needs.version.outputs.sha }}
