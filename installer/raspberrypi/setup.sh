@@ -24,7 +24,7 @@ packages=(python3 python3-gi gir1.2-nm-1.0 python3-pyside6.qtcore python3-pyside
     qml6-module-qtqml-workerscript xserver-xorg xinit openbox lightdm
     network-manager network-manager-gnome bluez blueman wireguard-tools
     openssh-client freerdp3-x11 xfce4-terminal chromium wmctrl arandr lxinput
-    lxpolkit libsecret-tools gnome-keyring unclutter-xfixes dbus-x11
+    lxpolkit libsecret-tools gnome-keyring libpam-gnome-keyring unclutter-xfixes dbus-x11
     plymouth plymouth-themes plymouth-label fonts-dejavu-core)
 missing=()
 for package in "${packages[@]}"; do
@@ -47,6 +47,9 @@ fi
 if ((${#missing[@]})); then
     apt-get update
     apt-get install --no-install-recommends -y "${missing[@]}"
+fi
+if [[ "$mode" == --image || "${2:-}" == --with-extras ]]; then
+    bash "$source_root/installer/raspberrypi/third-party.sh"
 fi
 install -d -m 755 /opt/rampi /usr/local/bin /usr/share/xsessions /etc/xdg/rampi /etc/systemd/user
 # Versioned source trees permit rollback; the active link changes only after verification.

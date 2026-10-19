@@ -3,6 +3,7 @@ set -eu
 # LightDM owns Xorg, VT and PAM. Never start a second display server.
 systemctl --user import-environment DISPLAY XAUTHORITY XDG_SESSION_TYPE
 dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_SESSION_TYPE
+gnome-keyring-daemon --start --components=secrets >/dev/null
 openbox --config-file /etc/xdg/rampi/openbox.xml &
 wm_pid=$!
 lxpolkit &

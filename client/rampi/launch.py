@@ -130,6 +130,8 @@ def stream_args(host: Host) -> list[str]:
     return [
         executable("moonlight"),
         "stream",
+        "-platform",
+        "sdl",
         "-width",
         width,
         "-height",

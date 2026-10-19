@@ -47,7 +47,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate client key.' }
     & $keygen -q -t ed25519 -N '' -f (Join-Path $directory 'host_key')
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate host key.' }
-    & icacls.exe (Join-Path $directory 'host_key') /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' /setowner '*S-1-5-32-544' | Out-Null
+    & icacls.exe (Join-Path $directory 'host_key') /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
+    & icacls.exe (Join-Path $directory 'host_key') /setowner '*S-1-5-32-544' | Out-Null
     foreach ($user in $users) {
         $account = Get-LocalUser -Name $user
         $profile = Get-CimInstance Win32_UserProfile | Where-Object SID -eq $account.SID.Value
@@ -72,7 +73,8 @@ KbdInteractiveAuthentication no
 AuthorizedKeysFile .ssh/authorized_keys
 AllowUsers $($users -join ' ')
 "@ | Set-Content -LiteralPath $originalConfig -Encoding ascii
-    & icacls.exe $originalConfig /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' /setowner '*S-1-5-32-544' | Out-Null
+    & icacls.exe $originalConfig /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
+    & icacls.exe $originalConfig /setowner '*S-1-5-32-544' | Out-Null
     & $sshd -t
     if ($LASTEXITCODE -ne 0) { throw 'Invalid isolated SSH configuration.' }
     Set-Service sshd -StartupType Manual

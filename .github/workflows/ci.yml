@@ -9,6 +9,13 @@ concurrency:
   group: ci-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
+  trixie-arm64:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - run: docker build -t rampi-trixie-test -f tests/container/Dockerfile .
+      - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test
   client:
     strategy:
       matrix:

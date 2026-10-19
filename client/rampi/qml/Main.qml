@@ -215,6 +215,7 @@ ApplicationWindow {
         Text { text: "Wähle dein Verbindungsverfahren.\nZurück zum Dashboard: Strg+Alt+Pos1. Windows erlaubt nur eine interaktive Desktopsitzung."; color: "#a4b5c7"; font.pixelSize: 18; lineHeight: 1.6; width: 800; wrapMode: Text.WordWrap }
         Button { text: "RDP · FreeRDP starten"; onClicked: rampi.launch("rdp") }
         Button { text: "Streaming · Moonlight starten"; onClicked: rampi.launch("stream") }
+        Button { text: "Streaming-Host koppeln"; onClicked: rampi.action("stream-pair", "") }
         Text { text: "Sunshine/Moonlight benötigen vorheriges Pairing.\nDie Hardwaredecodierung auf Pi 3 B+ ist noch nicht validiert."; color: "#c2b994"; font.pixelSize: 15 }
       }
     }

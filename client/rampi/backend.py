@@ -242,6 +242,11 @@ class Backend(QObject):
                 "display": ["arandr"],
                 "users": ["gnome-system-tools"],
                 "keyboard": ["lxinput"],
+                "stream-pair": terminal_args(
+                    ["moonlight", "pair", self.settings.host.address], "stream-pair"
+                )
+                if action == "stream-pair"
+                else [],
                 "ssh-key": terminal_args(["ssh-keygen", "-t", "ed25519"], "ssh-key")
                 if action == "ssh-key"
                 else [],
