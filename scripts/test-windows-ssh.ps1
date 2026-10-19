@@ -9,8 +9,9 @@ if ($env:GITHUB_ACTIONS -ne 'true') {
 $suffix = [Guid]::NewGuid().ToString('N').Substring(0,8)
 $users = @("rampiA$suffix", "rampiB$suffix")
 $directory = Join-Path $env:ProgramData "RampiCiTest-$suffix"
-$originalConfig = Join-Path $env:ProgramData 'ssh\sshd_config'
-$backup = $null
+$testConfig = Join-Path $directory 'sshd_config'
+$taskName = "RampiSshTest-$suffix"
+$ready = $false
 $namespace = "rampi-ci-$suffix"
 $sshd = Join-Path $env:WINDIR 'System32\OpenSSH\sshd.exe'
 $createdUsers = @()
@@ -57,11 +58,9 @@ try {
     }
     $publicHost = (Get-Content (Join-Path $directory 'host_key.pub') -Raw).Trim()
     Set-Content (Join-Path $directory 'known_hosts') "[127.0.0.1]:22222 $publicHost" -Encoding ascii
-    if (-not (Get-Service sshd -ErrorAction SilentlyContinue)) {
+    if (-not (Test-Path -LiteralPath $sshd)) {
         Add-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0' | Out-Null
     }
-    Stop-Service sshd -ErrorAction SilentlyContinue
-    if (Test-Path -LiteralPath $originalConfig) { $backup = [IO.File]::ReadAllText($originalConfig) }
     $hostKey = (Join-Path $directory 'host_key').Replace('\','/')
     @"
 Port 22222
@@ -72,18 +71,27 @@ PasswordAuthentication no
 KbdInteractiveAuthentication no
 AuthorizedKeysFile .ssh/authorized_keys
 AllowUsers $($users -join ' ')
-"@ | Set-Content -LiteralPath $originalConfig -Encoding ascii
-    & icacls.exe $originalConfig /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
-    & icacls.exe $originalConfig /setowner '*S-1-5-32-544' | Out-Null
-    & $sshd -t
+"@ | Set-Content -LiteralPath $testConfig -Encoding ascii
+    & icacls.exe $testConfig /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
+    & icacls.exe $testConfig /setowner '*S-1-5-32-544' | Out-Null
+    & $sshd -t -f $testConfig
     if ($LASTEXITCODE -ne 0) { throw 'Invalid isolated SSH configuration.' }
-    Set-Service sshd -StartupType Manual
-    try { Start-Service sshd } catch {
-        Get-WinEvent -LogName 'OpenSSH/Operational' -MaxEvents 8 -ErrorAction SilentlyContinue |
-            Select-Object -ExpandProperty Message | Write-Output
-        throw
+    # An isolated SYSTEM task supplies OpenSSH's required privileges without replacing
+    # the runner's preconfigured service, its config, its host keys or its listening ports.
+    $log = Join-Path $directory 'sshd.log'
+    $taskAction = New-ScheduledTaskAction -Execute $sshd -Argument "-D -f `"$testConfig`" -E `"$log`""
+    Register-ScheduledTask -TaskName $taskName -Action $taskAction -User SYSTEM -RunLevel Highest -Force | Out-Null
+    Start-ScheduledTask -TaskName $taskName
+    for ($attempt=0; $attempt -lt 30; $attempt++) {
+        if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 22222 -State Listen -ErrorAction SilentlyContinue) {
+            $ready=$true; break
+        }
+        Start-Sleep -Seconds 1
     }
-    Start-Sleep -Seconds 2
+    if (-not $ready) {
+        if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log | Write-Output }
+        throw 'Isolated OpenSSH task did not listen on its loopback test port.'
+    }
     $muxLiteral = "'" + (Join-Path $directory 'psmux.exe').Replace("'", "''") + "'"
     $heartbeat = '$n=0;while($true){Write-Output (''RAMPI_SSH_HEARTBEAT:''+$n);$n++;Start-Sleep -Milliseconds 300}'
     $heartbeatEncoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($heartbeat))
@@ -105,13 +113,12 @@ AllowUsers $($users -join ' ')
     if ($other.Code -eq 0) { throw 'Second Windows user could see the first user session.' }
     Write-Output 'PASS: native ConPTY persistence across real SSH reconnects; second user denied same namespace.'
 } finally {
-    $service = Get-Service sshd -ErrorAction SilentlyContinue
-    if ($createdUsers.Count -gt 0 -and $null -ne $service -and $service.Status -eq 'Running') {
+    if ($createdUsers.Count -gt 0 -and $ready) {
         $mux = "'" + (Join-Path $directory 'psmux.exe').Replace("'", "''") + "'"
         Invoke-TestSsh $users[0] "& $mux -L '$namespace' kill-server; exit `$LASTEXITCODE" | Out-Null
     }
-    Stop-Service sshd -ErrorAction SilentlyContinue
-    if ($null -ne $backup) { [IO.File]::WriteAllText($originalConfig, $backup) }
+    Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
     foreach ($user in $createdUsers) { Remove-LocalUser -Name $user -ErrorAction SilentlyContinue }
     # Remove only this test's verified directory, never account profiles or shared services.
     $resolved = [IO.Path]::GetFullPath($directory)
