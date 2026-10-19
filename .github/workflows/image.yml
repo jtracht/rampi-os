@@ -65,6 +65,7 @@ jobs:
           name: image-validation
           path: |
             artifacts/image/*.log
+            artifacts/image/qemu-environment.txt
             artifacts/image/partitions.json
             artifacts/image/package-manifest.tsv
             artifacts/image/dependency-licenses.tar.xz

@@ -24,6 +24,14 @@ ist `RAMPI_BOOT_OK` aus dem echten systemd-Healthcheck im Gast. Der getrennte
 Validierungsjob bewahrt Logs auf; fehlgeschlagene Validierung verhindert Releases.
 Ein Flash- oder physischer Pi-Boot wird nicht behauptet.
 
+Die virtuelle raspi3b-Maschine verwendet den originalen Pi-Kernel und das
+originale initramfs. Nur eine temporäre DTB-Kopie deaktiviert den Watchdog:
+QEMU 8.2 interpretiert dessen Deaktivierungszugriff als sofortigen Reset
+(siehe upstream hw/misc/bcm2835_powermgt.c). Der Test verwendet die im DTB
+als serial1 bezeichnete PL011-Konsole ttyAMA1. Das ausgelieferte Image und
+seine DTB bleiben unverändert; Laufzeitschreibzugriffe gehen in einen
+temporären Snapshot. qemu-environment.txt dokumentiert diese Testanpassung.
+
 Paketmanifest wird im Image unter `/opt/rampi/package-manifest.tsv` gespeichert.
 Der Buildpfad ist wiederholbar, aber wegen veränderlicher Paketquellen und
 Zeitstempel noch nicht bitweise reproduzierbar. Paket-Snapshots und festgelegte

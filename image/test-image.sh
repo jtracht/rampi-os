@@ -34,6 +34,16 @@ cp "$work/boot/bcm2710-rpi-3-b.dtb" "$work/pi3.dtb"
 file "$work/kernel8.img"
 fdtget "$work/pi3.dtb" /aliases serial0
 fdtget "$work/pi3.dtb" /aliases serial1
+# QEMU 8.2 resets immediately on a watchdog control write, even while the
+# initramfs is disarming the real Pi watchdog. Disable only that emulated
+# peripheral in this temporary DTB. The shipped DTB and image stay unchanged.
+fdtput -t s "$work/pi3.dtb" /soc/watchdog@7e100000 status disabled
+printf '%s\n' 'raspi3b; 1 GiB; 4 CPUs; original Pi kernel and initramfs.' \
+    'Temporary DTB: watchdog disabled because QEMU treats its disarm write as reset.' \
+    'Serial console uses ttyAMA1 according to the original DTB serial1 alias.' \
+    'Original image readonly checked; runtime writes use QEMU snapshot overlay.' \
+    > "$output/qemu-environment.txt"
+qemu-system-aarch64 --version >> "$output/qemu-environment.txt"
 initrd_args=()
 if [[ -f "$work/boot/initramfs8" ]]; then
     cp "$work/boot/initramfs8" "$work/initramfs8"
