@@ -1,0 +1,19 @@
+name: Fehler melden
+description: Reproduzierbarer Fehler ohne persönliche Zugangsdaten
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Hardware, Betriebssystem und Rampi-Version
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Schritte, erwartetes und tatsächliches Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Bereinigte Logs und tatsächlich ausgeführte Tests

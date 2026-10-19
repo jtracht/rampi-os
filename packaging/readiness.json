@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "regular_release": false,
+  "evidence": {
+    "pi3bplus_boot_login": null,
+    "pi3bplus_ram_and_animation": null,
+    "wifi_bluetooth_vpn": null,
+    "windows_ssh_reconnect": null,
+    "cross_user_isolation": null,
+    "streaming_hardware_decode": null,
+    "rdp_and_global_shortcuts": null,
+    "cloud_connectors_live": null,
+    "image_flash": null,
+    "complete_graphical_setup": null
+  }
+}

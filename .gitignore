@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+artifacts/
+.tools/
+# Originals under design are redundant; canonical copies are assets/references.
+design/references/*.png
+*.img
+*.img.xz
+*.key
+*.pem
+.env

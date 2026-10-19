@@ -1,0 +1,11 @@
+{
+  "release-type": "python",
+  "draft": true,
+  "include-v-in-tag": true,
+  "packages": {
+    ".": {
+      "package-name": "rampi-os",
+      "extra-files": ["client/rampi/__init__.py"]
+    }
+  }
+}

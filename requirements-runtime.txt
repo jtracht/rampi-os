@@ -1,0 +1,2 @@
+# Development smoke tests only. The Pi installer uses Debian-maintained Qt packages.
+PySide6==6.8.3

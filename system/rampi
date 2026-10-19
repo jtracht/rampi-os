@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+export PYTHONPATH="/opt/rampi/current${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/bin/python3 -m rampi.app "$@"

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Rampi
+Comment=Remote workstation shell
+Exec=/usr/local/bin/rampi-session
+TryExec=/usr/local/bin/rampi-session
+Type=Application
+DesktopNames=Rampi

@@ -1,0 +1,13 @@
+[Unit]
+Description=Rampi graphical workstation
+After=graphical-session-pre.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/rampi
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+UMask=0077
+Environment=QT_QUICK_CONTROLS_STYLE=Basic
+Environment=QT_QPA_PLATFORM=xcb
