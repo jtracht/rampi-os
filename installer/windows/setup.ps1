@@ -63,10 +63,28 @@ if ($Install) {
     if (-not (Test-Path -LiteralPath $source)) { throw "Hostpaket unvollständig: $source" }
     if ($PSCmdlet.ShouldProcess($target, 'Persönlichen Rampi-Sitzungsadapter installieren')) {
         New-Item -ItemType Directory -Path $target -Force | Out-Null
-        Copy-Item -LiteralPath $source -Destination (Join-Path $target 'rampi-session.ps1') -Force
         $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-        & icacls.exe $target /inheritance:r /grant:r "*${sid}:(OI)(CI)F" '*S-1-5-18:(OI)(CI)F' | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw 'Benutzer-ACL konnte nicht gesetzt werden.' }
+        $directoryAcl = [Security.AccessControl.DirectorySecurity]::new()
+        $directoryAcl.SetAccessRuleProtection($true,$false)
+        $directoryAcl.SetOwner([Security.Principal.SecurityIdentifier]::new($sid))
+        $fileAcl = [Security.AccessControl.FileSecurity]::new()
+        $fileAcl.SetAccessRuleProtection($true,$false)
+        $fileAcl.SetOwner([Security.Principal.SecurityIdentifier]::new($sid))
+        foreach ($identitySid in @($sid,'S-1-5-18')) {
+            $identityReference = [Security.Principal.SecurityIdentifier]::new($identitySid)
+            $directoryAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+                $identityReference, [Security.AccessControl.FileSystemRights]::FullControl,
+                [Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit',
+                [Security.AccessControl.PropagationFlags]::None,
+                [Security.AccessControl.AccessControlType]::Allow))
+            $fileAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+                $identityReference, [Security.AccessControl.FileSystemRights]::FullControl,
+                [Security.AccessControl.AccessControlType]::Allow))
+        }
+        Set-Acl -LiteralPath $target -AclObject $directoryAcl
+        $adapter = Join-Path $target 'rampi-session.ps1'
+        Copy-Item -LiteralPath $source -Destination $adapter -Force
+        Set-Acl -LiteralPath $adapter -AclObject $fileAcl
     }
 }
 Write-Output 'Audit beendet. Anbieter-CLIs, Sunshine und VPN bleiben unter ihren offiziellen Installationswegen.'

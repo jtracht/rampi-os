@@ -89,6 +89,23 @@ def tailscale_status() -> str:
     return str(data.get("BackendState", "Unknown"))
 
 
+def tailscale_action(action: str) -> str:
+    if action not in {"up", "down"}:
+        raise ValueError("Unbekannte Tailscale-Aktion.")
+    program = shutil.which("tailscale")
+    if not program:
+        raise RuntimeError("Tailscale ist nicht installiert.")
+    path = Path(program).resolve()
+    if os.name != "posix" or path.stat().st_uid != 0:
+        raise RuntimeError(
+            "Privilegierte VPN-Aktionen benötigen eine root-eigene Linux-Installation."
+        )
+    args = ["pkexec", str(path), action]
+    if action == "up":
+        args += ["--timeout=30s"]
+    return command(args, timeout=90)
+
+
 def wireguard_profiles() -> str:
     return command(["nmcli", "-t", "-f", "UUID,NAME,TYPE,ACTIVE", "connection", "show"])
 

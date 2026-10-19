@@ -87,6 +87,9 @@ jobs:
       - name: Real Windows OpenSSH reconnect and cross-user isolation
         shell: pwsh
         run: ./scripts/test-windows-ssh.ps1 -Psmux ./psmux/psmux.exe
+      - name: Installer permissions and data preservation
+        shell: pwsh
+        run: ./scripts/test-windows-installer.ps1
   security:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

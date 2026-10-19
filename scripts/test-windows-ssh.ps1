@@ -48,8 +48,16 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate client key.' }
     & $keygen -q -t ed25519 -N '' -f (Join-Path $directory 'host_key')
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate host key.' }
-    & icacls.exe (Join-Path $directory 'host_key') /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
-    & icacls.exe (Join-Path $directory 'host_key') /setowner '*S-1-5-32-544' | Out-Null
+    $keySecurity = [Security.AccessControl.FileSecurity]::new()
+    $keySecurity.SetAccessRuleProtection($true,$false)
+    $keySecurity.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'))
+    foreach ($sid in @('S-1-5-18','S-1-5-32-544')) {
+        $keySecurity.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+            [Security.Principal.SecurityIdentifier]::new($sid),
+            [Security.AccessControl.FileSystemRights]::FullControl,
+            [Security.AccessControl.AccessControlType]::Allow))
+    }
+    Set-Acl -LiteralPath (Join-Path $directory 'host_key') -AclObject $keySecurity
     foreach ($user in $users) {
         $account = Get-LocalUser -Name $user
         $profile = Get-CimInstance Win32_UserProfile | Where-Object SID -eq $account.SID.Value

@@ -19,24 +19,30 @@ def create_user(username: str, realname: str, password: str) -> str:
         raise RuntimeError("Linux-Benutzerverwaltung ist nur auf Linux verfügbar.")
     # mkpasswd invokes the operating system's libcrypt. No custom hashing or credential DB.
     hashed = command(["mkpasswd", "--method=yescrypt", "--stdin"], input_text=password + "\n")
-    from PySide6.QtDBus import QDBusConnection, QDBusInterface
+    from PySide6.QtDBus import QDBus, QDBusConnection, QDBusMessage
 
     bus = QDBusConnection.systemBus()
-    accounts = QDBusInterface(
-        "org.freedesktop.Accounts", "/org/freedesktop/Accounts", "org.freedesktop.Accounts", bus
-    )
-    accounts.setTimeout(60000)
-    if not accounts.isValid():
+    if not bus.isConnected():
         raise RuntimeError("AccountsService ist nicht erreichbar.")
-    result = accounts.call("CreateUser", username, realname, 0)
+
+    def authorized_call(path: str, interface: str, method: str, values: list):
+        message = QDBusMessage.createMethodCall("org.freedesktop.Accounts", path, interface, method)
+        message.setArguments(values)
+        message.setInteractiveAuthorizationAllowed(True)
+        return bus.call(message, QDBus.CallMode.Block, 60000)
+
+    result = authorized_call(
+        "/org/freedesktop/Accounts",
+        "org.freedesktop.Accounts",
+        "CreateUser",
+        [username, realname, 0],
+    )
     if result.errorMessage():
         raise RuntimeError(result.errorMessage())
     user_path = result.arguments()[0].path()
-    user = QDBusInterface(
-        "org.freedesktop.Accounts", user_path, "org.freedesktop.Accounts.User", bus
+    result = authorized_call(
+        user_path, "org.freedesktop.Accounts.User", "SetPassword", [hashed, ""]
     )
-    user.setTimeout(60000)
-    result = user.call("SetPassword", hashed, "")
     if result.errorMessage():
         raise RuntimeError(
             "Konto wurde angelegt, bleibt aber ohne gesetztes Passwort gesperrt: "

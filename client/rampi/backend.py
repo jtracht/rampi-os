@@ -231,9 +231,9 @@ class Backend(QObject):
             if action == "tailscale-status":
                 return services.tailscale_status()
             if action == "tailscale-up":
-                return command(["tailscale", "up"], timeout=60)
+                return services.tailscale_action("up")
             if action == "tailscale-down":
-                return command(["tailscale", "down"], timeout=30)
+                return services.tailscale_action("down")
             if action == "diagnostics":
                 import json
 
