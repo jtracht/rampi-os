@@ -48,7 +48,7 @@ def main() -> int:
         return 2
     backend = Backend(settings)
     engine = QQmlApplicationEngine()
-    warnings = []
+    warnings: list[str] = []
     engine.warnings.connect(lambda values: warnings.extend(str(value) for value in values))
     engine.rootContext().setContextProperty("rampi", backend)
     engine.rootContext().setContextProperty("windowed", args.windowed or bool(args.screenshot))
