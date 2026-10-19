@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 import shutil
-import tarfile
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -15,6 +15,9 @@ version = re.search(
 ).group(1)
 output = ROOT / "artifacts/release"
 output.mkdir(parents=True, exist_ok=True)
+for options in [["diff", "--quiet"], ["diff", "--cached", "--quiet"]]:
+    if subprocess.run(["git", *options], cwd=ROOT, check=False).returncode:
+        raise SystemExit("Commit tracked changes before packaging an immutable source revision.")
 include = [
     "client",
     "host",
@@ -48,20 +51,18 @@ for name in include:
             if p.is_file() and not any(part in {"__pycache__", ".pytest_cache"} for part in p.parts)
         ]
     )
-with tarfile.open(output / f"rampi-source-{version}.tar.gz", "w:gz") as archive:
-    for path in sorted(files):
-        info = archive.gettarinfo(
-            str(path), arcname=f"rampi-os/{path.relative_to(ROOT).as_posix()}"
-        )
-        info.uid = info.gid = info.mtime = 0
-        info.uname = info.gname = "root"
-        info.mode = (
-            0o755
-            if path.suffix == ".sh" or path.name in {"rampi", "rampi-session", "rampi-health"}
-            else 0o644
-        )
-        with path.open("rb") as stream:
-            archive.addfile(info, stream)
+subprocess.run(
+    [
+        "git",
+        "archive",
+        "--format=tar.gz",
+        "--prefix=rampi-os/",
+        "--output=" + str(output / f"rampi-source-{version}.tar.gz"),
+        "HEAD",
+    ],
+    cwd=ROOT,
+    check=True,
+)
 with zipfile.ZipFile(
     output / f"rampi-windows-host-{version}.zip", "w", zipfile.ZIP_DEFLATED
 ) as archive:
