@@ -7,7 +7,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QT_QUICK_BACKEND", "software")
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
 
-from PySide6.QtCore import QEventLoop, Qt, QTimer, QUrl  # noqa: E402
+from PySide6.QtCore import QEvent, QEventLoop, Qt, QTimer, QUrl  # noqa: E402
 from PySide6.QtGui import QGuiApplication  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuick import QQuickWindow  # noqa: E402, F401
@@ -47,4 +47,6 @@ if window.property("page") != "dashboard":
 if warnings:
     raise SystemExit("QML warnings: " + "\n".join(warnings))
 backend.jobs.pool.waitForDone(25000)
+engine.deleteLater()
+app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 print("PASS: actual QML loaded; six keyboard focus moves, Enter and Escape verified.")

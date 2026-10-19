@@ -67,6 +67,9 @@ def main() -> int:
     result = app.exec()
     backend.timer.stop()
     backend.jobs.pool.waitForDone(25000)
+    # Destroy QML bindings while the context object is still alive (not during Python teardown).
+    engine.deleteLater()
+    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     return result
 
 

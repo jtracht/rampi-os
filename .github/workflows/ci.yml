@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: docker build -t rampi-trixie-test -f tests/container/Dockerfile .
       - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test
+      - run: docker run --rm --user root -e RAMPI_TEST_CONTAINER=1 rampi-trixie-test python3 scripts/test-accounts.py
   client:
     strategy:
       matrix:
@@ -68,7 +69,11 @@ jobs:
       - name: PowerShell static analysis
         shell: pwsh
         run: |
-          Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -Scope CurrentUser
+          $analyzer = Get-Module -ListAvailable PSScriptAnalyzer | Sort-Object Version -Descending | Select-Object -First 1
+          if ($analyzer) { Import-Module $analyzer.Path } else {
+            if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) { Register-PSRepository -Default }
+            Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Repository PSGallery -Force -Scope CurrentUser
+          }
           $issues = Invoke-ScriptAnalyzer -Path installer/windows -Recurse -Severity Error
           $issues += Invoke-ScriptAnalyzer -Path host/windows -Recurse -Severity Error
           if ($issues) { $issues | Format-List; exit 1 }

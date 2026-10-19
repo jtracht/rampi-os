@@ -21,6 +21,7 @@ ApplicationWindow {
   property int selected: 0
   property string page: "dashboard"
   property bool keyboardMode: false
+  property var selectedCard: ({title: "", description: "", project: "", priority: "", status: ""})
   readonly property var modules: [
     {title: "Kanban Board", subtitle: "Projekte im Blick", caption: "READ ONLY  |  PROJECTS", symbol: "▥", accent: "#ff3c61", key: "kanban", dark: false},
     {title: "ChatGPT", subtitle: "Codex", caption: "CHAT  |  CODE  |  CREATE", symbol: "⌘", accent: "#087cf5", key: "codex", dark: false},
@@ -36,7 +37,7 @@ ApplicationWindow {
     else rampi.launch(key);
   }
   Shortcut { sequence: "Ctrl+Alt+Home"; onActivated: { window.page = "dashboard"; window.raise(); window.requestActivate(); } }
-  Shortcut { sequence: "Escape"; onActivated: { if (settings.visible) settings.close(); else window.page = "dashboard"; } }
+  Shortcut { sequence: "Escape"; onActivated: { if (notification.visible) notification.close(); else if (cardDetails.visible) cardDetails.close(); else if (settings.visible) settings.close(); else if (setupWizard.visible) setupWizard.close(); else window.page = "dashboard"; } }
   Shortcut { sequence: "Ctrl+,"; onActivated: settings.open() }
   Shortcut { sequence: "F11"; onActivated: window.visibility = window.visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen }
   Component.onCompleted: if (!rampi.configuration.setup_complete && showSetup) setupWizard.open()
@@ -155,17 +156,21 @@ ApplicationWindow {
                   ListView {
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 8; clip: true
                     model: modelData.cards
-                    delegate: Rectangle {
+                    delegate: Button {
+                      id: cardControl
                       required property var modelData
-                      width: ListView.view.width; height: 49; radius: 8; color: "#d1dce5"
-                      Row {
-                        anchors.fill: parent; anchors.margins: 10; spacing: 8
+                      width: ListView.view.width; height: 49
+                      focusPolicy: Qt.StrongFocus
+                      Accessible.name: modelData.title
+                      background: Rectangle { radius: 8; color: cardControl.activeFocus ? "#f3f7fa" : "#d1dce5" }
+                      contentItem: Row {
+                        spacing: 8
                         Rectangle { width: 9; height: 9; radius: 3; color: "#ff4666"; anchors.verticalCenter: parent.verticalCenter }
                         Text { text: modelData.title; width: parent.width - 20; elide: Text.ElideRight; color: "#101923"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
                       }
-                      ToolTip.visible: cardMouse.containsMouse
+                      onClicked: { window.selectedCard = modelData; cardDetails.open(); }
+                      ToolTip.visible: hovered || activeFocus
                       ToolTip.text: modelData.description || modelData.title
-                      MouseArea { id: cardMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                     }
                   }
                 }
@@ -253,6 +258,21 @@ ApplicationWindow {
     anchors.centerIn: parent
     width: Math.min(window.width - 50, 900); height: Math.min(window.height - 50, 650)
     onSettingsRequested: function(page) { settings.showPage(page); }
+  }
+  Dialog {
+    id: cardDetails
+    anchors.centerIn: parent
+    width: Math.min(window.width - 60, 850); height: Math.min(window.height - 60, 600)
+    title: window.selectedCard.title || "Aufgabe"
+    modal: true; standardButtons: Dialog.Close
+    ScrollView {
+      anchors.fill: parent
+      TextArea {
+        readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
+        textFormat: TextEdit.PlainText
+        text: "Projekt: " + (window.selectedCard.project || "—") + "\nStatus: " + window.selectedCard.status + "\nPriorität: " + window.selectedCard.priority + "\n\n" + window.selectedCard.description
+      }
+    }
   }
   Dialog {
     id: notification
