@@ -1,6 +1,6 @@
 # CI/CD
 
-CI läuft bei Main-/Feature-/Fix-Push und Pull Requests. Linux und Windows prüfen
+CI läuft bei Push auf main und bei Pull Requests. Linux und Windows prüfen
 Python-Lint, Typen, Unit-Tests, echten QML-Start und Pakete. Bash erhält ShellCheck;
 Windows erhält PowerShell-Analyse und einen isolierten nativen psmux-Test.
 Runtime-Abhängigkeiten werden mit pip-audit geprüft; detect-secrets und die

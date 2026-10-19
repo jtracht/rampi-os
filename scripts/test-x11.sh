@@ -5,7 +5,7 @@ temporary="$(mktemp -d)"
 export XDG_CONFIG_HOME="$temporary/config"
 install -d -m 700 "$XDG_CONFIG_HOME" "$XDG_CONFIG_HOME/rampi"
 printf '%s\n' '{"setup_complete":true}' > "$XDG_CONFIG_HOME/rampi/settings.json"
-openbox --config-file system/openbox.xml > "$temporary/openbox.log" 2>&1 &
+openbox --config-file "$(pwd)/system/openbox.xml" > "$temporary/openbox.log" 2>&1 &
 wm_pid=$!
 python3 -m rampi.app --windowed > "$temporary/client.log" 2>&1 &
 client_pid=$!
@@ -14,6 +14,7 @@ probe_pid=''
 cleanup() {
     if [[ "${1:-0}" != 0 ]]; then
         cat "$temporary/openbox.log" "$temporary/client.log" >&2
+        cat "$temporary/key-events.log" >&2 || true
         wmctrl -l >&2 || true
     fi
     kill "$client_pid" "$wm_pid" ${other_pid:+"$other_pid"} ${probe_pid:+"$probe_pid"} 2>/dev/null || true
@@ -45,9 +46,13 @@ xdotool key --clearmodifiers ctrl+alt+Home
 sleep 0.5
 active="$(xdotool getactivewindow)"
 if [[ "$active" != "$dashboard" ]]; then
-    cat "$temporary/openbox.log"; echo 'Dashboard shortcut failed.' >&2; exit 1
+    printf 'Dashboard shortcut failed: expected %s, active %s\n' "$dashboard" "$active" >&2
+    cat "$temporary/key-events.log" >&2
+    exit 1
 fi
-if grep -q 'keysym 0xff50, Home' "$temporary/key-events.log"; then
-    echo 'Reserved Home key was forwarded to the other application.' >&2; exit 1
+# X11 may deliver an unmatched key-up after ending a passive grab. Navigation
+# is triggered by key-down; ensure that the reserved Home press never reaches it.
+if awk 'BEGIN { RS="\n\n" } /KeyPress event/ && /keysym 0xff50, Home/ { found=1 } END { exit !found }' "$temporary/key-events.log"; then
+    echo 'Reserved Home key press was forwarded to the other application.' >&2; exit 1
 fi
 echo 'PASS: native Qt/X11 window started; Openbox globally selected the exact dashboard and intercepted the reserved shortcut.'

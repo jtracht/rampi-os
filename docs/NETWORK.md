@@ -1,7 +1,7 @@
 # WLAN, Bluetooth und Login
 
 NetworkManager verwaltet Netzwerkprofile. Der Client liest Status und WLANs
-asynchron über nmcli, das den vorhandenen NM-D-Bus-Dienst verwendet.
+asynchron über die NetworkManager-D-Bus-Schnittstelle und nmcli.
 Passwörter, Zertifikate und Profilrechte werden im bestehenden
 nm-connection-editor eingestellt; Rampi legt keine eigene Passwortdatei an.
 BlueZ und Blueman übernehmen Pairing, Agentenfragen und Geräteverbindungen.

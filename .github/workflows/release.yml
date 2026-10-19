@@ -87,5 +87,6 @@ jobs:
           sha256sum -- * > SHA256SUMS.tmp
           mv SHA256SUMS.tmp SHA256SUMS
           test -n "$(find . -name '*.img.xz' -print -quit)"
+          python3 ../../scripts/check-artifacts.py . --image
           gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" ./* --clobber
           gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$RELEASE_SHA" --draft=false

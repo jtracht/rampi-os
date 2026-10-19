@@ -44,6 +44,7 @@ jobs:
       - run: python -m rampi.app --screenshot artifacts/dashboard.png
       - run: python -m build
       - run: python scripts/package.py
+      - run: python scripts/check-artifacts.py artifacts/release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: client-${{ runner.os }}
