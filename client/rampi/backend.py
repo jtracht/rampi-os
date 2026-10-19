@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 from dataclasses import asdict
+from functools import partial
 from pathlib import Path
 
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
@@ -14,7 +15,7 @@ from PySide6.QtGui import QDesktopServices
 from . import __version__, services
 from .config import Host, Settings
 from .kanban import Board, load_board
-from .launch import browser_args, rdp_args, ssh_args, stream_args, terminal_args
+from .launch import browser_args, preview_args, rdp_args, ssh_args, stream_args, terminal_args
 from .process import Jobs, command
 
 
@@ -32,6 +33,9 @@ class Backend(QObject):
         self._status = {"network": "Ungeprüft", "bluetooth": "Ungeprüft", "vpn": "Ungeprüft"}
         self._board = Board()
         self._query = ""
+        self._previews = {
+            name: "Noch keine Verbindung." for name in ("codex", "claude", "antigravity")
+        }
         self.children_processes: dict[str, subprocess.Popen] = {}
         self.timer = QTimer(self)
         self.timer.setInterval(30000)
@@ -56,6 +60,10 @@ class Backend(QObject):
     def board(self):
         return self._board.view(self._query)
 
+    @Property("QVariantMap", notify=changed)
+    def previews(self):
+        return self._previews
+
     @Property(str, constant=True)
     def logoUrl(self):
         local = Path(__file__).parent / "branding" / "logo.png"
@@ -69,6 +77,14 @@ class Backend(QObject):
             ("vpn", services.tailscale_status),
         ]:
             self.jobs.submit(name, check)
+        if self.settings.hosts:
+            for module in self._previews:
+                try:
+                    args = preview_args(self.settings.host, module)
+                    self.jobs.submit("preview-" + module, partial(command, args, timeout=12))
+                except (ValueError, OSError) as exc:
+                    self._previews[module] = str(exc)
+            self.changed.emit()
 
     @Slot()
     def refreshBoard(self):
@@ -103,12 +119,18 @@ class Backend(QObject):
                 value = "Bereit" if "Powered: yes" in value else "Aus"
             self._status[name] = str(value)
             self.changed.emit()
+        elif name.startswith("preview-"):
+            self._previews[name[8:]] = str(value)[-8000:] or "Sitzung ohne sichtbare Ausgabe."
+            self.changed.emit()
         else:
             self.message.emit(str(value) or "Vorgang abgeschlossen.")
 
     @Slot(str, str)
     def _failed(self, name, error):
-        if name in self._status:
+        if name.startswith("preview-"):
+            self._previews[name[8:]] = "Host nicht erreichbar oder noch keine Sitzung."
+            self.changed.emit()
+        elif name in self._status:
             self._status[name] = "Nicht verfügbar"
             self.changed.emit()
         else:

@@ -47,6 +47,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate client key.' }
     & $keygen -q -t ed25519 -N '' -f (Join-Path $directory 'host_key')
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate host key.' }
+    & icacls.exe (Join-Path $directory 'host_key') /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' /setowner '*S-1-5-32-544' | Out-Null
     foreach ($user in $users) {
         $account = Get-LocalUser -Name $user
         $profile = Get-CimInstance Win32_UserProfile | Where-Object SID -eq $account.SID.Value
@@ -71,9 +72,15 @@ KbdInteractiveAuthentication no
 AuthorizedKeysFile .ssh/authorized_keys
 AllowUsers $($users -join ' ')
 "@ | Set-Content -LiteralPath $originalConfig -Encoding ascii
+    & icacls.exe $originalConfig /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' /setowner '*S-1-5-32-544' | Out-Null
     & $sshd -t
     if ($LASTEXITCODE -ne 0) { throw 'Invalid isolated SSH configuration.' }
-    Start-Service sshd
+    Set-Service sshd -StartupType Manual
+    try { Start-Service sshd } catch {
+        Get-WinEvent -LogName 'OpenSSH/Operational' -MaxEvents 8 -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty Message | Write-Output
+        throw
+    }
     Start-Sleep -Seconds 2
     $muxLiteral = "'" + (Join-Path $directory 'psmux.exe').Replace("'", "''") + "'"
     $heartbeat = '$n=0;while($true){Write-Output (''RAMPI_SSH_HEARTBEAT:''+$n);$n++;Start-Sleep -Milliseconds 300}'

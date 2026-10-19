@@ -197,7 +197,7 @@ ApplicationWindow {
               Column {
                 anchors.fill: parent; anchors.margins: 13; spacing: 9
                 Text { text: modelData.key === "browser" ? "https://www.raspberrypi.com" : "> " + (modelData.key === "antigravity" ? "agy" : modelData.key); color: modelData.key === "browser" ? "#78b9ff" : "#55d98b"; font.family: "monospace"; font.pixelSize: 13 }
-                Text { text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : "Native Windows-Sitzung\nSSH + ConPTY / psmux"; color: "#9cacbe"; font.pixelSize: 12; lineHeight: 1.5 }
+                Text { text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : rampi.previews[modelData.key]; width: parent.width; height: 58; clip: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: "#9cacbe"; font.family: "monospace"; font.pixelSize: 12; lineHeight: 1.3 }
                 Text { text: modelData.key === "browser" ? "Zum Öffnen auswählen →" : (rampi.configuration.hosts.length ? "Host eingerichtet · zum Verbinden auswählen →" : "Windows-Host noch nicht eingerichtet"); width: parent.width; wrapMode: Text.WordWrap; color: "#6f8498"; font.pixelSize: 11 }
               }
             }
@@ -229,7 +229,7 @@ ApplicationWindow {
           model: [{label: "WLAN", value: rampi.status.network}, {label: "Bluetooth", value: rampi.status.bluetooth}, {label: "VPN", value: rampi.status.vpn}]
           Column {
             Text { text: modelData.label; color: "#f2f5fa"; font.pixelSize: 13 }
-            Text { text: modelData.value; color: "#1edbb5"; font.pixelSize: 12; width: 130; elide: Text.ElideRight }
+            Text { text: modelData.value; color: modelData.value === "Verbunden" || modelData.value === "Running" || modelData.value === "Bereit" ? "#1edbb5" : "#8fa2b5"; font.pixelSize: 12; width: 130; elide: Text.ElideRight }
           }
         }
         Button { text: "⌨  Konsole"; onClicked: rampi.launch("console") }

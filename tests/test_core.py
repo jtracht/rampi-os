@@ -104,6 +104,9 @@ def test_github_pagination_is_read_only_and_preserves_status(monkeypatch):
     calls = []
 
     def api(url, token, body):
+        from graphql import parse
+
+        parse(body["query"])
         calls.append(body)
         page = len(calls)
         return {

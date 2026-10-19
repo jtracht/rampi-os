@@ -70,7 +70,12 @@ with zipfile.ZipFile(
     for name in ["setup.ps1", "LICENSE", "NOTICE"]:
         archive.write(ROOT / name, name)
 for name in ["setup.sh", "setup.ps1", "LICENSE", "NOTICE"]:
-    shutil.copyfile(ROOT / name, output / name)
+    if name.startswith("setup."):
+        bootstrap = (ROOT / name).read_text(encoding="utf-8")
+        bootstrap = bootstrap.replace("'0.1.0.dev0'", f"'{version}'")
+        (output / name).write_text(bootstrap, encoding="utf-8", newline="\n")
+    else:
+        shutil.copyfile(ROOT / name, output / name)
 checksums = []
 for path in sorted(output.iterdir()):
     if path.is_file() and path.name != "SHA256SUMS":
