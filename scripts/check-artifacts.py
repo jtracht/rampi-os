@@ -24,7 +24,10 @@ if args.image:
     images = list(directory.glob("*.img.xz"))
     if len(images) != 1:
         raise SystemExit("Exactly one flashable image required")
-    required.update([images[0].name, "package-manifest.tsv", "dependency-licenses.tar.xz"])
+    required.update([
+        images[0].name, "package-manifest.tsv", "dependency-licenses.tar.xz",
+        "qemu-boot.log", "partitions.json", "pi-gen-revision.txt", "readiness.json",
+    ])
 checksums = {}
 for line in (directory / "SHA256SUMS").read_text().splitlines():
     digest, name = line.split("  ", 1)

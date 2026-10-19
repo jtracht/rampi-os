@@ -22,6 +22,14 @@ foreach ($name in $names) {
 }
 [PSCustomObject]@{System=$os.Caption; Build=$os.BuildNumber; Edition=$edition; Programs=$programs} |
     ConvertTo-Json -Depth 4 | Write-Output
+if ($programs['psmux']) {
+    $muxVersion = (& $programs['psmux'] --version 2>&1 | Out-String)
+    Write-Output $muxVersion.Trim()
+    if ($muxVersion -notmatch 'psmux\s+(3\.\d+\.\d+)' -or [version]$Matches[1] -lt [version]'3.4.0') {
+        if ($Install -or $InstallMissing) { throw 'Vorhandenes psmux ist nicht kompatibel. Mindestens Version 3.4.0 der 3.x-Reihe erforderlich; bestehende Installation bewusst aktualisieren.' }
+        Write-Warning 'Vorhandenes psmux vor Verwendung auf eine kompatible Version der 3.x-Reihe aktualisieren.'
+    }
+}
 if ($InstallMissing -and -not $programs['psmux']) {
     $winget = Get-Command winget.exe -ErrorAction Stop
     if ($PSCmdlet.ShouldProcess('psmux 3.4.0', 'Mit WinGet aus offizieller Quelle installieren')) {

@@ -2,6 +2,13 @@
 set -euo pipefail
 if [[ $EUID -ne 0 ]]; then echo 'Mit sudo ausführen.' >&2; exit 1; fi
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+if command -v moonlight >/dev/null; then
+    moonlight_version="$(moonlight help | sed -n 's/^Moonlight Embedded \([0-9][0-9.]*\).*/\1/p' | head -1)"
+    if [[ -z "$moonlight_version" ]] || ! dpkg --compare-versions "$moonlight_version" ge 2.7.1; then
+        echo 'Vorhandenes Moonlight ist nicht als kompatibles Embedded >=2.7.1 erkannt; bestehende Installation bewusst aktualisieren.' >&2
+        exit 1
+    fi
+fi
 if ! command -v tailscale >/dev/null; then
     install -d -m 755 /usr/share/keyrings
     install -m 644 "$root/installer/raspberrypi/tailscale-archive-keyring.gpg" /usr/share/keyrings/tailscale-archive-keyring.gpg
