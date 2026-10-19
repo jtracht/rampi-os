@@ -2,6 +2,7 @@
 param([Parameter(Mandatory)][string]$Psmux)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandArgumentPassing = 'Standard'
 if ($env:GITHUB_ACTIONS -ne 'true') {
     throw 'This test creates temporary accounts and changes sshd only on a disposable GitHub runner.'
 }
@@ -38,17 +39,19 @@ try {
         if (-not $profile) { throw 'Windows did not create a test user profile.' }
         $sshDir = Join-Path $profile.LocalPath '.ssh'
         New-Item -ItemType Directory -Path $sshDir -Force | Out-Null
-        & icacls.exe $sshDir /inheritance:r /grant:r "*$($account.SID.Value):(OI)(CI)F" '*S-1-5-18:(OI)(CI)F' | Out-Null
+        & icacls.exe $sshDir /inheritance:r /grant:r "*$($account.SID.Value):(OI)(CI)F" '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
+        & icacls.exe $sshDir /setowner "*$($account.SID.Value)" | Out-Null
     }
     # Generate ephemeral OpenSSH keys; no real credentials or project files are used.
-    & $keygen -q -t ed25519 -N '""' -f (Join-Path $directory 'client_key')
+    & $keygen -q -t ed25519 -N '' -f (Join-Path $directory 'client_key')
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate client key.' }
-    & $keygen -q -t ed25519 -N '""' -f (Join-Path $directory 'host_key')
+    & $keygen -q -t ed25519 -N '' -f (Join-Path $directory 'host_key')
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate host key.' }
     foreach ($user in $users) {
         $account = Get-LocalUser -Name $user
         $profile = Get-CimInstance Win32_UserProfile | Where-Object SID -eq $account.SID.Value
         Copy-Item (Join-Path $directory 'client_key.pub') (Join-Path $profile.LocalPath '.ssh\authorized_keys')
+        & icacls.exe (Join-Path $profile.LocalPath '.ssh\authorized_keys') /setowner "*$($account.SID.Value)" | Out-Null
     }
     $publicHost = (Get-Content (Join-Path $directory 'host_key.pub') -Raw).Trim()
     Set-Content (Join-Path $directory 'known_hosts') "[127.0.0.1]:22222 $publicHost" -Encoding ascii
@@ -87,11 +90,14 @@ AllowUsers $($users -join ' ')
         $second.Text -notmatch 'RAMPI_SSH_HEARTBEAT:') {
         throw 'The native Windows process did not continue across closed SSH transports.'
     }
+    $identity = Invoke-TestSsh $users[1] 'whoami; exit 0'
+    if ($identity.Code -ne 0) { throw 'Second user SSH authentication failed; isolation test would be inconclusive.' }
     $other = Invoke-TestSsh $users[1] "& $muxLiteral -L '$namespace' has-session -t alive; exit `$LASTEXITCODE"
     if ($other.Code -eq 0) { throw 'Second Windows user could see the first user session.' }
     Write-Output 'PASS: native ConPTY persistence across real SSH reconnects; second user denied same namespace.'
 } finally {
-    if ($createdUsers.Count -gt 0 -and (Get-Service sshd -ErrorAction SilentlyContinue).Status -eq 'Running') {
+    $service = Get-Service sshd -ErrorAction SilentlyContinue
+    if ($createdUsers.Count -gt 0 -and $null -ne $service -and $service.Status -eq 'Running') {
         $mux = "'" + (Join-Path $directory 'psmux.exe').Replace("'", "''") + "'"
         Invoke-TestSsh $users[0] "& $mux -L '$namespace' kill-server; exit `$LASTEXITCODE" | Out-Null
     }
