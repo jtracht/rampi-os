@@ -21,6 +21,11 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - name: Build using pinned official pi-gen
         run: bash image/build.sh
+      - name: Software image validation and QEMU boot
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-arm dosfstools e2fsprogs
+          bash image/test-image.sh artifacts/image/*.img.xz artifacts/image
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: image

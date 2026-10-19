@@ -47,9 +47,12 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: sudo apt-get update && sudo apt-get install -y shellcheck
-      - run: find installer image system -type f \( -name '*.sh' -o -name rampi -o -name rampi-session \) -print0 | xargs -0 shellcheck
+      - run: find installer image system -type f \( -name '*.sh' -o -name rampi -o -name rampi-session -o -name rampi-health \) -print0 | xargs -0 shellcheck
       - run: bash -n setup.sh
       - run: python3 scripts/check-release.py --configuration-only
+      - name: Validate real Trixie NetworkManager import (no network activation)
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -w /src -e PYTHONPATH=client -e DEBIAN_FRONTEND=noninteractive debian:trixie bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends python3-gi gir1.2-nm-1.0 python3-pyside6.qtcore >/dev/null && python3 scripts/test-libnm.py'
   windows-host:
     runs-on: windows-latest
     timeout-minutes: 15

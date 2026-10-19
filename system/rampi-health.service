@@ -1,0 +1,15 @@
+[Unit]
+Description=Rampi software startup health check
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/rampi-health
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target

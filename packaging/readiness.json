@@ -1,16 +1,17 @@
 {
   "schema": 1,
   "regular_release": false,
+  "validation_policy": "Software-only acceptance per user instruction on 2026-10-19. Physical hardware tests are excluded; Docker, native Windows, and QEMU evidence must not be described as physical validation.",
   "evidence": {
-    "pi3bplus_boot_login": null,
-    "pi3bplus_ram_and_animation": null,
-    "wifi_bluetooth_vpn": null,
-    "windows_ssh_reconnect": null,
-    "cross_user_isolation": null,
-    "streaming_hardware_decode": null,
-    "rdp_and_global_shortcuts": null,
-    "cloud_connectors_live": null,
-    "image_flash": null,
-    "complete_graphical_setup": null
+    "native_qml_and_keyboard": null,
+    "docker_networkmanager_import": null,
+    "windows_native_persistence": null,
+    "configuration_and_secret_isolation": null,
+    "kanban_contracts_and_cache": null,
+    "installer_script_validation": null,
+    "ci_security_and_packages": null,
+    "image_partitions_and_filesystems": null,
+    "qemu_software_boot": null,
+    "release_artifact_completeness": null
   }
 }

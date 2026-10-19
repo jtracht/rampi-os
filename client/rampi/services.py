@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import getpass
 import json
 import os
 import re
@@ -89,16 +90,51 @@ def tailscale_status() -> str:
 
 
 def wireguard_profiles() -> str:
-    return command(["nmcli", "-t", "-f", "NAME,TYPE,ACTIVE", "connection", "show"])
+    return command(["nmcli", "-t", "-f", "UUID,NAME,TYPE,ACTIVE", "connection", "show"])
 
 
-def wireguard_import(filename: str) -> str:
+def wireguard_connection(filename: str, username: str):
     path = Path(filename).expanduser().resolve(strict=True)
     if path.suffix != ".conf" or path.stat().st_size > 65536:
         raise ValueError("Eine WireGuard-Konfiguration (.conf, höchstens 64 KiB) auswählen.")
-    # Importing through NetworkManager uses its system key storage and polkit.
-    result = command(["nmcli", "connection", "import", "type", "wireguard", "file", str(path)])
-    return result
+    # libnm parses WireGuard; set permissions BEFORE adding it to the system service.
+    # No shared transient profile and no auto-connect/routing race during import.
+    import gi
+
+    gi.require_version("NM", "1.0")
+    from gi.repository import NM, GLib
+
+    try:
+        connection = NM.conn_wireguard_import(str(path))
+    except GLib.Error as exc:
+        raise ValueError("WireGuard-Konfiguration konnte nicht sicher importiert werden.") from exc
+    setting = connection.get_setting_connection()
+    setting.props.autoconnect = False
+    setting.add_permission("user", username, None)
+    connection.verify()
+    return connection
+
+
+def wireguard_import(filename: str) -> str:
+    connection = wireguard_connection(filename, getpass.getuser())
+    from gi.repository import NM, Gio, GLib
+
+    setting = connection.get_setting_connection()
+    properties = connection.to_dbus(NM.ConnectionSerializationFlags.ALL)
+    parameters = GLib.Variant.new_tuple(properties, GLib.Variant("u", 1), GLib.Variant("a{sv}", {}))
+    bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    bus.call_sync(
+        "org.freedesktop.NetworkManager",
+        "/org/freedesktop/NetworkManager/Settings",
+        "org.freedesktop.NetworkManager.Settings",
+        "AddConnection2",
+        parameters,
+        GLib.VariantType.new("(oa{sv})"),
+        Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION,
+        30000,
+        None,
+    )
+    return f"Persönliches WireGuard-Profil importiert, Autostart aus. UUID: {setting.get_uuid()}"
 
 
 def network_action(action: str, value: str = "") -> str:
