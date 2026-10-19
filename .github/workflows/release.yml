@@ -69,6 +69,10 @@ jobs:
         with:
           name: image
           path: artifacts/image
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: image-validation
+          path: artifacts/image
       - run: python3 scripts/package.py
       - name: Publish only the complete verified artifact set
         env:

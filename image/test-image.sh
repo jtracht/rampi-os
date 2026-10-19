@@ -28,8 +28,14 @@ test -f "$work/root/opt/rampi/package-manifest.tsv"
 test -L "$work/root/etc/systemd/system/multi-user.target.wants/rampi-health.service"
 test -f "$work/root/etc/systemd/system/rampi-health.service"
 sudo cp "$work/root/opt/rampi/package-manifest.tsv" "$output/package-manifest.tsv"
+sudo cp "$work/root/opt/rampi/dependency-licenses.tar.xz" "$output/dependency-licenses.tar.xz"
 cp "$work/boot/kernel8.img" "$work/kernel8.img"
 cp "$work/boot/bcm2710-rpi-3-b.dtb" "$work/pi3.dtb"
+initrd_args=()
+if [[ -f "$work/boot/initramfs8" ]]; then
+    cp "$work/boot/initramfs8" "$work/initramfs8"
+    initrd_args=(-initrd "$work/initramfs8")
+fi
 sudo umount "$work/boot" "$work/root"
 sudo losetup -d "$loop"
 loop=''
@@ -41,6 +47,7 @@ truncate -s "$power" "$work/disk.img"
 set +e
 timeout 300 qemu-system-aarch64 -M raspi3b -m 1G -smp 4 -nographic -monitor none \
     -no-reboot -kernel "$work/kernel8.img" -dtb "$work/pi3.dtb" \
+    "${initrd_args[@]}" \
     -drive "file=$work/disk.img,format=raw,if=sd,snapshot=on" \
     -append 'root=/dev/mmcblk0p2 rootwait console=ttyAMA0,115200 loglevel=6 systemd.unit=multi-user.target' \
     > "$output/qemu-boot.log" 2>&1 &

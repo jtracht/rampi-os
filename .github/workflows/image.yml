@@ -53,5 +53,6 @@ jobs:
             artifacts/image/*.log
             artifacts/image/partitions.json
             artifacts/image/package-manifest.tsv
+            artifacts/image/dependency-licenses.tar.xz
           if-no-files-found: ignore
           retention-days: 7
