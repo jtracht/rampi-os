@@ -181,15 +181,22 @@ class Backend(QObject):
         current = self.children_processes.get(name)
         if current is not None and current.poll() is None:
             if shutil.which("wmctrl"):
-                command(["wmctrl", "-a", f"Rampi · {name}"])
+                try:
+                    command(["wmctrl", "-F", "-a", f"Rampi · {name}"])
+                except RuntimeError:
+                    pass  # The application may have set its own dynamic window title.
             self.message.emit("Die Anwendung läuft bereits. Wechsel mit Alt+Tab.")
             return
+        environment = os.environ.copy()
+        if name == "stream":
+            environment.update(SDL_GRAB_KEYBOARD="0", SDL_VIDEODRIVER="x11")
         self.children_processes[name] = subprocess.Popen(
             args,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=(os.name != "nt"),
+            env=environment,
         )
 
     @Slot(str)

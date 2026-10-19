@@ -2,7 +2,7 @@
 <openbox_config xmlns="http://openbox.org/3.4/rc">
   <focus><focusNew>yes</focusNew><followMouse>no</followMouse></focus>
   <keyboard>
-    <keybind key="C-A-Home"><action name="Execute"><command>wmctrl -a Rampi</command></action></keybind>
+    <keybind key="C-A-Home"><action name="Execute"><command>wmctrl -F -a Rampi</command></action></keybind>
     <keybind key="A-Tab"><action name="NextWindow"/></keybind>
     <keybind key="A-F4"><action name="Close"/></keybind>
     <keybind key="C-A-t"><action name="Execute"><command>xfce4-terminal</command></action></keybind>
