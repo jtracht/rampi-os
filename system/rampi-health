@@ -3,4 +3,9 @@ set -eu
 test -r /usr/share/xsessions/rampi.desktop
 test -r /etc/systemd/user/rampi.service
 PYTHONPATH=/opt/rampi/current /usr/bin/python3 -c 'from PySide6.QtQuick import QQuickWindow; from rampi import __version__; print("Rampi", __version__)'
+runtime="$(mktemp -d)"
+trap 'rm -rf -- "$runtime"' EXIT
+XDG_RUNTIME_DIR="$runtime" XDG_CONFIG_HOME="$runtime/config" XDG_CACHE_HOME="$runtime/cache" \
+    QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software PYTHONPATH=/opt/rampi/current \
+    /usr/bin/python3 -m rampi.app --smoke-test
 echo RAMPI_BOOT_OK

@@ -17,4 +17,9 @@ if grep -qE '^pi:[^!*:]' "$root/etc/shadow"; then
     echo 'Unerwartetes voreingestelltes Benutzerkennwort.' >&2; exit 1
 fi
 python3 -c 'from PySide6.QtQuick import QQuickWindow'
+runtime="$(mktemp -d)"
+trap 'rm -rf -- "$runtime"' EXIT
+XDG_RUNTIME_DIR="$runtime" XDG_CONFIG_HOME="$runtime/config" XDG_CACHE_HOME="$runtime/cache" \
+    QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software PYTHONPATH="$root/opt/rampi/current" \
+    python3 -m rampi.app --smoke-test
 echo 'Rootfs-Prüfung erfolgreich. Dies ist kein Hardware-Boot-Test.'

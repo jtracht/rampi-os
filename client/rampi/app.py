@@ -48,6 +48,8 @@ def main() -> int:
         return 2
     backend = Backend(settings)
     engine = QQmlApplicationEngine()
+    warnings = []
+    engine.warnings.connect(lambda values: warnings.extend(str(value) for value in values))
     engine.rootContext().setContextProperty("rampi", backend)
     engine.rootContext().setContextProperty("windowed", args.windowed or bool(args.screenshot))
     engine.rootContext().setContextProperty("showSetup", not bool(args.screenshot))
@@ -71,6 +73,9 @@ def main() -> int:
     # Destroy QML bindings while the context object is still alive (not during Python teardown).
     engine.deleteLater()
     app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    if args.smoke_test and warnings:
+        print("QML validation failed: " + "\n".join(warnings), file=sys.stderr)
+        return 1
     return result
 
 
