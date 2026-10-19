@@ -115,11 +115,45 @@ AllowUsers $($users -join ' ')
         $second.Text -notmatch 'RAMPI_SSH_HEARTBEAT:') {
         throw 'The native Windows process did not continue across closed SSH transports.'
     }
+    # Attach through an actual SSH PTY, then abruptly kill the transport process.
+    # Keep its stdin open and drain output so this is not an artificial EOF test.
+    $attachScript = "& $muxLiteral -L '$namespace' attach-session -t alive"
+    $attachEncoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($attachScript))
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $ssh
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardInput = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    foreach ($argument in @('-tt','-i',(Join-Path $directory 'client_key'),'-p','22222',
+        '-o','BatchMode=yes','-o','StrictHostKeyChecking=yes',
+        '-o',"UserKnownHostsFile=$(Join-Path $directory 'known_hosts')",'-l',$users[0],
+        '127.0.0.1','powershell.exe','-NoLogo','-NoProfile','-EncodedCommand',$attachEncoded)) {
+        $startInfo.ArgumentList.Add($argument)
+    }
+    $transport = [Diagnostics.Process]::new()
+    $transport.StartInfo = $startInfo
+    [void]$transport.Start()
+    $outputDrain = $transport.StandardOutput.ReadToEndAsync()
+    $errorDrain = $transport.StandardError.ReadToEndAsync()
+    Start-Sleep -Seconds 3
+    if ($transport.HasExited) { throw "Interactive SSH attach exited early: $($errorDrain.Result)" }
+    $transport.Kill()
+    $transport.WaitForExit()
+    [void]$outputDrain.GetAwaiter().GetResult()
+    [void]$errorDrain.GetAwaiter().GetResult()
+    Start-Sleep -Seconds 2
+    $afterDrop = Invoke-TestSsh $users[0] $capture
+    if ($afterDrop.Code -ne 0 -or $afterDrop.Text -eq $second.Text -or
+        $afterDrop.Text -notmatch 'RAMPI_SSH_HEARTBEAT:') {
+        throw 'Native process did not survive an abruptly killed interactive SSH transport.'
+    }
     $identity = Invoke-TestSsh $users[1] 'whoami; exit 0'
     if ($identity.Code -ne 0) { throw 'Second user SSH authentication failed; isolation test would be inconclusive.' }
     $other = Invoke-TestSsh $users[1] "& $muxLiteral -L '$namespace' has-session -t alive; exit `$LASTEXITCODE"
     if ($other.Code -eq 0) { throw 'Second Windows user could see the first user session.' }
-    Write-Output 'PASS: native ConPTY persistence across real SSH reconnects; second user denied same namespace.'
+    Write-Output 'PASS: native ConPTY survived SSH reconnects and an abruptly killed PTY transport; second user denied same namespace.'
 } finally {
     if ($createdUsers.Count -gt 0 -and $ready) {
         $mux = "'" + (Join-Path $directory 'psmux.exe').Replace("'", "''") + "'"
