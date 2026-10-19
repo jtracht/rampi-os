@@ -24,7 +24,7 @@ def test_settings_atomic_roundtrip_and_private_permissions(tmp_path):
     [
         "http://example.com",
         "file:///etc/passwd",
-        "https://user:secret@example.com",
+        "https://user:secret@example.com",  # pragma: allowlist secret (synthetic rejection fixture)
         "javascript:alert(1)",
     ],
 )

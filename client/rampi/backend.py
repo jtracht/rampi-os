@@ -84,6 +84,15 @@ class Backend(QObject):
         self._query = query
         self.boardChanged.emit()
 
+    @Slot()
+    def finishSetup(self):
+        try:
+            self.settings.setup_complete = True
+            self.settings.save()
+            self.changed.emit()
+        except (ValueError, OSError) as exc:
+            self.message.emit(str(exc))
+
     @Slot(str, object)
     def _result(self, name, value):
         if name == "board":

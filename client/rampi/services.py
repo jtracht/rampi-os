@@ -30,7 +30,34 @@ def inventory() -> dict[str, object]:
 
 
 def network_status() -> str:
-    return command(["nmcli", "-t", "-f", "STATE,CONNECTIVITY", "general"])
+    if os.name != "posix":
+        raise RuntimeError("NetworkManager ist auf diesem System nicht verfügbar.")
+    from PySide6.QtDBus import QDBusConnection, QDBusInterface, QDBusVariant
+
+    bus = QDBusConnection.systemBus()
+    interface = QDBusInterface(
+        "org.freedesktop.NetworkManager",
+        "/org/freedesktop/NetworkManager",
+        "org.freedesktop.DBus.Properties",
+        bus,
+    )
+    if not interface.isValid():
+        raise RuntimeError("NetworkManager-D-Bus ist nicht erreichbar.")
+    reply = interface.call("Get", "org.freedesktop.NetworkManager", "State")
+    if reply.errorMessage():
+        raise RuntimeError(reply.errorMessage())
+    state = reply.arguments()[0]
+    if isinstance(state, QDBusVariant):
+        state = state.variant()
+    return {
+        70: "Verbunden",
+        60: "Standortnetz",
+        50: "Lokales Netz",
+        40: "Verbinde …",
+        30: "Trenne …",
+        20: "Getrennt",
+        10: "Schlafmodus",
+    }.get(state, "Unbekannt")
 
 
 def wifi_list() -> list[dict[str, str]]:

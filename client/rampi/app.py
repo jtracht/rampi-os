@@ -49,6 +49,7 @@ def main() -> int:
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("rampi", backend)
     engine.rootContext().setContextProperty("windowed", args.windowed or bool(args.screenshot))
+    engine.rootContext().setContextProperty("showSetup", not bool(args.screenshot))
     engine.load(QUrl.fromLocalFile(str(Path(__file__).parent / "qml" / "Main.qml")))
     if not engine.rootObjects():
         return 1

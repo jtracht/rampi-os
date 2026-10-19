@@ -39,6 +39,7 @@ ApplicationWindow {
   Shortcut { sequence: "Escape"; onActivated: { if (settings.visible) settings.close(); else window.page = "dashboard"; } }
   Shortcut { sequence: "Ctrl+,"; onActivated: settings.open() }
   Shortcut { sequence: "F11"; onActivated: window.visibility = window.visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen }
+  Component.onCompleted: if (!rampi.configuration.setup_complete && showSetup) setupWizard.open()
 
   Item {
     id: stage
@@ -246,6 +247,12 @@ ApplicationWindow {
     }
   }
   SettingsDialog { id: settings; anchors.centerIn: parent; width: Math.min(window.width - 50, 1000); height: Math.min(window.height - 50, 780) }
+  SetupWizard {
+    id: setupWizard
+    anchors.centerIn: parent
+    width: Math.min(window.width - 50, 900); height: Math.min(window.height - 50, 650)
+    onSettingsRequested: function(page) { settings.showPage(page); }
+  }
   Dialog {
     id: notification
     anchors.centerIn: parent

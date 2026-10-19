@@ -8,6 +8,7 @@ Dialog {
   modal: true
   standardButtons: Dialog.Close
   property var host: rampi.configuration.hosts.length ? rampi.configuration.hosts[rampi.configuration.active_host] : ({})
+  function showPage(index) { tabs.currentIndex = index; open(); }
   onOpened: address.forceActiveFocus()
   contentItem: ColumnLayout {
     spacing: 12

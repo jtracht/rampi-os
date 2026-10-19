@@ -24,7 +24,7 @@ packages=(python3 python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.q
     qml6-module-qtqml-workerscript xserver-xorg xinit openbox lightdm
     network-manager network-manager-gnome bluez blueman wireguard-tools
     openssh-client freerdp3-x11 xfce4-terminal chromium wmctrl arandr lxinput
-    policykit-1-gnome libsecret-tools gnome-keyring unclutter-xfixes dbus-x11)
+    lxpolkit libsecret-tools gnome-keyring unclutter-xfixes dbus-x11)
 missing=()
 for package in "${packages[@]}"; do
     if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q '^install ok installed$'; then

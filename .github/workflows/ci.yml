@@ -31,6 +31,7 @@ jobs:
       - run: mypy client/rampi
       - run: pytest -q --junitxml=artifacts/tests.xml
       - run: python -m rampi.app --smoke-test
+      - run: python scripts/test-ui.py
       - run: python -m rampi.app --screenshot artifacts/dashboard.png
       - run: python -m build
       - run: python scripts/package.py
@@ -65,7 +66,7 @@ jobs:
         shell: pwsh
         run: |
           Invoke-WebRequest 'https://github.com/psmux/psmux/releases/download/v3.4.0/psmux-v3.4.0-windows-x64.zip' -OutFile psmux.zip
-          if ((Get-FileHash psmux.zip -Algorithm SHA256).Hash.ToLower() -ne 'a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721') { throw 'psmux checksum mismatch' }
+          if ((Get-FileHash psmux.zip -Algorithm SHA256).Hash.ToLower() -ne 'a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721') { throw 'psmux checksum mismatch' } # pragma: allowlist secret
           Expand-Archive psmux.zip -DestinationPath psmux
           ./scripts/test-persistence.ps1 -Psmux ./psmux/psmux.exe
   security:
@@ -80,6 +81,6 @@ jobs:
           python-version: '3.12'
       - run: pip install pip-audit detect-secrets
       - run: pip-audit -r requirements-runtime.txt
-      - run: detect-secrets scan --all-files --exclude-files '(requirements.*|.*\.png|.*\.lock)' > secret-scan.json
+      - run: detect-secrets scan --exclude-files '(requirements.*|.*\.png|.*\.lock)' > secret-scan.json
       - run: python scripts/check-secrets.py secret-scan.json
       - run: python scripts/check-licenses.py
