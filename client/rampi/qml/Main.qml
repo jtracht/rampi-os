@@ -64,7 +64,7 @@ ApplicationWindow {
         model: [{label: "Netzwerk", key: "network", glyph: "◉"}, {label: "Bluetooth", key: "bluetooth", glyph: "ᛒ"}, {label: "VPN", key: "vpn", glyph: "◈"}]
         Row {
           spacing: 10
-          Text { text: modelData.glyph; color: "#19d6b2"; font.pixelSize: 32 }
+          Text { text: modelData.glyph; color: ["Verbunden", "Running", "Bereit"].indexOf(rampi.status[modelData.key]) >= 0 ? "#19d6b2" : "#5d7185"; font.pixelSize: 32 }
           Column {
             Text { text: modelData.label; color: "#f4f6fa"; font.pixelSize: 13; font.bold: true }
             Text { text: rampi.status[modelData.key]; width: 130; elide: Text.ElideRight; color: "#92a7ba"; font.pixelSize: 11 }
@@ -93,6 +93,7 @@ ApplicationWindow {
           width: (tiles.width - 10) / 6; height: tiles.height
           title: modelData.title; subtitle: modelData.subtitle
           caption: modelData.caption; symbol: modelData.symbol
+          iconFile: ["columns-3", "terminal", "asterisk", "sparkles", "monitor", "globe"][index]
           accent: modelData.accent; darkInk: modelData.dark
           selected: window.selected === index
           reducedMotion: rampi.configuration.reduce_motion
@@ -199,11 +200,11 @@ ApplicationWindow {
             }
             Rectangle {
               Layout.fillWidth: true; Layout.fillHeight: true; radius: 10; color: "#080f17"
-              Column {
+              ColumnLayout {
                 anchors.fill: parent; anchors.margins: 13; spacing: 9
-                Text { text: modelData.key === "browser" ? "https://www.raspberrypi.com" : "> " + (modelData.key === "antigravity" ? "agy" : modelData.key); color: modelData.key === "browser" ? "#78b9ff" : "#55d98b"; font.family: "monospace"; font.pixelSize: 13 }
-                Text { text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : rampi.previews[modelData.key]; width: parent.width; height: 58; clip: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: "#9cacbe"; font.family: "monospace"; font.pixelSize: 12; lineHeight: 1.3 }
-                Text { text: modelData.key === "browser" ? "Zum Öffnen auswählen →" : (rampi.configuration.hosts.length ? "Host eingerichtet · zum Verbinden auswählen →" : "Windows-Host noch nicht eingerichtet"); width: parent.width; wrapMode: Text.WordWrap; color: "#6f8498"; font.pixelSize: 11 }
+                Text { Layout.fillWidth: true; elide: Text.ElideRight; text: modelData.key === "browser" ? rampi.configuration.browser_url : "> " + (modelData.key === "antigravity" ? "agy" : modelData.key); color: modelData.key === "browser" ? "#78b9ff" : "#55d98b"; font.family: "monospace"; font.pixelSize: 13 }
+                Text { Layout.fillWidth: true; Layout.fillHeight: true; text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : rampi.previews[modelData.key]; clip: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: "#9cacbe"; font.family: "monospace"; font.pixelSize: 12; lineHeight: 1.3 }
+                Text { Layout.fillWidth: true; visible: modelData.key === "browser" || !rampi.configuration.hosts.length; text: modelData.key === "browser" ? "Zum Öffnen auswählen →" : "Windows-Host noch nicht eingerichtet"; wrapMode: Text.WordWrap; color: "#6f8498"; font.pixelSize: 11 }
               }
             }
           }

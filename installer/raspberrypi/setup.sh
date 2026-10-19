@@ -17,7 +17,7 @@ if [[ "$mode" != --image ]]; then
         echo "Nicht validierte Zielhardware: $model" >&2; exit 1
     fi
 fi
-packages=(python3 python3-gi gir1.2-nm-1.0 python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtqml
+packages=(python3 python3-gi gir1.2-nm-1.0 libqt6svg6 python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtqml
     python3-pyside6.qtquick python3-pyside6.qtquickcontrols2 python3-pyside6.qtdbus
     qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
     qml6-module-qtquick-window qml6-module-qtquick-shapes qml6-module-qtquick-templates
@@ -59,6 +59,11 @@ target="/opt/rampi/$version"
 install -d -m 755 "$target"
 cp -a "$source_root/client/rampi" "$target/"
 chmod -R a+rX "$target"
+install -d -m 755 /usr/share/doc/rampi
+install -m 644 "$source_root/LICENSE" /usr/share/doc/rampi/LICENSE
+install -m 644 "$source_root/NOTICE" /usr/share/doc/rampi/NOTICE
+install -m 644 "$source_root/assets/references/RIGHTS.md" /usr/share/doc/rampi/BRANDING-RIGHTS.md
+cp -a "$source_root/docs/." /usr/share/doc/rampi/
 PYTHONPATH="$target" python3 -c 'from PySide6.QtQuick import QQuickWindow; from rampi.backend import Backend'
 ln -sfn "$target" /opt/rampi/current
 install -m 755 "$source_root/system/rampi" /usr/local/bin/rampi
