@@ -25,7 +25,7 @@ packages=(python3 python3-gi gir1.2-nm-1.0 python3-pyside6.qtcore python3-pyside
     network-manager network-manager-gnome bluez blueman wireguard-tools
     openssh-client freerdp3-x11 xfce4-terminal chromium wmctrl arandr lxinput
     lxpolkit libsecret-tools gnome-keyring libpam-gnome-keyring unclutter-xfixes dbus-x11
-    plymouth plymouth-themes plymouth-label fonts-dejavu-core)
+    plymouth plymouth-themes plymouth-label fonts-dejavu-core accountsservice whois)
 missing=()
 for package in "${packages[@]}"; do
     if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q '^install ok installed$'; then

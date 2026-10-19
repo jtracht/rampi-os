@@ -13,6 +13,7 @@ from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
 from . import __version__, services
+from .accounts import create_user
 from .config import Host, Settings
 from .kanban import Board, load_board
 from .launch import browser_args, preview_args, rdp_args, ssh_args, stream_args, terminal_args
@@ -108,6 +109,10 @@ class Backend(QObject):
             self.changed.emit()
         except (ValueError, OSError) as exc:
             self.message.emit(str(exc))
+
+    @Slot(str, str, str)
+    def createUser(self, username: str, realname: str, password: str):
+        self.jobs.submit("create-user", partial(create_user, username, realname, password))
 
     @Slot(str, object)
     def _result(self, name, value):

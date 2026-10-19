@@ -13,7 +13,7 @@ test "$(dpkg --print-architecture)" = arm64
 if find "$root/opt/rampi/current" -type f -perm /002 -print -quit | grep -q .; then
     echo 'Unsichere Dateiberechtigungen.' >&2; exit 1
 fi
-if grep -E '^pi:[^!*:]' "$root/etc/shadow"; then
+if grep -qE '^pi:[^!*:]' "$root/etc/shadow"; then
     echo 'Unerwartetes voreingestelltes Benutzerkennwort.' >&2; exit 1
 fi
 python3 -c 'from PySide6.QtQuick import QQuickWindow'

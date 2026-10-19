@@ -159,3 +159,11 @@ def test_api_redirect_does_not_forward_tokens(monkeypatch):
     monkeypatch.setattr("urllib.request.build_opener", opener)
     with pytest.raises(RuntimeError, match="test complete"):
         request("https://api.github.com", "sensitive-fixture")
+
+
+@pytest.mark.parametrize("name", ["-root", "Root", "name;cmd", "user\n", "a" * 32])
+def test_account_validation_rejects_unsafe_names(name):
+    from rampi.accounts import validate_new_user
+
+    with pytest.raises(ValueError):
+        validate_new_user(name, "synthetic-test-only")

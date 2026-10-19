@@ -55,6 +55,16 @@ Dialog {
           Button { text: "Linux-Systemkonsole öffnen"; onClicked: rampi.launch("console") }
           Button { text: "Abschlussdiagnose / installierte Programme"; onClicked: rampi.action("diagnostics", "") }
           CheckBox { id: reducedMotion; text: "Bewegung reduzieren"; checked: rampi.configuration.reduce_motion }
+          Label { text: "Neues Linux-Systemkonto · polkit fragt nach Administratorfreigabe"; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          TextField { id: newUser; placeholderText: "Benutzername"; Layout.fillWidth: true }
+          TextField { id: realName; placeholderText: "Anzeigename"; Layout.fillWidth: true }
+          TextField { id: newPassword; placeholderText: "Passwort · mindestens 12 Zeichen"; echoMode: TextInput.Password; Layout.fillWidth: true }
+          TextField { id: repeatPassword; placeholderText: "Passwort wiederholen"; echoMode: TextInput.Password; Layout.fillWidth: true }
+          Button {
+            text: "Linux-Konto anlegen"
+            enabled: newUser.text !== "" && newPassword.text.length >= 12 && newPassword.text === repeatPassword.text
+            onClicked: { rampi.createUser(newUser.text, realName.text, newPassword.text); newPassword.clear(); repeatPassword.clear(); }
+          }
           Label { text: "Benutzeranlage und Sprache: siehe Installationsanleitung.\nStrg+Alt+F2 öffnet den regulären TTY-Zugang."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
       }
