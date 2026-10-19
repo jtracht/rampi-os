@@ -12,10 +12,10 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
-from . import __version__, services
+from . import __version__, services, sshkeys
 from .accounts import create_user
 from .config import Host, Settings
-from .kanban import Board, load_board
+from .kanban import Board, load_board, store_token
 from .launch import browser_args, preview_args, rdp_args, ssh_args, stream_args, terminal_args
 from .process import Jobs, command
 
@@ -34,6 +34,7 @@ class Backend(QObject):
         self._status = {"network": "Ungeprüft", "bluetooth": "Ungeprüft", "vpn": "Ungeprüft"}
         self._board = Board()
         self._query = ""
+        self._host_key: dict = {"fingerprints": ""}
         self._previews = {
             name: "Noch keine Verbindung." for name in ("codex", "claude", "antigravity")
         }
@@ -64,6 +65,10 @@ class Backend(QObject):
     @Property("QVariantMap", notify=changed)
     def previews(self):
         return self._previews
+
+    @Property("QVariantMap", notify=changed)
+    def hostKey(self):
+        return self._host_key
 
     @Property(str, constant=True)
     def logoUrl(self):
@@ -114,11 +119,35 @@ class Backend(QObject):
     def createUser(self, username: str, realname: str, password: str):
         self.jobs.submit("create-user", partial(create_user, username, realname, password))
 
+    @Slot(str, str, str, str)
+    def storeToken(self, profile: str, kind: str, account: str, token: str):
+        self.jobs.submit("secret-store", partial(store_token, profile, kind, account, token))
+
+    @Slot("QVariantMap")
+    def scanHost(self, values):
+        try:
+            host = Host.from_form(values)
+            host.validate()
+            self.jobs.submit("host-key", partial(sshkeys.scan, host))
+        except (ValueError, TypeError) as exc:
+            self.message.emit(str(exc))
+
+    @Slot("QVariantMap")
+    def trustHost(self, values):
+        try:
+            host = Host.from_form(values)
+            self.jobs.submit("host-trust", partial(sshkeys.trust, host, self._host_key.copy()))
+        except (ValueError, TypeError) as exc:
+            self.message.emit(str(exc))
+
     @Slot(str, object)
     def _result(self, name, value):
         if name == "board":
             self._board = value
             self.boardChanged.emit()
+        elif name == "host-key":
+            self._host_key = value
+            self.changed.emit()
         elif name in self._status:
             if name == "bluetooth":
                 value = "Bereit" if "Powered: yes" in value else "Aus"
@@ -145,13 +174,8 @@ class Backend(QObject):
     def save(self, values):
         try:
             # QJSValue conversion is handled by the QVariantMap slot.
-            host = Host(
-                address=str(values.get("address", "")).strip(),
-                username=str(values.get("username", "")).strip(),
-                port=int(values.get("port", 22)),
-                identity=str(values.get("identity", "")).strip(),
-                project=str(values.get("project", "")),
-            )
+            base = self.settings.hosts[self.settings.active_host] if self.settings.hosts else None
+            host = Host.from_form(values, base)
             raw = asdict(self.settings)
             raw["hosts"] = [Host(**h) for h in raw["hosts"]]
             candidate = Settings(**raw)

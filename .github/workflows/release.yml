@@ -83,6 +83,7 @@ jobs:
           python3 scripts/check-release.py
           cp artifacts/image/* artifacts/release/
           cd artifacts/release
+          rm -f SHA256SUMS
           sha256sum -- * > SHA256SUMS.tmp
           mv SHA256SUMS.tmp SHA256SUMS
           test -n "$(find . -name '*.img.xz' -print -quit)"

@@ -23,7 +23,10 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 | board_token_key | string / leer | persönlicher Secret-Service-Profilname; niemals der Token selbst |
 | reduce_motion | bool / false | schaltet die Kachelverformung aus |
 
-Geheimnisse mit dem bestehenden Secret Service speichern, zum Beispiel:
+Zugangsdaten können unter Einstellungen → Kanban im persönlichen Secret Service
+gespeichert werden. Der Profilname wird in der Konfiguration gespeichert, der
+Token ausschließlich über die Standardeingabe an `secret-tool` übergeben.
+Alternativ den bestehenden Secret Service direkt verwenden, zum Beispiel:
 `secret-tool store --label='Rampi GitHub read-only' application rampi profile github-work`.
 Die Eingabe erfolgt interaktiv. Token nicht in Shellargumente, Git oder JSON kopieren.
 
@@ -34,6 +37,11 @@ mit Secret-Service-Wert `{"email":"…","token":"…"}`. OAuth verwendet stattde
 `https://api.atlassian.com/ex/jira/CLOUD-UUID#PROJEKT` und einen Bearer-Token.
 Trello speichert seinen Secret-Service-Wert als `{"key":"…","token":"…"}`.
 Die Beispiele enthalten keine echten Credentials.
+
+Unter Einstellungen → Host & SSH Hostschlüssel abrufen und die angezeigten
+SHA256-Fingerprints unabhängig am Windows-Host vergleichen (siehe Windows-Anleitung).
+Erst danach die Bestätigung aktivieren und speichern. Vorhandene abweichende
+Hostschlüssel werden nicht überschrieben; Änderungen müssen unabhängig geprüft werden.
 
 Kanban-Cache: `$XDG_CACHE_HOME/rampi/board-<SHA256>.json`, sonst `~/.cache/rampi/`.
 Der Hash trennt Anbieter, Quelle und Credential-Profil. Inhalte können vertraulich

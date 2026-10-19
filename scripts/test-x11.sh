@@ -3,7 +3,7 @@ set -euo pipefail
 export QT_QPA_PLATFORM=xcb QT_QUICK_BACKEND=software
 temporary="$(mktemp -d)"
 export XDG_CONFIG_HOME="$temporary/config"
-mkdir -p -m 700 "$XDG_CONFIG_HOME/rampi"
+install -d -m 700 "$XDG_CONFIG_HOME" "$XDG_CONFIG_HOME/rampi"
 printf '%s\n' '{"setup_complete":true}' > "$XDG_CONFIG_HOME/rampi/settings.json"
 openbox --config-file system/openbox.xml > "$temporary/openbox.log" 2>&1 &
 wm_pid=$!

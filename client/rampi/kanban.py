@@ -64,6 +64,34 @@ def secret(key: str) -> str:
     return command(["secret-tool", "lookup", "application", "rampi", "profile", key])
 
 
+def store_token(profile: str, kind: str, account: str, token: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", profile):
+        raise ValueError("Schlüsselbund-Profil: 1–64 Buchstaben, Ziffern, _, . oder -.")
+    if not token or len(token) > 8192 or "\x00" in token:
+        raise ValueError("Ein gültiges Zugriffstoken eingeben.")
+    value = token
+    if kind == "trello":
+        if not account:
+            raise ValueError("Trello benötigt zusätzlich seinen API-Key.")
+        value = json.dumps({"key": account, "token": token})
+    elif kind == "jira" and account:
+        value = json.dumps({"email": account, "token": token})
+    command(
+        [
+            "secret-tool",
+            "store",
+            "--label=Rampi Kanban",
+            "application",
+            "rampi",
+            "profile",
+            profile,
+        ],
+        input_text=value,
+        timeout=90,
+    )
+    return "Zugangsdaten im persönlichen System-Schlüsselbund gespeichert."
+
+
 def request(
     url: str, token: str = "", body: dict | None = None, headers: dict[str, str] | None = None
 ) -> Any:

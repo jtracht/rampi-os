@@ -9,6 +9,8 @@ Dialog {
   standardButtons: Dialog.Close
   property var host: rampi.configuration.hosts.length ? rampi.configuration.hosts[rampi.configuration.active_host] : ({})
   function showPage(index) { tabs.currentIndex = index; open(); }
+  function hostValues() { return {address: address.text, username: username.text, port: port.value,
+      identity: identity.text, project: project.text}; }
   onOpened: address.forceActiveFocus()
   contentItem: ColumnLayout {
     spacing: 12
@@ -27,7 +29,7 @@ Dialog {
         ColumnLayout {
           width: parent.width - 20; spacing: 12
           Label { text: "Windows 11 Pro · persönliche Verbindung"; font.pixelSize: 23; font.bold: true }
-          Label { text: "Vor dem Verbinden den SSH-Hostschlüssel über einen unabhängigen Kanal prüfen und in known_hosts übernehmen."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          Label { text: "Vor dem Verbinden die Fingerprints unabhängig am Windows-Host vergleichen. Ein Abruf allein bestätigt die Identität noch nicht."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           Label { text: "Hostname / VPN-IP" }
           TextField { id: address; text: dialog.host.address || ""; placeholderText: "workstation.tailnet.ts.net"; Layout.fillWidth: true }
           Label { text: "Windows-Benutzername" }
@@ -37,6 +39,14 @@ Dialog {
           Label { text: "Persönlicher privater SSH-Schlüssel · nur Dateipfad" }
           TextField { id: identity; text: dialog.host.identity || ""; placeholderText: "~/.ssh/id_ed25519"; Layout.fillWidth: true }
           Button { text: "SSH-Schlüssel mit OpenSSH erzeugen"; onClicked: rampi.action("ssh-key", "") }
+          Button { text: "SSH-Hostschlüssel abrufen"; onClicked: { verified.checked = false; rampi.scanHost(dialog.hostValues()); } }
+          TextArea { text: rampi.hostKey.fingerprints; readOnly: true; selectByMouse: true; textFormat: TextEdit.PlainText; wrapMode: TextEdit.Wrap; Layout.fillWidth: true }
+          CheckBox { id: verified; text: "Fingerprints unabhängig am Windows-Host verglichen" }
+          Button {
+            text: "Geprüfte Hostschlüssel speichern"
+            enabled: verified.checked && rampi.hostKey.fingerprints !== ""
+            onClicked: { rampi.trustHost(dialog.hostValues()); verified.checked = false; }
+          }
           Label { text: "Projektverzeichnis auf Windows" }
           TextField { id: project; text: dialog.host.project || ""; placeholderText: "C:\\Projects\\MeinProjekt"; Layout.fillWidth: true }
           Label { text: "Die offiziellen CLIs und psmux müssen im Windows-Benutzerkonto eingerichtet sein. Anmeldungen erfolgen in den jeweiligen offiziellen Programmen."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
@@ -99,6 +109,14 @@ Dialog {
           TextField { id: boardSource; text: rampi.configuration.board_source; Layout.fillWidth: true }
           Label { text: "Secret-Service-Profilname · kein Token im Konfigurationsfeld" }
           TextField { id: tokenKey; text: rampi.configuration.board_token_key; Layout.fillWidth: true }
+          TextField { id: tokenAccount; visible: boardKind.currentText === "jira" || boardKind.currentText === "trello"; placeholderText: boardKind.currentText === "trello" ? "Trello API-Key" : "Jira E-Mail · bei OAuth leer lassen"; Layout.fillWidth: true }
+          TextField { id: tokenValue; visible: boardKind.currentText !== "json"; placeholderText: "Persönliches Token · nur im Secret Service speichern"; echoMode: TextInput.Password; Layout.fillWidth: true }
+          Button {
+            text: "Zugang im persönlichen Schlüsselspeicher speichern"
+            visible: boardKind.currentText !== "json"
+            enabled: tokenKey.text !== "" && tokenValue.text !== ""
+            onClicked: { rampi.storeToken(tokenKey.text, boardKind.currentText, tokenAccount.text, tokenValue.text); tokenValue.clear(); }
+          }
           Label { text: "Cloud-Connectoren sind implementiert, aber noch nicht gegen persönliche Anbieter-Konten validiert. Lokale JSON-Dateien benötigen kein Token."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           Label { text: "Browser-Startseite · HTTPS" }
           TextField { id: browserUrl; text: rampi.configuration.browser_url; Layout.fillWidth: true }
