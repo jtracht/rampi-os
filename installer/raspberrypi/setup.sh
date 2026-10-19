@@ -21,7 +21,7 @@ packages=(python3 python3-gi gir1.2-nm-1.0 python3-pyside6.qtcore python3-pyside
     python3-pyside6.qtquick python3-pyside6.qtquickcontrols2 python3-pyside6.qtdbus
     qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
     qml6-module-qtquick-window qml6-module-qtquick-shapes qml6-module-qtquick-templates
-    qml6-module-qtqml-workerscript xserver-xorg xinit openbox lightdm
+    qml6-module-qtqml-workerscript xserver-xorg xinit openbox lightdm lightdm-gtk-greeter
     network-manager network-manager-gnome bluez blueman wireguard-tools
     openssh-client freerdp3-x11 xfce4-terminal chromium wmctrl arandr lxinput
     lxpolkit libsecret-tools gnome-keyring libpam-gnome-keyring unclutter-xfixes dbus-x11
@@ -75,6 +75,12 @@ install -m 644 "$source_root/client/rampi/branding/logo.png" /usr/share/plymouth
 systemctl enable NetworkManager bluetooth
 if [[ "$mode" == --image ]]; then
     systemctl enable lightdm rampi-health.service
+    systemctl set-default graphical.target
+    systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+    install -d -m 755 /etc/lightdm/lightdm.conf.d /etc/lightdm/lightdm-gtk-greeter.conf.d /usr/share/pixmaps
+    install -m 644 "$source_root/system/lightdm-rampi.conf" /etc/lightdm/lightdm.conf.d/60-rampi.conf
+    install -m 644 "$source_root/system/lightdm-greeter.conf" /etc/lightdm/lightdm-gtk-greeter.conf.d/60-rampi.conf
+    install -m 644 "$source_root/client/rampi/branding/logo.png" /usr/share/pixmaps/rampi.png
     plymouth-set-default-theme -R rampi
     if ! grep -qw splash /boot/firmware/cmdline.txt; then
         sed -i '1 s/$/ quiet splash/' /boot/firmware/cmdline.txt

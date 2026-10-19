@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from PySide6.QtCore import QEvent, QObject, Qt, QTimer, QUrl
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
 
@@ -38,6 +38,7 @@ def main() -> int:
     app = QGuiApplication(sys.argv[:1])
     app.setApplicationName("Rampi")
     app.setOrganizationName("Rampi")
+    app.setWindowIcon(QIcon(str(Path(__file__).parent / "branding" / "logo.png")))
     input_mode = InputMode(app)
     app.installEventFilter(input_mode)
     try:

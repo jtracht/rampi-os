@@ -37,6 +37,7 @@ jobs:
     outputs:
       created: ${{ steps.release.outputs.release_created }}
       tag: ${{ steps.release.outputs.tag_name }}
+      sha: ${{ steps.release.outputs.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Require the tested commit to still be main
@@ -53,7 +54,7 @@ jobs:
     if: needs.version.outputs.created == 'true'
     uses: ./.github/workflows/image.yml
     with:
-      ref: ${{ needs.version.outputs.tag }}
+      ref: ${{ needs.version.outputs.sha }}
   publish:
     needs: [version, image]
     runs-on: ubuntu-24.04
@@ -63,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ needs.version.outputs.tag }}
+          ref: ${{ needs.version.outputs.sha }}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: image
@@ -73,6 +74,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.version.outputs.tag }}
+          RELEASE_SHA: ${{ needs.version.outputs.sha }}
         run: |
           python3 scripts/check-release.py
           cp artifacts/image/* artifacts/release/
@@ -81,4 +83,4 @@ jobs:
           mv SHA256SUMS.tmp SHA256SUMS
           test -n "$(find . -name '*.img.xz' -print -quit)"
           gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" ./* --clobber
-          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$RELEASE_SHA" --draft=false

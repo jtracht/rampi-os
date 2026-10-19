@@ -2,6 +2,7 @@
   "release-type": "python",
   "draft": true,
   "include-v-in-tag": true,
+  "include-component-in-tag": false,
   "packages": {
     ".": {
       "package-name": "rampi-os",
