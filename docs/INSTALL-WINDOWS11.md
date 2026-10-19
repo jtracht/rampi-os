@@ -23,9 +23,12 @@ Administratorkonten können gemäß bestehender sshd-Konfiguration stattdessen
 nicht blind überschreiben; Microsoft-Dokumentation befolgen:
 https://learn.microsoft.com/windows-server/administration/openssh/openssh_keymanagement
 
-Pi-Hostschlüsselprüfung: Fingerprint auf Windows lokal ermitteln, unabhängig
+Pi-Hostschlüsselprüfung: Fingerprints auf Windows lokal ermitteln, beispielsweise
+mit `ssh-keygen -lf C:\ProgramData\ssh\ssh_host_ed25519_key.pub -E sha256`;
+für weitere angebotene Hostschlüssel entsprechend wiederholen. Unabhängig
 abgleichen und erst dann die passende bekannte Hostidentität im persönlichen
-Linux-OpenSSH-Profil akzeptieren. Rampi verwendet strikt `StrictHostKeyChecking=yes`.
+Linux-OpenSSH-Profil über Einstellungen → Host & SSH speichern.
+Rampi verwendet strikt `StrictHostKeyChecking=yes`.
 
 Anbieter-CLIs aus offiziellen Quellen installieren und im persönlichen Konto
 anmelden. Sunshine und VPN werden erkannt, nicht automatisch ersetzt oder geöffnet.

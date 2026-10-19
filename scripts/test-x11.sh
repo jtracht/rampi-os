@@ -12,10 +12,14 @@ client_pid=$!
 other_pid=''
 probe_pid=''
 cleanup() {
+    if [[ "${1:-0}" != 0 ]]; then
+        cat "$temporary/openbox.log" "$temporary/client.log" >&2
+        wmctrl -l >&2 || true
+    fi
     kill "$client_pid" "$wm_pid" ${other_pid:+"$other_pid"} ${probe_pid:+"$probe_pid"} 2>/dev/null || true
     rm -rf -- "$temporary"
 }
-trap cleanup EXIT
+trap 'cleanup $?' EXIT
 dashboard=''
 for ((attempt=0; attempt<80; attempt++)); do
     dashboard="$(xdotool search --onlyvisible --name '^Rampi$' 2>/dev/null | head -1 || true)"
@@ -33,7 +37,7 @@ for ((attempt=0; attempt<40; attempt++)); do
     sleep 0.1
 done
 [[ -n "$other" ]]
-xdotool windowactivate --sync "$other"
+timeout 10 xdotool windowactivate --sync "$other"
 stdbuf -oL xev -id "$other" -event keyboard > "$temporary/key-events.log" 2>&1 &
 probe_pid=$!
 sleep 0.3

@@ -17,7 +17,7 @@ jobs:
       - run: docker build -t rampi-trixie-test -f tests/container/Dockerfile .
       - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test
       - run: docker run --rm --user root -e RAMPI_TEST_CONTAINER=1 rampi-trixie-test python3 scripts/test-accounts.py
-      - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test xvfb-run -a -s '-screen 0 1600x900x24 -nolisten tcp' bash scripts/test-x11.sh
+      - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test timeout 60 xvfb-run -a -s '-screen 0 1600x900x24 -nolisten tcp' bash scripts/test-x11.sh
   client:
     strategy:
       matrix:
