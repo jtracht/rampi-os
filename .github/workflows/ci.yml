@@ -72,6 +72,9 @@ jobs:
           if ((Get-FileHash psmux.zip -Algorithm SHA256).Hash.ToLower() -ne 'a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721') { throw 'psmux checksum mismatch' } # pragma: allowlist secret
           Expand-Archive psmux.zip -DestinationPath psmux
           ./scripts/test-persistence.ps1 -Psmux ./psmux/psmux.exe
+      - name: Real Windows OpenSSH reconnect and cross-user isolation
+        shell: pwsh
+        run: ./scripts/test-windows-ssh.ps1 -Psmux ./psmux/psmux.exe
   security:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
