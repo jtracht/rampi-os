@@ -18,7 +18,7 @@ Stand: 20. Oktober 2026. Physische Hardwaretests sind auf Nutzerwunsch durch
 | Image | Festgelegter offizieller pi-gen-Commit, Lite Trixie arm64, Plymouth, LightDM, Paketmanifest/Lizenzarchiv; erzeugt, virtuelle Abnahme siehe Actions |
 | CI/Release | ARM64-Docker mit 1-GB-Limit, Linux/Windows, Sicherheits-/Skript-/Archivprüfungen; Veröffentlichung erfordert Softwarebelege und frisch bestandenen Imageworkflow |
 
-74 Python-Tests prüfen Konfiguration, Argumente, Cachetrennung, Anbieter-Verträge,
+87 Python-Tests prüfen Konfiguration, Argumente, Cachetrennung, Anbieter-Verträge,
 Hostschlüsselrotation und Zugangsdatenübergabe ohne Token in Prozessargumenten.
 Zusätzliche Integrationstests verwenden echte Systemkomponenten; die WLAN-Oberfläche hat einen ausdrücklich gekennzeichneten D-Bus-Fixture-Test und einen separaten echten NetworkManager-Profil-/Secret-Test ohne Funkgerät. [WLAN-Bedienung und Testgrenzen](WIFI.md). Komplexe
 Netzwerkeinstellungen und Bluetooth-Pairing verwenden gepflegte Systemdialoge.
@@ -37,4 +37,4 @@ Images sind durch Quellenrevision und Paketmanifest nachvollziehbar, wegen
 beweglicher Paketspiegel bislang nicht bitweise reproduzierbar.
 [Testnachweise](TESTING.md); aktuelle Freigabe in packaging/readiness.json.
 [Streaming und Windows-Kontengrenzen](STREAMING.md).
-[Gesamtfortschritt: ca. 73 % mit Bewertungsmaßstab](PROGRESS.md).
+[Gesamtfortschritt: ca. 75 % mit Bewertungsmaßstab](PROGRESS.md).

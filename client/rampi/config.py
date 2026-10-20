@@ -94,6 +94,7 @@ class Settings:
     board_token_key: str = ""
     board_columns: list[str] = field(default_factory=list)
     reduce_motion: bool = False
+    sound_effects: bool = True
 
     @property
     def host(self) -> Host:

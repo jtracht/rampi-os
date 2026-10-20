@@ -39,7 +39,6 @@ ColumnLayout {
     onClicked: { rampi.connectWifi(page.selectedKey, password.text); password.clear(); }
   }
   RampiButton { objectName: "wifiDisconnect"; text: "Verbindung trennen"; enabled: !!page.selected.active && !rampi.wifi.busy; onClicked: { password.clear(); rampi.disconnectWifi(page.selectedKey); } }
-  RampiButton { text: "Erweiterte Netzwerkverwaltung"; onClicked: { password.clear(); rampi.action("wifi-connect", ""); } }
-  Label { text: "Versteckte Netze, Unternehmens-WLAN und Kennwortänderungen im erweiterten Dialog einrichten. Das Ein-/Ausschalten von WLAN gilt für das ganze Gerät."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+  Label { text: "Suche, Kennworteingabe, Verbinden und Trennen erfolgen hier. Das Ein-/Ausschalten von WLAN gilt für das ganze Gerät. Neue Unternehmensprofile benötigen derzeit eine vorab eingerichtete NetworkManager-Konfiguration."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
   onVisibleChanged: if (!visible) password.clear()
 }

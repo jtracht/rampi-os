@@ -11,10 +11,10 @@ from dataclasses import asdict, replace
 from functools import partial
 from pathlib import Path
 
-from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import Property, QCoreApplication, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
-from . import __version__, services, sshkeys, wifi
+from . import __version__, bluetooth, desktop, services, sshkeys, wifi
 from .accounts import create_user
 from .config import Host, Settings
 from .kanban import Board, load_board, store_token
@@ -36,6 +36,7 @@ class Backend(QObject):
     changed = Signal()
     message = Signal(str)
     boardChanged = Signal()
+    bluetoothChallengeChanged = Signal()
 
     def __init__(self, settings: Settings, parent: QObject | None = None):
         super().__init__(parent)
@@ -53,6 +54,22 @@ class Backend(QObject):
         self._vpn_generation = 0
         self._wifi = {"networks": [], "enabled": False, "error": "Noch nicht geprüft"}
         self._wifi_generation = 0
+        self._desktop = {"displays": [], "layouts": [], "layout": "", "error": ""}
+        self._bluetooth = {"adapters": [], "devices": [], "error": "Noch nicht geprüft"}
+        self._bluetooth_epoch = 0
+        self._bluetooth_challenges: list[dict] = []
+        self.bt_agent = bluetooth.PairingAgent(self)
+        self.bt_agent.requested.connect(self._bluetooth_request)
+        self.bt_agent.removed.connect(self._bluetooth_removed)
+        self.bt_agent.unavailable.connect(self._bluetooth_unavailable)
+        self.bt_refresh = QTimer(self)
+        self.bt_refresh.setSingleShot(True)
+        self.bt_refresh.setInterval(250)
+        self.bt_refresh.timeout.connect(self.refreshBluetooth)
+        self.bt_agent.updated.connect(self._schedule_bluetooth_refresh)
+        application = QCoreApplication.instance()
+        if application:
+            application.aboutToQuit.connect(self.bt_agent.close)
         self._host_key: dict = {"fingerprints": ""}
         self._host_generation = 0
         self._sessions = {name: "Ungeprüft" for name in ("codex", "claude", "antigravity")}
@@ -110,6 +127,84 @@ class Backend(QObject):
         self._wifi_generation += 1
         self.jobs.submit(f"wifi-snapshot-{self._wifi_generation}", partial(wifi.snapshot, scan))
         self.changed.emit()
+
+    @Property("QVariantMap", notify=changed)
+    def bluetooth(self):
+        return {
+            **self._bluetooth,
+            "busy": any(n.startswith("bluetooth-action-") for n in self.jobs.pending),
+            "loading": any(n.startswith("bluetooth-snapshot-") for n in self.jobs.pending),
+        }
+
+    @Property("QVariantMap", notify=bluetoothChallengeChanged)
+    def bluetoothChallenge(self):
+        return self._bluetooth_challenges[0] if self._bluetooth_challenges else {}
+
+    @Slot(object)
+    def _bluetooth_request(self, value):
+        if value["display"]:
+            self._bluetooth_challenges = [c for c in self._bluetooth_challenges if not c["display"]]
+        self._bluetooth_challenges.append(value)
+        self.bluetoothChallengeChanged.emit()
+
+    @Slot(int)
+    def _bluetooth_removed(self, identifier):
+        self._bluetooth_challenges = [
+            c
+            for c in self._bluetooth_challenges
+            if c["id"] != identifier and (identifier or not c["display"])
+        ]
+        self.bluetoothChallengeChanged.emit()
+
+    @Slot(str)
+    def _bluetooth_unavailable(self, error):
+        self._bluetooth_epoch += 1
+        self._bluetooth = {"adapters": [], "devices": [], "error": error}
+        self.changed.emit()
+
+    @Slot()
+    def _schedule_bluetooth_refresh(self):
+        if not self.bt_refresh.isActive():
+            self.bt_refresh.start()
+
+    @Slot()
+    def refreshBluetooth(self):
+        if any(n.startswith("bluetooth-snapshot-") for n in self.jobs.pending):
+            return
+
+        def read():
+            self.bt_agent.ensure()
+            return bluetooth.snapshot()
+
+        self.jobs.submit(f"bluetooth-snapshot-{self._bluetooth_epoch}", read)
+        self.changed.emit()
+
+    @Slot(str, str, bool)
+    def bluetoothAction(self, operation, path, enabled=False):
+        if operation != "cancel-pair" and any(
+            n.startswith("bluetooth-action-") for n in self.jobs.pending
+        ):
+            self.message.emit("Ein Bluetooth-Auftrag läuft bereits.")
+            return
+
+        def execute():
+            self.bt_agent.ensure()
+            return bluetooth.action(operation, path, enabled)
+
+        self.jobs.submit("bluetooth-action-" + operation, execute)
+        self.changed.emit()
+
+    @Slot()
+    def stopBluetoothDiscovery(self):
+        if bluetooth.has_discovery():
+            self.jobs.submit("bluetooth-action-stop-discovery", bluetooth.stop_discovery)
+
+    @Slot(int, bool, str)
+    def answerBluetooth(self, identifier, accepted, value=""):
+        try:
+            self.bt_agent.answer(identifier, accepted, value)
+        except (ValueError, RuntimeError) as exc:
+            self.message.emit(str(exc))
 
     @Slot(str, str)
     def connectWifi(self, key, password):
@@ -360,7 +455,24 @@ class Backend(QObject):
 
     @Slot(str, object)
     def _result(self, name, value):
-        if name.startswith("wifi-snapshot-"):
+        if name == "desktop-snapshot":
+            self._desktop = value
+            self.changed.emit()
+        elif name == "desktop-apply":
+            self.refreshDesktop()
+        elif name.startswith("bluetooth-snapshot-"):
+            if name != f"bluetooth-snapshot-{self._bluetooth_epoch}":
+                return
+            self._bluetooth = value
+            self.changed.emit()
+        elif name.startswith("bluetooth-action-"):
+            if name != "bluetooth-action-stop-discovery":
+                self.message.emit(str(value))
+            self.refreshBluetooth()
+            if name in {"bluetooth-action-pair", "bluetooth-action-cancel-pair"}:
+                self.bt_agent.cancel_all()
+            self.changed.emit()
+        elif name.startswith("wifi-snapshot-"):
             if name == f"wifi-snapshot-{self._wifi_generation}":
                 self._wifi = value
                 self.changed.emit()
@@ -435,6 +547,23 @@ class Backend(QObject):
 
     @Slot(str, str)
     def _failed(self, name, error):
+        if name.startswith("desktop-"):
+            self._desktop = {**self._desktop, "error": str(error)}
+            self.changed.emit()
+            return
+        if name.startswith("bluetooth-snapshot-"):
+            if name != f"bluetooth-snapshot-{self._bluetooth_epoch}":
+                return
+            self._bluetooth = {"adapters": [], "devices": [], "error": str(error)}
+            self.changed.emit()
+            return
+        if name.startswith("bluetooth-action-"):
+            self.message.emit(error)
+            self.refreshBluetooth()
+            if name in {"bluetooth-action-pair", "bluetooth-action-cancel-pair"}:
+                self.bt_agent.cancel_all()
+            self.changed.emit()
+            return
         if name.startswith("wifi-snapshot-"):
             if name == f"wifi-snapshot-{self._wifi_generation}":
                 self._wifi = {"networks": [], "enabled": False, "error": str(error)}
@@ -498,6 +627,7 @@ class Backend(QObject):
                     raise ValueError("Kanban-Spalten müssen eine Liste sein.")
                 candidate.board_columns = values["board_columns"]
             candidate.reduce_motion = bool(values.get("reduce_motion", False))
+            candidate.sound_effects = bool(values.get("sound_effects", candidate.sound_effects))
             source_changed = (
                 candidate.board_kind,
                 candidate.board_source,
@@ -521,6 +651,26 @@ class Backend(QObject):
         except (ValueError, OSError, TypeError) as exc:
             self.message.emit(str(exc))
             return False
+
+    @Property("QVariantMap", notify=changed)
+    def desktop(self):
+        return {**self._desktop, "busy": any(n.startswith("desktop-") for n in self.jobs.pending)}
+
+    @Slot()
+    def refreshDesktop(self):
+        self.jobs.submit("desktop-snapshot", desktop.snapshot)
+
+    @Slot(str, str)
+    def applyDesktop(self, output, mode):
+        self.jobs.submit("desktop-apply", partial(desktop.resolution, output, mode))
+
+    @Slot(str)
+    def applyKeyboard(self, layout):
+        self.jobs.submit("desktop-apply", partial(desktop.keyboard, layout))
+
+    @Slot(int)
+    def applyPointer(self, speed):
+        self.jobs.submit("desktop-apply", partial(desktop.pointer, speed))
 
     def _launch(self, name: str, args: list[str]):
         current = self.children_processes.get(name)
@@ -592,11 +742,6 @@ class Backend(QObject):
 
         try:
             tools = {
-                "wifi-connect": ["nm-connection-editor"],
-                "bluetooth": ["blueman-manager"],
-                "display": ["arandr"],
-                "users": ["gnome-system-tools"],
-                "keyboard": ["lxinput"],
                 "stream-pair": terminal_args(pair_args(self.settings.host), "stream-pair")
                 if action == "stream-pair"
                 else [],

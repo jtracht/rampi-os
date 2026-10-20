@@ -18,10 +18,10 @@ if [[ "$mode" != --image ]]; then
     fi
 fi
 packages=(python3 python3-gi gir1.2-nm-1.0 libqt6svg6 qt6-svg-plugins python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtqml
-    python3-pyside6.qtquick python3-pyside6.qtquickcontrols2 python3-pyside6.qtdbus
+    python3-pyside6.qtquick python3-pyside6.qtquickcontrols2 python3-pyside6.qtdbus qml6-module-qtmultimedia
     qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
     qml6-module-qtquick-window qml6-module-qtquick-shapes qml6-module-qtquick-templates
-    qml6-module-qtqml-workerscript xserver-xorg xinit openbox lightdm lightdm-gtk-greeter
+    qml6-module-qtqml-workerscript xserver-xorg x11-xserver-utils x11-xkb-utils xinit openbox lightdm lightdm-gtk-greeter
     network-manager network-manager-gnome bluez blueman wireguard-tools
     openssh-client freerdp3-x11 xfce4-terminal chromium wmctrl arandr lxinput
     lxpolkit libsecret-tools gnome-keyring libpam-gnome-keyring unclutter-xfixes dbus-x11

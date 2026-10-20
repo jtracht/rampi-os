@@ -2,10 +2,9 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-Dialog {
+FullPage {
   id: dialog
   title: rampi.configuration.setup_complete ? "Einstellungen · persönliches Profil" : "Willkommen bei Rampi · Einrichtung"
-  modal: true
   standardButtons: Dialog.Close
   property var host: rampi.configuration.hosts.length ? rampi.configuration.hosts[rampi.configuration.active_host] : ({})
   property bool addingHost: false
@@ -25,18 +24,20 @@ Dialog {
     addingHost = false; editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1;
     loadHost(dialog.host);
     if (tabs.currentIndex === 0) address.forceActiveFocus(); else tabs.currentItem.forceActiveFocus();
-    if (tabs.currentIndex === 1) rampi.refreshWifi(false);
+    if (tabs.currentIndex === 2) rampi.refreshWifi(false);
   }
   contentItem: ColumnLayout {
     spacing: 12
     TabBar {
       id: tabs; objectName: "settingsTabs"; Layout.fillWidth: true
-      onCurrentIndexChanged: { if (currentIndex === 2) rampi.refreshVpnProfiles(); if (currentIndex === 1) rampi.refreshWifi(false); }
-      TabButton { text: "Host & SSH" }
-      TabButton { text: "System" }
-      TabButton { text: "VPN" }
-      TabButton { text: "Kanban & Browser" }
-      TabButton { text: "KI-Sitzungen" }
+      onCurrentIndexChanged: { if (currentIndex === 4) rampi.refreshVpnProfiles(); if (currentIndex === 2) rampi.refreshWifi(false); }
+      RampiTabButton { text: "Host & SSH" }
+      RampiTabButton { text: "System" }
+      RampiTabButton { objectName: "wifiTab"; text: "WLAN" }
+      RampiTabButton { objectName: "bluetoothTab"; text: "Bluetooth" }
+      RampiTabButton { text: "VPN" }
+      RampiTabButton { text: "Kanban & Browser" }
+      RampiTabButton { text: "KI-Sitzungen" }
     }
     StackLayout {
       currentIndex: tabs.currentIndex
@@ -101,14 +102,11 @@ Dialog {
         ColumnLayout {
           width: parent.width - 20; spacing: 16
           Label { text: "Vorhandene Systemdienste"; font.pixelSize: 23; font.bold: true }
-          WifiSettings { Layout.fillWidth: true }
-          Label { text: "Weitere Systemdienste · BlueZ, polkit und PAM"; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-          RampiButton { text: "Bluetooth · Geräte koppeln"; onClicked: rampi.action("bluetooth", "") }
-          RampiButton { text: "HDMI · Anzeige einstellen"; onClicked: rampi.action("display", "") }
-          RampiButton { text: "Tastatur und Maus"; onClicked: rampi.action("keyboard", "") }
+          DesktopSettings { Layout.fillWidth: true }
           RampiButton { text: "Linux-Systemkonsole öffnen"; onClicked: rampi.launch("console") }
           RampiButton { text: "Abschlussdiagnose / installierte Programme"; onClicked: rampi.action("diagnostics", "") }
           CheckBox { id: reducedMotion; text: "Bewegung reduzieren"; checked: rampi.configuration.reduce_motion }
+          CheckBox { id: soundEffects; objectName: "soundEffects"; text: "Dezente Klickklänge bei Hover, Fokus und Auswahl"; checked: rampi.configuration.sound_effects }
           Label { text: "Neues Linux-Systemkonto · polkit fragt nach Administratorfreigabe"; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           TextField { id: newUser; placeholderText: "Benutzername"; Layout.fillWidth: true }
           TextField { id: realName; placeholderText: "Anzeigename"; Layout.fillWidth: true }
@@ -121,6 +119,14 @@ Dialog {
           }
           Label { text: "Benutzeranlage und Sprache: siehe Installationsanleitung.\nStrg+Alt+F2 öffnet den regulären TTY-Zugang."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
+      }
+      ScrollView {
+        clip: true
+        ColumnLayout { width: parent.width - 20; WifiSettings { Layout.fillWidth: true } }
+      }
+      ScrollView {
+        clip: true
+        ColumnLayout { width: parent.width - 20; BluetoothSettings { Layout.fillWidth: true } }
       }
       ScrollView {
         ColumnLayout {
@@ -212,20 +218,20 @@ Dialog {
           if (rampi.save({board_kind: boardKind.currentText,
               board_source: boardSource.text, board_token_key: tokenKey.text,
               board_columns: boardColumns.text.split("\n").map(function(c) { return c.trim(); }).filter(function(c) { return c !== ""; }),
-              browser_url: browserUrl.text, reduce_motion: reducedMotion.checked})) dialog.close();
+              browser_url: browserUrl.text, reduce_motion: reducedMotion.checked, sound_effects: soundEffects.checked})) dialog.close();
         }
       }
       RampiButton { text: "Später einrichten"; onClicked: dialog.close() }
     }
   }
-  Dialog {
-    id: removeProfile; title: "Hostprofil entfernen?"; modal: true
+  FullPage {
+    id: removeProfile; title: "Hostprofil entfernen?"
     standardButtons: Dialog.Yes | Dialog.No
     Label { text: "Nur das ausgewählte Profil wird entfernt. SSH- und Streaming-Schlüssel sowie Windows-Prozesse bleiben erhalten."; width: 460; wrapMode: Text.WordWrap }
     onAccepted: { if (rampi.removeHost(dialog.editIndex)) { dialog.editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1; dialog.loadHost(dialog.host); } }
   }
-  Dialog {
-    id: stopSession; property string module: ""; title: "Windows-KI-Sitzung beenden?"; modal: true
+  FullPage {
+    id: stopSession; property string module: ""; title: "Windows-KI-Sitzung beenden?"
     standardButtons: Dialog.Yes | Dialog.No
     Label { text: "Der laufende KI-Prozess dieser Sitzung auf dem aktiven Windows-Host wird beendet. Zum bloßen Trennen stattdessen die lokale Verbindung schließen."; width: 460; wrapMode: Text.WordWrap }
     onAccepted: rampi.stopSession(module)

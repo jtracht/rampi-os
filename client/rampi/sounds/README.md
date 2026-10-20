@@ -1,0 +1,1 @@
+Original Rampi interface sounds, generated as short damped sine transients at 48 kHz mono PCM. Apache-2.0. No third-party samples. Playback reuses Qt SoundEffect instances; selection sounds are throttled and all sounds can be disabled in System settings.
