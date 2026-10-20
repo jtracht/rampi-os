@@ -1,23 +1,32 @@
 # Rampi OS
 
 Native Remote-Arbeitsumgebung für Raspberry Pi 3 Model B+ und Windows 11 Pro.
-Eigenständige Qt-Quick-Oberfläche; vorhandene Systemdienste übernehmen Netzwerk,
-Login, Terminals, Remote Desktop und Browser. Eigenentwickelter Code: Apache-2.0.
+Die Anwendung und ihre Oberfläche werden auf **Rust / GTK 4 / Wayland** umgestellt.
+Die neue Sitzung verwendet labwc und benötigt kein `startx`. Terminals und Browser
+werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
+weiterhin vorhandene Systemdienste. Eigenentwickelter Code: Apache-2.0.
 
-**Status: softwaregeprüfter Entwicklungsstand.** Native Oberfläche, persönliche
-Konfiguration, Kanban-Adapter und Windows-ConPTY-Persistenz sind implementiert.
-Die [Softwareabnahme](docs/validation/software-acceptance-2026-10-20.md) dokumentiert
-die bisherigen Systemintegrationen und einen erfolgreichen virtuellen Image-Boot.
-Die aktuelle Testsuite enthält 87 Python-Tests.
-Der gesamte Entwicklungsstand liegt bei **ca. 75 %** des vereinbarten Auftrags;
-[Bewertungsmaßstab und offene Punkte](docs/PROGRESS.md) unterscheiden das vom
-erfolgreich veröffentlichten Entwicklungsstand.
-Die Abnahme erfolgt auf ausdrücklichen Nutzerwunsch ausschließlich softwareseitig:
-ARM64-Docker, native Windows-CI und Image-/QEMU-Prüfungen. Physische Hardwaretests
-sind aus dem Umfang ausgeschlossen. [Funktionsstand](docs/STATUS.md) und
-[Testnachweise](docs/TESTING.md) nennen die tatsächlichen Ergebnisse und Grenzen.
+**Aktuell: Rust-Port in Entwicklung; noch kein neuer regulärer Release.**
+Die [Migrationsübersicht](docs/RUST-MIGRATION.md) nennt Quellcode, Start,
+softwareseitige Nachweise und verbleibende Funktionen. Der frühere Stand von
+ca. 75 % gehört zum Python-/QML-Prototyp; er wird nicht als Fertigstellungsgrad
+der neuen Rust-Laufzeit ausgegeben. Die aktuellen [Fortschrittswerte](docs/PROGRESS.md)
+werden deshalb gesondert bewertet.
 
-## Start auf einem Entwicklungsrechner
+Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Rust wird mit
+Docker/Wayland, nativer ARM64-CI und anschließend neuen Image-/QEMU-Tests geprüft.
+
+## Rust-Entwicklung unter Linux
+
+```sh
+cargo test --locked -p rampi-core
+RAMPI_ASSETS="$PWD/client/rampi" cargo run --locked -p rampi-ui -- --windowed
+```
+
+GTK-/VTE-/WebKitGTK-Entwicklungspakete werden benötigt; alternativ dient
+`tests/rust/Dockerfile` als vollständige Buildumgebung.
+
+## Historischer Python-/QML-Prototyp
 
 Python 3.11 oder neuer:
 

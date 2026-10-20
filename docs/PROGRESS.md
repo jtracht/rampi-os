@@ -1,6 +1,37 @@
 # Entwicklungsfortschritt
 
-Aktueller Entwicklungsstand: **ca. 75 %**. Baseline v0.3.0: ca. 69 %.
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 49 %**.
+Rust-Umstellung: **ca. 35 %** (separate Portierungsschätzung).
+Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
+Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
+Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
+
+| Bereich | Rust-Stand / 5 |
+|---|---:|
+| Grafische Sitzung und Dashboard | 3 |
+| Tastatur und Maus | 3 |
+| Setup-Assistent | 1 |
+| Linux-Konten und Login | 2 |
+| WLAN | 2 |
+| Bluetooth | 2 |
+| VPN | 2 |
+| Windows-Host und Persistenz | 4 |
+| Anbieter-CLIs | 3 |
+| Remote Desktop und Streaming | 2 |
+| Kanban | 2 |
+| Browser | 3 |
+| Installer und Reparatur | 2 |
+| Sicherheit und Isolation | 3 |
+| Design und Branding | 3 |
+| GitHub und CI/CD | 4 |
+| Systemimage | 1 |
+| Manuelle Updates | 4 |
+| Dokumentation | 2 |
+| Performance | 1 |
+| **Summe** | **49 / 100** |
+
+Nachweise und Grenzen: [Rust-Migration](RUST-MIGRATION.md).
+Die folgenden Tabellen dokumentieren den bisherigen Python-/QML-Stand.
 
 Die Zahl bewertet den gesamten Masterprompt, einschließlich Integration,
 Bedienung und Nachweisen. Sie ist eine transparente Planungsschätzung, keine

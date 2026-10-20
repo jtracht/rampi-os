@@ -1,0 +1,45 @@
+name: Rust and Wayland
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+permissions:
+  contents: read
+concurrency:
+  group: rust-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  native:
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - run: docker build -t rampi-rust-dev -f tests/rust/Dockerfile .
+      - name: Locked native Rust build, formatting, lint and core tests
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev bash -ec 'cargo fmt --all --check; cargo test --locked -p rampi-core; cargo clippy --locked --workspace --all-targets -j 1 -- -D warnings; cargo build --locked --workspace -j 1'
+      - name: Real headless Wayland session, no X11 and 1 GiB limit
+        run: |
+          mkdir -p artifacts/rust
+          chmod 777 artifacts/rust
+          docker run --rm --network none --security-opt seccomp=unconfined --user 1000:1000 --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v "$PWD/artifacts/rust:/artifacts" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 -e RAMPI_TEST_ARTIFACTS=/artifacts rampi-rust-dev dbus-run-session -- bash tests/rust/run-wayland.sh | tee artifacts/rust/wayland.log
+      - name: Rust Wayland installer and session syntax
+        run: |
+          docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/setup.sh system/rampi system/rampi-session system/rampi-wayland-start system/rampi-health tests/rust/run-wayland.sh
+      - name: Rust GIO network contract on an isolated system bus (no radio)
+        run: |
+          docker run --rm --network none --user 1000:1000 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-services.py | tee artifacts/rust/network-contract.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: rust-wayland-${{ matrix.arch }}
+          path: artifacts/rust/
+          if-no-files-found: ignore

@@ -1,0 +1,630 @@
+use crate::{bus, widgets::*};
+use gtk::{gio, glib, prelude::*};
+use rampi_core::{
+    board::Board,
+    config::{self, Host},
+};
+use std::{cell::RefCell, path::PathBuf, rc::Rc};
+use vte::prelude::*;
+use webkit6::prelude::*;
+
+pub fn settings(
+    stack: &gtk::Stack,
+    conf: &Shared,
+    status: &gtk::Label,
+    f: &Feedback,
+) -> (gtk::Box, gtk::Stack) {
+    let page = column();
+    let header = row();
+    let back = button("← Dashboard", f);
+    let s = stack.clone();
+    back.connect_clicked(move |_| s.set_visible_child_name("dashboard"));
+    header.append(&back);
+    let title = label("Einstellungen · persönliches Profil");
+    title.add_css_class("heading");
+    header.append(&title);
+    page.append(&header);
+    let tabs = gtk::Stack::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .transition_type(gtk::StackTransitionType::Crossfade)
+        .build();
+    page.append(&gtk::StackSwitcher::builder().stack(&tabs).build());
+    page.append(&tabs);
+    tabs.add_titled(&scroll(&host(conf, status, f)), Some("host"), "Host & SSH");
+    let system = column();
+    let reduce = gtk::CheckButton::with_label("Bewegung reduzieren");
+    reduce.set_active(conf.borrow().reduce_motion);
+    system.append(&reduce);
+    let sound = gtk::CheckButton::with_label("Dezente Klickklänge bei Hover, Fokus und Auswahl");
+    sound.set_active(conf.borrow().sound_effects);
+    system.append(&sound);
+    let (c, s) = (conf.clone(), stack.clone());
+    reduce.connect_toggled(move |b| {
+        c.borrow_mut().reduce_motion = b.is_active();
+        s.set_transition_duration(if b.is_active() { 0 } else { 150 });
+    });
+    let c = conf.clone();
+    sound.connect_toggled(move |b| c.borrow_mut().sound_effects = b.is_active());
+    let save = button("Persönliche Einstellungen speichern", f);
+    let (c, stat) = (conf.clone(), status.clone());
+    save.connect_clicked(move |_| {
+        status_result(
+            &stat,
+            config::config_dir().and_then(|p| c.borrow().save(&p.join("settings.json"))),
+        )
+    });
+    system.append(&save);
+    tabs.add_titled(&system, Some("system"), "System");
+    tabs.add_titled(&scroll(&wifi(status, f)), Some("wifi"), "WLAN");
+    tabs.add_titled(
+        &scroll(&bluetooth(stack, status, f)),
+        Some("bluetooth"),
+        "Bluetooth",
+    );
+    let vpn = column();
+    vpn.append(&label("Tailscale & WireGuard\nBeide Dienste ändern systemweite Routen. Die vorhandenen Dienste prüfen deine Berechtigungen."));
+    for (name, args) in [
+        ("Tailscale-Status", vec!["tailscale", "status"]),
+        ("Tailscale verbinden", vec!["pkexec", "tailscale", "up"]),
+        ("Tailscale trennen", vec!["pkexec", "tailscale", "down"]),
+        ("WireGuard-Profile", vec!["nmcli", "connection", "show"]),
+    ] {
+        let b = button(name, f);
+        let (s, stat) = (stack.clone(), status.clone());
+        b.connect_clicked(move |_| {
+            terminal(&s, "vpn", args.iter().map(Into::into).collect(), &stat)
+        });
+        vpn.append(&b);
+    }
+    tabs.add_titled(&vpn, Some("vpn"), "VPN");
+    let data = column();
+    let source = gtk::Entry::builder()
+        .placeholder_text("Persönliche Kanban-JSON-Datei")
+        .text(&conf.borrow().board_source)
+        .build();
+    data.append(&source);
+    let browser_url = gtk::Entry::builder()
+        .placeholder_text("Browser-Startseite · HTTPS")
+        .text(&conf.borrow().browser_url)
+        .build();
+    data.append(&browser_url);
+    let save = button("Datenquelle und Startseite speichern", f);
+    let (c, stat) = (conf.clone(), status.clone());
+    save.connect_clicked(move |_| {
+        let mut candidate = c.borrow().clone();
+        candidate.board_source = source.text().to_string();
+        candidate.browser_url = browser_url.text().to_string();
+        let result = config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
+        if result.is_ok() {
+            *c.borrow_mut() = candidate;
+        }
+        status_result(&stat, result);
+    });
+    data.append(&save);
+    tabs.add_titled(&data, Some("board"), "Kanban & Browser");
+    (page, tabs)
+}
+fn host(conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+    let page = column();
+    page.append(&label("Windows 11 Pro · persönliche Verbindung"));
+    let h = conf
+        .borrow()
+        .hosts
+        .get(conf.borrow().active_host)
+        .cloned()
+        .unwrap_or_default();
+    let mut fields = vec![];
+    for (title, value) in [
+        ("Profilname", h.name.as_str()),
+        ("Hostname / VPN-IP", &h.address),
+        ("Windows-Benutzername", &h.username),
+        ("Privater SSH-Schlüssel · Dateipfad", &h.identity),
+        ("Projektverzeichnis auf Windows", &h.project),
+    ] {
+        page.append(&label(title));
+        let field = gtk::Entry::builder().text(value).build();
+        page.append(&field);
+        fields.push(field);
+    }
+    page.append(&label("SSH verwendet geprüfte Hostschlüssel und persönliche Schlüssel. Unbekannte Hostschlüssel werden nicht automatisch akzeptiert. Die Anbieterprogramme laufen nativ unter Windows; psmux erhält ihre Prozesse bei Verbindungsabbrüchen."));
+    let save = button("Hostprofil speichern", f);
+    let (c, stat) = (conf.clone(), status.clone());
+    save.connect_clicked(move |_| {
+        let mut candidate = c.borrow().clone();
+        let h = Host {
+            name: fields[0].text().to_string(),
+            address: fields[1].text().to_string(),
+            username: fields[2].text().to_string(),
+            identity: fields[3].text().to_string(),
+            project: fields[4].text().to_string(),
+            ..h.clone()
+        };
+        if candidate.hosts.is_empty() {
+            candidate.hosts.push(h);
+            candidate.active_host = 0;
+        } else {
+            let i = candidate.active_host;
+            candidate.hosts[i] = h;
+        }
+        let result = config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
+        if result.is_ok() {
+            *c.borrow_mut() = candidate;
+        }
+        status_result(&stat, result);
+    });
+    page.append(&save);
+    page
+}
+fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
+    let page = column();
+    page.append(&label("WLAN · NetworkManager"));
+    let controls = row();
+    let scan = button("WLANs suchen", f);
+    let radio = gtk::Switch::new();
+    let state = label("Status noch nicht geprüft");
+    controls.append(&scan);
+    controls.append(&radio);
+    controls.append(&state);
+    page.append(&controls);
+    let list = gtk::ListBox::new();
+    page.append(&list);
+    let networks: Rc<RefCell<Vec<bus::Wifi>>> = Rc::new(RefCell::new(vec![]));
+    let password = gtk::PasswordEntry::builder()
+        .placeholder_text("WLAN-Kennwort")
+        .show_peek_icon(true)
+        .build();
+    page.append(&password);
+    let buttons = row();
+    let connect = button("Verbinden", f);
+    let disconnect = button("Trennen", f);
+    buttons.append(&connect);
+    buttons.append(&disconnect);
+    page.append(&buttons);
+    page.append(&label("Suche, Auswahl und Kennworteingabe bleiben auf dieser Seite. Neue Profile gehören ausschließlich deinem Linux-Konto. Unternehmensnetze benötigen ein vorhandenes NetworkManager-Profil."));
+    let (l, n, r, st, stat) = (
+        list.clone(),
+        networks.clone(),
+        radio.clone(),
+        state.clone(),
+        status.clone(),
+    );
+    scan.connect_clicked(move |b| {
+        b.set_sensitive(false);
+        let (b, l, n, r, st, stat) = (
+            b.clone(),
+            l.clone(),
+            n.clone(),
+            r.clone(),
+            st.clone(),
+            stat.clone(),
+        );
+        glib::MainContext::default().spawn_local(async move {
+            match bus::wifi_scan(true).await {
+                Ok((enabled, rows)) => {
+                    while let Some(child) = l.first_child() {
+                        l.remove(&child);
+                    }
+                    for row in &rows {
+                        let name = label(&row.label);
+                        name.set_margin_top(12);
+                        name.set_margin_bottom(12);
+                        l.append(&name);
+                    }
+                    *n.borrow_mut() = rows;
+                    r.set_active(enabled);
+                    st.set_text(if enabled {
+                        "WLAN eingeschaltet"
+                    } else {
+                        "WLAN ausgeschaltet"
+                    });
+                }
+                Err(e) => stat.set_text(&e.to_string()),
+            }
+            b.set_sensitive(true);
+        });
+    });
+    let stat = status.clone();
+    radio.connect_state_set(move |_, enabled| {
+        let stat = stat.clone();
+        glib::MainContext::default().spawn_local(async move {
+            status_result(&stat, bus::wifi_radio(enabled).await);
+        });
+        glib::Propagation::Proceed
+    });
+    let (l, n, p, stat) = (
+        list.clone(),
+        networks.clone(),
+        password.clone(),
+        status.clone(),
+    );
+    connect.connect_clicked(move |b| {
+        let selected = l
+            .selected_row()
+            .and_then(|r| n.borrow().get(r.index() as usize).cloned());
+        if let Some(row) = selected {
+            let secret = p.text().to_string();
+            p.set_text("");
+            b.set_sensitive(false);
+            let (b, stat) = (b.clone(), stat.clone());
+            glib::MainContext::default().spawn_local(async move {
+                status_result(&stat, bus::wifi_connect(row, secret).await);
+                b.set_sensitive(true);
+            });
+        }
+    });
+    let (l, n, stat) = (list, networks, status.clone());
+    disconnect.connect_clicked(move |_| {
+        if let Some(row) = l
+            .selected_row()
+            .and_then(|r| n.borrow().get(r.index() as usize).cloned())
+        {
+            let stat = stat.clone();
+            glib::MainContext::default().spawn_local(async move {
+                status_result(&stat, bus::wifi_disconnect(&row).await);
+            });
+        }
+    });
+    page
+}
+fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+    let page = column();
+    page.append(&label("Bluetooth · BlueZ"));
+    let refresh = button("Adapter und Geräte aktualisieren", f);
+    page.append(&refresh);
+    let picker = gtk::DropDown::from_strings(&[]);
+    let adapters: Rc<RefCell<Vec<bus::BluetoothAdapter>>> = Rc::new(RefCell::new(vec![]));
+    page.append(&picker);
+    let list = gtk::ListBox::new();
+    page.append(&list);
+    let devices: Rc<RefCell<Vec<bus::BluetoothDevice>>> = Rc::new(RefCell::new(vec![]));
+    let (a, d, p, l, stat) = (
+        adapters.clone(),
+        devices.clone(),
+        picker.clone(),
+        list.clone(),
+        status.clone(),
+    );
+    refresh.connect_clicked(move |b| {
+        b.set_sensitive(false);
+        let (a, d, p, l, stat, b) = (
+            a.clone(),
+            d.clone(),
+            p.clone(),
+            l.clone(),
+            stat.clone(),
+            b.clone(),
+        );
+        glib::MainContext::default().spawn_local(async move {
+            match bus::bluetooth_snapshot().await {
+                Ok((aa, dd)) => {
+                    let names: Vec<String> = aa
+                        .iter()
+                        .map(|a| format!("{} · {}", a.label, if a.powered { "Ein" } else { "Aus" }))
+                        .collect();
+                    let model =
+                        gtk::StringList::new(&names.iter().map(String::as_str).collect::<Vec<_>>());
+                    p.set_model(Some(&model));
+                    p.set_selected(0);
+                    *a.borrow_mut() = aa;
+                    while let Some(child) = l.first_child() {
+                        l.remove(&child);
+                    }
+                    for device in &dd {
+                        l.append(&label(&device.label));
+                    }
+                    *d.borrow_mut() = dd;
+                }
+                Err(e) => stat.set_text(&e.to_string()),
+            }
+            b.set_sensitive(true);
+        });
+    });
+    let controls = gtk::FlowBox::new();
+    controls.set_selection_mode(gtk::SelectionMode::None);
+    page.append(&controls);
+    for (title, op, value) in [
+        ("Einschalten", "power", true),
+        ("Ausschalten", "power", false),
+        ("Geräte suchen", "scan", false),
+        ("Suche beenden", "stop-scan", false),
+        ("Koppeln", "pair", false),
+        ("Verbinden", "connect", false),
+        ("Trennen", "disconnect", false),
+        ("Dauerhaft vertrauen", "trust", true),
+        ("Kopplung entfernen", "remove", false),
+    ] {
+        let b = button(title, f);
+        controls.insert(&b, -1);
+        let (a, l, p, d, stat, s, f) = (
+            adapters.clone(),
+            list.clone(),
+            picker.clone(),
+            devices.clone(),
+            status.clone(),
+            stack.clone(),
+            f.clone(),
+        );
+        b.connect_clicked(move |_| {
+            let selected = l
+                .selected_row()
+                .and_then(|r| d.borrow().get(r.index() as usize).cloned());
+            if let Some(device) = &selected
+                && ((op == "pair" && device.paired) || (op == "connect" && device.connected))
+            {
+                stat.set_text("Das Gerät ist bereits gekoppelt beziehungsweise verbunden.");
+                return;
+            }
+            let value = if op == "trust" {
+                selected.as_ref().is_some_and(|d| !d.trusted)
+            } else {
+                value
+            };
+            let object = if ["power", "scan", "stop-scan"].contains(&op) {
+                a.borrow()
+                    .get(p.selected() as usize)
+                    .map(|a| a.path.clone())
+            } else {
+                l.selected_row()
+                    .and_then(|r| d.borrow().get(r.index() as usize).map(|d| d.path.clone()))
+            };
+            if let Some(object) = object {
+                let stat = stat.clone();
+                let execute = move || {
+                    let (stat, object) = (stat.clone(), object.clone());
+                    glib::MainContext::default().spawn_local(async move {
+                        status_result(&stat, bus::bluetooth_action(op, &object, value).await);
+                    });
+                };
+                if op == "trust" || op == "remove" || (op == "power" && !value) {
+                    confirm(
+                        &s,
+                        title,
+                        "Diese Änderung gilt systemweit für alle Benutzer.",
+                        &f,
+                        execute,
+                    );
+                } else {
+                    execute();
+                }
+            }
+        });
+    }
+    page.append(&label("Kopplungen und Vertrauen gelten für das ganze Gerät. Neue Geräte erhalten nicht automatisch dauerhaftes Vertrauen."));
+    page
+}
+pub fn confirm(
+    stack: &gtk::Stack,
+    title: &str,
+    text: &str,
+    f: &Feedback,
+    action: impl Fn() + 'static,
+) {
+    if let Some(old) = stack.child_by_name("confirmation") {
+        stack.remove(&old);
+    }
+    let previous = stack
+        .visible_child_name()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "dashboard".into());
+    let page = column();
+    let heading = label(title);
+    heading.add_css_class("heading");
+    page.append(&heading);
+    page.append(&label(text));
+    let no = button("Abbrechen", f);
+    no.set_widget_name("rampi-back");
+    let yes = button("Bewusst bestätigen", f);
+    page.append(&no);
+    page.append(&yes);
+    stack.add_named(&page, Some("confirmation"));
+    let (s, p) = (stack.clone(), previous.clone());
+    no.connect_clicked(move |_| s.set_visible_child_name(&p));
+    let (s, p) = (stack.clone(), previous);
+    yes.connect_clicked(move |_| {
+        s.set_visible_child_name(&p);
+        action();
+    });
+    stack.set_visible_child_name("confirmation");
+    no.grab_focus();
+}
+pub fn terminal(
+    stack: &gtk::Stack,
+    name: &str,
+    args: Vec<std::ffi::OsString>,
+    status: &gtk::Label,
+) {
+    let key = format!("terminal-{name}");
+    if stack.child_by_name(&key).is_some() {
+        stack.set_visible_child_name(&key);
+        return;
+    }
+    let term = vte::Terminal::new();
+    term.set_hexpand(true);
+    term.set_vexpand(true);
+    term.set_scrollback_lines(5000);
+    let name = key.clone();
+    stack.add_named(&term, Some(&key));
+    stack.set_visible_child_name(&key);
+    let strings: Vec<String> = args
+        .iter()
+        .map(|s| s.to_string_lossy().to_string())
+        .collect();
+    let argv: Vec<&str> = strings.iter().map(String::as_str).collect();
+    let stat = status.clone();
+    term.spawn_async(
+        vte::PtyFlags::DEFAULT,
+        None,
+        &argv,
+        &[],
+        glib::SpawnFlags::SEARCH_PATH,
+        || {},
+        -1,
+        None::<&gio::Cancellable>,
+        move |result| {
+            if let Err(e) = result {
+                stat.set_text(&format!("Terminal konnte nicht gestartet werden: {e}"));
+            }
+        },
+    );
+    let s = stack.downgrade();
+    term.connect_child_exited(move |_, code| {
+        if let Some(s) = s.upgrade() {
+            if let Some(child) = s.child_by_name(&name) {
+                s.remove(&child);
+            }
+            s.set_visible_child_name("dashboard");
+        }
+        println!("RAMPI_TERMINAL_EXIT={code}");
+    });
+    term.grab_focus();
+}
+pub fn board(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+    let page = column();
+    let back = button("← Dashboard", f);
+    let s = stack.clone();
+    back.connect_clicked(move |_| s.set_visible_child_name("dashboard"));
+    page.append(&back);
+    let search = gtk::SearchEntry::new();
+    search.set_placeholder_text(Some("Aufgaben suchen · Nur lesen"));
+    page.append(&search);
+    let columns = row();
+    columns.set_homogeneous(true);
+    page.append(&scroll(&columns));
+    let (conf, stat, cols) = (conf.clone(), status.clone(), columns.clone());
+    search.connect_search_changed(move |entry| {
+        while let Some(child) = cols.first_child() {
+            cols.remove(&child);
+        }
+        let conf = conf.borrow();
+        if conf.board_source.is_empty() {
+            cols.append(&label("Keine Datenquelle eingerichtet."));
+            return;
+        }
+        match Board::load(&PathBuf::from(&conf.board_source)) {
+            Ok(board) => {
+                for name in board.columns(&conf.board_columns) {
+                    let column = column();
+                    column.add_css_class("panel");
+                    let heading = label(&name);
+                    heading.add_css_class("heading");
+                    column.append(&heading);
+                    for card in board.filtered(&entry.text(), "", "", &name) {
+                        column.append(&label(&format!(
+                            "{}\n{}\n{}",
+                            card.title, card.project, card.description
+                        )));
+                    }
+                    cols.append(&column);
+                }
+            }
+            Err(e) => stat.set_text(&e.to_string()),
+        }
+    });
+    page
+}
+pub fn remote(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+    let page = column();
+    page.append(&label("Deine Windows-Workstation\nRDP meldet dich mit deinem Windows-Konto an. Sunshine teilt die aktive Windows-Konsole."));
+    let b = button("RDP · nativer Wayland-Client", f);
+    let (conf, s, stat) = (conf.clone(), stack.clone(), status.clone());
+    b.connect_clicked(move |_| {
+        let result = conf.borrow().host().and_then(rampi_core::launch::rdp);
+        match result {
+            Ok(args) => terminal(&s, "rdp", args, &stat),
+            Err(e) => stat.set_text(&e.to_string()),
+        }
+    });
+    page.append(&b);
+    page
+}
+pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) {
+    if stack.child_by_name("browser").is_some() {
+        stack.set_visible_child_name("browser");
+        return;
+    }
+    let page = column();
+    let bar = row();
+    let back = button("←", f);
+    let forward = button("→", f);
+    let reload = button("↻", f);
+    let address = gtk::Entry::builder()
+        .text(&conf.borrow().browser_url)
+        .hexpand(true)
+        .build();
+    bar.append(&back);
+    bar.append(&forward);
+    bar.append(&reload);
+    bar.append(&address);
+    page.append(&bar);
+    let directory = match config::config_dir() {
+        Ok(d) => d.join("browser-native"),
+        Err(e) => {
+            status.set_text(&e.to_string());
+            return;
+        }
+    };
+    if let Err(e) = std::fs::create_dir_all(&directory) {
+        status.set_text(&e.to_string());
+        return;
+    }
+    use std::os::unix::fs::PermissionsExt;
+    if let Err(e) = std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o700)) {
+        status.set_text(&e.to_string());
+        return;
+    }
+    let session =
+        webkit6::NetworkSession::new(directory.to_str(), directory.join("cache").to_str());
+    let web = webkit6::WebView::builder()
+        .network_session(&session)
+        .hexpand(true)
+        .vexpand(true)
+        .build();
+    crate::browser_prompts::install(&web, stack, status, f);
+    let w = web.clone();
+    back.connect_clicked(move |_| w.go_back());
+    let w = web.clone();
+    forward.connect_clicked(move |_| w.go_forward());
+    let w = web.clone();
+    reload.connect_clicked(move |_| w.reload());
+    let (w, stat) = (web.clone(), status.clone());
+    address.connect_activate(move |e| {
+        let uri = e.text();
+        match config::validate_https(&uri) {
+            Ok(()) => w.load_uri(&uri),
+            Err(error) => stat.set_text(&error.to_string()),
+        }
+    });
+    let w = web.downgrade();
+    web.connect_create(move |_, action| {
+        if let (Some(view), Some(uri)) = (w.upgrade(), action.request().and_then(|r| r.uri())) {
+            view.load_uri(&uri);
+        }
+        None
+    });
+    web.load_uri(&conf.borrow().browser_url);
+    page.append(&web);
+    stack.add_named(&page, Some("browser"));
+    stack.set_visible_child_name("browser");
+}
+
+pub fn go_back(stack: &gtk::Stack) {
+    fn find(root: &gtk::Widget) -> Option<gtk::Button> {
+        if root.widget_name() == "rampi-back" {
+            return root.clone().downcast().ok();
+        }
+        let mut next = root.first_child();
+        while let Some(child) = next {
+            if let Some(b) = find(&child) {
+                return Some(b);
+            }
+            next = child.next_sibling();
+        }
+        None
+    }
+    if let Some(b) = stack.visible_child().and_then(|w| find(&w)) {
+        b.emit_clicked();
+    } else {
+        stack.set_visible_child_name("dashboard");
+    }
+}

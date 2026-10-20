@@ -50,6 +50,8 @@ with tarfile.open(directory / source) as archive:
         ".github/workflows/ci.yml", ".github/workflows/release.yml", "LICENSE",
         "client/rampi/qml/Main.qml", "client/rampi/icons/LICENSE", "image/build.sh",
         "installer/raspberrypi/setup.sh", "docs/INSTALL-RASPBERRYPI.md", "setup.sh",
+        "Cargo.toml", "Cargo.lock", "native/ui/src/linux.rs", "native/core/src/config.rs",
+        "system/labwc/rc.xml", "docs/RUST-MIGRATION.md",
     ]:
         if "rampi-os/" + name not in entries:
             raise SystemExit(f"Source archive incomplete: {name}")

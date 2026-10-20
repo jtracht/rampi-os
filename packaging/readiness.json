@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "regular_release": true,
+  "regular_release": false,
   "validation_policy": "Software-only acceptance per explicit user instruction. Physical hardware tests are excluded; software results do not imply physical validation. Every release must pass a fresh image build, QEMU boot and complete artifact verification.",
   "evidence": {
     "native_qml_and_keyboard": "docs/validation/software-acceptance-2026-10-20.md",
@@ -13,5 +13,6 @@
     "image_partitions_and_filesystems": "docs/validation/software-acceptance-2026-10-20.md",
     "qemu_software_boot": "docs/validation/software-acceptance-2026-10-20.md",
     "release_artifact_completeness": "docs/validation/software-acceptance-2026-10-20.md"
-  }
+  },
+  "migration": "Rust/GTK4/Wayland port in progress. Previous Python/QML evidence does not validate the new runtime. Release remains withheld until native parity, ARM64 CI, installer/image and QEMU checks pass."
 }
