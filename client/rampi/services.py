@@ -129,7 +129,11 @@ def personal_wireguard_profiles() -> list[dict[str, object]]:
     client = NM.Client.new(None)
     if not client.get_nm_running():
         raise RuntimeError("NetworkManager ist nicht erreichbar.")
-    active = {connection.get_uuid() for connection in client.get_active_connections()}
+    active = {
+        connection.get_uuid()
+        for connection in client.get_active_connections()
+        if connection.get_state() == NM.ActiveConnectionState.ACTIVATED
+    }
     permissions = [f"user:{linux_username()}:"]
     profiles = []
     for connection in client.get_connections():
