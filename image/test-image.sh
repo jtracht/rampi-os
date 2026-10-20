@@ -25,7 +25,6 @@ sudo mount -o ro "${loop}p2" "$work/root"
 test -f "$work/boot/kernel8.img"
 test -f "$work/boot/bcm2710-rpi-3-b.dtb"
 test -f "$work/root/opt/rampi/package-manifest.tsv"
-test -L "$work/root/etc/systemd/system/multi-user.target.wants/rampi-health.service"
 test -f "$work/root/etc/systemd/system/rampi-health.service"
 sudo cp "$work/root/opt/rampi/package-manifest.tsv" "$output/package-manifest.tsv"
 sudo cp "$work/root/opt/rampi/dependency-licenses.tar.xz" "$output/dependency-licenses.tar.xz"
@@ -41,6 +40,7 @@ fdtput -t s "$work/pi3.dtb" /soc/watchdog@7e100000 status disabled
 printf '%s\n' 'raspi3b; 1 GiB; 4 CPUs; original Pi kernel and initramfs.' \
     'Temporary DTB: watchdog disabled because QEMU treats its disarm write as reset.' \
     'Serial console uses ttyAMA1 according to the original DTB serial1 alias.' \
+    'Boot probe explicitly requested with systemd.wants; writable runtime overlay; Plymouth off for serial diagnostics.' \
     'Original image readonly checked; runtime writes use QEMU snapshot overlay.' \
     > "$output/qemu-environment.txt"
 qemu-system-aarch64 --version >> "$output/qemu-environment.txt"
@@ -62,7 +62,7 @@ timeout 300 qemu-system-aarch64 -M raspi3b -m 1G -smp 4 -nographic -monitor none
     -no-reboot -kernel "$work/kernel8.img" -dtb "$work/pi3.dtb" \
     "${initrd_args[@]}" \
     -drive "file=$work/disk.img,format=raw,if=sd,snapshot=on" \
-    -append 'root=/dev/mmcblk0p2 rootwait earlycon=pl011,mmio32,0x3f201000 console=ttyAMA1,115200 loglevel=7 systemd.unit=multi-user.target' \
+    -append 'root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait earlycon=pl011,mmio32,0x3f201000 console=ttyAMA1,115200 loglevel=6 plymouth.enable=0 systemd.show_status=yes systemd.unit=multi-user.target systemd.wants=rampi-health.service' \
     > "$output/qemu-boot.log" 2>&1 &
 qemu_pid=$!
 set -e

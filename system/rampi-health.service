@@ -11,5 +11,3 @@ ProtectHome=true
 PrivateTmp=true
 StandardOutput=journal+console
 
-[Install]
-WantedBy=multi-user.target

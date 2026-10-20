@@ -31,6 +31,10 @@ QEMU 8.2 interpretiert dessen Deaktivierungszugriff als sofortigen Reset
 als serial1 bezeichnete PL011-Konsole ttyAMA1. Das ausgelieferte Image und
 seine DTB bleiben unverändert; Laufzeitschreibzugriffe gehen in einen
 temporären Snapshot. qemu-environment.txt dokumentiert diese Testanpassung.
+Der Test fordert den installierten Healthcheck mit systemd.wants ausdrücklich
+an. Er rendert die tatsächliche QML-Oberfläche ohne Display und ohne Warnungen.
+Auf Endgeräten läuft dieser Prüfprozess nur bei bewusster Diagnose, damit der
+normale Boot keine zweite grafische Anwendung als root startet.
 
 Paketmanifest wird im Image unter `/opt/rampi/package-manifest.tsv` gespeichert.
 Der Buildpfad ist wiederholbar, aber wegen veränderlicher Paketquellen und

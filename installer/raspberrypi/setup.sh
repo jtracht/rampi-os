@@ -79,7 +79,7 @@ install -m 644 "$source_root/system/plymouth/rampi.script" /usr/share/plymouth/t
 install -m 644 "$source_root/client/rampi/branding/logo.png" /usr/share/plymouth/themes/rampi/logo.png
 systemctl enable NetworkManager bluetooth
 if [[ "$mode" == --image ]]; then
-    systemctl enable lightdm rampi-health.service
+    systemctl enable lightdm
     systemctl set-default graphical.target
     systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
     install -d -m 755 /etc/lightdm/lightdm.conf.d /etc/lightdm/lightdm-gtk-greeter.conf.d /usr/share/pixmaps
