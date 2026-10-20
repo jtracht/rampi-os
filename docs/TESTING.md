@@ -52,3 +52,7 @@ Eingabe-/Streaminglatenz sind außerhalb des vereinbarten Testumfangs.
 Reproduzieren: pytest -q, python scripts/test-ui.py und die Docker-Aufrufe
 in .github/workflows/ci.yml. Windows-SSH-/Installer-Tests verweigern Ausführung
 außerhalb von GitHub CI. Imageprotokolle werden als Artefakte aufbewahrt.
+Der Imageworkflow verwendet bei den Stagingquellen normale Benutzerbesitzrechte
+und prüft danach root-eigene, für andere Benutzer schreibgeschützte Programmdateien.
+Der QML-Test kontrolliert zusätzlich echte Latin-/Umlautglyphen und eine
+gleichbreite Terminalschrift, damit ein Start mit fehlenden Fonts nicht genügt.
