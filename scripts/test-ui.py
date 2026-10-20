@@ -8,14 +8,20 @@ os.environ.setdefault("QT_QUICK_BACKEND", "software")
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
 
 from PySide6.QtCore import QEvent, QEventLoop, Qt, QTimer, QUrl  # noqa: E402
-from PySide6.QtGui import QGuiApplication  # noqa: E402
+from PySide6.QtGui import QFont, QFontMetrics  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuick import QQuickWindow  # noqa: E402, F401
 from PySide6.QtTest import QTest  # noqa: E402
+from rampi.app import create_application  # noqa: E402
 from rampi.backend import Backend  # noqa: E402
 from rampi.config import Settings  # noqa: E402
 
-app = QGuiApplication([])
+app = create_application()
+if not all(QFontMetrics(app.font()).inFont(character) for character in "Rampi äöü"):
+    raise SystemExit("The real platform font cannot render dashboard text")
+metrics = QFontMetrics(QFont("monospace", 12))
+if metrics.horizontalAdvance("iii") != metrics.horizontalAdvance("WWW"):
+    raise SystemExit("Terminal previews do not use an actual monospace font")
 backend = Backend(Settings())
 backend.timer.stop()
 engine = QQmlApplicationEngine()
