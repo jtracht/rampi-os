@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from PySide6.QtCore import QEvent, QObject, Qt, QTimer, QUrl
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
 
@@ -38,6 +38,7 @@ def main() -> int:
     app = QGuiApplication(sys.argv[:1])
     app.setApplicationName("Rampi")
     app.setOrganizationName("Rampi")
+    app.setWindowIcon(QIcon(str(Path(__file__).parent / "branding" / "logo.png")))
     input_mode = InputMode(app)
     app.installEventFilter(input_mode)
     try:
@@ -47,8 +48,11 @@ def main() -> int:
         return 2
     backend = Backend(settings)
     engine = QQmlApplicationEngine()
+    warnings: list[str] = []
+    engine.warnings.connect(lambda values: warnings.extend(str(value) for value in values))
     engine.rootContext().setContextProperty("rampi", backend)
     engine.rootContext().setContextProperty("windowed", args.windowed or bool(args.screenshot))
+    engine.rootContext().setContextProperty("showSetup", not bool(args.screenshot))
     engine.load(QUrl.fromLocalFile(str(Path(__file__).parent / "qml" / "Main.qml")))
     if not engine.rootObjects():
         return 1
@@ -66,6 +70,12 @@ def main() -> int:
     result = app.exec()
     backend.timer.stop()
     backend.jobs.pool.waitForDone(25000)
+    # Destroy QML bindings while the context object is still alive (not during Python teardown).
+    engine.deleteLater()
+    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    if args.smoke_test and warnings:
+        print("QML validation failed: " + "\n".join(warnings), file=sys.stderr)
+        return 1
     return result
 
 

@@ -6,15 +6,17 @@ import os
 import shutil
 import subprocess
 from dataclasses import asdict
+from functools import partial
 from pathlib import Path
 
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
-from . import __version__, services
+from . import __version__, services, sshkeys
+from .accounts import create_user
 from .config import Host, Settings
-from .kanban import Board, load_board
-from .launch import browser_args, rdp_args, ssh_args, stream_args, terminal_args
+from .kanban import Board, load_board, store_token
+from .launch import browser_args, preview_args, rdp_args, ssh_args, stream_args, terminal_args
 from .process import Jobs, command
 
 
@@ -32,6 +34,10 @@ class Backend(QObject):
         self._status = {"network": "Ungeprüft", "bluetooth": "Ungeprüft", "vpn": "Ungeprüft"}
         self._board = Board()
         self._query = ""
+        self._host_key: dict = {"fingerprints": ""}
+        self._previews = {
+            name: "Noch keine Verbindung." for name in ("codex", "claude", "antigravity")
+        }
         self.children_processes: dict[str, subprocess.Popen] = {}
         self.timer = QTimer(self)
         self.timer.setInterval(30000)
@@ -56,6 +62,14 @@ class Backend(QObject):
     def board(self):
         return self._board.view(self._query)
 
+    @Property("QVariantMap", notify=changed)
+    def previews(self):
+        return self._previews
+
+    @Property("QVariantMap", notify=changed)
+    def hostKey(self):
+        return self._host_key
+
     @Property(str, constant=True)
     def logoUrl(self):
         local = Path(__file__).parent / "branding" / "logo.png"
@@ -69,6 +83,14 @@ class Backend(QObject):
             ("vpn", services.tailscale_status),
         ]:
             self.jobs.submit(name, check)
+        if self.settings.hosts:
+            for module in self._previews:
+                try:
+                    args = preview_args(self.settings.host, module)
+                    self.jobs.submit("preview-" + module, partial(command, args, timeout=12))
+                except (ValueError, OSError) as exc:
+                    self._previews[module] = str(exc)
+            self.changed.emit()
 
     @Slot()
     def refreshBoard(self):
@@ -84,22 +106,65 @@ class Backend(QObject):
         self._query = query
         self.boardChanged.emit()
 
+    @Slot()
+    def finishSetup(self):
+        try:
+            self.settings.setup_complete = True
+            self.settings.save()
+            self.changed.emit()
+        except (ValueError, OSError) as exc:
+            self.message.emit(str(exc))
+
+    @Slot(str, str, str)
+    def createUser(self, username: str, realname: str, password: str):
+        self.jobs.submit("create-user", partial(create_user, username, realname, password))
+
+    @Slot(str, str, str, str)
+    def storeToken(self, profile: str, kind: str, account: str, token: str):
+        self.jobs.submit("secret-store", partial(store_token, profile, kind, account, token))
+
+    @Slot("QVariantMap")
+    def scanHost(self, values):
+        try:
+            host = Host.from_form(values)
+            host.validate()
+            self.jobs.submit("host-key", partial(sshkeys.scan, host))
+        except (ValueError, TypeError) as exc:
+            self.message.emit(str(exc))
+
+    @Slot("QVariantMap")
+    def trustHost(self, values):
+        try:
+            host = Host.from_form(values)
+            self.jobs.submit("host-trust", partial(sshkeys.trust, host, self._host_key.copy()))
+        except (ValueError, TypeError) as exc:
+            self.message.emit(str(exc))
+
     @Slot(str, object)
     def _result(self, name, value):
         if name == "board":
             self._board = value
             self.boardChanged.emit()
+        elif name == "host-key":
+            self._host_key = value
+            self.changed.emit()
         elif name in self._status:
             if name == "bluetooth":
                 value = "Bereit" if "Powered: yes" in value else "Aus"
             self._status[name] = str(value)
+            self.changed.emit()
+        elif name.startswith("preview-"):
+            self._previews[name[8:]] = str(value)[-8000:] or "Sitzung ohne sichtbare Ausgabe."
             self.changed.emit()
         else:
             self.message.emit(str(value) or "Vorgang abgeschlossen.")
 
     @Slot(str, str)
     def _failed(self, name, error):
-        if name in self._status:
+        if name.startswith("preview-"):
+            self._previews[name[8:]] = "Host nicht erreichbar oder noch keine Sitzung."
+            self.changed.emit()
+        elif name in self._status:
             self._status[name] = "Nicht verfügbar"
             self.changed.emit()
         else:
@@ -109,13 +174,8 @@ class Backend(QObject):
     def save(self, values):
         try:
             # QJSValue conversion is handled by the QVariantMap slot.
-            host = Host(
-                address=str(values.get("address", "")).strip(),
-                username=str(values.get("username", "")).strip(),
-                port=int(values.get("port", 22)),
-                identity=str(values.get("identity", "")).strip(),
-                project=str(values.get("project", "")),
-            )
+            base = self.settings.hosts[self.settings.active_host] if self.settings.hosts else None
+            host = Host.from_form(values, base)
             raw = asdict(self.settings)
             raw["hosts"] = [Host(**h) for h in raw["hosts"]]
             candidate = Settings(**raw)
@@ -145,15 +205,22 @@ class Backend(QObject):
         current = self.children_processes.get(name)
         if current is not None and current.poll() is None:
             if shutil.which("wmctrl"):
-                command(["wmctrl", "-a", f"Rampi · {name}"])
+                try:
+                    command(["wmctrl", "-F", "-a", f"Rampi · {name}"])
+                except RuntimeError:
+                    pass  # The application may have set its own dynamic window title.
             self.message.emit("Die Anwendung läuft bereits. Wechsel mit Alt+Tab.")
             return
+        environment = os.environ.copy()
+        if name == "stream":
+            environment.update(SDL_GRAB_KEYBOARD="0", SDL_VIDEODRIVER="x11")
         self.children_processes[name] = subprocess.Popen(
             args,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=(os.name != "nt"),
+            env=environment,
         )
 
     @Slot(str)
@@ -195,9 +262,9 @@ class Backend(QObject):
             if action == "tailscale-status":
                 return services.tailscale_status()
             if action == "tailscale-up":
-                return command(["tailscale", "up"], timeout=60)
+                return services.tailscale_action("up")
             if action == "tailscale-down":
-                return command(["tailscale", "down"], timeout=30)
+                return services.tailscale_action("down")
             if action == "diagnostics":
                 import json
 
@@ -211,6 +278,11 @@ class Backend(QObject):
                 "display": ["arandr"],
                 "users": ["gnome-system-tools"],
                 "keyboard": ["lxinput"],
+                "stream-pair": terminal_args(
+                    ["moonlight", "pair", self.settings.host.address], "stream-pair"
+                )
+                if action == "stream-pair"
+                else [],
                 "ssh-key": terminal_args(["ssh-keygen", "-t", "ed25519"], "ssh-key")
                 if action == "ssh-key"
                 else [],

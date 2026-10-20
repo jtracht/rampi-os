@@ -1,27 +1,54 @@
 # Testnachweise und Abnahme
 
-19.10.2026 auf Windows 11 Pro x64 tatsächlich ausgeführt:
+Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Verbindlicher
+Ersatzumfang: [VALIDATION-SCOPE.md](VALIDATION-SCOPE.md).
 
-- Native Qt-Quick-Anwendung gestartet und Screenshot erzeugt.
-- 22 Python-Tests erfolgreich: Konfiguration, private Rechte auf geeigneten
-  Systemen, sichere Argumente, Zertifikatsoptionen, lokale Boards/Cache,
-  Credential-Cachetrennung, GitHub-Paginierung mit Fixtures, Redirect-Schutz.
-- Ruff und mypy für den Client erfolgreich.
-- PowerShell-Skripte mit dem nativen Parser geprüft; Diagnose tatsächlich ausgeführt.
-- psmux 3.4.0 anhand des offiziellen Release-Digests geprüft; ein nativer
-  ConPTY-Prozess produzierte nach Ende unabhängiger Clients weitere Ausgaben.
+Am 19./20.10.2026 tatsächlich ausgeführt:
 
-Das sind keine erfolgreichen Live-Tests gegen Cloud-Kanban-Konten und kein
-SSH-/VPN-Unterbrechungs- oder Mehrbenutzertest. Aktuelle CI-Ergebnisse und neu
-hinzugefügte Tests haben Vorrang vor dieser anfänglichen Momentaufnahme.
+- 36 Python-Tests auf Windows, Linux und nativem ARM64-Trixie: private
+  Konfiguration, sichere Argumente, Zertifikatsoptionen, Anbieter-Verträge,
+  Cachetrennung, Redirect-Schutz, Hostschlüsselrotation und Secret-Übergabe.
+- Tatsächliches QML geladen, sechs Fokuswechsel, Enter und Escape geprüft;
+  gerenderter Screenshot, kein HTML-Ersatz.
+- ARM64-Docker unter 1 GB RAM und vier CPUs: echte libnm-Importvalidierung,
+  Benutzer-ACL vor Speicherung, Autostart deaktiviert.
+- AccountsService/PAM im wegwerfbaren ARM64-Container: normales Konto angelegt,
+  richtiges Passwort akzeptiert, falsches abgewiesen.
+- Tatsächlicher GNOME-Keyring-/Secret-Service-Rundlauf in isoliertem D-Bus:
+  Token gespeichert und gelesen, verschlüsselte Datei und persönliche Rechte
+  bestätigt (CI 39338203802).
+- Virtuelles X11 mit Openbox/Qt: Ctrl+Alt+Home wechselt vom zweiten Fenster
+  zum Dashboard. Der Home-Tastendruck erreicht das andere Fenster nicht.
+  X11 kann nach Ende des Grabs ein alleinstehendes KeyRelease liefern;
+  dieses löst keine Home-Aktion aus.
+- Offizielles psmux 3.4.0 per SHA256 geprüft, native Prozesspersistenz lokal
+  unter Windows 11 Pro und in Windows-CI bestätigt.
+- Windows-CI: isolierter OpenSSH-Server, zwei temporäre normale Konten,
+  echten interaktiven SSH-Client abrupt beendet, erneut verbunden und
+  fortlaufende Ausgabe bestätigt; fremdes Konto kann Sitzung nicht öffnen.
+- Windows-Installer in CI ausgeführt: unsichere Alt-ACL ersetzt, nur Benutzer
+  und SYSTEM zugelassen; persönliche Daten erhalten.
+- Ruff, mypy, ShellCheck, PowerShell-Analyse, pip-audit, Secret-Scan,
+  Lizenzdokumente, vollständige Quell-/Windows-Archive und Prüfsummen.
 
-Noch auszuführen: Pi-3-B+-Boot/Login; Bluetooth-Tastatur ab Erststart; WLAN-Passwort;
-Tailscale-Authentifizierung; WireGuard-Profilrechte/Routing; Linux-/Windows-Kontotrennung;
-SSH-Abbruch/Reattach während laufender CLI; alle offiziellen CLI-Anmeldungen;
-RDP-Zertifikat/Shortcuts; Sunshine/Moonlight-Decodierung/Audio; Browserdownloads;
-Image-Partitionen, Flash und Boot; Deinstallation/Rollback; Performancewerte.
+Windows-Integrationstests laufen auf GitHub-Windows-Runnern, nicht auf einem
+virtuellen Windows-11-Pro-Desktop. Lokale Persistenz und Bestandsaufnahme liefen
+auf dem vorhandenen Windows 11 Pro. CI verändert keine persönlichen Konten
+oder bestehenden Hostdienste.
 
-`scripts/test-persistence.ps1` nutzt einen zufälligen psmux-Namespace und beendet
-nur diesen Testserver. Keine bestehenden persönlichen Sitzungen werden beendet.
-`python -m rampi.app --smoke-test` lädt die tatsächliche QML-Oberfläche, keine
-HTML-Nachbildung. `--screenshot DATEI` speichert das gerenderte native Fenster.
+Imageworkflow: offizieller pi-gen-Build, readonly FAT-/ext4-Prüfungen,
+Partitionslayout, Bootdateien, Paketmanifest und Lizenzarchiv. QEMU muss den
+echten systemd-Healthcheck RAMPI_BOOT_OK erreichen; ein Build allein ist kein
+Bootnachweis. Aktuelle Ergebnisse: [GitHub Actions](https://github.com/jtracht/rampi-os/actions).
+Fehlgeschlagene Prüfungen werden vor Freigabe behoben, nicht als bestanden gewertet.
+Die [Softwareabnahme vom 20.10.2026](validation/software-acceptance-2026-10-20.md)
+verlinkt den erfolgreichen CI-Gesamtlauf und den tatsächlich bestandenen
+virtuellen Boot einschließlich RAMPI_BOOT_OK.
+
+Keine erfolgreichen persönlichen Cloudanmeldungen, VPN-Netze, RDP-Desktops
+oder Sunshine-Streams werden behauptet. Funk, HDMI, GPU-Leistung und echte
+Eingabe-/Streaminglatenz sind außerhalb des vereinbarten Testumfangs.
+
+Reproduzieren: pytest -q, python scripts/test-ui.py und die Docker-Aufrufe
+in .github/workflows/ci.yml. Windows-SSH-/Installer-Tests verweigern Ausführung
+außerhalb von GitHub CI. Imageprotokolle werden als Artefakte aufbewahrt.

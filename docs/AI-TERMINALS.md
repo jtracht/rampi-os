@@ -7,9 +7,11 @@ Berechtigungsdialoge bleiben unverändert in den offiziellen CLIs.
 
 Feste Windows-Sitzungen heißen rampi-codex, rampi-claude und rampi-antigravity.
 `new-session -A` verbindet erneut mit einer bestehenden Sitzung. Ein SSH-Ausfall
-soll nur den Client beenden, nicht den abgekoppelten ConPTY-Server. Lokal wurde
-dies über unabhängige Clients geprüft; die vollständige SSH-/VPN-Unterbrechung
-steht als eigener Abnahmetest aus. Bei Rückkehr erneut die Kachel öffnen.
+beendet nur den Client, nicht den abgekoppelten ConPTY-Server. Der Windows-CI-Test
+hat eine echte OpenSSH-Verbindung während eines laufenden Prozesses abrupt beendet,
+danach erneut verbunden und fortlaufende Ausgaben geprüft. Ein zweites Windows-Konto
+konnte die fremde Sitzung nicht öffnen. Ein VPN-Transport ist für diesen
+Sitzungsmechanismus nicht erforderlich. Bei Rückkehr erneut die Kachel öffnen.
 Sitzungen gezielt beenden: Host-Adapter mit `-Module codex -Action Stop` aufrufen.
 Den Server nicht pauschal mit kill-server beenden: Er könnte andere persönliche
 Sitzungen verwalten. Ein Hostneustart muss Prozesse nicht erhalten.

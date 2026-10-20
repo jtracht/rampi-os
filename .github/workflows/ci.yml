@@ -1,14 +1,25 @@
 name: CI
 on:
+  workflow_dispatch:
   push:
-    branches: [main, 'feat/**', 'fix/**']
+    branches: [main]
   pull_request:
 permissions:
   contents: read
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
+  trixie-arm64:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - run: docker build -t rampi-trixie-test -f tests/container/Dockerfile .
+      - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test
+      - run: docker run --rm --user root -e RAMPI_TEST_CONTAINER=1 rampi-trixie-test python3 scripts/test-accounts.py
+      - run: docker run --rm rampi-trixie-test dbus-run-session -- timeout 30 python3 scripts/test-secrets.py
+      - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test timeout 60 xvfb-run -a -s '-screen 0 1600x900x24 -nolisten tcp' bash scripts/test-x11.sh
   client:
     strategy:
       matrix:
@@ -31,9 +42,11 @@ jobs:
       - run: mypy client/rampi
       - run: pytest -q --junitxml=artifacts/tests.xml
       - run: python -m rampi.app --smoke-test
+      - run: python scripts/test-ui.py
       - run: python -m rampi.app --screenshot artifacts/dashboard.png
       - run: python -m build
       - run: python scripts/package.py
+      - run: python scripts/check-artifacts.py artifacts/release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: client-${{ runner.os }}
@@ -46,9 +59,13 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: sudo apt-get update && sudo apt-get install -y shellcheck
-      - run: find installer image system -type f \( -name '*.sh' -o -name rampi -o -name rampi-session \) -print0 | xargs -0 shellcheck
+      - run: find installer image system -type f \( -name '*.sh' -o -name rampi -o -name rampi-session -o -name rampi-health \) -print0 | xargs -0 shellcheck
       - run: bash -n setup.sh
+      - run: shellcheck setup.sh scripts/*.sh
       - run: python3 scripts/check-release.py --configuration-only
+      - name: Validate real Trixie NetworkManager import (no network activation)
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -w /src -e PYTHONPATH=client -e DEBIAN_FRONTEND=noninteractive debian:trixie bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends python3-gi gir1.2-nm-1.0 python3-pyside6.qtcore >/dev/null && python3 scripts/test-libnm.py'
   windows-host:
     runs-on: windows-latest
     timeout-minutes: 15
@@ -57,7 +74,11 @@ jobs:
       - name: PowerShell static analysis
         shell: pwsh
         run: |
-          Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -Scope CurrentUser
+          $analyzer = Get-Module -ListAvailable PSScriptAnalyzer | Sort-Object Version -Descending | Select-Object -First 1
+          if ($analyzer) { Import-Module $analyzer.Path } else {
+            if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) { Register-PSRepository -Default }
+            Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Repository PSGallery -Force -Scope CurrentUser
+          }
           $issues = Invoke-ScriptAnalyzer -Path installer/windows -Recurse -Severity Error
           $issues += Invoke-ScriptAnalyzer -Path host/windows -Recurse -Severity Error
           if ($issues) { $issues | Format-List; exit 1 }
@@ -65,9 +86,15 @@ jobs:
         shell: pwsh
         run: |
           Invoke-WebRequest 'https://github.com/psmux/psmux/releases/download/v3.4.0/psmux-v3.4.0-windows-x64.zip' -OutFile psmux.zip
-          if ((Get-FileHash psmux.zip -Algorithm SHA256).Hash.ToLower() -ne 'a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721') { throw 'psmux checksum mismatch' }
+          if ((Get-FileHash psmux.zip -Algorithm SHA256).Hash.ToLower() -ne 'a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721') { throw 'psmux checksum mismatch' } # pragma: allowlist secret
           Expand-Archive psmux.zip -DestinationPath psmux
           ./scripts/test-persistence.ps1 -Psmux ./psmux/psmux.exe
+      - name: Real Windows OpenSSH reconnect and cross-user isolation
+        shell: pwsh
+        run: ./scripts/test-windows-ssh.ps1 -Psmux ./psmux/psmux.exe
+      - name: Installer permissions and data preservation
+        shell: pwsh
+        run: ./scripts/test-windows-installer.ps1
   security:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -80,6 +107,7 @@ jobs:
           python-version: '3.12'
       - run: pip install pip-audit detect-secrets
       - run: pip-audit -r requirements-runtime.txt
-      - run: detect-secrets scan --all-files --exclude-files '(requirements.*|.*\.png|.*\.lock)' > secret-scan.json
+      - name: Scan tracked source (allow the published checksum and public evidence path)
+        run: detect-secrets scan --exclude-secrets '^(a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721|docs/validation/software-acceptance-2026-10-20\.md)$' --exclude-files '(requirements.*|.*\.png|.*\.lock)' > secret-scan.json
       - run: python scripts/check-secrets.py secret-scan.json
       - run: python scripts/check-licenses.py

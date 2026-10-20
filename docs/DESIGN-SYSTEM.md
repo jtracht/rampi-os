@@ -24,6 +24,9 @@ Systemleiste unten mit Einstellungen links. Keine Verläufe oder Schatten.
 Qt Quick Shapes verformt alle vier Kachelseiten in einer 200-ms-Sequenz.
 Fokus ändert die Flächenfarbe statt eines zusätzlichen Rahmens. Bewegung kann
 reduziert werden. Animation läuft ausschließlich beim Auswahlwechsel.
-Icons des ersten Stands sind neutrale Systemglyphen; offizielle Anbieterlogos
-werden nicht als selbst lizenzierte Grafiken ausgegeben. Eigenständige
-SVG-/PNG-/Boot-/Login-Varianten sind noch zu erstellen und zu prüfen.
+Die Hauptkacheln verwenden sechs festgelegte Lucide-SVG-Icons mit vollständigen
+ISC-/Feather-MIT-Lizenzhinweisen. Es sind neutrale Modulicons; offizielle Anbieterlogos
+werden nicht als selbst lizenzierte Grafiken ausgegeben. Das unveränderte
+Original-PNG liefert App-Icon, Boot-/Login-Grafik und Repository-Branding;
+das Dashboard verwendet einen kompakten Laufzeitanschnitt. Eine eigenständige
+vektorisierte SVG-Neuzeichnung wird nicht behauptet.

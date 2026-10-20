@@ -27,6 +27,7 @@ vollständig archivieren. Die aktuelle Dokumentprüfung ersetzt das nicht.
 | Tailscale | BSD-3-Clause für Open-Source-Teile; Dienstbedingungen separat |
 | WireGuard | GPLv2 / tools GPLv2 je Paket |
 | pi-gen | BSD-3-Clause |
+| Lucide-SVG-Icons | ISC und zugehörige Feather-MIT-Hinweise; vollständige Datei in client/rampi/icons/LICENSE |
 
 Maßgeblich sind jeweils die Copyrightdateien der tatsächlich verwendeten Version.
 Offizielle KI-CLIs werden nicht im Pi-Image oder Rampi-Quellcode gebündelt.

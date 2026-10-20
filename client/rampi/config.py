@@ -57,6 +57,16 @@ class Host:
     project: str = ""
     resolution: str = "1280x720"
 
+    @classmethod
+    def from_form(cls, values: dict, base: Host | None = None) -> Host:
+        data = asdict(base) if base else asdict(cls())
+        for key in data:
+            if key in values:
+                data[key] = int(str(values[key])) if key == "port" else str(values[key])
+        for key in ["address", "username", "identity"]:
+            data[key] = data[key].strip()
+        return cls(**data)
+
     def validate(self) -> None:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.:-]{0,252}", self.address):
             raise ValueError("Ungültiger Hostname oder IP-Adresse.")

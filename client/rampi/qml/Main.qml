@@ -21,6 +21,7 @@ ApplicationWindow {
   property int selected: 0
   property string page: "dashboard"
   property bool keyboardMode: false
+  property var selectedCard: ({title: "", description: "", project: "", priority: "", status: ""})
   readonly property var modules: [
     {title: "Kanban Board", subtitle: "Projekte im Blick", caption: "READ ONLY  |  PROJECTS", symbol: "▥", accent: "#ff3c61", key: "kanban", dark: false},
     {title: "ChatGPT", subtitle: "Codex", caption: "CHAT  |  CODE  |  CREATE", symbol: "⌘", accent: "#087cf5", key: "codex", dark: false},
@@ -36,9 +37,10 @@ ApplicationWindow {
     else rampi.launch(key);
   }
   Shortcut { sequence: "Ctrl+Alt+Home"; onActivated: { window.page = "dashboard"; window.raise(); window.requestActivate(); } }
-  Shortcut { sequence: "Escape"; onActivated: { if (settings.visible) settings.close(); else window.page = "dashboard"; } }
+  Shortcut { sequence: "Escape"; onActivated: { if (notification.visible) notification.close(); else if (cardDetails.visible) cardDetails.close(); else if (settings.visible) settings.close(); else if (setupWizard.visible) setupWizard.close(); else window.page = "dashboard"; } }
   Shortcut { sequence: "Ctrl+,"; onActivated: settings.open() }
   Shortcut { sequence: "F11"; onActivated: window.visibility = window.visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen }
+  Component.onCompleted: if (!rampi.configuration.setup_complete && showSetup) setupWizard.open()
 
   Item {
     id: stage
@@ -62,7 +64,7 @@ ApplicationWindow {
         model: [{label: "Netzwerk", key: "network", glyph: "◉"}, {label: "Bluetooth", key: "bluetooth", glyph: "ᛒ"}, {label: "VPN", key: "vpn", glyph: "◈"}]
         Row {
           spacing: 10
-          Text { text: modelData.glyph; color: "#19d6b2"; font.pixelSize: 32 }
+          Text { text: modelData.glyph; color: ["Verbunden", "Running", "Bereit"].indexOf(rampi.status[modelData.key]) >= 0 ? "#19d6b2" : "#5d7185"; font.pixelSize: 32 }
           Column {
             Text { text: modelData.label; color: "#f4f6fa"; font.pixelSize: 13; font.bold: true }
             Text { text: rampi.status[modelData.key]; width: 130; elide: Text.ElideRight; color: "#92a7ba"; font.pixelSize: 11 }
@@ -91,6 +93,7 @@ ApplicationWindow {
           width: (tiles.width - 10) / 6; height: tiles.height
           title: modelData.title; subtitle: modelData.subtitle
           caption: modelData.caption; symbol: modelData.symbol
+          iconFile: ["columns-3", "terminal", "asterisk", "sparkles", "monitor", "globe"][index]
           accent: modelData.accent; darkInk: modelData.dark
           selected: window.selected === index
           reducedMotion: rampi.configuration.reduce_motion
@@ -154,17 +157,21 @@ ApplicationWindow {
                   ListView {
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 8; clip: true
                     model: modelData.cards
-                    delegate: Rectangle {
+                    delegate: Button {
+                      id: cardControl
                       required property var modelData
-                      width: ListView.view.width; height: 49; radius: 8; color: "#d1dce5"
-                      Row {
-                        anchors.fill: parent; anchors.margins: 10; spacing: 8
+                      width: ListView.view.width; height: 49
+                      focusPolicy: Qt.StrongFocus
+                      Accessible.name: modelData.title
+                      background: Rectangle { radius: 8; color: cardControl.activeFocus ? "#f3f7fa" : "#d1dce5" }
+                      contentItem: Row {
+                        spacing: 8
                         Rectangle { width: 9; height: 9; radius: 3; color: "#ff4666"; anchors.verticalCenter: parent.verticalCenter }
                         Text { text: modelData.title; width: parent.width - 20; elide: Text.ElideRight; color: "#101923"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
                       }
-                      ToolTip.visible: cardMouse.containsMouse
+                      onClicked: { window.selectedCard = modelData; cardDetails.open(); }
+                      ToolTip.visible: hovered || activeFocus
                       ToolTip.text: modelData.description || modelData.title
-                      MouseArea { id: cardMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                     }
                   }
                 }
@@ -193,11 +200,11 @@ ApplicationWindow {
             }
             Rectangle {
               Layout.fillWidth: true; Layout.fillHeight: true; radius: 10; color: "#080f17"
-              Column {
+              ColumnLayout {
                 anchors.fill: parent; anchors.margins: 13; spacing: 9
-                Text { text: modelData.key === "browser" ? "https://www.raspberrypi.com" : "> " + (modelData.key === "antigravity" ? "agy" : modelData.key); color: modelData.key === "browser" ? "#78b9ff" : "#55d98b"; font.family: "monospace"; font.pixelSize: 13 }
-                Text { text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : "Native Windows-Sitzung\nSSH + ConPTY / psmux"; color: "#9cacbe"; font.pixelSize: 12; lineHeight: 1.5 }
-                Text { text: modelData.key === "browser" ? "Zum Öffnen auswählen →" : (rampi.configuration.hosts.length ? "Host eingerichtet · zum Verbinden auswählen →" : "Windows-Host noch nicht eingerichtet"); width: parent.width; wrapMode: Text.WordWrap; color: "#6f8498"; font.pixelSize: 11 }
+                Text { Layout.fillWidth: true; elide: Text.ElideRight; text: modelData.key === "browser" ? rampi.configuration.browser_url : "> " + (modelData.key === "antigravity" ? "agy" : modelData.key); color: modelData.key === "browser" ? "#78b9ff" : "#55d98b"; font.family: "monospace"; font.pixelSize: 13 }
+                Text { Layout.fillWidth: true; Layout.fillHeight: true; text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : rampi.previews[modelData.key]; clip: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: "#9cacbe"; font.family: "monospace"; font.pixelSize: 12; lineHeight: 1.3 }
+                Text { Layout.fillWidth: true; visible: modelData.key === "browser" || !rampi.configuration.hosts.length; text: modelData.key === "browser" ? "Zum Öffnen auswählen →" : "Windows-Host noch nicht eingerichtet"; wrapMode: Text.WordWrap; color: "#6f8498"; font.pixelSize: 11 }
               }
             }
           }
@@ -214,6 +221,7 @@ ApplicationWindow {
         Text { text: "Wähle dein Verbindungsverfahren.\nZurück zum Dashboard: Strg+Alt+Pos1. Windows erlaubt nur eine interaktive Desktopsitzung."; color: "#a4b5c7"; font.pixelSize: 18; lineHeight: 1.6; width: 800; wrapMode: Text.WordWrap }
         Button { text: "RDP · FreeRDP starten"; onClicked: rampi.launch("rdp") }
         Button { text: "Streaming · Moonlight starten"; onClicked: rampi.launch("stream") }
+        Button { text: "Streaming-Host koppeln"; onClicked: rampi.action("stream-pair", "") }
         Text { text: "Sunshine/Moonlight benötigen vorheriges Pairing.\nDie Hardwaredecodierung auf Pi 3 B+ ist noch nicht validiert."; color: "#c2b994"; font.pixelSize: 15 }
       }
     }
@@ -228,7 +236,7 @@ ApplicationWindow {
           model: [{label: "WLAN", value: rampi.status.network}, {label: "Bluetooth", value: rampi.status.bluetooth}, {label: "VPN", value: rampi.status.vpn}]
           Column {
             Text { text: modelData.label; color: "#f2f5fa"; font.pixelSize: 13 }
-            Text { text: modelData.value; color: "#1edbb5"; font.pixelSize: 12; width: 130; elide: Text.ElideRight }
+            Text { text: modelData.value; color: modelData.value === "Verbunden" || modelData.value === "Running" || modelData.value === "Bereit" ? "#1edbb5" : "#8fa2b5"; font.pixelSize: 12; width: 130; elide: Text.ElideRight }
           }
         }
         Button { text: "⌨  Konsole"; onClicked: rampi.launch("console") }
@@ -246,6 +254,27 @@ ApplicationWindow {
     }
   }
   SettingsDialog { id: settings; anchors.centerIn: parent; width: Math.min(window.width - 50, 1000); height: Math.min(window.height - 50, 780) }
+  SetupWizard {
+    id: setupWizard
+    anchors.centerIn: parent
+    width: Math.min(window.width - 50, 900); height: Math.min(window.height - 50, 650)
+    onSettingsRequested: function(page) { settings.showPage(page); }
+  }
+  Dialog {
+    id: cardDetails
+    anchors.centerIn: parent
+    width: Math.min(window.width - 60, 850); height: Math.min(window.height - 60, 600)
+    title: window.selectedCard.title || "Aufgabe"
+    modal: true; standardButtons: Dialog.Close
+    ScrollView {
+      anchors.fill: parent
+      TextArea {
+        readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
+        textFormat: TextEdit.PlainText
+        text: "Projekt: " + (window.selectedCard.project || "—") + "\nStatus: " + window.selectedCard.status + "\nPriorität: " + window.selectedCard.priority + "\n\n" + window.selectedCard.description
+      }
+    }
+  }
   Dialog {
     id: notification
     anchors.centerIn: parent

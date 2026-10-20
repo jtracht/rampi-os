@@ -22,6 +22,14 @@ foreach ($name in $names) {
 }
 [PSCustomObject]@{System=$os.Caption; Build=$os.BuildNumber; Edition=$edition; Programs=$programs} |
     ConvertTo-Json -Depth 4 | Write-Output
+if ($programs['psmux']) {
+    $muxVersion = (& $programs['psmux'] --version 2>&1 | Out-String)
+    Write-Output $muxVersion.Trim()
+    if ($muxVersion -notmatch 'psmux\s+(3\.\d+\.\d+)' -or [version]$Matches[1] -lt [version]'3.4.0') {
+        if ($Install -or $InstallMissing) { throw 'Vorhandenes psmux ist nicht kompatibel. Mindestens Version 3.4.0 der 3.x-Reihe erforderlich; bestehende Installation bewusst aktualisieren.' }
+        Write-Warning 'Vorhandenes psmux vor Verwendung auf eine kompatible Version der 3.x-Reihe aktualisieren.'
+    }
+}
 if ($InstallMissing -and -not $programs['psmux']) {
     $winget = Get-Command winget.exe -ErrorAction Stop
     if ($PSCmdlet.ShouldProcess('psmux 3.4.0', 'Mit WinGet aus offizieller Quelle installieren')) {
@@ -34,9 +42,11 @@ if ($EnableOpenSsh) {
         [Security.Principal.WindowsBuiltInRole]::Administrator)
     if (-not $admin) { throw 'OpenSSH-Einrichtung benötigt eine erhöhte PowerShell.' }
     if ($PSCmdlet.ShouldProcess('Windows OpenSSH Server / TCP 22', 'Installieren und aktivieren')) {
-        $capability = Get-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0'
-        if ($capability.State -ne 'Installed') {
-            Add-WindowsCapability -Online -Name $capability.Name | Out-Null
+        if (-not (Get-Service sshd -ErrorAction SilentlyContinue)) {
+            $capability = Get-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0'
+            if ($capability.State -ne 'Installed') {
+                Add-WindowsCapability -Online -Name $capability.Name | Out-Null
+            }
         }
         Set-Service sshd -StartupType Automatic
         Start-Service sshd
@@ -63,10 +73,28 @@ if ($Install) {
     if (-not (Test-Path -LiteralPath $source)) { throw "Hostpaket unvollständig: $source" }
     if ($PSCmdlet.ShouldProcess($target, 'Persönlichen Rampi-Sitzungsadapter installieren')) {
         New-Item -ItemType Directory -Path $target -Force | Out-Null
-        Copy-Item -LiteralPath $source -Destination (Join-Path $target 'rampi-session.ps1') -Force
         $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-        & icacls.exe $target /inheritance:r /grant:r "*${sid}:(OI)(CI)F" '*S-1-5-18:(OI)(CI)F' | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw 'Benutzer-ACL konnte nicht gesetzt werden.' }
+        $directoryAcl = [Security.AccessControl.DirectorySecurity]::new()
+        $directoryAcl.SetAccessRuleProtection($true,$false)
+        $directoryAcl.SetOwner([Security.Principal.SecurityIdentifier]::new($sid))
+        $fileAcl = [Security.AccessControl.FileSecurity]::new()
+        $fileAcl.SetAccessRuleProtection($true,$false)
+        $fileAcl.SetOwner([Security.Principal.SecurityIdentifier]::new($sid))
+        foreach ($identitySid in @($sid,'S-1-5-18')) {
+            $identityReference = [Security.Principal.SecurityIdentifier]::new($identitySid)
+            $directoryAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+                $identityReference, [Security.AccessControl.FileSystemRights]::FullControl,
+                [Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit',
+                [Security.AccessControl.PropagationFlags]::None,
+                [Security.AccessControl.AccessControlType]::Allow))
+            $fileAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+                $identityReference, [Security.AccessControl.FileSystemRights]::FullControl,
+                [Security.AccessControl.AccessControlType]::Allow))
+        }
+        Set-Acl -LiteralPath $target -AclObject $directoryAcl
+        $adapter = Join-Path $target 'rampi-session.ps1'
+        Copy-Item -LiteralPath $source -Destination $adapter -Force
+        Set-Acl -LiteralPath $adapter -AclObject $fileAcl
     }
 }
 Write-Output 'Audit beendet. Anbieter-CLIs, Sunshine und VPN bleiben unter ihren offiziellen Installationswegen.'

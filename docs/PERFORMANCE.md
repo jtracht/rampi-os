@@ -1,9 +1,15 @@
-# Performance und Messplan
+# Softwaremessung und Performancegrenzen
 
-Es wurden bislang keine RAM-/CPU-/Latenzwerte auf Raspberry Pi gemessen.
-Architekturentscheidungen sind Hypothesen, keine Benchmarkergebnisse.
+Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Im nativen
+ARM64-Trixie-Container mit 1 GB RAM und vier CPUs erreichte der kurze tatsächliche
+QML-Starttest am 19.10.2026 eine maximale Prozessbelegung von 112876 KiB
+(etwa 110 MiB), 0,36 s Benutzer- und 0,07 s System-CPU-Zeit bei 1,82 s Laufzeit.
+Nachweis: CI-Lauf 39335885373, Job trixie-arm64, erfolgreicher Docker-Testschritt.
+Der getrennte X11-Schritt dieses Laufs scheiterte an seinem damaligen Testaufbau.
+Diese Werte messen nur den Clientstart, nicht das Gesamtsystem oder Pi-Leistung.
 
-Auf Pi 3 B+ nach Boot und Anmeldung jeweils fünf Minuten stabilisieren lassen.
+Optionale spätere Hardwaremessung außerhalb des Abnahmeumfangs:
+Nach Boot und Anmeldung jeweils fünf Minuten stabilisieren lassen.
 Dashboard, ein einzelnes KI-Terminal, 720p-RDP, Streaming und Browser einzeln
 messen. `free -m`, `systemd-cgtop`, `pidstat`, `journalctl --user -u rampi` und
 `vcgencmd get_throttled` nutzen. Werkzeuge zuerst erkennen; nur bei Bedarf installieren.

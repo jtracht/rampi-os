@@ -5,8 +5,9 @@ mit Raspberry Pi Imager beziehen; Benutzer, Zeitzone, Sprache und Tastatur dort
 einrichten. USB-Tastatur für die erste Bluetooth-Kopplung bereithalten.
 
 Das vollständige Quellpaket entpacken, darin `bash setup.sh --check` ausführen.
-Nach Prüfung `sudo bash setup.sh --install`. Das einzelne setup.sh benötigt
-derzeit den restlichen Quellbaum; es lädt nicht ungeprüft Code nach.
+Nach Prüfung `sudo bash setup.sh --install`. Das einzelne setup.sh lädt in einem
+veröffentlichten Release das versionsgleiche Quellpaket und prüft dessen
+veröffentlichte SHA-256-Prüfsumme vor der Installation.
 
 Das Skript verwendet Debian-Pakete, installiert nur fehlende Pakete und stoppt
 bei aktiven konkurrierenden Netzwerkmanagern. Es ersetzt keine vorhandene
@@ -21,7 +22,9 @@ Quellstand. Es gibt keinen Update-Timer. `repair.sh` prüft Voraussetzungen;
 `diagnostics.sh` sammelt nicht geheime Systemdaten. `uninstall.sh` entfernt nur die
 Sitzungsintegration. Persönliche Daten und gemeinsame Pakete bleiben erhalten.
 
-Tailscale und Moonlight werden noch nicht automatisch aus Fremdquellen installiert.
-Die im Netzwerk-/Streamingdokument verlinkten offiziellen Wege verwenden und
-Version/Kompatibilität vor der Aktivierung prüfen. Der Installer stellt daher
-noch nicht alle geforderten Module vollständig bereit.
+`--install --with-extras` ergänzt fehlendes Tailscale aus dem signierten offiziellen
+Repository und baut fehlendes Moonlight Embedded aus einem festgelegten offiziellen
+Commit. Vorhandene Installationen bleiben erhalten. Im Image sind diese Komponenten
+enthalten. Der SDL-/FFmpeg-Pfad verwendet die bestehende X11-Sitzung und benötigt
+keine Änderungen an KMS-/FKMS-Firmwareoptionen. Entsprechende Moonlight-Quellen
+werden mitgeliefert. Updates bleiben manuell.

@@ -7,6 +7,7 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$Module = $Module.ToLowerInvariant()
 $mux = Get-Command psmux.exe -ErrorAction Stop
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 if ($identity.IsSystem) { throw 'KI-Sitzungen dürfen nicht als SYSTEM laufen.' }

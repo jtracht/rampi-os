@@ -2,10 +2,11 @@
 
 Conventional Commits auf Feature-Branches, Pull Requests nach main.
 Reguläre Releases sind gesperrt, solange `regular_release` false ist oder
-Hardware-/Funktionsnachweise fehlen. Die Sperre nicht allein zur Veröffentlichung
+Software-/Funktionsnachweise fehlen. Physische Hardwaretests sind ausgenommen.
+Die Sperre nicht allein zur Veröffentlichung
 eines erfolgreichen Builds entfernen.
 
-Nach Abschluss sämtlicher Abnahmen konkrete Nachweisdateien in
+Nach Abschluss der vereinbarten Softwareabnahme konkrete Nachweisdateien in
 `packaging/readiness.json` eintragen. Release Please erstellt einen Versions-PR,
 aktualisiert Changelog/Version und erzeugt nach Merge ein vMAJOR.MINOR.PATCH-Tag
 mit einem zunächst unveröffentlichten Draft. Der Imagejob und die Paketierung
@@ -17,4 +18,6 @@ Repository zusätzlich mit menschlicher Freigabe geschützt werden.
 Ein fehlgeschlagener Build lässt den Draft unveröffentlicht. Es wird kein
 zweites Versions-Tag erfunden. Vor Wiederholung Tag, Commit und Artefaktversionen
 abgleichen. Installierte Endgeräte erhalten keine automatischen Updates.
-Aktueller Stand: Entwicklungsversion 0.1.0.dev0, keine reguläre Freigabe.
+Die Softwareabnahme vom 20.10.2026 ist dokumentiert und in readiness.json
+eingetragen. Jeder neue Release muss seinen eigenen Image-/QML-/QEMU- und
+vollständigen Artefakttest bestehen. Der Versionsstand steht in pyproject.toml.

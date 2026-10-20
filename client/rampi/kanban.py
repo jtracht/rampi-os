@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import re
@@ -61,6 +62,34 @@ def secret(key: str) -> str:
     if not key:
         return ""
     return command(["secret-tool", "lookup", "application", "rampi", "profile", key])
+
+
+def store_token(profile: str, kind: str, account: str, token: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", profile):
+        raise ValueError("Schlüsselbund-Profil: 1–64 Buchstaben, Ziffern, _, . oder -.")
+    if not token or len(token) > 8192 or "\x00" in token:
+        raise ValueError("Ein gültiges Zugriffstoken eingeben.")
+    value = token
+    if kind == "trello":
+        if not account:
+            raise ValueError("Trello benötigt zusätzlich seinen API-Key.")
+        value = json.dumps({"key": account, "token": token})
+    elif kind == "jira" and account:
+        value = json.dumps({"email": account, "token": token})
+    command(
+        [
+            "secret-tool",
+            "store",
+            "--label=Rampi Kanban",
+            "application",
+            "rampi",
+            "profile",
+            profile,
+        ],
+        input_text=value,
+        timeout=90,
+    )
+    return "Zugangsdaten im persönlichen System-Schlüsselbund gespeichert."
 
 
 def request(
@@ -226,8 +255,28 @@ def jira(source: str, token: str) -> Board:
     if not sep or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", project):
         raise ValueError("Jira-Quelle: https://SITE.atlassian.net#PROJEKT")
     origin = urlsplit(site)
-    if origin.path not in {"", "/"} or origin.query:
-        raise ValueError("Bitte nur die Jira-Site-Adresse angeben.")
+    if origin.query:
+        raise ValueError("Bitte keine Queryparameter in der Jira-Quelle verwenden.")
+    auth: dict[str, str] = {}
+    bearer = token
+    if origin.hostname and origin.hostname.endswith(".atlassian.net"):
+        if origin.path not in {"", "/"}:
+            raise ValueError("Bitte nur die Jira-Site-Adresse angeben.")
+        try:
+            credentials = json.loads(token)
+            encoded = base64.b64encode(
+                (credentials["email"] + ":" + credentials["token"]).encode()
+            ).decode()
+        except (ValueError, KeyError, TypeError) as exc:
+            raise ValueError(
+                'Jira Cloud benötigt im Secret Service {"email":…,"token":…}.'
+            ) from exc
+        auth["Authorization"] = "Basic " + encoded
+        bearer = ""
+    elif origin.hostname != "api.atlassian.com" or not re.fullmatch(
+        r"/ex/jira/[a-fA-F0-9-]{36}/?", origin.path
+    ):
+        raise ValueError("Jira: Cloud-Site mit E-Mail/API-Token oder OAuth-Cloud-ID verwenden.")
     board = Board(project)
     cursor = None
     for _ in range(100):
@@ -238,7 +287,7 @@ def jira(source: str, token: str) -> Board:
         }
         if cursor:
             body["nextPageToken"] = cursor
-        data = request(site.rstrip("/") + "/rest/api/3/search/jql", token, body)
+        data = request(site.rstrip("/") + "/rest/api/3/search/jql", bearer, body, auth)
         for issue in data["issues"]:
             f = issue["fields"]
             board.cards.append(
@@ -246,7 +295,7 @@ def jira(source: str, token: str) -> Board:
                     issue["key"],
                     f["summary"],
                     f["status"]["name"],
-                    json.dumps(f.get("description") or {}, ensure_ascii=False),
+                    description_text(f.get("description")),
                     (f.get("priority") or {}).get("name", "normal"),
                     project,
                     site.rstrip("/") + "/browse/" + issue["key"],
@@ -256,6 +305,17 @@ def jira(source: str, token: str) -> Board:
         if not cursor:
             return board
     raise ValueError("Jira-Paginierung überschreitet das Limit.")
+
+
+def description_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict):
+        return ""
+    if value.get("type") == "text":
+        return str(value.get("text", ""))
+    separator = "\n" if value.get("type") in {"doc", "bulletList", "orderedList"} else ""
+    return separator.join(description_text(item) for item in value.get("content", []))
 
 
 def notion(source: str, token: str) -> Board:

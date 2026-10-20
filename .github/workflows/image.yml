@@ -1,6 +1,11 @@
 name: Image candidate
 on:
   workflow_dispatch:
+    inputs:
+      image_run_id:
+        description: 'Optional: validate an existing candidate artifact from this run; never used for releases'
+        type: string
+        default: ''
   workflow_call:
     inputs:
       ref:
@@ -8,17 +13,19 @@ on:
         required: true
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: image-${{ github.ref }}
+  group: image-${{ github.ref }}-${{ inputs.image_run_id || 'build' }}
   cancel-in-progress: false
 jobs:
   image:
+    if: inputs.image_run_id == ''
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.sha }}
       - name: Build using pinned official pi-gen
         run: bash image/build.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -27,4 +34,40 @@ jobs:
           path: artifacts/image/
           compression-level: 0
           if-no-files-found: error
+          retention-days: 7
+  validate:
+    needs: image
+    if: always() && (needs.image.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.image_run_id != ''))
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: image
+          path: artifacts/image
+          run-id: ${{ inputs.image_run_id || github.run_id }}
+          github-token: ${{ github.token }}
+      - name: Software image validation and QEMU boot
+        env:
+          IMAGE_PRODUCER_RUN: ${{ inputs.image_run_id || github.run_id }}
+          VALIDATOR_SHA: ${{ github.sha }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-arm dosfstools e2fsprogs device-tree-compiler file
+          echo "Image producer run: $IMAGE_PRODUCER_RUN; validator revision: $VALIDATOR_SHA"
+          bash image/test-image.sh artifacts/image/*.img.xz artifacts/image
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: image-validation
+          path: |
+            artifacts/image/*.log
+            artifacts/image/qemu-environment.txt
+            artifacts/image/partitions.json
+            artifacts/image/package-manifest.tsv
+            artifacts/image/dependency-licenses.tar.xz
+          if-no-files-found: ignore
           retention-days: 7

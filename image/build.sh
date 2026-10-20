@@ -13,7 +13,9 @@ git -C "$work" checkout --detach "$revision"
 mkdir -p "$work/stage-rampi/00-rampi/files/source"
 git -C "$root" archive HEAD | tar -x -C "$work/stage-rampi/00-rampi/files/source"
 cp "$root/image/stage-rampi/00-run.sh" "$work/stage-rampi/00-rampi/00-run.sh"
+cp "$root/image/stage-rampi/prerun.sh" "$work/stage-rampi/prerun.sh"
 chmod +x "$work/stage-rampi/00-rampi/00-run.sh"
+chmod +x "$work/stage-rampi/prerun.sh"
 touch "$work/stage2/SKIP_IMAGES" "$work/stage-rampi/EXPORT_IMAGE"
 cat > "$work/config" <<EOF
 IMG_NAME='rampi-os-rpi3bplus-v$version'

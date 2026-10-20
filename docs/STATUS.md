@@ -1,28 +1,30 @@
 # Implementierungs- und Abnahmestand
 
-Stand: 19. Oktober 2026. Kein regulärer Release freigegeben.
+Stand: 20. Oktober 2026. Physische Hardwaretests sind auf Nutzerwunsch durch
+[Softwareabnahme](VALIDATION-SCOPE.md) ersetzt.
 
-| Bereich | Implementiert | Nachweis / offene Arbeit |
-|---|---|---|
-| Qt-Quick-Dashboard | Sechs Kacheln, farbige Panels, Original-Logo, 200-ms-Verformung aller Kanten | Windows-Start und Screenshot; Pi-GPU und Bildrate offen |
-| Eingabe | Qt-Fokus, Pfeile, Tab, Enter, Escape, Cursorwechsel | Automatisierter QML-Test und Hardwarebedienung ergänzen |
-| Einstellungen | Gemeinsames Backend, Host-/Browser-/Kanban-Profil, Systemdialoge | Noch kein vollständiger grafischer Assistent mit 15 Schritten |
-| Benutzer | Ausschließlich Linux-/Windows-Konten, persönliche Dateien | PAM über LightDM; Mehrbenutzer-Endtest offen |
-| WLAN | Async-Status, Scan, NetworkManager-Systemdialog | Keine eigene Passwortspeicherung; Pi-Test offen |
-| Bluetooth | BlueZ-Status, Blueman-Pairingdialog | Native Integration, noch keine eigene vollständige Pairingoberfläche |
-| Tailscale | Status, verbinden, trennen | Bereits installierter Dienst erforderlich; Endtest offen |
-| WireGuard | NM-Import, Profile, verbinden, trennen | Benutzerberechtigungen des Imports müssen vor Aktivierung geprüft werden |
-| KI | Offizielle codex/claude/agy, OpenSSH, psmux-Adapter | Lokaler nativer Prozesspersistenztest bestanden; SSH-Abbruch offen |
-| Kanban JSON | Lesen, Spalten, Titel, Beschreibung, Priorität, Suche, Cache | Unit-Tests bestanden |
-| Cloud-Kanban | GitHub Projects, Trello, Jira, Asana, Notion lesende Adapter | Fixtures testen GitHub-Paginierung; Live-Konten fehlen, noch nicht als unterstützt freigegeben |
-| RDP | FreeRDP-Aufruf, interaktive Authentifizierung, TOFU-Zertifikate | Endtest und Shortcut-Weiterleitung auf Pi offen |
-| Streaming | Moonlight-Embedded-Aufruf | Installation/Decodierung/VT-Nutzung unter Trixie auf Pi 3 ungeprüft |
-| Browser | Bestehendes Chromium/Firefox mit persönlichem Profil | Kein eigener Renderer; RAM- und Downloadtest auf Pi offen |
-| Installer | Audit/Install, Windows-Opt-ins, manuelle Updates, vorsichtige Deinstallation | PowerShell-Audit lokal; Linux-Installation noch nicht auf Pi geprüft |
-| Image | Festgelegter pi-gen-Commit, eigene Stage, Rootfs-Prüfungen | Kein Flash-/Boottest belegt; nicht bitweise reproduzierbar, Paketquellen noch nicht eingefroren |
-| Bootanimation | Plymouth als Architekturentscheidung | Noch nicht integriert |
-| CI/Release | Workflows, Artefakte, Prüfsummen, Release-Sperre | Aktuelle Actions-Ergebnisse im Repository prüfen |
+| Bereich | Implementierung und tatsächlich geprüfter Umfang |
+|---|---|
+| Dashboard | Native Qt-Quick-Oberfläche, sechs Kacheln, Original-Logo, Lucide-Icons, 200-ms-Verformung aller Kanten; unter Linux/Windows geprüft |
+| Eingabe | Pfeile, Enter, Escape, Tab, Cursorwechsel; tatsächlicher QML-Test und globales Openbox-Kürzel unter virtuellem X11 |
+| Einrichtung | 15-Themen-Assistent, persönliche Einstellungen, SSH-Fingerprint-Vergleich und Secret-Service-Tokenablage |
+| Benutzer | LightDM/PAM und Linux-Systemkonten; AccountsService-Kontoanlage und korrektes/falsches Passwort im ARM64-Container geprüft |
+| Netzwerk/VPN | NetworkManager-D-Bus, async Scan, bestehende BlueZ-Dialoge; echter libnm-Import mit persönlichen Rechten; Tailscale/WireGuard über vorhandene Dienste |
+| KI-Terminals | Offizielle native codex/claude/agy, VTE/OpenSSH und bestehendes psmux/ConPTY; Windows-Prozess nach abruptem SSH-Abbruch wieder erreichbar, zwei Konten getrennt |
+| Kanban | Lesende JSON-, GitHub-, Trello-, Jira-, Asana-/Notion-Adapter, Details, Suche und privater Offline-Cache; Vertragstests, keine persönlichen Cloudkonten |
+| Remote Desktop | FreeRDP mit interaktiver Anmeldung und TOFU; Sunshine/Moonlight Embedded 2.7.1 mit Pairing und SDL/FFmpeg im vorhandenen X11 |
+| Browser | Vorhandenes Chromium/Firefox, eigenes Benutzerprofil, Start bei Bedarf |
+| Installation | Linux-/Windows-Bestandsaufnahme, sichere Adapter-ACL, Datenbewahrung, manuelle Updates; echte Windows-Installer-Prüfung in CI |
+| Image | Festgelegter offizieller pi-gen-Commit, Lite Trixie arm64, Plymouth, LightDM, Paketmanifest/Lizenzarchiv; erzeugt, virtuelle Abnahme siehe Actions |
+| CI/Release | ARM64-Docker mit 1-GB-Limit, Linux/Windows, Sicherheits-/Skript-/Archivprüfungen; Veröffentlichung erfordert Softwarebelege und frisch bestandenen Imageworkflow |
 
-Die offenen Punkte sind echte Entwicklungsarbeit und keine vom Dashboard
-simulierten Erfolgsmeldungen. `packaging/readiness.json` sperrt reguläre Releases,
-solange die geforderten Nachweise fehlen.
+36 Python-Tests prüfen Konfiguration, Argumente, Cachetrennung, Anbieter-Verträge,
+Hostschlüsselrotation und Zugangsdatenübergabe ohne Token in Prozessargumenten.
+Zusätzliche Integrationstests verwenden echte Systemkomponenten. Komplexe
+Netzwerkeinstellungen und Bluetooth-Pairing verwenden gepflegte Systemdialoge.
+
+Persönliche Cloudanmeldungen, VPN-Netze, RDP-Desktops und Sunshine-Streams wurden
+nicht live geprüft. Physische Funk-/HDMI-/GPU-/Latenzwerte werden nicht behauptet.
+Images sind durch Quellenrevision und Paketmanifest nachvollziehbar, wegen
+beweglicher Paketspiegel bislang nicht bitweise reproduzierbar.
+[Testnachweise](TESTING.md); aktuelle Freigabe in packaging/readiness.json.

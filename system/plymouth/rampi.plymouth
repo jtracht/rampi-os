@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Rampi
+Description=Rampi startup with supplied original branding
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/rampi
+ScriptFile=/usr/share/plymouth/themes/rampi/rampi.script

@@ -7,7 +7,8 @@ Type=simple
 ExecStart=/usr/local/bin/rampi
 Restart=on-failure
 RestartSec=3
-NoNewPrivileges=true
+# Remain an ordinary user; trusted system tools may request explicit polkit/PAM authorization.
+# NoNewPrivileges would prevent the user's console and pkexec from authenticating normally.
 UMask=0077
 Environment=QT_QUICK_CONTROLS_STYLE=Basic
 Environment=QT_QPA_PLATFORM=xcb

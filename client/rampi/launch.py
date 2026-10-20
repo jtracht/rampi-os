@@ -35,10 +35,25 @@ def ssh_args(host: Host, module: str) -> list[str]:
         f"& $s -Module {ps_literal(module)} -Project {ps_literal(host.project)}; "
         "exit $LASTEXITCODE"
     )
+    return ssh_command(host, script)
+
+
+def preview_args(host: Host, module: str) -> list[str]:
+    if module not in MODULES:
+        raise ValueError("Unbekanntes KI-Modul.")
+    script = (
+        "$ErrorActionPreference='Stop'; "
+        f"psmux.exe capture-pane -p -t {ps_literal('rampi-' + module)}; exit $LASTEXITCODE"
+    )
+    return ssh_command(host, script, interactive=False)
+
+
+def ssh_command(host: Host, script: str, interactive: bool = True) -> list[str]:
+    host.validate()
     encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
     args = [
         "ssh",
-        "-tt",
+        "-tt" if interactive else "-T",
         "-o",
         "StrictHostKeyChecking=yes",
         "-o",
@@ -47,9 +62,13 @@ def ssh_args(host: Host, module: str) -> list[str]:
         "ServerAliveInterval=15",
         "-o",
         "ServerAliveCountMax=3",
+        "-o",
+        "ConnectTimeout=8",
         "-p",
         str(host.port),
     ]
+    if not interactive:
+        args += ["-o", "BatchMode=yes"]
     if host.identity:
         args += ["-i", str(Path(host.identity).expanduser())]
     args += [
@@ -111,6 +130,8 @@ def stream_args(host: Host) -> list[str]:
     return [
         executable("moonlight"),
         "stream",
+        "-platform",
+        "sdl",
         "-width",
         width,
         "-height",

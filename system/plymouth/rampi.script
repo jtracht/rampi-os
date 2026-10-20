@@ -1,0 +1,14 @@
+Window.SetBackgroundTopColor(0.03, 0.06, 0.09);
+Window.SetBackgroundBottomColor(0.03, 0.06, 0.09);
+logo.image = Image("logo.png").Scale(260, 260);
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetX(Window.GetWidth() / 2 - logo.image.GetWidth() / 2);
+logo.sprite.SetY(Window.GetHeight() / 2 - 180);
+title.image = Image.Text("Rampi", 1, 1, 1);
+title.sprite = Sprite(title.image);
+title.sprite.SetX(Window.GetWidth() / 2 - title.image.GetWidth() / 2);
+title.sprite.SetY(Window.GetHeight() / 2 + 100);
+fun progress_callback(duration, progress) {
+    title.sprite.SetOpacity(0.55 + progress * 0.45);
+}
+Plymouth.SetBootProgressFunction(progress_callback);

@@ -8,6 +8,7 @@ Control {
   required property string subtitle
   required property string caption
   required property string symbol
+  required property string iconFile
   required property color accent
   property bool selected: false
   property bool reducedMotion: false
@@ -23,7 +24,7 @@ Control {
   }
   SequentialAnimation {
     id: ripple
-    NumberAnimation { target: tile; property: "wave"; to: 12; duration: 65; easing.type: Easing.OutQuad }
+    NumberAnimation { target: tile; property: "wave"; to: 24; duration: 65; easing.type: Easing.OutQuad }
     NumberAnimation { target: tile; property: "wave"; to: -5; duration: 55; easing.type: Easing.InOutQuad }
     NumberAnimation { target: tile; property: "wave"; to: 0; duration: 80; easing.type: Easing.OutQuad }
   }
@@ -46,15 +47,12 @@ Control {
     anchors.centerIn: parent
     width: parent.width - 28
     spacing: 10
-    Text {
-      text: tile.symbol
+    Image {
+      source: "../icons/" + tile.iconFile + ".svg"
       width: parent.width
       height: 100
-      horizontalAlignment: Text.AlignHCenter
-      verticalAlignment: Text.AlignVCenter
-      font.pixelSize: 82
-      font.weight: Font.Light
-      color: tile.darkInk ? "#111820" : "#ffffff"
+      sourceSize: Qt.size(88, 88)
+      fillMode: Image.PreserveAspectFit
     }
     Text {
       text: tile.title; width: parent.width
