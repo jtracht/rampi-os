@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/jtracht/rampi-os/compare/v0.2.2...v0.3.0) (2026-10-20)
+
+
+### Features
+
+* graphical host profiles and persistent AI session management ([#9](https://github.com/jtracht/rampi-os/issues/9)) ([06ffbfc](https://github.com/jtracht/rampi-os/commit/06ffbfc2b279ea0d64870ed63243f8f99b67f0b9))
+
+
+### Bug Fixes
+
+* wait for RDP certificate generation before pinning the test server ([#10](https://github.com/jtracht/rampi-os/issues/10)) ([323e184](https://github.com/jtracht/rampi-os/commit/323e1841e4a3da0980a079408f66f240d453e8b0))
+
 ## [0.2.2](https://github.com/jtracht/rampi-os/compare/v0.2.1...v0.2.2) (2026-10-20)
 
 
