@@ -6,7 +6,7 @@
   "packages": {
     ".": {
       "package-name": "rampi-os",
-      "extra-files": ["client/rampi/__init__.py"]
+      "extra-files": [{"type": "generic", "path": "client/rampi/__init__.py"}]
     }
   }
 }

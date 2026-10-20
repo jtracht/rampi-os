@@ -21,3 +21,6 @@ abgleichen. Installierte Endgeräte erhalten keine automatischen Updates.
 Die Softwareabnahme vom 20.10.2026 ist dokumentiert und in readiness.json
 eingetragen. Jeder neue Release muss seinen eigenen Image-/QML-/QEMU- und
 vollständigen Artefakttest bestehen. Der Versionsstand steht in pyproject.toml.
+Die CI weist Abweichungen zwischen Paketversion, Clientversion und
+Release-Manifest zurück. Der zusätzliche Client-Versionsmarker wird als
+expliziter Generic-Updater mit reinen SemVer-Versionen gepflegt.
