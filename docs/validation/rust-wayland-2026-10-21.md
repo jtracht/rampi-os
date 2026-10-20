@@ -3,8 +3,13 @@
 Revision: `3788dc1`, Entwicklungszweig `codex/software-acceptance-85`.
 Die Umstellung ist noch kein regulärer Release.
 
-[Rust-/Wayland-CI](https://github.com/jtracht/rampi-os/actions/runs/39512410403)
-hat die nativen Jobs für **amd64 und arm64 erfolgreich** abgeschlossen:
+Der bisherige CI-Lauf meldete grüne Jobs, obwohl die Log-Pipeline einen
+Docker-Fehler beim Start der WebKit-Sandbox verdeckte. Die Artefaktprüfung hat
+diesen unvollständigen Lauf abgewiesen. Sein grüner Gesamtstatus ist **kein**
+Nachweis aller folgenden Schritte. Die korrigierte Pipeline verwendet `pipefail`
+und prüft jede Laufzeitmarkierung sowie Speicherwert und Screenshot ausdrücklich.
+Der nachfolgende Umfang ist lokal auf amd64 nachgewiesen; vollständige korrigierte
+CI-Ergebnisse für beide Architekturen werden nach Abschluss ergänzt.
 
 - Rust-Code mit `Cargo.lock` kompiliert; Formatierung und Clippy ohne Warnungen.
 - Acht Rust-Core-Tests zu Konfiguration, Schreibrechten, URL-/Hostvalidierung,

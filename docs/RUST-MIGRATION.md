@@ -43,7 +43,8 @@ dem Raspberry Pi kompiliert; Installer erwarten ein vorgebautes ARM64-Binary.
 
 ## Nachgewiesen und noch offen
 
-Auf amd64 und arm64 in [CI nachgewiesen](validation/rust-wayland-2026-10-21.md): Rust-Core-Tests; vollständiger Linux-Build; Clippy ohne
+Lokal auf amd64 nachgewiesen; vollständige CI-Artefakte werden separat
+[verifiziert](validation/rust-wayland-2026-10-21.md): Rust-Core-Tests; vollständiger Linux-Build; Clippy ohne
 Warnungen; echte labwc-Sitzung mit `GdkWaylandDisplay`, einem App-Fenster und
 getrennten Einstellungsseiten; tatsächliche VTE-PTY-Ein-/Ausgabe; tatsächliche
 WebKit-DOM-/JavaScript-Ausführung; Rust-/GIO-Aufrufe gegen eine private
@@ -68,7 +69,8 @@ Der Test verwendet einen virtuellen labwc-Ausgang mit Pixman, ohne Host-GPU,
 Host-Eingabegeräte oder physischen Raspberry Pi. Der Container läuft als normaler
 Benutzer mit deaktiviertem Netzwerk, schreibgeschütztem Quellcode und einem
 eigenen Ausgabeordner. Docker muss unprivilegierte User-Namespaces zulassen:
-für diesen Test wird sein Seccomp-Filter ausgesetzt. Die WebKit-Sandbox selbst
+für diesen Test werden sein Seccomp-Filter und das Docker-AppArmor-Profil
+ausgesetzt. Die WebKit-Sandbox selbst
 bleibt eingeschaltet; `WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS` wird nicht gesetzt.
 Diese Containeroption gehört ausschließlich zur Testumgebung.
 
