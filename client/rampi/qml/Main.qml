@@ -193,11 +193,11 @@ ApplicationWindow {
           Layout.fillWidth: true; Layout.fillHeight: true
           ColumnLayout {
             anchors.fill: parent; anchors.margins: 14; spacing: 8
-            RowLayout {
-              Layout.fillWidth: true
-              Image { source: "../icons/" + ({codex: "terminal-preview", claude: "asterisk-preview", antigravity: "sparkles-preview", browser: "globe"})[modelData.key] + ".svg"; Layout.preferredWidth: 28; Layout.preferredHeight: 28; sourceSize: Qt.size(28, 28) }
-              Text { text: modelData.title + (modelData.key === "browser" ? "" : " / " + modelData.subtitle); color: "#edf3fa"; font.pixelSize: 15; font.bold: true; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight }
-              Rectangle { width: 8; height: 8; radius: 3; color: "#627487" }
+            Item {
+              Layout.fillWidth: true; Layout.preferredHeight: 28
+              Image { id: previewIcon; anchors.left: parent.left; width: 28; height: 28; source: "../icons/" + ({codex: "terminal-preview", claude: "asterisk-preview", antigravity: "sparkles-preview", browser: "globe"})[modelData.key] + ".svg"; sourceSize: Qt.size(28, 28) }
+              Text { anchors { left: previewIcon.right; leftMargin: 8; right: previewStatus.left; rightMargin: 8; verticalCenter: parent.verticalCenter }; text: modelData.title + (modelData.key === "browser" ? "" : " / " + modelData.subtitle); color: "#edf3fa"; font.pixelSize: 15; font.bold: true; elide: Text.ElideRight }
+              Rectangle { id: previewStatus; anchors { right: parent.right; verticalCenter: parent.verticalCenter }; width: 8; height: 8; radius: 3; color: "#627487" }
             }
             Rectangle {
               Layout.fillWidth: true; Layout.fillHeight: true; radius: 10; color: "#080f17"
