@@ -21,7 +21,12 @@ Dialog {
   function showPage(index) { tabs.currentIndex = index; open(); }
   function hostValues() { return {name: hostName.text, address: address.text, username: username.text, port: port.value,
       identity: identity.text, project: project.text, resolution: resolution.text}; }
-  onOpened: { addingHost = false; editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1; loadHost(dialog.host); address.forceActiveFocus(); }
+  onOpened: {
+    addingHost = false; editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1;
+    loadHost(dialog.host);
+    if (tabs.currentIndex === 0) address.forceActiveFocus(); else tabs.currentItem.forceActiveFocus();
+    if (tabs.currentIndex === 1) rampi.refreshWifi(false);
+  }
   contentItem: ColumnLayout {
     spacing: 12
     TabBar {

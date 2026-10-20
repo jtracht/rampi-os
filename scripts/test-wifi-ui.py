@@ -107,9 +107,10 @@ try:
         window = engine.rootObjects()[0]
         window.requestActivate()
         dialog = window.findChild(QObject, "settingsDialog")
+        window.findChild(QObject, "settingsTabs").setProperty("currentIndex", 1)
         QMetaObject.invokeMethod(dialog, "open")
         wait_until(lambda: dialog.property("opened"))
-        window.findChild(QObject, "settingsTabs").setProperty("currentIndex", 1)
+        require(window.activeFocusItem().property("visible"), "Dialog focused hidden content")
         wait_until(lambda: bool(backend.wifi["networks"]))
         picker = window.findChild(QObject, "wifiPicker")
         picker.forceActiveFocus()
