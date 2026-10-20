@@ -3,6 +3,20 @@
 Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Verbindlicher
 Ersatzumfang: [VALIDATION-SCOPE.md](VALIDATION-SCOPE.md).
 
+Die aktuelle Suite enthält 74 Python-Tests. Für die eigene WLAN-Oberfläche
+prüft `scripts/test-wifi-ui.py` echte QML-Tastatureingabe und GIO-D-Bus-Aufrufe
+gegen das isolierte NetworkManager-Template von python-dbusmock: maskiertes
+Kennwort, private Profilübergabe, keine Zugangsdaten in Meldungen/Dateien,
+Profilwiederverwendung, Trennen und Scan. Diese Aktivierung ist eine Fixture,
+kein Nachweis einer Funkanmeldung oder von DHCP über WLAN.
+
+Zusätzlich prüft `scripts/test-wifi-profile.py` im echten NetworkManager der
+Wegwerf-VPN-Container die Speicherung eines privaten WLAN-Profils, unveränderte
+Benutzer-ACL, ausgeblendetes Geheimnis in Metadaten und verweigerten
+Geheimnisabruf durch ein anderes Linux-Konto. libnm validiert offene, WPA2-
+und SAE-Profile und lehnt ein zu kurzes WPA2-Kennwort ab. Dabei wird kein WLAN
+aktiviert. Bedienung, Quellen und weitere Grenzen: [WIFI.md](WIFI.md).
+
 Am 19./20.10.2026 tatsächlich ausgeführt:
 
 - 36 Python-Tests auf Windows, Linux und nativem ARM64-Trixie: private

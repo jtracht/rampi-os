@@ -1,6 +1,6 @@
 # Entwicklungsfortschritt
 
-Aktueller Entwicklungsstand: **ca. 72 %**. Baseline v0.3.0: ca. 69 %.
+Aktueller Entwicklungsstand: **ca. 73 %**. Baseline v0.3.0: ca. 69 %.
 
 Die Zahl bewertet den gesamten Masterprompt, einschließlich Integration,
 Bedienung und Nachweisen. Sie ist eine transparente Planungsschätzung, keine
@@ -51,7 +51,8 @@ Belegte Erweiterungen gegenüber der Baseline:
 | VPN | 4 / 5 | Eigene grafische Auswahl; offizielle D-Bus-Metadaten mit aktivem Zustand; gemeinsame/fremde Profile ausgeschlossen; UID statt Umgebungsvariablen bestimmt das Systemkonto |
 | Remote Desktop und Streaming | 4 / 5 | Echter 997-Hz-Testton über Sunshine/PulseAudio, Opus und Moonlight/SDL empfangen; erneute Verbindung; Stille und falscher Ton werden abgewiesen |
 | Kanban | 4 / 5 | Spaltenreihenfolge gespeichert; unabhängige Projekt-/Prioritäts-/Statusfilter mit Suche; tatsächliche QML-Tastaturtests und JSON-Neuladen |
+| WLAN | 3 / 5 | Eigene Auswahl und maskierte Kennworteingabe; QML/GIO-Vertrag auf isoliertem D-Bus; echte NetworkManager-Speicherung und fremdem Konto verweigerter Geheimnisabruf; vollständige WPA-/DHCP-Verbindung noch offen |
 
-Damit **72 / 100 Punkte**, entsprechend **ca. 72 %**. Lokale Prüfungen sind bestanden;
+Damit **73 / 100 Punkte**, entsprechend **ca. 73 %**. Lokale Prüfungen sind bestanden;
 die Änderungen durchlaufen zusätzlich die vollständige CI und einen frischen
 Release-Image-Build. Die verbleibenden Punkte in der Baseline bleiben offen.

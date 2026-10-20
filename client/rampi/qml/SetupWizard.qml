@@ -11,7 +11,7 @@ Dialog {
   readonly property var steps: [
     {title: "Sprache & Tastatur", text: "Die Oberfläche dieses Entwicklungsstands ist deutsch. Passe Tastatur und Maus im vorhandenen Systemdialog an. Die Systemsprache wird bei der Raspberry-Pi-Ersteinrichtung festgelegt.", action: "keyboard", label: "Tastatur und Maus"},
     {title: "HDMI-Anzeige", text: "Wähle eine gut lesbare Auflösung für Bildschirm oder Beamer. Rampi verändert keine Firmware- oder Bootoptionen.", action: "display", label: "Anzeige einstellen"},
-    {title: "WLAN", text: "NetworkManager verwaltet WLANs und Zugangsdaten. Die Einrichtung erfolgt im vorhandenen grafischen Systemdialog.", action: "wifi-connect", label: "WLAN einrichten"},
+    {title: "WLAN", text: "Wähle dein WLAN in den Rampi-Einstellungen. NetworkManager verwaltet Verbindung und persönliche Zugangsdaten. Für versteckte oder Unternehmensnetze steht der erweiterte Systemdialog bereit.", page: 1, label: "WLAN einrichten"},
     {title: "Bluetooth", text: "Kopple Tastatur und Maus über BlueZ und den vorhandenen Pairingdialog. Halte für die erste Einrichtung eine USB-Tastatur bereit.", action: "bluetooth", label: "Geräte koppeln"},
     {title: "Linux-Konto & Login", text: "Du bist mit deinem persönlichen Linux-Systemkonto angemeldet. LightDM und PAM verwalten den Login. Zusätzliche normale Konten lassen sich über AccountsService mit polkit-Freigabe anlegen.", page: 1, label: "Linux-Konten"},
     {title: "VPN", text: "Wähle Tailscale oder WireGuard. Beachte die systemweiten Routingauswirkungen und die Berechtigungen anderer Benutzer.", page: 2, label: "VPN-Einstellungen"},

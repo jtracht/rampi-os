@@ -14,7 +14,7 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
-from . import __version__, services, sshkeys
+from . import __version__, services, sshkeys, wifi
 from .accounts import create_user
 from .config import Host, Settings
 from .kanban import Board, load_board, store_token
@@ -51,6 +51,8 @@ class Backend(QObject):
         self._vpn_profiles: list[dict] = []
         self._vpn_error = "Noch nicht geprüft"
         self._vpn_generation = 0
+        self._wifi = {"networks": [], "enabled": False, "error": "Noch nicht geprüft"}
+        self._wifi_generation = 0
         self._host_key: dict = {"fingerprints": ""}
         self._host_generation = 0
         self._sessions = {name: "Ungeprüft" for name in ("codex", "claude", "antigravity")}
@@ -96,6 +98,40 @@ class Backend(QObject):
 
     def _vpn_busy(self) -> bool:
         return any(name in self.jobs.pending for name in ("wg-up", "wg-down", "wg-import"))
+
+    @Property("QVariantMap", notify=changed)
+    def wifi(self):
+        return {**self._wifi, "busy": any(n.startswith("wifi-") for n in self.jobs.pending)}
+
+    @Slot(bool)
+    def refreshWifi(self, scan=False):
+        if any(n.startswith("wifi-") for n in self.jobs.pending):
+            return
+        self._wifi_generation += 1
+        self.jobs.submit(f"wifi-snapshot-{self._wifi_generation}", partial(wifi.snapshot, scan))
+        self.changed.emit()
+
+    @Slot(str, str)
+    def connectWifi(self, key, password):
+        if any(n.startswith("wifi-") for n in self.jobs.pending):
+            self.message.emit("Ein WLAN-Auftrag läuft bereits.")
+            return
+        self.jobs.submit("wifi-connect-personal", partial(wifi.connect, key, password))
+        self.changed.emit()
+
+    @Slot(bool)
+    def enableWifi(self, enabled):
+        if any(n.startswith("wifi-") for n in self.jobs.pending):
+            return
+        self.jobs.submit("wifi-radio", partial(wifi.set_enabled, enabled))
+        self.changed.emit()
+
+    @Slot(str)
+    def disconnectWifi(self, key):
+        if any(n.startswith("wifi-") for n in self.jobs.pending):
+            return
+        self.jobs.submit("wifi-disconnect", partial(wifi.disconnect, key))
+        self.changed.emit()
 
     @Slot()
     def refreshVpnProfiles(self):
@@ -324,7 +360,14 @@ class Backend(QObject):
 
     @Slot(str, object)
     def _result(self, name, value):
-        if name.startswith("board-"):
+        if name.startswith("wifi-snapshot-"):
+            if name == f"wifi-snapshot-{self._wifi_generation}":
+                self._wifi = value
+                self.changed.emit()
+        elif name in {"wifi-connect-personal", "wifi-radio", "wifi-disconnect"}:
+            self.message.emit(str(value))
+            self.refreshWifi(False)
+        elif name.startswith("board-"):
             if name != f"board-{self._board_generation}":
                 return
             self._board = value
@@ -392,6 +435,15 @@ class Backend(QObject):
 
     @Slot(str, str)
     def _failed(self, name, error):
+        if name.startswith("wifi-snapshot-"):
+            if name == f"wifi-snapshot-{self._wifi_generation}":
+                self._wifi = {"networks": [], "enabled": False, "error": str(error)}
+                self.changed.emit()
+            return
+        if name in {"wifi-connect-personal", "wifi-radio", "wifi-disconnect"}:
+            self.message.emit(error)
+            self.refreshWifi(False)
+            return
         if name.startswith("board-") and name != f"board-{self._board_generation}":
             return
         if name.startswith("vpn-profiles-"):
@@ -524,18 +576,6 @@ class Backend(QObject):
             return
 
         def execute():
-            if action == "wifi-scan":
-                return (
-                    "\n".join(
-                        f"{n['ssid']} · {n['signal']}% · {n['security']}"
-                        for n in services.wifi_list()
-                    )
-                    or "Keine WLANs gefunden."
-                )
-            if action == "wifi-connect":
-                # nmcli prompts in VTE, so passwords never enter argv or the dashboard.
-                self.message.emit("WLAN-Zugang bitte im geöffneten Systemdialog bestätigen.")
-                return "WLAN-Verwaltung geöffnet."
             if action.startswith("wg-"):
                 return services.network_action(action[3:], value)
             if action == "tailscale-status":

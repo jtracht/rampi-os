@@ -26,7 +26,7 @@ Dialog {
     spacing: 12
     TabBar {
       id: tabs; objectName: "settingsTabs"; Layout.fillWidth: true
-      onCurrentIndexChanged: if (currentIndex === 2) rampi.refreshVpnProfiles()
+      onCurrentIndexChanged: { if (currentIndex === 2) rampi.refreshVpnProfiles(); if (currentIndex === 1) rampi.refreshWifi(false); }
       TabButton { text: "Host & SSH" }
       TabButton { text: "System" }
       TabButton { text: "VPN" }
@@ -96,9 +96,8 @@ Dialog {
         ColumnLayout {
           width: parent.width - 20; spacing: 16
           Label { text: "Vorhandene Systemdienste"; font.pixelSize: 23; font.bold: true }
-          Label { text: "Die Systemdialoge verwenden NetworkManager, BlueZ und polkit. Linux-Konten und Login bleiben unter PAM-Verwaltung."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-          RampiButton { text: "WLANs suchen"; onClicked: rampi.action("wifi-scan", "") }
-          RampiButton { text: "Netzwerkverbindungen einrichten"; onClicked: rampi.action("wifi-connect", "") }
+          WifiSettings { Layout.fillWidth: true }
+          Label { text: "Weitere Systemdienste · BlueZ, polkit und PAM"; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           RampiButton { text: "Bluetooth · Geräte koppeln"; onClicked: rampi.action("bluetooth", "") }
           RampiButton { text: "HDMI · Anzeige einstellen"; onClicked: rampi.action("display", "") }
           RampiButton { text: "Tastatur und Maus"; onClicked: rampi.action("keyboard", "") }
