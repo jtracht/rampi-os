@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/jtracht/rampi-os/compare/v0.4.0...v0.5.0) (2026-10-20)
+
+
+### Features
+
+* add personal WLAN settings with NetworkManager and keyboard setup ([#14](https://github.com/jtracht/rampi-os/issues/14)) ([aa35263](https://github.com/jtracht/rampi-os/commit/aa3526377e775de51a88930d0325d7b035b55ac2))
+
 ## [0.4.0](https://github.com/jtracht/rampi-os/compare/v0.3.0...v0.4.0) (2026-10-20)
 
 
