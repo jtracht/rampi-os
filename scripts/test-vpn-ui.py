@@ -14,7 +14,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QT_QUICK_BACKEND", "software")
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
 
-from PySide6.QtCore import QEvent, QMetaObject, QObject, Qt, QUrl  # noqa: E402
+from PySide6.QtCore import QEvent, QEventLoop, QMetaObject, QObject, Qt, QTimer, QUrl  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuick import QQuickWindow  # noqa: E402, F401
 from PySide6.QtTest import QTest  # noqa: E402
@@ -27,7 +27,11 @@ def wait_until(condition):
     for _ in range(400):
         if condition():
             return
-        QTest.qWait(50)
+        # Run the same event loop as the application, releasing the Python GIL
+        # so QRunnable jobs can execute with Debian's PySide6 bindings too.
+        loop = QEventLoop()
+        QTimer.singleShot(50, loop.quit)
+        loop.exec()
     raise RuntimeError(
         "VPN UI timeout: " + repr(backend.vpnProfiles) + "; pending=" + repr(backend.jobs.pending)
     )

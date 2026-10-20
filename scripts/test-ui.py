@@ -84,7 +84,9 @@ def wait_until(condition):
     for _ in range(200):
         if condition():
             return
-        QTest.qWait(25)
+        loop = QEventLoop()
+        QTimer.singleShot(25, loop.quit)
+        loop.exec()
     raise SystemExit("Actual QML/connector action did not finish")
 
 
