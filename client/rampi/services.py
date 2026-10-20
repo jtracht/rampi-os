@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import getpass
 import json
 import os
 import re
@@ -110,6 +109,75 @@ def wireguard_profiles() -> str:
     return command(["nmcli", "-t", "-f", "UUID,NAME,TYPE,ACTIVE", "connection", "show"])
 
 
+def linux_username() -> str:
+    if os.name != "posix":
+        raise RuntimeError("Linux-Systemkonto benötigt.")
+    import pwd
+
+    return pwd.getpwuid(os.getuid()).pw_name  # type: ignore[attr-defined]
+
+
+def personal_wireguard_profiles() -> list[dict[str, object]]:
+    """Read public D-Bus metadata only, without a thread-bound NMClient cache."""
+    if os.name != "posix":
+        raise RuntimeError("NetworkManager-Profile sind nur unter Linux verfügbar.")
+    from gi.repository import Gio, GLib
+
+    bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    interface = "org.freedesktop.NetworkManager"
+    root = "/org/freedesktop/NetworkManager"
+
+    def call(path, api, method, parameters=None):
+        return bus.call_sync(
+            interface, path, api, method, parameters, None, Gio.DBusCallFlags.NONE, 5000, None
+        ).unpack()[0]
+
+    def properties(path, api):
+        return call(path, "org.freedesktop.DBus.Properties", "GetAll", GLib.Variant("(s)", (api,)))
+
+    def unavailable(error):
+        # A connection can disappear or become private between snapshot calls.
+        return (Gio.DBusError.get_remote_error(error) or "").endswith(
+            (".PermissionDenied", ".AccessDenied", ".UnknownObject", ".UnknownConnection")
+        )
+
+    active = set()
+    for path in properties(root, interface).get("ActiveConnections", []):
+        try:
+            data = properties(path, interface + ".Connection.Active")
+        except GLib.Error as exc:
+            if not unavailable(exc):
+                raise
+            continue
+        if data.get("State") == 2:  # NM_ACTIVE_CONNECTION_STATE_ACTIVATED
+            active.add(data["Uuid"])
+    permissions = [f"user:{linux_username()}:"]
+    profiles = []
+    for path in call(root + "/Settings", interface + ".Settings", "ListConnections"):
+        try:
+            setting = call(path, interface + ".Settings.Connection", "GetSettings").get(
+                "connection", {}
+            )
+        except GLib.Error as exc:
+            if not unavailable(exc):
+                raise
+            continue
+        if setting.get("type") != "wireguard" or setting.get("permissions", []) != permissions:
+            continue
+        identifier = setting["uuid"]
+        name = setting["id"]
+        connected = identifier in active
+        profiles.append(
+            {
+                "uuid": identifier,
+                "name": name,
+                "active": connected,
+                "label": name + (" · Verbunden" if connected else " · Getrennt"),
+            }
+        )
+    return sorted(profiles, key=lambda item: str(item["name"]).casefold())
+
+
 def wireguard_connection(filename: str, username: str):
     path = Path(filename).expanduser().resolve(strict=True)
     if path.suffix != ".conf" or path.stat().st_size > 65536:
@@ -133,7 +201,7 @@ def wireguard_connection(filename: str, username: str):
 
 
 def wireguard_import(filename: str) -> str:
-    connection = wireguard_connection(filename, getpass.getuser())
+    connection = wireguard_connection(filename, linux_username())
     from gi.repository import NM, Gio, GLib
 
     setting = connection.get_setting_connection()

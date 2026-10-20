@@ -92,6 +92,7 @@ class Settings:
     board_source: str = ""
     board_kind: str = "json"
     board_token_key: str = ""
+    board_columns: list[str] = field(default_factory=list)
     reduce_motion: bool = False
 
     @property
@@ -121,10 +122,28 @@ class Settings:
             _ = result.host
         if result.board_kind not in {"json", "github", "trello", "jira", "asana", "notion"}:
             raise ValueError("Unbekannter Kanban-Connector.")
+        result.validate_columns()
         return result
+
+    def validate_columns(self) -> None:
+        if (
+            not isinstance(self.board_columns, list)
+            or len(self.board_columns) > 32
+            or any(
+                not isinstance(c, str)
+                or not c.strip()
+                or c != c.strip()
+                or len(c) > 80
+                or any(ord(v) < 32 for v in c)
+                for c in self.board_columns
+            )
+            or len(set(self.board_columns)) != len(self.board_columns)
+        ):
+            raise ValueError("Kanban-Spalten: höchstens 32 eindeutige Namen mit 1–80 Zeichen.")
 
     def save(self, path: Path | None = None) -> None:
         safe_url(self.browser_url)
+        self.validate_columns()
         if self.hosts:
             _ = self.host
         atomic_json(path or config_home() / "settings.json", asdict(self))

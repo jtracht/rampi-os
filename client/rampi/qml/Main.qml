@@ -121,14 +121,42 @@ ApplicationWindow {
             Text { text: (rampi.board.cached ? "Offline-Cache · " : "") + "Projektübersicht · Nur lesen"; color: "#9eb0c2"; font.pixelSize: 13 }
           }
           Item { Layout.fillWidth: true }
-          Text { text: rampi.board.count + " Karten"; color: "#a9b8c7"; font.pixelSize: 12 }
-          Button { text: "↻"; Accessible.name: "Kanban aktualisieren"; onClicked: rampi.refreshBoard() }
+          Text { text: rampi.board.count + " / " + rampi.board.total + " Karten"; color: "#a9b8c7"; font.pixelSize: 12 }
+          RampiButton { text: "↻"; Accessible.name: "Kanban aktualisieren"; onClicked: rampi.refreshBoard() }
         }
         TextField {
+          id: boardSearch; objectName: "boardSearch"
           visible: window.page === "kanban"
           Layout.fillWidth: true
           placeholderText: "Titel, Beschreibung, Projekt oder Priorität suchen …"
+          text: rampi.board.filters.query
           onTextChanged: rampi.search(text)
+        }
+        RowLayout {
+          visible: window.page === "kanban"; Layout.fillWidth: true
+          ComboBox {
+            id: projectFilter; objectName: "projectFilter"; Layout.fillWidth: true
+            model: ["Alle Projekte"].concat(rampi.board.projects)
+            currentIndex: rampi.board.filters.project ? rampi.board.projects.indexOf(rampi.board.filters.project) + 1 : 0
+            onActivated: rampi.filterBoard(currentIndex > 0 ? currentText : "",
+                priorityFilter.currentIndex > 0 ? priorityFilter.currentText : "",
+                statusFilter.currentIndex > 0 ? statusFilter.currentText : "")
+          }
+          ComboBox {
+            id: priorityFilter; objectName: "priorityFilter"; Layout.fillWidth: true
+            model: ["Alle Prioritäten"].concat(rampi.board.priorities)
+            currentIndex: rampi.board.filters.priority ? rampi.board.priorities.indexOf(rampi.board.filters.priority) + 1 : 0
+            onActivated: rampi.filterBoard(projectFilter.currentIndex > 0 ? projectFilter.currentText : "",
+                currentIndex > 0 ? currentText : "", statusFilter.currentIndex > 0 ? statusFilter.currentText : "")
+          }
+          ComboBox {
+            id: statusFilter; objectName: "statusFilter"; Layout.fillWidth: true
+            model: ["Alle Status"].concat(rampi.board.statuses)
+            currentIndex: rampi.board.filters.status ? rampi.board.statuses.indexOf(rampi.board.filters.status) + 1 : 0
+            onActivated: rampi.filterBoard(projectFilter.currentIndex > 0 ? projectFilter.currentText : "",
+                priorityFilter.currentIndex > 0 ? priorityFilter.currentText : "", currentIndex > 0 ? currentText : "")
+          }
+          RampiButton { objectName: "clearBoardFilters"; text: "Zurücksetzen"; onClicked: { boardSearch.clear(); projectFilter.currentIndex = 0; priorityFilter.currentIndex = 0; statusFilter.currentIndex = 0; rampi.filterBoard("", "", ""); } }
         }
         Text {
           visible: rampi.board.warning !== ""
@@ -157,7 +185,7 @@ ApplicationWindow {
                   ListView {
                     Layout.fillWidth: true; Layout.fillHeight: true; spacing: 8; clip: true
                     model: modelData.cards
-                    delegate: Button {
+                    delegate: RampiButton {
                       id: cardControl
                       required property var modelData
                       width: ListView.view.width; height: 49
@@ -220,9 +248,9 @@ ApplicationWindow {
         anchors.centerIn: parent; spacing: 22; width: 800
         Text { text: "Deine Windows-Workstation"; color: "#f4f6fa"; font.pixelSize: 36; font.bold: true }
         Text { text: "Wähle dein Verbindungsverfahren.\nZurück zum Dashboard: Strg+Alt+Pos1. Windows erlaubt nur eine interaktive Desktopsitzung."; color: "#a4b5c7"; font.pixelSize: 18; lineHeight: 1.6; width: 800; wrapMode: Text.WordWrap }
-        Button { text: "RDP · FreeRDP starten"; onClicked: rampi.launch("rdp") }
-        Button { text: "Windows-Konsole teilen · Moonlight"; onClicked: rampi.launch("stream") }
-        Button { text: "Streaming-Host koppeln"; onClicked: rampi.action("stream-pair", "") }
+        RampiButton { text: "RDP · FreeRDP starten"; onClicked: rampi.launch("rdp") }
+        RampiButton { text: "Windows-Konsole teilen · Moonlight"; onClicked: rampi.launch("stream") }
+        RampiButton { text: "Streaming-Host koppeln"; onClicked: rampi.action("stream-pair", "") }
         Text { text: "RDP meldet dich mit deinem Windows-Konto an. Sunshine teilt die aktive Windows-Konsole; die Kopplung ersetzt keine Windows-Anmeldung.\nKopplungsschlüssel sind pro Rampi-Benutzer, Host und Windows-Konto getrennt. Bei gemeinsam genutzten Hosts RDP verwenden."; width: 800; wrapMode: Text.WordWrap; color: "#c2b994"; font.pixelSize: 15 }
       }
     }
@@ -231,7 +259,7 @@ ApplicationWindow {
       x: 14; y: 804; width: 1572; height: 75; radius: 23
       RowLayout {
         anchors.fill: parent; anchors.margins: 16; spacing: 28
-        Button { text: "Einstellungen"; icon.source: "../icons/settings.svg"; icon.color: "#edf3fa"; font.pixelSize: 18; onClicked: settings.open() }
+        RampiButton { text: "Einstellungen"; icon.source: "../icons/settings.svg"; icon.color: "#edf3fa"; font.pixelSize: 18; onClicked: settings.open() }
         Rectangle { width: 1; height: 38; color: "#4a5e70" }
         Repeater {
           model: [{label: "WLAN", value: rampi.status.network}, {label: "Bluetooth", value: rampi.status.bluetooth}, {label: "VPN", value: rampi.status.vpn}]
@@ -240,10 +268,10 @@ ApplicationWindow {
             Text { text: modelData.value; color: modelData.value === "Verbunden" || modelData.value === "Running" || modelData.value === "Bereit" ? "#1edbb5" : "#8fa2b5"; font.pixelSize: 12; width: 130; elide: Text.ElideRight }
           }
         }
-        Button { text: "Konsole"; icon.source: "../icons/terminal.svg"; icon.color: "#edf3fa"; onClicked: rampi.launch("console") }
+        RampiButton { text: "Konsole"; icon.source: "../icons/terminal.svg"; icon.color: "#edf3fa"; onClicked: rampi.launch("console") }
         Item { Layout.fillWidth: true }
         Text { text: "Rampi " + rampi.version + "\nKleine Hardware. Große Möglichkeiten."; color: "#8fa2b5"; font.pixelSize: 12; lineHeight: 1.5 }
-        Button { visible: window.page !== "dashboard"; text: "← Dashboard"; onClicked: window.page = "dashboard" }
+        RampiButton { visible: window.page !== "dashboard"; text: "← Dashboard"; onClicked: window.page = "dashboard" }
       }
     }
     MouseArea {

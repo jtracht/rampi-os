@@ -59,7 +59,7 @@ gleichbreite Terminalschrift, damit ein Start mit fehlenden Fonts nicht genügt.
 
 ## Ergänzende Softwareabnahme: Streaming-Profile und WireGuard
 
-Die aktuelle Suite enthält 39 Python-Tests. Neue Prüfungen bestätigen die
+Stand v0.2.2: 39 Python-Tests. Zusätzliche Prüfungen bestätigen die
 Trennung von Moonlight-Kopplungspfaden zwischen Linux-Benutzern, Hosts und
 Windows-Konten sowie den Einrichtungshinweis ohne persönliche Kopplung.
 
@@ -88,7 +88,7 @@ Tailscale-Netz und kein Test gegen fremde oder persönliche Endpunkte.
 
 ## Ergänzung: Hostverwaltung und echte RDP-Verbindung
 
-Die Suite umfasst jetzt 45 Python-Tests. Zusätzliche Fälle prüfen mehrere
+Stand v0.3.0: 45 Python-Tests. Zusätzliche Fälle prüfen mehrere
 Hostprofile, Speicherung und Löschung, die Sperre beim laufenden Client sowie
 das Verwerfen verspäteter Status-, Vorschau- und Fingerprintantworten eines
 vorherigen Hosts. Der reale QML-Test speichert ein Profil durch die tatsächlichen
@@ -137,3 +137,34 @@ Test die manuelle Freigabe. Diese Abnahme belegt Linux-Softwarevideo und die
 Protokollkopplung, keine Windows-Bildschirmaufnahme, GPU-Decodierung, Audio,
 Streaming-Tastatureingabe oder gemessene Pi-Leistung. Sunshine bleibt eine
 Freigabe der aktiven Konsole und schafft keine getrennte Windows-Anmeldung.
+
+## Ergänzung: Kanban, persönliche VPN-Auswahl und tatsächlicher Streaming-Ton
+
+Die Suite enthält 60 Python-Tests. Neue Fälle kombinieren Kanban-Filter und Suche,
+erhalten unbekannte/leere Spalten, weisen ungültige Spaltenkonfigurationen vor der
+Dateiersetzung zurück und verwerfen verspätete Antworten nach Quellenwechsel.
+Der echte QML-Test liest eine JSON-Datei, wählt Filter mit der Tastatur, lädt die
+Quelle erneut und speichert eine Spaltenreihenfolge durch die Einstellungsoberfläche.
+
+Der echte WireGuard-Rundlauf prüft zusätzlich die neue persönliche Profilliste:
+NetworkManager-D-Bus liefert den unveränderten Namen mit Sonderzeichen und den
+vollständig aktivierten Zustand.
+Gemeinsame Profile erscheinen nicht; ein anderes Linux-Konto sieht keine
+persönlichen Einträge. Die UID-Zuordnung wird auch bei gefälschten USER-/LOGNAME-
+Umgebungsvariablen geprüft. Ein weiterer echter QML-Test wählt das persönliche
+Profil mit der Tastatur und aktiviert den tatsächlichen Tunnel über Enter.
+Rampi verwendet für eigene Aktionsknöpfe den vorhandenen Qt-Button mit einer
+einheitlichen Enter-Ergänzung. Enter, Ziffernblock-Enter und Leertaste lösen im
+Oberflächentest jeweils genau eine Aktion aus.
+Die Aktivierungs- und Berechtigungsprüfungen bleiben erhalten.
+
+Der Sunshine-Test startet im isolierten Servercontainer einen privaten PulseAudio-
+Null-Sink und dessen vorhandenes Sinusmodul mit 997 Hz. Sunshine nimmt den Ton auf
+und überträgt ihn als Opus. Moonlight decodiert ihn über die unveränderte SDL-
+Audioausgabe; SDLs vorhandener Disk-Treiber schreibt empfangene PCM-Samples im
+Clientcontainer. Die Prüfung verlangt ausreichende Energie und Korrelation mit
+997 Hz; separate Negativfälle verwerfen Stille und 440 Hz. Beide Verbindungen
+müssen Videowechsel und Ton nachweisen. Das Testsignal folgt Sunshines virtuellem
+Standardausgang. Keine Lautsprecher, Audiogeräte oder Host-Pulse-Sockets werden
+freigegeben. Dies prüft Linux-Softwareaudio, keine Windows-WASAPI-Aufnahme,
+Streaming-Tastatureingaben oder physische Audiolatenz.

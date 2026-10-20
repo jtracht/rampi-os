@@ -1,5 +1,6 @@
 """Exercise actual QML keyboard navigation in a separate native GUI process."""
 
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -30,7 +31,8 @@ from rampi.config import Settings  # noqa: E402
 
 app = create_application()
 missing = [
-    character for character in "Rampi äöü"
+    character
+    for character in "Rampi äöü"
     if not QFontMetrics(app.font()).inFontUcs4(ord(character))
 ]
 if missing:
@@ -78,6 +80,77 @@ def item(name):
     return value
 
 
+def wait_until(condition):
+    for _ in range(200):
+        if condition():
+            return
+        loop = QEventLoop()
+        QTimer.singleShot(25, loop.quit)
+        loop.exec()
+    raise SystemExit("Actual QML/connector action did not finish")
+
+
+source = Path(personal_files.name) / "board.json"
+source.write_text(
+    json.dumps(
+        {
+            "cards": [
+                {"title": "VPN", "project": "Infra", "priority": "high", "status": "Review"},
+                {"title": "Layout", "project": "UI", "priority": "normal", "status": "Offen"},
+                {"title": "Keys", "project": "Infra", "priority": "normal", "status": "Offen"},
+            ]
+        }
+    ),
+    encoding="utf-8",
+)
+if not backend.save({"board_kind": "json", "board_source": str(source)}):
+    raise SystemExit("Could not configure the actual JSON connector")
+wait_until(lambda: backend.board["total"] == 3)
+window.setProperty("page", "kanban")
+app.processEvents()
+item("projectFilter").forceActiveFocus()
+QTest.keyClick(window, Qt.Key.Key_Down)
+wait_until(lambda: backend.board["count"] == 2)
+if item("projectFilter").property("currentText") != "Infra":
+    raise SystemExit("Filter choice was lost when the model refreshed")
+item("priorityFilter").forceActiveFocus()
+QTest.keyClick(window, Qt.Key.Key_Down)
+wait_until(lambda: backend.board["count"] == 1)
+if item("projectFilter").property("currentText") != "Infra":
+    raise SystemExit("Combined filters lost the selected project")
+backend.refreshBoard()
+backend.jobs.pool.waitForDone(25000)
+app.processEvents()
+if backend.board["count"] != 1:
+    raise SystemExit("Refreshing the real JSON source lost filters")
+item("statusFilter").forceActiveFocus()
+QTest.keyClick(window, Qt.Key.Key_Down)
+wait_until(lambda: backend.board["count"] == 0)
+QTest.keyClick(window, Qt.Key.Key_Home)
+wait_until(lambda: backend.board["count"] == 1)
+QMetaObject.invokeMethod(item("clearBoardFilters"), "clicked")
+wait_until(lambda: backend.board["count"] == 3)
+item("boardSearch").forceActiveFocus()
+for key in [Qt.Key.Key_K, Qt.Key.Key_E, Qt.Key.Key_Y, Qt.Key.Key_S]:
+    QTest.keyClick(window, key)
+wait_until(lambda: backend.board["count"] == 1)
+QMetaObject.invokeMethod(item("clearBoardFilters"), "clicked")
+wait_until(lambda: backend.board["count"] == 3)
+activations = []
+reset = item("clearBoardFilters")
+reset.clicked.connect(lambda: activations.append(True))
+for expected_count, key in enumerate(
+    [Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space], start=1
+):
+    reset.forceActiveFocus()
+    QTest.keyClick(window, key)
+    if len(activations) != expected_count:
+        raise SystemExit("A focused Rampi button did not activate exactly once per key")
+if source.read_text(encoding="utf-8").count('"title"') != 3:
+    raise SystemExit("Read-only filters changed their source")
+window.setProperty("page", "dashboard")
+
+
 dialog = item("settingsDialog")
 QMetaObject.invokeMethod(dialog, "open")
 app.processEvents()
@@ -97,6 +170,15 @@ QMetaObject.invokeMethod(dialog, "open")
 app.processEvents()
 if item("hostAddress").property("text") != "windows.test":
     raise SystemExit("The real QML host editor did not restore its profile")
+item("settingsTabs").setProperty("currentIndex", 3)
+item("boardColumns").setProperty("text", "Review\nOffen")
+QMetaObject.invokeMethod(item("saveGeneral"), "clicked")
+app.processEvents()
+if Settings.load().board_columns != ["Review", "Offen"]:
+    raise SystemExit("The actual QML column configuration did not persist")
+if backend.board["columns"][0]["name"] != "Review":
+    raise SystemExit("The real board did not apply the configured column order")
+QMetaObject.invokeMethod(dialog, "open")
 item("settingsTabs").setProperty("currentIndex", 4)
 app.processEvents()
 QTest.qWait(100)
@@ -114,4 +196,4 @@ backend.jobs.pool.waitForDone(25000)
 engine.deleteLater()
 app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 personal_files.cleanup()
-print("PASS: actual QML keyboard navigation, host profile save/restore and session dialog.")
+print("PASS: QML keyboard filters, JSON refresh, column persistence, host and session settings.")
