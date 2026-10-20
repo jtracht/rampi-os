@@ -9,6 +9,7 @@ button.tile { background: transparent; padding: 0; border: none; outline: none; 
 .dark-ink { color: #101820; }
 .brand { font-size: 58px; font-weight: 800; letter-spacing: -2px; }
 .heading { font-size: 24px; font-weight: 700; }
+.preview-title { font-weight: 700; }
 .panel { background: #101e28; border-radius: 18px; padding: 22px; }
 .status { color: #9eb6c8; font-size: 13px; }
 entry, passwordentry { background: #152532; color: #edf3fa; padding: 12px; border-radius: 10px; }

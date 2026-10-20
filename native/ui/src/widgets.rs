@@ -45,6 +45,10 @@ impl Feedback {
 }
 pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {
     let b = gtk::Button::with_label(text);
+    wire_button(&b, feedback);
+    b
+}
+pub fn wire_button(b: &gtk::Button, feedback: &Feedback) {
     let f = feedback.clone();
     b.connect_clicked(move |_| f.play(true));
     let m = gtk::EventControllerMotion::new();
@@ -55,7 +59,6 @@ pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {
     let f = feedback.clone();
     c.connect_enter(move |_| f.play(false));
     b.add_controller(c);
-    b
 }
 pub fn icon_button(text: &str, icon: &str, f: &Feedback) -> gtk::Button {
     let b = button("", f);

@@ -19,14 +19,23 @@ for _ in $(seq 1 100); do
     sleep 0.1
 done
 if [[ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]]; then cat "$test_home/compositor.log"; exit 1; fi
-/build/target/debug/rampi-native --self-test &
+/build/target/debug/rampi-native --self-test > "$test_home/application.log" 2>&1 &
 application_pid=$!
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then
     sleep 0.5
     grim "$RAMPI_TEST_ARTIFACTS/rust-wayland-dashboard.png"
     chmod 644 "$RAMPI_TEST_ARTIFACTS/rust-wayland-dashboard.png"
 fi
-wait "$application_pid"
+wait "$application_pid" || { cat "$test_home/application.log"; exit 1; }
+cat "$test_home/application.log"
+if grep -q 'Gtk-WARNING' "$test_home/application.log"; then echo 'GTK layout warning in the actual interface.' >&2; exit 1; fi
+/build/target/debug/rampi-native --keyboard-test &
+keyboard_pid=$!
+sleep 0.4
+wtype -s 150 -k Right -s 100 -k Left -s 100 -k Return
+sleep 1.2
+wtype -s 150 -k Escape
+wait "$keyboard_pid"
 /build/target/debug/rampi-native --embedded-test
 pulseaudio --start --exit-idle-time=-1 --log-target="file:$test_home/audio.log"
 export PULSE_SINK=rampi_feedback

@@ -29,7 +29,8 @@ pub fn settings(
         .vexpand(true)
         .transition_type(gtk::StackTransitionType::Crossfade)
         .build();
-    page.append(&gtk::StackSwitcher::builder().stack(&tabs).build());
+    let switcher = gtk::StackSwitcher::builder().stack(&tabs).build();
+    page.append(&switcher);
     page.append(&tabs);
     tabs.add_titled(&scroll(&host(conf, status, f)), Some("host"), "Host & SSH");
     let system = column();
@@ -103,6 +104,13 @@ pub fn settings(
     });
     data.append(&save);
     tabs.add_titled(&data, Some("board"), "Kanban & Browser");
+    let mut child = switcher.first_child();
+    while let Some(widget) = child {
+        if let Ok(button) = widget.clone().downcast::<gtk::Button>() {
+            wire_button(&button, f);
+        }
+        child = widget.next_sibling();
+    }
     (page, tabs)
 }
 fn host(conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {

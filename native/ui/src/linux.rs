@@ -46,6 +46,8 @@ fn build(app: &gtk::Application) {
         .default_width(1600)
         .default_height(900)
         .build();
+    let focus_feedback = feedback.clone();
+    window.connect_focus_widget_notify(move |_| focus_feedback.play(false));
     let root = column();
     root.set_margin_top(24);
     root.set_margin_bottom(20);
@@ -54,6 +56,8 @@ fn build(app: &gtk::Application) {
     let stack = gtk::Stack::builder()
         .hexpand(true)
         .vexpand(true)
+        .vhomogeneous(false)
+        .hhomogeneous(false)
         .transition_type(gtk::StackTransitionType::Crossfade)
         .transition_duration(if settings.borrow().reduce_motion {
             0
@@ -202,18 +206,24 @@ fn build(app: &gtk::Application) {
             .map(|h| format!("{} · {}@{}", h.name, h.username, h.address))
             .unwrap_or_else(|| "Windows-Host noch nicht eingerichtet".into());
         let text = if i == 3 {
-            format!(
-                "{title}\n\n{}\nLokaler Browser · persönliches Profil",
-                settings.borrow().browser_url
-            )
+            format!("{} · Lokaler Browser", settings.borrow().browser_url)
         } else {
-            format!("{title}\n\n{host}")
+            host
         };
-        let panel = label(&text);
+        let panel = column();
         panel.add_css_class("panel");
         panel.set_hexpand(true);
         panel.set_vexpand(true);
-        panel.set_max_width_chars(25);
+        let heading = label(title);
+        heading.set_single_line_mode(true);
+        heading.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        heading.add_css_class("preview-title");
+        panel.append(&heading);
+        let detail = label(&text);
+        detail.set_max_width_chars(25);
+        detail.set_lines(2);
+        detail.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        panel.append(&detail);
         assistant_previews.attach(&panel, (i % 2) as i32, (i / 2) as i32, 1, 1);
     }
     previews.append(&assistant_previews);
@@ -287,7 +297,15 @@ fn build(app: &gtk::Application) {
         if s.visible_child_name().is_some_and(|n| n == "dashboard")
             && [gdk::Key::Left, gdk::Key::Right].contains(&key)
         {
-            let current = buttons.iter().position(|b| b.has_focus()).unwrap_or(0);
+            let current = weak
+                .upgrade()
+                .and_then(|w| gtk::prelude::RootExt::focus(&w))
+                .and_then(|focused| {
+                    buttons.iter().position(|b| {
+                        &focused == b.upcast_ref::<gtk::Widget>() || focused.is_ancestor(b)
+                    })
+                })
+                .unwrap_or(0);
             let next = if key == gdk::Key::Right {
                 (current + 1) % 6
             } else {
@@ -313,6 +331,9 @@ fn build(app: &gtk::Application) {
     }
     window.present();
     tile_buttons[0].grab_focus();
+    if std::env::args().any(|a| a == "--keyboard-test") {
+        crate::checks::keyboard(app, &stack);
+    }
     if std::env::args().any(|a| a == "--sound-test") {
         let (app, f) = (app.clone(), feedback.clone());
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {

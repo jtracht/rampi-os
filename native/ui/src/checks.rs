@@ -5,6 +5,28 @@ use std::rc::Rc;
 use vte::prelude::*;
 use webkit6::prelude::*;
 
+pub fn keyboard(app: &gtk::Application, stack: &gtk::Stack) {
+    let s = stack.clone();
+    glib::timeout_add_local_once(std::time::Duration::from_millis(1600), move || {
+        if s.visible_child_name().as_deref() != Some("kanban") {
+            eprintln!(
+                "Wayland arrow/Enter input did not open Kanban: {:?}",
+                s.visible_child_name()
+            );
+            std::process::exit(1);
+        }
+    });
+    let (a, s) = (app.clone(), stack.clone());
+    glib::timeout_add_local_once(std::time::Duration::from_millis(3200), move || {
+        if s.visible_child_name().as_deref() != Some("dashboard") {
+            eprintln!("Wayland Escape did not return to dashboard");
+            std::process::exit(1);
+        }
+        println!("RAMPI_RUST_WAYLAND_KEYBOARD_OK");
+        a.quit();
+    });
+}
+
 pub fn embedded(app: &gtk::Application, stack: &gtk::Stack) {
     if std::env::var("RAMPI_TEST_CONTAINER").as_deref() != Ok("1") {
         eprintln!("Embedded checks require their isolated test container");
