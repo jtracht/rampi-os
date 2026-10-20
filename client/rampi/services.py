@@ -60,25 +60,6 @@ def network_status() -> str:
     }.get(state, "Unbekannt")
 
 
-def wifi_list() -> list[dict[str, str]]:
-    # Escaped SSIDs must not be parsed with split(':').
-    output = command(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY", "device", "wifi", "list"])
-    result = []
-    for line in output.splitlines():
-        fields = re.split(r"(?<!\\):", line)
-        if len(fields) == 3 and fields[0]:
-            result.append(
-                dict(
-                    zip(
-                        ("ssid", "signal", "security"),
-                        [f.replace(r"\:", ":").replace(r"\\", "\\") for f in fields],
-                        strict=True,
-                    )
-                )
-            )
-    return result
-
-
 def bluetooth_status() -> str:
     return command(["bluetoothctl", "show"])
 

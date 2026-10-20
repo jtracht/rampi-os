@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: docker build -t rampi-trixie-test -f tests/container/Dockerfile .
       - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test
+      - name: WLAN QML and D-Bus contract (isolated NM fixture; no radio)
+        run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 -e RAMPI_TEST_CONTAINER=1 rampi-trixie-test timeout 60 python3 scripts/test-wifi-ui.py
       - run: docker run --rm --user root -e RAMPI_TEST_CONTAINER=1 rampi-trixie-test python3 scripts/test-accounts.py
       - run: docker run --rm rampi-trixie-test dbus-run-session -- timeout 30 python3 scripts/test-secrets.py
       - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test timeout 60 xvfb-run -a -s '-screen 0 1600x900x24 -nolisten tcp' bash scripts/test-x11.sh

@@ -8,8 +8,8 @@ Login, Terminals, Remote Desktop und Browser. Eigenentwickelter Code: Apache-2.0
 Konfiguration, Kanban-Adapter und Windows-ConPTY-Persistenz sind implementiert.
 Die [Softwareabnahme](docs/validation/software-acceptance-2026-10-20.md) dokumentiert
 die bisherigen Systemintegrationen und einen erfolgreichen virtuellen Image-Boot.
-Die aktuelle Testsuite enthält 60 Python-Tests.
-Der gesamte Entwicklungsstand liegt bei **ca. 72 %** des vereinbarten Auftrags;
+Die aktuelle Testsuite enthält 74 Python-Tests.
+Der gesamte Entwicklungsstand liegt bei **ca. 73 %** des vereinbarten Auftrags;
 [Bewertungsmaßstab und offene Punkte](docs/PROGRESS.md) unterscheiden das vom
 erfolgreich veröffentlichten Entwicklungsstand.
 Die Abnahme erfolgt auf ausdrücklichen Nutzerwunsch ausschließlich softwareseitig:

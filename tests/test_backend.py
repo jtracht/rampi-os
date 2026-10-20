@@ -112,3 +112,35 @@ def test_competing_wireguard_action_is_not_started(tmp_path, monkeypatch):
     assert backend.vpnProfiles["busy"] and "bereits" in messages[-1]
     backend.jobs.pending.clear()
     assert app is not None
+
+
+def test_competing_wifi_work_is_not_started_or_exposed(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    app = QCoreApplication.instance() or QCoreApplication([])
+    backend = Backend(Settings())
+    backend.timer.stop()
+    backend.jobs.pending.add("wifi-connect-personal")
+    submitted = []
+    monkeypatch.setattr(backend.jobs, "submit", lambda *args: submitted.append(args))
+    backend.connectWifi("another", "temporary-credential")
+    backend.enableWifi(False)
+    backend.disconnectWifi("another")
+    backend.refreshWifi(True)
+    assert not submitted and backend.wifi["busy"]
+    assert "temporary-credential" not in repr(backend.wifi)
+    backend.jobs.pending.clear()
+    assert app is not None
+
+
+def test_old_wifi_snapshot_cannot_replace_new_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    app = QCoreApplication.instance() or QCoreApplication([])
+    backend = Backend(Settings())
+    backend.timer.stop()
+    backend._wifi_generation = 2
+    current = {"networks": [], "enabled": True, "error": ""}
+    backend._result("wifi-snapshot-2", current)
+    backend._result("wifi-snapshot-1", {"enabled": False})
+    backend._failed("wifi-snapshot-1", "Outdated service failure")
+    assert backend.wifi["enabled"] and backend.wifi["error"] == ""
+    assert app is not None

@@ -113,6 +113,23 @@ def integration(image: str) -> None:
             else:
                 raise RuntimeError("Container NetworkManager did not become ready")
         addresses = []
+        wifi_path = execute(
+            peers[0], "python3", "scripts/test-wifi-profile.py", user="rampi"
+        ).stdout.strip()
+        if not re.fullmatch(r"/org/freedesktop/NetworkManager/Settings/[0-9]+", wifi_path):
+            raise RuntimeError("WLAN profile test did not return a NetworkManager object path")
+        execute(
+            peers[0],
+            "python3",
+            "scripts/test-wifi-profile.py",
+            "--deny-secrets",
+            wifi_path,
+            user="rampi-other",
+        )
+        print(
+            "PASS: real NetworkManager stores the private WLAN credential; "
+            "GetSettings omits secrets and another Linux account cannot retrieve them."
+        )
         private_keys = []
         public_keys = []
         for peer in peers:
