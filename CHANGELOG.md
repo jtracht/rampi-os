@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/jtracht/rampi-os/compare/v0.2.0...v0.2.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* constrain preview headings to their panel width ([1a8c2f5](https://github.com/jtracht/rampi-os/commit/1a8c2f53019f4c13d2dcd780f6b0f7ebf8f21d53))
+* readable dashboard typography and protected installed code ([241e5ce](https://github.com/jtracht/rampi-os/commit/241e5cef442c2b431394358db2e8f38e8d3ebed8))
+
 ## [0.2.0](https://github.com/jtracht/rampi-os/compare/v0.1.0...v0.2.0) (2026-10-20)
 
 
