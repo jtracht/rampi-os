@@ -194,8 +194,9 @@ ApplicationWindow {
           ColumnLayout {
             anchors.fill: parent; anchors.margins: 14; spacing: 8
             RowLayout {
+              Layout.fillWidth: true
               Image { source: "../icons/" + ({codex: "terminal-preview", claude: "asterisk-preview", antigravity: "sparkles-preview", browser: "globe"})[modelData.key] + ".svg"; Layout.preferredWidth: 28; Layout.preferredHeight: 28; sourceSize: Qt.size(28, 28) }
-              Text { text: modelData.title + (modelData.key === "browser" ? "" : " / " + modelData.subtitle); color: "#edf3fa"; font.pixelSize: 15; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
+              Text { text: modelData.title + (modelData.key === "browser" ? "" : " / " + modelData.subtitle); color: "#edf3fa"; font.pixelSize: 15; font.bold: true; Layout.fillWidth: true; Layout.minimumWidth: 0; elide: Text.ElideRight }
               Rectangle { width: 8; height: 8; radius: 3; color: "#627487" }
             }
             Rectangle {
