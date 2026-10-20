@@ -154,7 +154,7 @@ Freigabe der aktiven Konsole und schafft keine getrennte Windows-Anmeldung.
 
 ## Ergänzung: Kanban, persönliche VPN-Auswahl und tatsächlicher Streaming-Ton
 
-Die Suite enthält 60 Python-Tests. Neue Fälle kombinieren Kanban-Filter und Suche,
+Mit v0.4.0 enthielt die Suite 60 Python-Tests. Neue Fälle kombinierten Kanban-Filter und Suche,
 erhalten unbekannte/leere Spalten, weisen ungültige Spaltenkonfigurationen vor der
 Dateiersetzung zurück und verwerfen verspätete Antworten nach Quellenwechsel.
 Der echte QML-Test liest eine JSON-Datei, wählt Filter mit der Tastatur, lädt die
