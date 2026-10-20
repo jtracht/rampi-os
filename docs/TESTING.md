@@ -56,3 +56,32 @@ Der Imageworkflow verwendet bei den Stagingquellen normale Benutzerbesitzrechte
 und prüft danach root-eigene, für andere Benutzer schreibgeschützte Programmdateien.
 Der QML-Test kontrolliert zusätzlich echte Latin-/Umlautglyphen und eine
 gleichbreite Terminalschrift, damit ein Start mit fehlenden Fonts nicht genügt.
+
+## Ergänzende Softwareabnahme: Streaming-Profile und WireGuard
+
+Die aktuelle Suite enthält 39 Python-Tests. Neue Prüfungen bestätigen die
+Trennung von Moonlight-Kopplungspfaden zwischen Linux-Benutzern, Hosts und
+Windows-Konten sowie den Einrichtungshinweis ohne persönliche Kopplung.
+
+`scripts/test-wireguard.py` hat lokal unter Docker mit Debian Trixie amd64
+einen echten Rundlauf durchgeführt: zwei getrennte Netzwerk-Namensräume,
+NetworkManager und polkit, Rampi-Import und Aktivierung als normaler Benutzer,
+private Profilrechte und deaktivierter Autostart, bidirektionaler verschlüsselter
+Datenverkehr, WireGuard-Handshake und Transferzähler, Ablehnung eines falschen
+Peer-Schlüssels sowie Trennung über den Rampi-Adapter. Die Testumgebung wird
+anschließend entfernt. Die ARM64-CI führt denselben Test aus.
+
+Reproduzieren:
+
+```sh
+docker build -t rampi-trixie-test -f tests/container/Dockerfile .
+python scripts/test-wireguard.py
+```
+
+Die Container verwenden ein eigenes internes Docker-Netz und erhalten nur
+NET_ADMIN/NET_RAW für ihre eigenen Netzwerk-Namensräume. Weder Hostnetzwerk noch
+privilegierte Container sind nötig. Kurzlebige Schlüssel erzeugt das vorhandene
+`wg`; sie werden weder ausgegeben noch in Git gespeichert. Die zusätzliche
+polkit-Freigabe existiert nur in den wegwerfbaren Testcontainern.
+Dies ist ein tatsächlicher privater VPN-Test, keine Anmeldung in einem persönlichen
+Tailscale-Netz und kein Test gegen fremde oder persönliche Endpunkte.

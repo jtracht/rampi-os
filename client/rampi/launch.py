@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import json
+import os
 import shutil
 from pathlib import Path
 
-from .config import Host, Settings, config_home, safe_url
+from .config import Host, Settings, config_home, private_dir, safe_url
 
 MODULES = ("codex", "claude", "antigravity")
 
@@ -123,6 +126,23 @@ def rdp_args(host: Host) -> list[str]:
     ]
 
 
+def stream_profile(host: Host) -> Path:
+    """Never reuse paired-client credentials across Windows account/host profiles."""
+    host.validate()
+    identity = json.dumps([host.address.casefold(), host.port, host.username.casefold()])
+    name = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    root = private_dir(private_dir(config_home()) / "streaming")
+    path = private_dir(root / name)
+    # Moonlight Embedded 2.7.1 copies this option into a 4096-byte C buffer.
+    if len(os.fsencode(path)) >= 4096:
+        raise ValueError("Der Pfad zum Streaming-Profil ist zu lang.")
+    return path
+
+
+def pair_args(host: Host) -> list[str]:
+    return [executable("moonlight"), "pair", "-keydir", str(stream_profile(host)), host.address]
+
+
 def stream_args(host: Host) -> list[str]:
     host.validate()
     width, height = host.resolution.split("x")
@@ -130,6 +150,8 @@ def stream_args(host: Host) -> list[str]:
     return [
         executable("moonlight"),
         "stream",
+        "-keydir",
+        str(stream_profile(host)),
         "-platform",
         "sdl",
         "-width",

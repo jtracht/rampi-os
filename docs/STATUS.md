@@ -12,13 +12,13 @@ Stand: 20. Oktober 2026. Physische Hardwaretests sind auf Nutzerwunsch durch
 | Netzwerk/VPN | NetworkManager-D-Bus, async Scan, bestehende BlueZ-Dialoge; echter libnm-Import mit persönlichen Rechten; Tailscale/WireGuard über vorhandene Dienste |
 | KI-Terminals | Offizielle native codex/claude/agy, VTE/OpenSSH und bestehendes psmux/ConPTY; Windows-Prozess nach abruptem SSH-Abbruch wieder erreichbar, zwei Konten getrennt |
 | Kanban | Lesende JSON-, GitHub-, Trello-, Jira-, Asana-/Notion-Adapter, Details, Suche und privater Offline-Cache; Vertragstests, keine persönlichen Cloudkonten |
-| Remote Desktop | FreeRDP mit interaktiver Anmeldung und TOFU; Sunshine/Moonlight Embedded 2.7.1 mit Pairing und SDL/FFmpeg im vorhandenen X11 |
+| Remote Desktop | FreeRDP mit interaktiver Anmeldung und TOFU; Sunshine/Moonlight Embedded 2.7.1 mit persönlichen Kopplungsschlüsseln je Host/Windows-Konto und SDL/FFmpeg im vorhandenen X11; Sunshine teilt die aktive Konsole, keine Windows-Kontenisolierung durch Pairing |
 | Browser | Vorhandenes Chromium/Firefox, eigenes Benutzerprofil, Start bei Bedarf |
 | Installation | Linux-/Windows-Bestandsaufnahme, sichere Adapter-ACL, Datenbewahrung, manuelle Updates; echte Windows-Installer-Prüfung in CI |
 | Image | Festgelegter offizieller pi-gen-Commit, Lite Trixie arm64, Plymouth, LightDM, Paketmanifest/Lizenzarchiv; erzeugt, virtuelle Abnahme siehe Actions |
 | CI/Release | ARM64-Docker mit 1-GB-Limit, Linux/Windows, Sicherheits-/Skript-/Archivprüfungen; Veröffentlichung erfordert Softwarebelege und frisch bestandenen Imageworkflow |
 
-36 Python-Tests prüfen Konfiguration, Argumente, Cachetrennung, Anbieter-Verträge,
+39 Python-Tests prüfen Konfiguration, Argumente, Cachetrennung, Anbieter-Verträge,
 Hostschlüsselrotation und Zugangsdatenübergabe ohne Token in Prozessargumenten.
 Zusätzliche Integrationstests verwenden echte Systemkomponenten. Komplexe
 Netzwerkeinstellungen und Bluetooth-Pairing verwenden gepflegte Systemdialoge.
@@ -28,3 +28,4 @@ nicht live geprüft. Physische Funk-/HDMI-/GPU-/Latenzwerte werden nicht behaupt
 Images sind durch Quellenrevision und Paketmanifest nachvollziehbar, wegen
 beweglicher Paketspiegel bislang nicht bitweise reproduzierbar.
 [Testnachweise](TESTING.md); aktuelle Freigabe in packaging/readiness.json.
+[Streaming und Windows-Kontengrenzen](STREAMING.md).

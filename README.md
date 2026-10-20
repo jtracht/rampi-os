@@ -7,7 +7,8 @@ Login, Terminals, Remote Desktop und Browser. Eigenentwickelter Code: Apache-2.0
 **Status: softwaregeprüfter Entwicklungsstand.** Native Oberfläche, persönliche
 Konfiguration, Kanban-Adapter und Windows-ConPTY-Persistenz sind implementiert.
 Die [Softwareabnahme](docs/validation/software-acceptance-2026-10-20.md) dokumentiert
-36 Tests, echte Systemintegrationen und einen erfolgreichen virtuellen Image-Boot.
+die bisherigen Systemintegrationen und einen erfolgreichen virtuellen Image-Boot.
+Die aktuelle Testsuite enthält 39 Python-Tests.
 Die Abnahme erfolgt auf ausdrücklichen Nutzerwunsch ausschließlich softwareseitig:
 ARM64-Docker, native Windows-CI und Image-/QEMU-Prüfungen. Physische Hardwaretests
 sind aus dem Umfang ausgeschlossen. [Funktionsstand](docs/STATUS.md) und

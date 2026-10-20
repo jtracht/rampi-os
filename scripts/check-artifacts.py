@@ -54,7 +54,9 @@ with tarfile.open(directory / source) as archive:
         if "rampi-os/" + name not in entries:
             raise SystemExit(f"Source archive incomplete: {name}")
 with zipfile.ZipFile(directory / host) as archive:
-    for name in ["setup.ps1", "installer/windows/setup.ps1", "host/windows/rampi-session.ps1"]:
+    for name in [
+        "setup.ps1", "installer/windows/setup.ps1", "host/windows/rampi-session.ps1", "STREAMING.md"
+    ]:
         if name not in archive.namelist():
             raise SystemExit(f"Windows package incomplete: {name}")
 print(f"PASS: complete release archives and {len(checksums)} SHA256 checksums verified.")

@@ -47,3 +47,8 @@ Kanban-Cache: `$XDG_CACHE_HOME/rampi/board-<SHA256>.json`, sonst `~/.cache/rampi
 Der Hash trennt Anbieter, Quelle und Credential-Profil. Inhalte können vertraulich
 sein und gehören nur dem jeweiligen Linux-Benutzer. Cache kann manuell gelöscht
 werden. Browserprofil: `~/.config/rampi/browser/`.
+
+Moonlight-Kopplungsschlüssel: `~/.config/rampi/streaming/<SHA256>/`, getrennt nach
+Hostadresse, SSH-Port und Windows-Konto. Kopplung und Streaming verwenden denselben
+persönlichen Schlüsselpfad; bestehende globale Moonlight-Schlüssel werden nicht
+übernommen. [Einrichtung und Kontengrenzen](STREAMING.md).

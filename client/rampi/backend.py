@@ -16,7 +16,16 @@ from . import __version__, services, sshkeys
 from .accounts import create_user
 from .config import Host, Settings
 from .kanban import Board, load_board, store_token
-from .launch import browser_args, preview_args, rdp_args, ssh_args, stream_args, terminal_args
+from .launch import (
+    browser_args,
+    pair_args,
+    preview_args,
+    rdp_args,
+    ssh_args,
+    stream_args,
+    stream_profile,
+    terminal_args,
+)
 from .process import Jobs, command
 
 
@@ -233,6 +242,12 @@ class Backend(QObject):
             elif module == "rdp":
                 args = terminal_args(rdp_args(self.settings.host), "rdp")
             elif module == "stream":
+                profile = stream_profile(self.settings.host)
+                if not all((profile / name).is_file() for name in ("client.pem", "key.pem")):
+                    raise RuntimeError(
+                        "Diesen Host mit diesem Windows-Konto zuerst über "
+                        "„Streaming-Host koppeln“ koppeln."
+                    )
                 args = stream_args(self.settings.host)
             elif module == "console":
                 args = terminal_args([os.environ.get("SHELL", "/bin/bash")], "console")
@@ -279,7 +294,7 @@ class Backend(QObject):
                 "users": ["gnome-system-tools"],
                 "keyboard": ["lxinput"],
                 "stream-pair": terminal_args(
-                    ["moonlight", "pair", self.settings.host.address], "stream-pair"
+                    pair_args(self.settings.host), "stream-pair"
                 )
                 if action == "stream-pair"
                 else [],
