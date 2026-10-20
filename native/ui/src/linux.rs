@@ -3,7 +3,7 @@ use gtk::{gdk, gio, glib, prelude::*};
 use rampi_core::config::{self, Settings};
 use std::{cell::RefCell, rc::Rc};
 
-pub fn run() {
+pub fn run() -> glib::ExitCode {
     let app = gtk::Application::builder()
         .application_id("org.rampi.Workstation")
         .build();
@@ -15,7 +15,7 @@ pub fn run() {
             build(app);
         }
     });
-    app.run_with_args::<&str>(&[]);
+    app.run_with_args::<&str>(&[])
 }
 fn build(app: &gtk::Application) {
     let css = gtk::CssProvider::new();

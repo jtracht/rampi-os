@@ -31,7 +31,7 @@ fn main() {
         return;
     }
     #[cfg(target_os = "linux")]
-    linux::run();
+    std::process::exit(linux::run().value());
     #[cfg(not(target_os = "linux"))]
     {
         eprintln!(
