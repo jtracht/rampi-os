@@ -17,7 +17,10 @@ from rampi.backend import Backend  # noqa: E402
 from rampi.config import Settings  # noqa: E402
 
 app = create_application()
-missing = [character for character in "Rampi äöü" if not QFontMetrics(app.font()).inFont(character)]
+missing = [
+    character for character in "Rampi äöü"
+    if not QFontMetrics(app.font()).inFontUcs4(ord(character))
+]
 if missing:
     raise SystemExit(
         f"The real platform font {QFontInfo(app.font()).family()!r} cannot render {missing!r}; "
