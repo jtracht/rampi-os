@@ -100,7 +100,7 @@ if item("hostAddress").property("text") != "windows.test":
 item("settingsTabs").setProperty("currentIndex", 4)
 app.processEvents()
 QTest.qWait(100)
-output = Path("artifacts/session-settings.png")
+output = Path(os.environ.get("RAMPI_TEST_ARTIFACTS", personal_files.name)) / "session-settings.png"
 output.parent.mkdir(parents=True, exist_ok=True)
 if not window.grabWindow().save(str(output.resolve())):
     raise SystemExit("Could not capture the actual session settings")
