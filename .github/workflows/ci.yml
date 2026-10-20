@@ -20,6 +20,8 @@ jobs:
       - run: docker run --rm --user root -e RAMPI_TEST_CONTAINER=1 rampi-trixie-test python3 scripts/test-accounts.py
       - run: docker run --rm rampi-trixie-test dbus-run-session -- timeout 30 python3 scripts/test-secrets.py
       - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test timeout 60 xvfb-run -a -s '-screen 0 1600x900x24 -nolisten tcp' bash scripts/test-x11.sh
+      - name: Real WireGuard peers with NetworkManager and Linux account isolation
+        run: timeout 240 python3 scripts/test-wireguard.py
   client:
     strategy:
       matrix:

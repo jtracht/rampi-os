@@ -73,6 +73,7 @@ with zipfile.ZipFile(
     for name in ["setup.ps1", "LICENSE", "NOTICE"]:
         archive.write(ROOT / name, name)
     archive.write(ROOT / "docs/INSTALL-WINDOWS11.md", "README.md")
+    archive.write(ROOT / "docs/STREAMING.md", "STREAMING.md")
 for name in ["setup.sh", "setup.ps1", "LICENSE", "NOTICE"]:
     if name.startswith("setup."):
         bootstrap = (ROOT / name).read_text(encoding="utf-8")

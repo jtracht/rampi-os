@@ -34,3 +34,7 @@ Anbieter-CLIs aus offiziellen Quellen installieren und im persönlichen Konto
 anmelden. Sunshine und VPN werden erkannt, nicht automatisch ersetzt oder geöffnet.
 `-WhatIf` zeigt Änderungen. Uninstall entfernt keine Windows-Dienste und beendet
 keine bestehenden psmux-Sitzungen. Hostneustarts beenden laufende Prozesse.
+
+Sunshine teilt die aktive Windows-Konsole, während RDP eine Windows-Anmeldung
+prüft. Geräte-Pairing ersetzt keine Benutzeranmeldung. Für gemeinsam genutzte
+Hosts RDP verwenden; [Streaming und getrennte Kopplungsschlüssel](STREAMING.md).

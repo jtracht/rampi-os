@@ -31,3 +31,20 @@ def test_save_retains_other_hosts(tmp_path, monkeypatch):
     assert Settings.load().hosts[0].address == "changed"
     backend.jobs.pool.waitForDone()
     assert app is not None
+
+
+def test_streaming_requires_pairing_for_the_selected_account(tmp_path, monkeypatch):
+    from rampi.config import Host
+
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    app = QCoreApplication.instance() or QCoreApplication([])
+    backend = Backend(Settings(hosts=[Host(address="workstation", username="alice")]))
+    backend.timer.stop()
+    messages = []
+    backend.message.connect(messages.append)
+    launched = []
+    monkeypatch.setattr(backend, "_launch", lambda *args: launched.append(args))
+    backend.launch("stream")
+    assert not launched
+    assert "Streaming-Host koppeln" in messages[-1]
+    assert app is not None
