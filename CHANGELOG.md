@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/jtracht/rampi-os/compare/v0.3.0...v0.4.0) (2026-10-20)
+
+
+### Features
+
+* add Kanban filters, personal VPN selection and streaming audio validation ([#12](https://github.com/jtracht/rampi-os/issues/12)) ([8926ed5](https://github.com/jtracht/rampi-os/commit/8926ed51eb0a7bb9907e288d9adddde4e42bf631))
+
 ## [0.3.0](https://github.com/jtracht/rampi-os/compare/v0.2.2...v0.3.0) (2026-10-20)
 
 
