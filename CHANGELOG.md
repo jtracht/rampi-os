@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/jtracht/rampi-os/compare/v0.2.1...v0.2.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* isolate streaming credentials and validate real WireGuard connections ([b937932](https://github.com/jtracht/rampi-os/commit/b937932a655e9dda2fc1125cd5aef8fa655577bf))
+
 ## [0.2.1](https://github.com/jtracht/rampi-os/compare/v0.2.0...v0.2.1) (2026-10-20)
 
 
