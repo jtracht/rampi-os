@@ -69,7 +69,7 @@ pub fn icon_button(text: &str, icon: &str, f: &Feedback) -> gtk::Button {
     b
 }
 fn icon_image(name: &str, size: i32) -> gtk::Image {
-    match gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(
+    let image = match gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(
         assets().join("icons").join(format!("{name}.svg")),
         size,
         size,
@@ -77,7 +77,9 @@ fn icon_image(name: &str, size: i32) -> gtk::Image {
     ) {
         Ok(pixbuf) => gtk::Image::from_paintable(Some(&gtk::gdk::Texture::for_pixbuf(&pixbuf))),
         Err(_) => gtk::Image::from_icon_name("image-missing-symbolic"),
-    }
+    };
+    image.set_pixel_size(size);
+    image
 }
 pub fn label(text: &str) -> gtk::Label {
     let l = gtk::Label::new(Some(text));

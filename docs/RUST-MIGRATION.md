@@ -43,7 +43,7 @@ dem Raspberry Pi kompiliert; Installer erwarten ein vorgebautes ARM64-Binary.
 
 ## Nachgewiesen und noch offen
 
-Lokal nachgewiesen: Rust-Core-Tests; vollständiger Linux-Build; Clippy ohne
+Auf amd64 und arm64 in [CI nachgewiesen](validation/rust-wayland-2026-10-21.md): Rust-Core-Tests; vollständiger Linux-Build; Clippy ohne
 Warnungen; echte labwc-Sitzung mit `GdkWaylandDisplay`, einem App-Fenster und
 getrennten Einstellungsseiten; tatsächliche VTE-PTY-Ein-/Ausgabe; tatsächliche
 WebKit-DOM-/JavaScript-Ausführung; Rust-/GIO-Aufrufe gegen eine private

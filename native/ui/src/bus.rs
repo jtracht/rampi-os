@@ -27,7 +27,7 @@ pub async fn call(
         parameters,
         None,
         gio::DBusCallFlags::ALLOW_INTERACTIVE_AUTHORIZATION,
-        15_000,
+        if method == "Pair" { 90_000 } else { 15_000 },
     )
     .await
     .map_err(|_| {

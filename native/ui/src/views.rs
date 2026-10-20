@@ -470,10 +470,13 @@ pub fn terminal(
     let s = stack.downgrade();
     term.connect_child_exited(move |_, code| {
         if let Some(s) = s.upgrade() {
+            let was_visible = s.visible_child_name().is_some_and(|key| key == name);
             if let Some(child) = s.child_by_name(&name) {
                 s.remove(&child);
             }
-            s.set_visible_child_name("dashboard");
+            if was_visible {
+                s.set_visible_child_name("dashboard");
+            }
         }
         println!("RAMPI_TERMINAL_EXIT={code}");
     });
@@ -523,19 +526,90 @@ pub fn board(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
     });
     page
 }
+pub fn board_preview(conf: &Shared) -> gtk::Box {
+    let panel = column();
+    panel.add_css_class("panel");
+    let title = label("Kanban Board");
+    title.add_css_class("heading");
+    panel.append(&title);
+    panel.append(&label("Projektübersicht · Nur lesen"));
+    let columns = row();
+    columns.set_homogeneous(true);
+    columns.set_vexpand(true);
+    panel.append(&columns);
+    let (c, cols) = (conf.clone(), columns.clone());
+    panel.connect_map(move |_| {
+        while let Some(child) = cols.first_child() {
+            cols.remove(&child);
+        }
+        let conf = c.borrow();
+        let board = if conf.board_source.is_empty() {
+            Board::default()
+        } else {
+            match Board::load(&PathBuf::from(&conf.board_source)) {
+                Ok(b) => b,
+                Err(_) => {
+                    cols.append(&label(
+                        "Datenquelle nicht verfügbar. In den Einstellungen prüfen.",
+                    ));
+                    return;
+                }
+            }
+        };
+        for (index, status) in board.columns(&conf.board_columns).iter().enumerate() {
+            let lane = column();
+            lane.set_hexpand(true);
+            lane.add_css_class("board-lane");
+            lane.add_css_class(&format!("lane-{}", index % 4));
+            let heading = label(status);
+            heading.set_max_width_chars(10);
+            heading.add_css_class("lane-title");
+            lane.append(&heading);
+            for card in board.cards.iter().filter(|c| c.status == *status).take(3) {
+                let text = label(&card.title);
+                text.set_max_width_chars(14);
+                text.add_css_class("board-card");
+                lane.append(&text);
+            }
+            cols.append(&lane);
+        }
+    });
+    panel
+}
 pub fn remote(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
     page.append(&label("Deine Windows-Workstation\nRDP meldet dich mit deinem Windows-Konto an. Sunshine teilt die aktive Windows-Konsole."));
     let b = button("RDP · nativer Wayland-Client", f);
-    let (conf, s, stat) = (conf.clone(), stack.clone(), status.clone());
+    let (host_settings, s, stat) = (conf.clone(), stack.clone(), status.clone());
     b.connect_clicked(move |_| {
-        let result = conf.borrow().host().and_then(rampi_core::launch::rdp);
+        let result = host_settings
+            .borrow()
+            .host()
+            .and_then(rampi_core::launch::rdp);
         match result {
             Ok(args) => terminal(&s, "rdp", args, &stat),
             Err(e) => stat.set_text(&e.to_string()),
         }
     });
     page.append(&b);
+    for (title, pair) in [
+        ("Desktop-Streaming öffnen", false),
+        ("Streaming-Host koppeln", true),
+    ] {
+        let b = button(title, f);
+        let (conf, s, stat) = (conf.clone(), stack.clone(), status.clone());
+        b.connect_clicked(move |_| {
+            let result = conf
+                .borrow()
+                .host()
+                .and_then(|h| rampi_core::launch::streaming(h, pair));
+            match result {
+                Ok(args) => terminal(&s, if pair { "stream-pair" } else { "stream" }, args, &stat),
+                Err(e) => stat.set_text(&e.to_string()),
+            }
+        });
+        page.append(&b);
+    }
     page
 }
 pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) {

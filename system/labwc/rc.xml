@@ -4,5 +4,4 @@
   <keyboard>
     <keybind key="C-A-Home"><action name="Execute" command="/usr/local/bin/rampi"/></keybind>
   </keyboard>
-  <windowRules><windowRule identifier="org.rampi.Workstation"><action name="ToggleFullscreen"/></windowRule></windowRules>
 </labwc_config>

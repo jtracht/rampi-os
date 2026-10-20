@@ -84,6 +84,8 @@ fn build(app: &gtk::Application) {
                 (h as f64 - 730.0 * scale) / 2.0,
             );
             cr.scale(scale, scale);
+            cr.rectangle(0.0, 0.0, 1100.0, 730.0);
+            cr.clip();
             cr.set_source_pixbuf(&pixbuf, -75.0, -100.0);
             let _ = cr.paint();
         });
@@ -178,19 +180,43 @@ fn build(app: &gtk::Application) {
     dashboard.append(&tiles);
     let previews = row();
     previews.set_homogeneous(true);
-    for title in [
-        "Kanban Board · Nur lesen",
+    previews.append(&views::board_preview(&settings));
+    let assistant_previews = gtk::Grid::new();
+    assistant_previews.set_column_homogeneous(true);
+    assistant_previews.set_row_homogeneous(true);
+    assistant_previews.set_column_spacing(14);
+    assistant_previews.set_row_spacing(14);
+    for (i, title) in [
         "ChatGPT / Codex",
         "Claude / Claude Code",
         "Gemini / Antigravity",
-    ] {
-        let p = label(&format!(
-            "{title}\n\nPersönliches Profil in den Einstellungen wählen.\nDas Dashboard funktioniert auch offline."
-        ));
-        p.add_css_class("panel");
-        p.set_vexpand(true);
-        previews.append(&p);
+        "Webbrowser",
+    ]
+    .iter()
+    .enumerate()
+    {
+        let host = settings
+            .borrow()
+            .hosts
+            .get(settings.borrow().active_host)
+            .map(|h| format!("{} · {}@{}", h.name, h.username, h.address))
+            .unwrap_or_else(|| "Windows-Host noch nicht eingerichtet".into());
+        let text = if i == 3 {
+            format!(
+                "{title}\n\n{}\nLokaler Browser · persönliches Profil",
+                settings.borrow().browser_url
+            )
+        } else {
+            format!("{title}\n\n{host}")
+        };
+        let panel = label(&text);
+        panel.add_css_class("panel");
+        panel.set_hexpand(true);
+        panel.set_vexpand(true);
+        panel.set_max_width_chars(25);
+        assistant_previews.attach(&panel, (i % 2) as i32, (i / 2) as i32, 1, 1);
     }
+    previews.append(&assistant_previews);
     dashboard.append(&previews);
     let footer = row();
     let open_settings = button("⚙  Einstellungen", &feedback);

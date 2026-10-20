@@ -10,7 +10,7 @@ export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_HEADLESS_OUTPUTS=1
 export GDK_BACKEND=wayland GSK_RENDERER=cairo RAMPI_ASSETS=/src/client/rampi
 export WAYLAND_DISPLAY=wayland-0 GTK_A11Y=none
 mkdir "$test_home/compositor"
-printf '<labwc_config/>\n' > "$test_home/compositor/rc.xml"
+cp /src/system/labwc/rc.xml "$test_home/compositor/rc.xml"
 labwc -C "$test_home/compositor" > "$test_home/compositor.log" 2>&1 &
 compositor_pid=$!
 trap 'kill "$compositor_pid" 2>/dev/null || true' EXIT
@@ -51,3 +51,7 @@ print(f'RAMPI_RUST_SOUND_PCM_OK peak={peak}')
 PY
 if pgrep -x Xorg || pgrep -x Xwayland || pgrep -x startx; then echo 'Unerlaubter X11-Prozess.' >&2; exit 1; fi
 echo RAMPI_WAYLAND_WITHOUT_X11_OK
+if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then
+    cat /sys/fs/cgroup/memory.peak > "$RAMPI_TEST_ARTIFACTS/memory-peak-bytes.txt"
+    chmod 644 "$RAMPI_TEST_ARTIFACTS/memory-peak-bytes.txt"
+fi

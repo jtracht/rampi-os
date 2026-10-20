@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
 Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 49 %**.
-Rust-Umstellung: **ca. 35 %** (separate Portierungsschätzung).
+Rust-Umstellung: **ca. 40 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
