@@ -147,7 +147,8 @@ Der echte QML-Test liest eine JSON-Datei, wählt Filter mit der Tastatur, lädt 
 Quelle erneut und speichert eine Spaltenreihenfolge durch die Einstellungsoberfläche.
 
 Der echte WireGuard-Rundlauf prüft zusätzlich die neue persönliche Profilliste:
-libnm liefert den unveränderten Namen mit Sonderzeichen und den aktiven Zustand.
+NetworkManager-D-Bus liefert den unveränderten Namen mit Sonderzeichen und den
+vollständig aktivierten Zustand.
 Gemeinsame Profile erscheinen nicht; ein anderes Linux-Konto sieht keine
 persönlichen Einträge. Die UID-Zuordnung wird auch bei gefälschten USER-/LOGNAME-
 Umgebungsvariablen geprüft. Ein weiterer echter QML-Test wählt das persönliche

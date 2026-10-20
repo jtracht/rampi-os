@@ -9,12 +9,16 @@ den Administrator. Rampi räumt sich keine stillen Operatorrechte ein.
 Das Image enthält Tailscale; bestehende Installationen werden wiederverwendet.
 
 WireGuard-Konfigurationen werden als `.conf` bis 64 KiB über NetworkManager
-importiert. Die Auswahlliste lädt über libnm/D-Bus die sichtbaren WireGuard-Profile
+importiert. Die Auswahlliste lädt über NetworkManager-D-Bus die sichtbaren WireGuard-Profile
 und zeigt ihren tatsächlichen aktiven Zustand. Sie enthält ausschließlich Profile,
 deren einzige Benutzerberechtigung das aktuelle Linux-Systemkonto ist. Gemeinsame
 Profile und fremde Konten erscheinen dort nicht. Das Konto stammt aus der UID und
 Systemkontendatenbank; LOGNAME/USER werden dafür nicht vertraut. Private Schlüssel
-werden für die Liste nicht angefordert.
+werden für die Liste nicht angefordert: Der offizielle
+[GetSettings-Aufruf](https://networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager.Settings.Connection.html)
+liefert keine Secrets. Begrenzte synchrone GIO-Aufrufe laufen im Hintergrundthread;
+die Anzeige benötigt keinen zusätzlichen dauerhaften NMClient-Cache oder GLib-
+Ereignisloop im Qt-Hauptthread.
 Zum Verbinden/Trennen verwendet Rampi intern die eindeutige Verbindungs-UUID,
 auch bei Profilnamen mit Doppelpunkten oder Backslashes. Die Auswahl bleibt an die
 UUID gebunden. Import oder Verbindungsänderung aktualisiert die Liste; verspätete

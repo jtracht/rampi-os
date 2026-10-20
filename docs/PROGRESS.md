@@ -48,7 +48,7 @@ Belegte Erweiterungen gegenüber der Baseline:
 
 | Bereich | Neuer Punktestand | Nachweis |
 |---|---:|---|
-| VPN | 4 / 5 | Eigene grafische Auswahl; echte libnm-Metadaten mit aktivem Zustand; gemeinsame/fremde Profile ausgeschlossen; UID statt Umgebungsvariablen bestimmt das Systemkonto |
+| VPN | 4 / 5 | Eigene grafische Auswahl; offizielle D-Bus-Metadaten mit aktivem Zustand; gemeinsame/fremde Profile ausgeschlossen; UID statt Umgebungsvariablen bestimmt das Systemkonto |
 | Remote Desktop und Streaming | 4 / 5 | Echter 997-Hz-Testton über Sunshine/PulseAudio, Opus und Moonlight/SDL empfangen; erneute Verbindung; Stille und falscher Ton werden abgewiesen |
 | Kanban | 4 / 5 | Spaltenreihenfolge gespeichert; unabhängige Projekt-/Prioritäts-/Statusfilter mit Suche; tatsächliche QML-Tastaturtests und JSON-Neuladen |
 
