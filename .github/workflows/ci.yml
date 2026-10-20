@@ -25,6 +25,15 @@ jobs:
       - run: docker build -t rampi-remote-test -f tests/remote/Dockerfile .
       - name: Actual FreeRDP desktop frames, keyboard, reconnect and certificate rejection
         run: timeout 240 python3 scripts/test-rdp.py
+      - run: docker build -t rampi-streaming-test -f tests/streaming/Dockerfile .
+      - name: Actual Sunshine pairing, unpaired profile rejection and changing Moonlight video
+        run: timeout 240 python3 scripts/test-streaming.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: remote-integration-arm64
+          path: artifacts/
+          if-no-files-found: ignore
   client:
     strategy:
       matrix:

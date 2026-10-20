@@ -25,9 +25,12 @@ Netzwerkeinstellungen und Bluetooth-Pairing verwenden gepflegte Systemdialoge.
 
 FreeRDP hat gegen einen isolierten echten xrdp/PAM-Server TLS-Anmeldung,
 Bildübertragung, Tastatureingaben, Wiederverbindung und Zertifikatsablehnung
-bestanden. Persönliche Cloudanmeldungen, Tailscale-Netze, Windows-RDP/NLA und
-Sunshine-Streams wurden nicht live geprüft. Physische Funk-/HDMI-/GPU-/Latenzwerte
-werden nicht behauptet.
+bestanden. Sunshine und Moonlight haben unter Linux mit Software-Videocodierung
+die tatsächliche PIN-Kopplung, Ablehnung eines nicht gekoppelten Profils und
+wechselnde übertragene Videobilder bei zwei Verbindungen bestanden.
+Persönliche Cloudanmeldungen, Tailscale-Netze, Windows-RDP/NLA und Windows-
+Sunshine sind noch ungeprüft. Streaming-Audio/-Eingabe und physische
+Funk-/HDMI-/GPU-/Latenzwerte werden durch diese Tests nicht nachgewiesen.
 Images sind durch Quellenrevision und Paketmanifest nachvollziehbar, wegen
 beweglicher Paketspiegel bislang nicht bitweise reproduzierbar.
 [Testnachweise](TESTING.md); aktuelle Freigabe in packaging/readiness.json.

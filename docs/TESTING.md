@@ -112,3 +112,28 @@ Der Testserver erzwingt TLS; dies ist kein Nachweis für Windows-NLA oder die
 Windows-Desktopintegration. Windows-CI prüft außerdem die tatsächlichen
 Status-/Stop-Aktionen des persönlichen psmux-Adapters: Das exakt benannte Ziel
 wird beendet, eine Sitzung mit gleichem Namenspräfix bleibt erhalten.
+
+## Ergänzung: tatsächliche Sunshine/Moonlight-Verbindung
+
+`scripts/test-streaming.py` hat lokal mit Debian Trixie amd64 die offizielle
+Sunshine-Version 2026.914.233613 und denselben Moonlight-Embedded-2.7.1-Quellcommit
+wie der Pi-Installer verbunden. Zwei normale Benutzerprozesse in getrennten
+internen Docker-Netzwerk-Namensräumen führen die echte PIN-Kopplung aus. Ein
+zweites, nicht gekoppeltes Rampi-Profil erhält keinen Anwendungszugriff. Der
+Server verändert seine X11-Bildfläche fortlaufend; auf dem Client müssen beide
+Farben nach echter H.264-Übertragung und SDL/FFmpeg-Decodierung ankommen, auch
+nach erneuter Verbindung. Ein Start oder eine reine Logmeldung genügt nicht.
+
+```sh
+docker build -t rampi-streaming-test -f tests/streaming/Dockerfile .
+python scripts/test-streaming.py
+```
+
+Die offiziellen amd64-/arm64-Sunshine-Pakete werden per veröffentlichtem SHA256
+geprüft. Die ARM64-CI führt den gleichen Rundlauf aus. Jeder Container hat ein
+1-GB-/Vier-CPU-Limit; Hostports und Hardwaregeräte werden nicht freigegeben.
+Sunshines vorhandene stdin-PIN-Funktion ersetzt ausschließlich im wegwerfbaren
+Test die manuelle Freigabe. Diese Abnahme belegt Linux-Softwarevideo und die
+Protokollkopplung, keine Windows-Bildschirmaufnahme, GPU-Decodierung, Audio,
+Streaming-Tastatureingabe oder gemessene Pi-Leistung. Sunshine bleibt eine
+Freigabe der aktiven Konsole und schafft keine getrennte Windows-Anmeldung.
