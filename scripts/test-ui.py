@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QUICK_BACKEND", "software")
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
 
 from PySide6.QtCore import QEvent, QEventLoop, Qt, QTimer, QUrl  # noqa: E402
-from PySide6.QtGui import QFont, QFontMetrics  # noqa: E402
+from PySide6.QtGui import QFont, QFontDatabase, QFontInfo, QFontMetrics  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuick import QQuickWindow  # noqa: E402, F401
 from PySide6.QtTest import QTest  # noqa: E402
@@ -17,8 +17,12 @@ from rampi.backend import Backend  # noqa: E402
 from rampi.config import Settings  # noqa: E402
 
 app = create_application()
-if not all(QFontMetrics(app.font()).inFont(character) for character in "Rampi äöü"):
-    raise SystemExit("The real platform font cannot render dashboard text")
+missing = [character for character in "Rampi äöü" if not QFontMetrics(app.font()).inFont(character)]
+if missing:
+    raise SystemExit(
+        f"The real platform font {QFontInfo(app.font()).family()!r} cannot render {missing!r}; "
+        f"available families: {QFontDatabase.families()}"
+    )
 metrics = QFontMetrics(QFont("monospace", 12))
 if metrics.horizontalAdvance("iii") != metrics.horizontalAdvance("WWW"):
     raise SystemExit("Terminal previews do not use an actual monospace font")
