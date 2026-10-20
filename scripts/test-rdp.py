@@ -210,6 +210,14 @@ def integration(image: str):
                 break
             time.sleep(0.25)
         execute(server_id, "chpasswd", input_text=f"rdpuser:{password}\n")
+        # The image already contains Debian's snakeoil certificate. Wait until our
+        # server has replaced it and is listening before reading the fingerprint.
+        for _attempt in range(120):
+            if ":3389" in execute(server_id, "ss", "-ltn", check=False).stdout:
+                break
+            time.sleep(0.25)
+        else:
+            raise RuntimeError("The isolated RDP server did not become ready")
         # Certificate material is generated in the fixture, never accepted blindly.
         for _attempt in range(60):
             certificate = execute(
@@ -248,10 +256,6 @@ def integration(image: str):
             "tcp",
         )
         time.sleep(1)
-        for _attempt in range(60):
-            if execute(server_id, "ss", "-ltn", check=False).stdout.find(":3389") >= 0:
-                break
-            time.sleep(0.25)
         for _cycle in range(2):
             token = "RAMPI_TYPED_" + uuid.uuid4().hex
             execute(
