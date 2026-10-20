@@ -35,6 +35,15 @@ anmelden. Sunshine und VPN werden erkannt, nicht automatisch ersetzt oder geöff
 `-WhatIf` zeigt Änderungen. Uninstall entfernt keine Windows-Dienste und beendet
 keine bestehenden psmux-Sitzungen. Hostneustarts beenden laufende Prozesse.
 
+Nach einem Clientupdate den mitgelieferten Hostadapter durch erneutes
+`setup.ps1 -Install` aktualisieren. Die grafische Seite **KI-Sitzungen** benötigt
+die Adapteraktion `Status`; ältere Adapter werden als nicht verfügbar angezeigt.
+Je Anbieter und Windows-Konto besteht eine persistente Sitzung. Ein anderes
+Projektverzeichnis gilt beim nächsten Start einer neuen Sitzung. **Windows-Sitzung
+beenden** beendet den KI-Prozess; **lokale Verbindungen schließen** trennt lediglich
+die Clients. Hostprofile können nur ohne laufende lokale Verbindung gewechselt
+werden. Das Entfernen eines Profils löscht keine Schlüssel oder Windows-Prozesse.
+
 Sunshine teilt die aktive Windows-Konsole, während RDP eine Windows-Anmeldung
 prüft. Geräte-Pairing ersetzt keine Benutzeranmeldung. Für gemeinsam genutzte
 Hosts RDP verwenden; [Streaming und getrennte Kopplungsschlüssel](STREAMING.md).

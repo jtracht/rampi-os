@@ -85,3 +85,30 @@ privilegierte Container sind nötig. Kurzlebige Schlüssel erzeugt das vorhanden
 polkit-Freigabe existiert nur in den wegwerfbaren Testcontainern.
 Dies ist ein tatsächlicher privater VPN-Test, keine Anmeldung in einem persönlichen
 Tailscale-Netz und kein Test gegen fremde oder persönliche Endpunkte.
+
+## Ergänzung: Hostverwaltung und echte RDP-Verbindung
+
+Die Suite umfasst jetzt 45 Python-Tests. Zusätzliche Fälle prüfen mehrere
+Hostprofile, Speicherung und Löschung, die Sperre beim laufenden Client sowie
+das Verwerfen verspäteter Status-, Vorschau- und Fingerprintantworten eines
+vorherigen Hosts. Der reale QML-Test speichert ein Profil durch die tatsächlichen
+Formularaktionen, öffnet es erneut und prüft die Tastatursteuerung der Sitzungsseite.
+Er verwendet ausschließlich ein temporäres persönliches Konfigurationsverzeichnis.
+
+`scripts/test-rdp.py` hat lokal mit Docker/Trixie amd64 eine echte Verbindung
+zwischen FreeRDP und xrdp/PAM bestanden: unabhängiger TLS-Fingerprintvergleich,
+übertragene Desktop-Pixel, eingegebener Text beim authentifizierten Benutzer,
+erneute Verbindung und Zurückweisung eines falschen Zertifikats. Server und
+Client besitzen getrennte Netzwerk-Namensräume in einem internen Docker-Netz,
+je 512 MB RAM und zwei CPUs. Keine Hostports, Geräte oder Hostdienste werden
+freigegeben. Die ARM64-CI führt denselben Test aus.
+
+```sh
+docker build -t rampi-remote-test -f tests/remote/Dockerfile .
+python scripts/test-rdp.py
+```
+
+Der Testserver erzwingt TLS; dies ist kein Nachweis für Windows-NLA oder die
+Windows-Desktopintegration. Windows-CI prüft außerdem die tatsächlichen
+Status-/Stop-Aktionen des persönlichen psmux-Adapters: Das exakt benannte Ziel
+wird beendet, eine Sitzung mit gleichem Namenspräfix bleibt erhalten.

@@ -8,18 +8,28 @@ Dialog {
   modal: true
   standardButtons: Dialog.Close
   property var host: rampi.configuration.hosts.length ? rampi.configuration.hosts[rampi.configuration.active_host] : ({})
+  property bool addingHost: false
+  property int editIndex: -1
+  function loadHost(value) {
+    hostName.text = value.name || "Windows";
+    address.text = value.address || ""; username.text = value.username || "";
+    port.value = value.port || 22; identity.text = value.identity || "";
+    project.text = value.project || ""; resolution.text = value.resolution || "1280x720";
+    verified.checked = false;
+  }
   function showPage(index) { tabs.currentIndex = index; open(); }
-  function hostValues() { return {address: address.text, username: username.text, port: port.value,
-      identity: identity.text, project: project.text}; }
-  onOpened: address.forceActiveFocus()
+  function hostValues() { return {name: hostName.text, address: address.text, username: username.text, port: port.value,
+      identity: identity.text, project: project.text, resolution: resolution.text}; }
+  onOpened: { addingHost = false; editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1; loadHost(dialog.host); address.forceActiveFocus(); }
   contentItem: ColumnLayout {
     spacing: 12
     TabBar {
-      id: tabs; Layout.fillWidth: true
+      id: tabs; objectName: "settingsTabs"; Layout.fillWidth: true
       TabButton { text: "Host & SSH" }
       TabButton { text: "System" }
       TabButton { text: "VPN" }
       TabButton { text: "Kanban & Browser" }
+      TabButton { text: "KI-Sitzungen" }
     }
     StackLayout {
       currentIndex: tabs.currentIndex
@@ -29,11 +39,25 @@ Dialog {
         ColumnLayout {
           width: parent.width - 20; spacing: 12
           Label { text: "Windows 11 Pro · persönliche Verbindung"; font.pixelSize: 23; font.bold: true }
+          Label { text: "Aktiver Host: " + (dialog.host.name || "Noch nicht eingerichtet") + (dialog.host.username ? " · " + dialog.host.username + "@" + dialog.host.address : ""); wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          ComboBox {
+            id: hostPicker; objectName: "hostPicker"; Layout.fillWidth: true
+            model: rampi.configuration.hosts.map(function(h) { return h.name + " · " + h.username + "@" + h.address; })
+            currentIndex: dialog.editIndex
+            onActivated: function(index) { dialog.addingHost = false; dialog.editIndex = index; dialog.loadHost(rampi.configuration.hosts[index]); }
+          }
+          RowLayout {
+            Button { objectName: "newHost"; text: "Neues Profil"; onClicked: { dialog.addingHost = true; dialog.editIndex = -1; dialog.loadHost({name: "Neuer Host"}); hostName.forceActiveFocus(); } }
+            Button { text: "Dieses Profil verwenden"; enabled: dialog.editIndex >= 0; onClicked: rampi.selectHost(dialog.editIndex) }
+            Button { text: "Profil entfernen"; enabled: dialog.editIndex >= 0; onClicked: removeProfile.open() }
+          }
+          Label { text: "Profilname" }
+          TextField { id: hostName; objectName: "hostName"; Layout.fillWidth: true }
           Label { text: "Vor dem Verbinden die Fingerprints unabhängig am Windows-Host vergleichen. Ein Abruf allein bestätigt die Identität noch nicht."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           Label { text: "Hostname / VPN-IP" }
-          TextField { id: address; text: dialog.host.address || ""; placeholderText: "workstation.tailnet.ts.net"; Layout.fillWidth: true }
+          TextField { id: address; objectName: "hostAddress"; placeholderText: "workstation.tailnet.ts.net"; Layout.fillWidth: true }
           Label { text: "Windows-Benutzername" }
-          TextField { id: username; text: dialog.host.username || ""; Layout.fillWidth: true }
+          TextField { id: username; objectName: "hostUsername"; Layout.fillWidth: true }
           Label { text: "SSH-Port" }
           SpinBox { id: port; from: 1; to: 65535; value: dialog.host.port || 22; editable: true }
           Label { text: "Persönlicher privater SSH-Schlüssel · nur Dateipfad" }
@@ -49,6 +73,20 @@ Dialog {
           }
           Label { text: "Projektverzeichnis auf Windows" }
           TextField { id: project; text: dialog.host.project || ""; placeholderText: "C:\\Projects\\MeinProjekt"; Layout.fillWidth: true }
+          Label { text: "Streaming-Auflösung · Breite x Höhe" }
+          TextField { id: resolution; placeholderText: "1280x720"; Layout.fillWidth: true }
+          Button {
+            objectName: "saveHost"; text: dialog.addingHost || dialog.editIndex < 0 ? "Hostprofil hinzufügen" : "Hostprofil speichern"
+            onClicked: {
+              let creating = dialog.addingHost || dialog.editIndex < 0;
+              if (rampi.saveHost(dialog.hostValues(), creating ? -1 : dialog.editIndex)) {
+                dialog.addingHost = false;
+                dialog.editIndex = creating ? rampi.configuration.hosts.length - 1 : dialog.editIndex;
+                dialog.loadHost(rampi.configuration.hosts[dialog.editIndex]);
+              }
+            }
+          }
+          Button { text: "Lokale Remote-Verbindungen schließen"; onClicked: rampi.disconnectClients() }
           Label { text: "Die offiziellen CLIs und psmux müssen im Windows-Benutzerkonto eingerichtet sein. Anmeldungen erfolgen in den jeweiligen offiziellen Programmen."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
       }
@@ -123,18 +161,55 @@ Dialog {
           Label { text: "Browserprofile, SSH-Schlüssel und Konfigurationen bleiben im persönlichen Linux-Konto."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
       }
+      ScrollView {
+        clip: true
+        ColumnLayout {
+          width: parent.width - 20; spacing: 18
+          Label { text: "Persistente Windows-KI-Sitzungen"; font.pixelSize: 23; font.bold: true }
+          Label { text: "Host: " + (dialog.host.name || "Nicht eingerichtet") + (dialog.host.username ? " · " + dialog.host.username : ""); wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          Label { text: "Pro Anbieter und Windows-Benutzer bleibt eine Sitzung erhalten. Öffnen verbindet erneut. Ein geändertes Projekt gilt beim nächsten Sitzungsstart; eine vorhandene Sitzung zuerst bewusst beenden."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          Button { text: "Sitzungen auf Windows prüfen"; onClicked: rampi.refreshSessions() }
+          Repeater {
+            model: rampi.sessions
+            Frame {
+              required property var modelData
+              Layout.fillWidth: true
+              contentItem: ColumnLayout {
+                Label { text: modelData.title; font.pixelSize: 20; font.bold: true }
+                Label { text: modelData.state; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                RowLayout {
+                  Button { text: "Öffnen / wiederverbinden"; onClicked: rampi.launch(modelData.module) }
+                  Button { text: "Windows-Sitzung beenden"; enabled: modelData.state === "Läuft auf Windows"; onClicked: { stopSession.module = modelData.module; stopSession.open(); } }
+                }
+              }
+            }
+          }
+          Button { text: "Nur lokale Verbindungen schließen"; onClicked: rampi.disconnectClients() }
+        }
+      }
     }
     RowLayout {
       Button {
-        text: "Speichern"
+        text: "Allgemeine Einstellungen speichern"
         onClicked: {
-          if (rampi.save({address: address.text, username: username.text, port: port.value,
-              identity: identity.text, project: project.text, board_kind: boardKind.currentText,
+          if (rampi.save({board_kind: boardKind.currentText,
               board_source: boardSource.text, board_token_key: tokenKey.text,
               browser_url: browserUrl.text, reduce_motion: reducedMotion.checked})) dialog.close();
         }
       }
       Button { text: "Später einrichten"; onClicked: dialog.close() }
     }
+  }
+  Dialog {
+    id: removeProfile; title: "Hostprofil entfernen?"; modal: true
+    standardButtons: Dialog.Yes | Dialog.No
+    Label { text: "Nur das ausgewählte Profil wird entfernt. SSH- und Streaming-Schlüssel sowie Windows-Prozesse bleiben erhalten."; width: 460; wrapMode: Text.WordWrap }
+    onAccepted: { if (rampi.removeHost(dialog.editIndex)) { dialog.editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1; dialog.loadHost(dialog.host); } }
+  }
+  Dialog {
+    id: stopSession; property string module: ""; title: "Windows-KI-Sitzung beenden?"; modal: true
+    standardButtons: Dialog.Yes | Dialog.No
+    Label { text: "Der laufende KI-Prozess dieser Sitzung auf dem aktiven Windows-Host wird beendet. Zum bloßen Trennen stattdessen die lokale Verbindung schließen."; width: 460; wrapMode: Text.WordWrap }
+    onAccepted: rampi.stopSession(module)
   }
 }
