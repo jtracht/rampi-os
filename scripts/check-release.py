@@ -1,4 +1,4 @@
-"""Fail closed: a successful build is never evidence of a hardware test."""
+"""Require documented software acceptance before the fresh release checks."""
 
 import argparse
 import json

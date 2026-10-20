@@ -18,4 +18,6 @@ Repository zusätzlich mit menschlicher Freigabe geschützt werden.
 Ein fehlgeschlagener Build lässt den Draft unveröffentlicht. Es wird kein
 zweites Versions-Tag erfunden. Vor Wiederholung Tag, Commit und Artefaktversionen
 abgleichen. Installierte Endgeräte erhalten keine automatischen Updates.
-Aktueller Stand: Entwicklungsversion 0.1.0.dev0, keine reguläre Freigabe.
+Die Softwareabnahme vom 20.10.2026 ist dokumentiert und in readiness.json
+eingetragen. Jeder neue Release muss seinen eigenen Image-/QML-/QEMU- und
+vollständigen Artefakttest bestehen. Der Versionsstand steht in pyproject.toml.

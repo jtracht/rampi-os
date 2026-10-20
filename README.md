@@ -4,8 +4,10 @@ Native Remote-Arbeitsumgebung für Raspberry Pi 3 Model B+ und Windows 11 Pro.
 Eigenständige Qt-Quick-Oberfläche; vorhandene Systemdienste übernehmen Netzwerk,
 Login, Terminals, Remote Desktop und Browser. Eigenentwickelter Code: Apache-2.0.
 
-**Status: Entwicklungsstand.** Die native Oberfläche, persönliche Konfiguration,
-lokales Kanban und native Windows-ConPTY-Persistenz sind implementiert und getestet.
+**Status: softwaregeprüfter Entwicklungsstand.** Native Oberfläche, persönliche
+Konfiguration, Kanban-Adapter und Windows-ConPTY-Persistenz sind implementiert.
+Die [Softwareabnahme](docs/validation/software-acceptance-2026-10-20.md) dokumentiert
+36 Tests, echte Systemintegrationen und einen erfolgreichen virtuellen Image-Boot.
 Die Abnahme erfolgt auf ausdrücklichen Nutzerwunsch ausschließlich softwareseitig:
 ARM64-Docker, native Windows-CI und Image-/QEMU-Prüfungen. Physische Hardwaretests
 sind aus dem Umfang ausgeschlossen. [Funktionsstand](docs/STATUS.md) und
@@ -76,9 +78,9 @@ python scripts/package.py
 
 GitHub Actions prüft Linux/Windows, Skripte, Sicherheit und die Paketierung.
 Der Image-Workflow verwendet einen festgelegten Commit des offiziellen pi-gen.
-Reguläre Releases bleiben bis zur dokumentierten Softwareabnahme gesperrt;
-Release Please bereitet danach Versionen, Tags und zunächst unveröffentlichte
-Releases vor. Veröffentlichung erfolgt erst nach vollständigem Image-Build.
+Die dokumentierte Softwareabnahme erlaubt die Releasevorbereitung;
+Release Please erstellt Versionen, Tags und zunächst unveröffentlichte
+Releases. Veröffentlichung erfolgt erst nach vollständigem Image-Build.
 
 Die [Dashboard-Vorlage](assets/references/1000141105.png) und das
 [gelieferte Logo](assets/references/1000141106.png) sind die Designgrundlage.

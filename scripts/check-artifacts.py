@@ -26,7 +26,8 @@ if args.image:
         raise SystemExit("Exactly one flashable image required")
     required.update([
         images[0].name, "package-manifest.tsv", "dependency-licenses.tar.xz",
-        "qemu-boot.log", "partitions.json", "pi-gen-revision.txt", "readiness.json",
+        "qemu-boot.log", "qemu-environment.txt", "partitions.json",
+        "pi-gen-revision.txt", "readiness.json",
     ])
 checksums = {}
 for line in (directory / "SHA256SUMS").read_text().splitlines():

@@ -41,6 +41,9 @@ Partitionslayout, Bootdateien, Paketmanifest und Lizenzarchiv. QEMU muss den
 echten systemd-Healthcheck RAMPI_BOOT_OK erreichen; ein Build allein ist kein
 Bootnachweis. Aktuelle Ergebnisse: [GitHub Actions](https://github.com/jtracht/rampi-os/actions).
 Fehlgeschlagene Prüfungen werden vor Freigabe behoben, nicht als bestanden gewertet.
+Die [Softwareabnahme vom 20.10.2026](validation/software-acceptance-2026-10-20.md)
+verlinkt den erfolgreichen CI-Gesamtlauf und den tatsächlich bestandenen
+virtuellen Boot einschließlich RAMPI_BOOT_OK.
 
 Keine erfolgreichen persönlichen Cloudanmeldungen, VPN-Netze, RDP-Desktops
 oder Sunshine-Streams werden behauptet. Funk, HDMI, GPU-Leistung und echte

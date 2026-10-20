@@ -1,17 +1,17 @@
 {
   "schema": 1,
-  "regular_release": false,
-  "validation_policy": "Software-only acceptance per user instruction on 2026-10-19. Physical hardware tests are excluded; Docker, native Windows, and QEMU evidence must not be described as physical validation.",
+  "regular_release": true,
+  "validation_policy": "Software-only acceptance per explicit user instruction. Physical hardware tests are excluded; software results do not imply physical validation. Every release must pass a fresh image build, QEMU boot and complete artifact verification.",
   "evidence": {
-    "native_qml_and_keyboard": null,
-    "docker_networkmanager_import": null,
-    "windows_native_persistence": null,
-    "configuration_and_secret_isolation": null,
-    "kanban_contracts_and_cache": null,
-    "installer_script_validation": null,
-    "ci_security_and_packages": null,
-    "image_partitions_and_filesystems": null,
-    "qemu_software_boot": null,
-    "release_artifact_completeness": null
+    "native_qml_and_keyboard": "docs/validation/software-acceptance-2026-10-20.md",
+    "docker_networkmanager_import": "docs/validation/software-acceptance-2026-10-20.md",
+    "windows_native_persistence": "docs/validation/software-acceptance-2026-10-20.md",
+    "configuration_and_secret_isolation": "docs/validation/software-acceptance-2026-10-20.md",
+    "kanban_contracts_and_cache": "docs/validation/software-acceptance-2026-10-20.md",
+    "installer_script_validation": "docs/validation/software-acceptance-2026-10-20.md",
+    "ci_security_and_packages": "docs/validation/software-acceptance-2026-10-20.md",
+    "image_partitions_and_filesystems": "docs/validation/software-acceptance-2026-10-20.md",
+    "qemu_software_boot": "docs/validation/software-acceptance-2026-10-20.md",
+    "release_artifact_completeness": "docs/validation/software-acceptance-2026-10-20.md"
   }
 }
