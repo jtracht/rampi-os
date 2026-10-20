@@ -107,7 +107,7 @@ jobs:
           python-version: '3.12'
       - run: pip install pip-audit detect-secrets
       - run: pip-audit -r requirements-runtime.txt
-      - name: Scan tracked source (allow only the published psmux checksum)
-        run: detect-secrets scan --exclude-secrets '^a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721$' --exclude-files '(requirements.*|.*\.png|.*\.lock)' > secret-scan.json
+      - name: Scan tracked source (allow the published checksum and public evidence path)
+        run: detect-secrets scan --exclude-secrets '^(a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721|docs/validation/software-acceptance-2026-10-20\.md)$' --exclude-files '(requirements.*|.*\.png|.*\.lock)' > secret-scan.json
       - run: python scripts/check-secrets.py secret-scan.json
       - run: python scripts/check-licenses.py
