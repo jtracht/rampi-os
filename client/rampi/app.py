@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from PySide6.QtCore import QEvent, QObject, Qt, QTimer, QUrl
-from PySide6.QtGui import QGuiApplication, QIcon
+from PySide6.QtGui import QFont, QFontDatabase, QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
 
@@ -28,14 +28,35 @@ class InputMode(QObject):
         return False
 
 
+def create_application() -> QGuiApplication:
+    # The Windows offscreen plugin has no platform font database by default.
+    # Reuse installed system fonts; no Windows font files are redistributed.
+    if os.name == "nt" and os.environ.get("QT_QPA_PLATFORM") == "offscreen":
+        directory = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+        if directory.is_dir():
+            os.environ.setdefault("QT_QPA_FONTDIR", str(directory))
+    os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
+    app = QGuiApplication(sys.argv[:1])
+    families = QFontDatabase.families()
+    preferred = ["Segoe UI", "DejaVu Sans"] if os.name == "nt" else ["DejaVu Sans", "Noto Sans"]
+    for family in preferred:
+        if family in families:
+            app.setFont(QFont(family))
+            break
+    for family in ["Consolas", "DejaVu Sans Mono", "Liberation Mono"]:
+        if family in families:
+            QFont.insertSubstitution("monospace", family)
+            break
+    return app
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--windowed", action="store_true")
     parser.add_argument("--screenshot", type=Path)
     parser.add_argument("--smoke-test", action="store_true")
     args = parser.parse_args()
-    os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
-    app = QGuiApplication(sys.argv[:1])
+    app = create_application()
     app.setApplicationName("Rampi")
     app.setOrganizationName("Rampi")
     app.setWindowIcon(QIcon(str(Path(__file__).parent / "branding" / "logo.png")))

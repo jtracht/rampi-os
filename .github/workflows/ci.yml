@@ -36,7 +36,7 @@ jobs:
         with:
           python-version: '3.12'
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 fonts-dejavu-core
       - run: python -m pip install -e '.[dev]'
       - run: ruff check client tests scripts
       - run: mypy client/rampi

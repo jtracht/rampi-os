@@ -61,13 +61,13 @@ ApplicationWindow {
       Text { text: "SMALL PI.\nBIG REACH.\nREAL WORK."; font.pixelSize: 11; font.letterSpacing: 3; lineHeight: 1.5; color: "#a7b6c6" }
       Item { Layout.fillWidth: true }
       Repeater {
-        model: [{label: "Netzwerk", key: "network", glyph: "◉"}, {label: "Bluetooth", key: "bluetooth", glyph: "ᛒ"}, {label: "VPN", key: "vpn", glyph: "◈"}]
+        model: [{label: "Netzwerk", key: "network", icon: "wifi"}, {label: "Bluetooth", key: "bluetooth", icon: "bluetooth"}, {label: "VPN", key: "vpn", icon: "shield-check"}]
         Row {
           spacing: 10
-          Text { text: modelData.glyph; color: ["Verbunden", "Running", "Bereit"].indexOf(rampi.status[modelData.key]) >= 0 ? "#19d6b2" : "#5d7185"; font.pixelSize: 32 }
+          Image { source: "../icons/" + modelData.icon + ".svg"; width: 32; height: 32; sourceSize: Qt.size(32, 32) }
           Column {
             Text { text: modelData.label; color: "#f4f6fa"; font.pixelSize: 13; font.bold: true }
-            Text { text: rampi.status[modelData.key]; width: 130; elide: Text.ElideRight; color: "#92a7ba"; font.pixelSize: 11 }
+            Text { text: rampi.status[modelData.key]; width: 130; elide: Text.ElideRight; color: ["Verbunden", "Running", "Bereit"].indexOf(rampi.status[modelData.key]) >= 0 ? "#19d6b2" : "#92a7ba"; font.pixelSize: 11 }
           }
         }
       }
@@ -194,7 +194,7 @@ ApplicationWindow {
           ColumnLayout {
             anchors.fill: parent; anchors.margins: 14; spacing: 8
             RowLayout {
-              Text { text: modelData.symbol; color: modelData.accent; font.pixelSize: 30 }
+              Image { source: "../icons/" + ({codex: "terminal-preview", claude: "asterisk-preview", antigravity: "sparkles-preview", browser: "globe"})[modelData.key] + ".svg"; Layout.preferredWidth: 28; Layout.preferredHeight: 28; sourceSize: Qt.size(28, 28) }
               Text { text: modelData.title + (modelData.key === "browser" ? "" : " / " + modelData.subtitle); color: "#edf3fa"; font.pixelSize: 15; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
               Rectangle { width: 8; height: 8; radius: 3; color: "#627487" }
             }
@@ -230,7 +230,7 @@ ApplicationWindow {
       x: 14; y: 804; width: 1572; height: 75; radius: 23
       RowLayout {
         anchors.fill: parent; anchors.margins: 16; spacing: 28
-        Button { text: "⚙  Einstellungen"; font.pixelSize: 18; onClicked: settings.open() }
+        Button { text: "Einstellungen"; icon.source: "../icons/settings.svg"; icon.color: "#edf3fa"; font.pixelSize: 18; onClicked: settings.open() }
         Rectangle { width: 1; height: 38; color: "#4a5e70" }
         Repeater {
           model: [{label: "WLAN", value: rampi.status.network}, {label: "Bluetooth", value: rampi.status.bluetooth}, {label: "VPN", value: rampi.status.vpn}]
@@ -239,7 +239,7 @@ ApplicationWindow {
             Text { text: modelData.value; color: modelData.value === "Verbunden" || modelData.value === "Running" || modelData.value === "Bereit" ? "#1edbb5" : "#8fa2b5"; font.pixelSize: 12; width: 130; elide: Text.ElideRight }
           }
         }
-        Button { text: "⌨  Konsole"; onClicked: rampi.launch("console") }
+        Button { text: "Konsole"; icon.source: "../icons/terminal.svg"; icon.color: "#edf3fa"; onClicked: rampi.launch("console") }
         Item { Layout.fillWidth: true }
         Text { text: "Rampi " + rampi.version + "\nKleine Hardware. Große Möglichkeiten."; color: "#8fa2b5"; font.pixelSize: 12; lineHeight: 1.5 }
         Button { visible: window.page !== "dashboard"; text: "← Dashboard"; onClicked: window.page = "dashboard" }

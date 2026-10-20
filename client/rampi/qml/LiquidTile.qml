@@ -58,17 +58,21 @@ Control {
       text: tile.title; width: parent.width
       horizontalAlignment: Text.AlignHCenter
       font.pixelSize: 23; font.weight: Font.DemiBold
+      fontSizeMode: Text.HorizontalFit; minimumPixelSize: 18
       color: tile.darkInk ? "#111820" : "#ffffff"
     }
     Text {
       text: tile.subtitle; width: parent.width
       horizontalAlignment: Text.AlignHCenter; font.pixelSize: 17
+      fontSizeMode: Text.HorizontalFit; minimumPixelSize: 13
       color: tile.darkInk ? "#1b242b" : "#edf3ff"
     }
   }
   Text {
     anchors { bottom: parent.bottom; bottomMargin: 27; horizontalCenter: parent.horizontalCenter }
     text: tile.caption; font.pixelSize: 10; font.letterSpacing: 2
+    width: parent.width - 32; horizontalAlignment: Text.AlignHCenter
+    fontSizeMode: Text.HorizontalFit; minimumPixelSize: 8
     color: tile.darkInk ? "#1b242b" : "#e9f1ff"
   }
   MouseArea {

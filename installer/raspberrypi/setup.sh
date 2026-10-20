@@ -71,12 +71,15 @@ if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]*)$ ]]; then exit 1; 
 target="/opt/rampi/$version"
 install -d -m 755 "$target"
 cp -a "$source_root/client/rampi" "$target/"
-chmod -R a+rX "$target"
+chown -hR root:root "$target"
+chmod -R a+rX,go-w "$target"
 install -d -m 755 /usr/share/doc/rampi
 install -m 644 "$source_root/LICENSE" /usr/share/doc/rampi/LICENSE
 install -m 644 "$source_root/NOTICE" /usr/share/doc/rampi/NOTICE
 install -m 644 "$source_root/assets/references/RIGHTS.md" /usr/share/doc/rampi/BRANDING-RIGHTS.md
 cp -a "$source_root/docs/." /usr/share/doc/rampi/
+chown -hR root:root /usr/share/doc/rampi
+chmod -R a+rX,go-w /usr/share/doc/rampi
 PYTHONPATH="$target" python3 -c 'from PySide6.QtQuick import QQuickWindow; from rampi.backend import Backend'
 ln -sfn "$target" /opt/rampi/current
 install -m 755 "$source_root/system/rampi" /usr/local/bin/rampi
