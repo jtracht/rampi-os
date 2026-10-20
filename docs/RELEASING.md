@@ -9,8 +9,10 @@ eines erfolgreichen Builds entfernen.
 Nach Abschluss der vereinbarten Softwareabnahme konkrete Nachweisdateien in
 `packaging/readiness.json` eintragen. Release Please erstellt einen Versions-PR,
 aktualisiert Changelog/Version und erzeugt nach Merge ein vMAJOR.MINOR.PATCH-Tag
-mit einem zunächst unveröffentlichten Draft. Der Imagejob und die Paketierung
-müssen vollständig erfolgreich sein. Erst dann lädt der Publishjob Quellpaket,
+mit einem zunächst unveröffentlichten Draft.
+Die Option `force-tag-creation` setzt das Tag bereits beim Anlegen des Drafts,
+damit weitere Versions-PRs während des Imagebuilds den richtigen Ausgangspunkt haben.
+Der Imagejob und die Paketierung müssen vollständig erfolgreich sein. Erst dann lädt der Publishjob Quellpaket,
 Windows-Host-ZIP, setup.sh, setup.ps1, Lizenzinformationen, Image und SHA256SUMS
 hoch und veröffentlicht den Draft. Das GitHub-Environment `release` kann im
 Repository zusätzlich mit menschlicher Freigabe geschützt werden.

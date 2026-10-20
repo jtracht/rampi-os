@@ -1,6 +1,7 @@
 {
   "release-type": "python",
   "draft": true,
+  "force-tag-creation": true,
   "include-v-in-tag": true,
   "include-component-in-tag": false,
   "packages": {
