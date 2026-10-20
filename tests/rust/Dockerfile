@@ -10,5 +10,9 @@ RUN useradd --create-home --uid 1000 rampi
 RUN rustup component add clippy rustfmt
 RUN apt-get update && apt-get install -y --no-install-recommends librsvg2-common libgtk-4-media-gstreamer \
     && rm -rf /var/lib/apt/lists/*
-RUN apt-get update && apt-get install -y --no-install-recommends python3-dbusmock \
+RUN apt-get update && apt-get install -y --no-install-recommends python3-dbusmock pulseaudio \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends gstreamer1.0-pulseaudio \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libcanberra-dev libcanberra-pulse \
     && rm -rf /var/lib/apt/lists/*

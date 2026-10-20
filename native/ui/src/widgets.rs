@@ -10,22 +10,21 @@ pub type Shared = Rc<RefCell<Settings>>;
 #[derive(Clone)]
 pub struct Feedback {
     settings: Shared,
-    select: gtk::MediaFile,
-    click: gtk::MediaFile,
+    audio: Rc<Option<crate::audio::Sound>>,
     last: Rc<Cell<Instant>>,
 }
 impl Feedback {
+    pub fn prepared(&self) -> bool {
+        self.audio.is_some()
+    }
     pub fn new(settings: Shared) -> Self {
-        // GTK's GStreamer implementation accepts files, but aborts on streams.
-        // Reuse two prepared instances with the packaged original PCM assets.
-        let select = gtk::MediaFile::for_filename(assets().join("sounds/select.wav"));
-        let click = gtk::MediaFile::for_filename(assets().join("sounds/click.wav"));
-        select.set_volume(0.12);
-        click.set_volume(0.22);
+        let audio = Rc::new(crate::audio::Sound::new(
+            &assets().join("sounds/select.wav"),
+            &assets().join("sounds/click.wav"),
+        ));
         Self {
             settings,
-            select,
-            click,
+            audio,
             last: Rc::new(Cell::new(Instant::now())),
         }
     }
@@ -36,9 +35,12 @@ impl Feedback {
             return;
         }
         self.last.set(Instant::now());
-        let stream = if click { &self.click } else { &self.select };
-        stream.seek(0);
-        stream.play();
+        if let Some(audio) = self.audio.as_ref() {
+            let code = audio.play(click);
+            if code < 0 && std::env::var("RAMPI_TEST_CONTAINER").as_deref() == Ok("1") {
+                eprintln!("Audio playback unavailable: canberra error {code}");
+            }
+        }
     }
 }
 pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {

@@ -287,6 +287,21 @@ fn build(app: &gtk::Application) {
     }
     window.present();
     tile_buttons[0].grab_focus();
+    if std::env::args().any(|a| a == "--sound-test") {
+        let (app, f) = (app.clone(), feedback.clone());
+        glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
+            if !f.prepared() {
+                return glib::ControlFlow::Continue;
+            }
+            f.play(true);
+            let app = app.clone();
+            glib::timeout_add_local_once(std::time::Duration::from_millis(2500), move || {
+                println!("RAMPI_RUST_SOUND_PREPARED_OK");
+                app.quit();
+            });
+            glib::ControlFlow::Break
+        });
+    }
     if std::env::args().any(|a| a == "--embedded-test") {
         let (a, s) = (app.clone(), stack.clone());
         glib::timeout_add_local_once(std::time::Duration::from_millis(300), move || {

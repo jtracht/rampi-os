@@ -27,9 +27,9 @@ python3 - <<'PY'
 import os, pwd, uuid
 from pathlib import Path
 secret = uuid.uuid4().hex
-root = Path('/run/rampi-acceptance-root')
+root = Path('/run/rampi-acceptance-root')  # pragma: allowlist secret - public fixture path
 config = ('interface=wlan1\ndriver=nl80211\nssid=RampiVirtualPrivate\n'
-          'hw_mode=g\nchannel=1\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\n'
+          'hw_mode=g\nchannel=1\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\n'  # pragma: allowlist secret - public hostapd constants
           'wpa_passphrase=' + secret + '\n')
 (root / 'hostapd.conf').write_text(config)
 key = Path('/run/rampi-acceptance-user/wifi-key')

@@ -24,8 +24,30 @@ application_pid=$!
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then
     sleep 0.5
     grim "$RAMPI_TEST_ARTIFACTS/rust-wayland-dashboard.png"
+    chmod 644 "$RAMPI_TEST_ARTIFACTS/rust-wayland-dashboard.png"
 fi
 wait "$application_pid"
 /build/target/debug/rampi-native --embedded-test
+pulseaudio --start --exit-idle-time=-1 --log-target="file:$test_home/audio.log"
+export PULSE_SINK=rampi_feedback
+pactl load-module module-null-sink sink_name=rampi_feedback >/dev/null
+pactl set-default-sink rampi_feedback
+pactl set-sink-volume rampi_feedback 100%
+pactl set-source-volume rampi_feedback.monitor 100%
+parec --device=rampi_feedback.monitor --format=s16le --rate=48000 --channels=1 --latency-msec=20 > "$test_home/click.pcm" &
+record_pid=$!
+timeout 15 /build/target/debug/rampi-native --sound-test
+sleep 0.6
+kill "$record_pid"
+wait "$record_pid" 2>/dev/null || true
+python3 - "$test_home/click.pcm" <<'PY'
+import array, sys
+data = array.array('h')
+data.frombytes(open(sys.argv[1], 'rb').read())
+peak=max(map(abs,data),default=0)
+if len(data) < 1000 or peak < 50:
+    raise SystemExit(f'Actual native click playback is silent or too quiet: peak={peak}')
+print(f'RAMPI_RUST_SOUND_PCM_OK peak={peak}')
+PY
 if pgrep -x Xorg || pgrep -x Xwayland || pgrep -x startx; then echo 'Unerlaubter X11-Prozess.' >&2; exit 1; fi
 echo RAMPI_WAYLAND_WITHOUT_X11_OK

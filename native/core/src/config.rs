@@ -237,7 +237,7 @@ mod tests {
     fn credentials_are_not_urls() {
         for value in [
             "http://example.com",
-            "https://user:secret@example.com",
+            "https://user:secret@example.com", // pragma: allowlist secret - deliberately invalid test URL
             "https://example.com\n",
         ] {
             assert!(validate_https(value).is_err());
@@ -252,7 +252,7 @@ mod tests {
     }
     #[test]
     fn unknown_fields_and_duplicate_columns_fail() {
-        assert!(serde_json::from_str::<Settings>(r#"{"password":"secret"}"#).is_err());
+        assert!(serde_json::from_str::<Settings>(r#"{"password":"secret"}"#).is_err()); // pragma: allowlist secret - dummy rejected configuration
         let s = Settings {
             board_columns: vec!["Offen".into(), "Offen".into()],
             ..Default::default()

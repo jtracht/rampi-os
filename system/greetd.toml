@@ -2,5 +2,5 @@
 vt = 7
 
 [default_session]
-command = "labwc -C /etc/xdg/rampi/greeter -S 'wlgreet --command /usr/local/bin/rampi-session'"
+command = "/usr/bin/labwc -C /etc/xdg/rampi/greeter -S '/usr/sbin/wlgreet --command /usr/local/bin/rampi-session'"
 user = "_greetd"

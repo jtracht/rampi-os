@@ -4,7 +4,9 @@ Verbindliche Architekturänderung vom 21. Oktober 2026: Anwendung und Oberfläch
 werden in Rust entwickelt. Die grafische Sitzung verwendet Wayland mit labwc;
 `startx`, Xorg und Openbox gehören nicht zur neuen Laufzeit.
 
-GTK 4 stellt Widgets, Eingabe, Fokus, Barrierefreiheit und Cairo bereit. VTE
+GTK 4 stellt Widgets, Eingabe, Fokus, Barrierefreiheit und Cairo bereit.
+libcanberra übernimmt die kurzen UI-Klänge über den vorhandenen PulseAudio-
+beziehungsweise PipeWire-Pulse-Dienst. VTE
 stellt das eingebettete Terminal einschließlich PTY bereit. WebKitGTK stellt
 die eingebettete Browser-Engine bereit. Diese Komponenten werden über ihre
 Rust-Bindings verwendet. Rampi entwickelt keine eigenen Ersatzprotokolle,
@@ -44,7 +46,8 @@ dem Raspberry Pi kompiliert; Installer erwarten ein vorgebautes ARM64-Binary.
 Lokal nachgewiesen: Rust-Core-Tests; vollständiger Linux-Build; Clippy ohne
 Warnungen; echte labwc-Sitzung mit `GdkWaylandDisplay`, einem App-Fenster und
 getrennten Einstellungsseiten; tatsächliche VTE-PTY-Ein-/Ausgabe; tatsächliche
-WebKit-DOM-/JavaScript-Ausführung. Die Laufzeitprüfung verwendet ein Limit von
+WebKit-DOM-/JavaScript-Ausführung; Rust-/GIO-Aufrufe gegen eine private
+NetworkManager-Fixture; tatsächliche Klick-Audioausgabe über libcanberra/PulseAudio. Die Laufzeitprüfung verwendet ein Limit von
 1 GiB. Im Test laufen weder Xorg noch Xwayland noch `startx`.
 
 Das ist keine vollständige Funktionsabnahme. Die bisherigen Python-/QML-,

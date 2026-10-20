@@ -11,10 +11,13 @@ if [[ "$mode" != --image ]]; then
     if [[ "$model" != *'Raspberry Pi 3 Model B Plus'* && "$model" != *'Raspberry Pi 3 Model B+'* ]]; then echo "Nicht validierte Zielhardware: $model" >&2; exit 1; fi
 fi
 packages=(libgtk-4-1 libvte-2.91-gtk4-0 libwebkitgtk-6.0-4 libgtk-4-media-gstreamer librsvg2-common
-    gstreamer1.0-plugins-good labwc greetd wlgreet dbus-user-session
+    gstreamer1.0-plugins-good gstreamer1.0-pulseaudio libcanberra0 libcanberra-pulse labwc greetd wlgreet dbus-user-session
     network-manager bluez wireguard-tools openssh-client freerdp3-wayland
     wlr-randr libsecret-tools gnome-keyring libpam-gnome-keyring
     plymouth plymouth-themes fonts-dejavu-core accountsservice whois binutils)
+if ! dpkg-query -W -f='${Status}' pulseaudio 2>/dev/null | grep -q '^install ok installed$'; then
+    packages+=(pipewire-audio)
+fi
 new_login=0
 if [[ "$mode" == --image ]] || [[ ! -e /etc/greetd/config.toml && ! -e /etc/systemd/system/display-manager.service ]]; then new_login=1; fi
 if [[ "$mode" != --image && -e /etc/systemd/system/display-manager.service ]]; then
