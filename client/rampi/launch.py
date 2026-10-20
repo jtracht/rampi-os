@@ -51,6 +51,17 @@ def preview_args(host: Host, module: str) -> list[str]:
     return ssh_command(host, script, interactive=False)
 
 
+def session_args(host: Host, module: str, action: str) -> list[str]:
+    if module not in MODULES or action not in {"Status", "Stop"}:
+        raise ValueError("Unbekannte Sitzungsaktion.")
+    script = (
+        "$ErrorActionPreference='Stop'; "
+        "$s=Join-Path $env:LOCALAPPDATA 'Rampi\\rampi-session.ps1'; "
+        f"& $s -Module {ps_literal(module)} -Action {ps_literal(action)}; exit $LASTEXITCODE"
+    )
+    return ssh_command(host, script, interactive=False)
+
+
 def ssh_command(host: Host, script: str, interactive: bool = True) -> list[str]:
     host.validate()
     encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")

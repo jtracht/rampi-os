@@ -1,13 +1,25 @@
 """Exercise actual QML keyboard navigation in a separate native GUI process."""
 
 import os
+import tempfile
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QT_QUICK_BACKEND", "software")
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
+personal_files = tempfile.TemporaryDirectory(prefix="rampi-ui-")
+os.environ["XDG_CONFIG_HOME"] = personal_files.name
+os.environ["XDG_CACHE_HOME"] = personal_files.name
 
-from PySide6.QtCore import QEvent, QEventLoop, Qt, QTimer, QUrl  # noqa: E402
+from PySide6.QtCore import (  # noqa: E402
+    QEvent,
+    QEventLoop,
+    QMetaObject,
+    QObject,
+    Qt,
+    QTimer,
+    QUrl,
+)
 from PySide6.QtGui import QFont, QFontDatabase, QFontInfo, QFontMetrics  # noqa: E402
 from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 from PySide6.QtQuick import QQuickWindow  # noqa: E402, F401
@@ -57,9 +69,49 @@ if window.property("page") != "kanban":
 QTest.keyClick(window, Qt.Key.Key_Escape)
 if window.property("page") != "dashboard":
     raise SystemExit("Escape did not return to dashboard")
+
+
+def item(name):
+    value = window.findChild(QObject, name)
+    if value is None:
+        raise SystemExit(f"Missing actual QML control: {name}")
+    return value
+
+
+dialog = item("settingsDialog")
+QMetaObject.invokeMethod(dialog, "open")
+app.processEvents()
+QMetaObject.invokeMethod(item("newHost"), "clicked")
+for name, value in [
+    ("hostName", "Software-Test"),
+    ("hostAddress", "windows.test"),
+    ("hostUsername", "developer"),
+]:
+    item(name).setProperty("text", value)
+QMetaObject.invokeMethod(item("saveHost"), "clicked")
+app.processEvents()
+if len(backend.settings.hosts) != 1 or backend.settings.hosts[0].name != "Software-Test":
+    raise SystemExit("The real QML host editor did not persist its profile")
+QMetaObject.invokeMethod(dialog, "close")
+QMetaObject.invokeMethod(dialog, "open")
+app.processEvents()
+if item("hostAddress").property("text") != "windows.test":
+    raise SystemExit("The real QML host editor did not restore its profile")
+item("settingsTabs").setProperty("currentIndex", 4)
+app.processEvents()
+QTest.qWait(100)
+output = Path(os.environ.get("RAMPI_TEST_ARTIFACTS", personal_files.name)) / "session-settings.png"
+output.parent.mkdir(parents=True, exist_ok=True)
+if not window.grabWindow().save(str(output.resolve())):
+    raise SystemExit("Could not capture the actual session settings")
+QTest.keyClick(window, Qt.Key.Key_Tab)
+QTest.keyClick(window, Qt.Key.Key_Escape)
+if dialog.property("visible"):
+    raise SystemExit("Keyboard Escape did not close session settings")
 if warnings:
     raise SystemExit("QML warnings: " + "\n".join(warnings))
 backend.jobs.pool.waitForDone(25000)
 engine.deleteLater()
 app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
-print("PASS: actual QML loaded; six keyboard focus moves, Enter and Escape verified.")
+personal_files.cleanup()
+print("PASS: actual QML keyboard navigation, host profile save/restore and session dialog.")

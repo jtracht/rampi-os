@@ -3,7 +3,7 @@
 param(
     [Parameter(Mandatory)][ValidateSet('codex','claude','antigravity')][string]$Module,
     [string]$Project = '',
-    [ValidateSet('Attach','List','Stop')][string]$Action = 'Attach'
+    [ValidateSet('Attach','List','Stop','Status')][string]$Action = 'Attach'
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -13,7 +13,13 @@ $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 if ($identity.IsSystem) { throw 'KI-Sitzungen dürfen nicht als SYSTEM laufen.' }
 $session = 'rampi-' + $Module
 if ($Action -eq 'List') { & $mux.Source list-sessions; exit $LASTEXITCODE }
-if ($Action -eq 'Stop') { & $mux.Source kill-session -t $session; exit $LASTEXITCODE }
+if ($Action -eq 'Status') {
+    & $mux.Source has-session -t "=$session" 2>$null | Out-Null
+    $running = $LASTEXITCODE -eq 0
+    [PSCustomObject]@{schema=1; module=$Module; running=$running} | ConvertTo-Json -Compress
+    exit 0
+}
+if ($Action -eq 'Stop') { & $mux.Source kill-session -t "=$session"; exit $LASTEXITCODE }
 if ($Project) {
     $resolved = Resolve-Path -LiteralPath $Project -ErrorAction Stop
     if ($resolved.Provider.Name -ne 'FileSystem' -or

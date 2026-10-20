@@ -254,7 +254,7 @@ ApplicationWindow {
       onPositionChanged: window.keyboardMode = false
     }
   }
-  SettingsDialog { id: settings; anchors.centerIn: parent; width: Math.min(window.width - 50, 1000); height: Math.min(window.height - 50, 780) }
+  SettingsDialog { id: settings; objectName: "settingsDialog"; anchors.centerIn: parent; width: Math.min(window.width - 50, 1000); height: Math.min(window.height - 50, 780) }
   SetupWizard {
     id: setupWizard
     anchors.centerIn: parent

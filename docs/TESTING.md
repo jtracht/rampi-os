@@ -85,3 +85,55 @@ privilegierte Container sind nötig. Kurzlebige Schlüssel erzeugt das vorhanden
 polkit-Freigabe existiert nur in den wegwerfbaren Testcontainern.
 Dies ist ein tatsächlicher privater VPN-Test, keine Anmeldung in einem persönlichen
 Tailscale-Netz und kein Test gegen fremde oder persönliche Endpunkte.
+
+## Ergänzung: Hostverwaltung und echte RDP-Verbindung
+
+Die Suite umfasst jetzt 45 Python-Tests. Zusätzliche Fälle prüfen mehrere
+Hostprofile, Speicherung und Löschung, die Sperre beim laufenden Client sowie
+das Verwerfen verspäteter Status-, Vorschau- und Fingerprintantworten eines
+vorherigen Hosts. Der reale QML-Test speichert ein Profil durch die tatsächlichen
+Formularaktionen, öffnet es erneut und prüft die Tastatursteuerung der Sitzungsseite.
+Er verwendet ausschließlich ein temporäres persönliches Konfigurationsverzeichnis.
+
+`scripts/test-rdp.py` hat lokal mit Docker/Trixie amd64 eine echte Verbindung
+zwischen FreeRDP und xrdp/PAM bestanden: unabhängiger TLS-Fingerprintvergleich,
+übertragene Desktop-Pixel, eingegebener Text beim authentifizierten Benutzer,
+erneute Verbindung und Zurückweisung eines falschen Zertifikats. Server und
+Client besitzen getrennte Netzwerk-Namensräume in einem internen Docker-Netz,
+je 512 MB RAM und zwei CPUs. Keine Hostports, Geräte oder Hostdienste werden
+freigegeben. Die ARM64-CI führt denselben Test aus.
+
+```sh
+docker build -t rampi-remote-test -f tests/remote/Dockerfile .
+python scripts/test-rdp.py
+```
+
+Der Testserver erzwingt TLS; dies ist kein Nachweis für Windows-NLA oder die
+Windows-Desktopintegration. Windows-CI prüft außerdem die tatsächlichen
+Status-/Stop-Aktionen des persönlichen psmux-Adapters: Das exakt benannte Ziel
+wird beendet, eine Sitzung mit gleichem Namenspräfix bleibt erhalten.
+
+## Ergänzung: tatsächliche Sunshine/Moonlight-Verbindung
+
+`scripts/test-streaming.py` hat lokal mit Debian Trixie amd64 die offizielle
+Sunshine-Version 2026.914.233613 und denselben Moonlight-Embedded-2.7.1-Quellcommit
+wie der Pi-Installer verbunden. Zwei normale Benutzerprozesse in getrennten
+internen Docker-Netzwerk-Namensräumen führen die echte PIN-Kopplung aus. Ein
+zweites, nicht gekoppeltes Rampi-Profil erhält keinen Anwendungszugriff. Der
+Server verändert seine X11-Bildfläche fortlaufend; auf dem Client müssen beide
+Farben nach echter H.264-Übertragung und SDL/FFmpeg-Decodierung ankommen, auch
+nach erneuter Verbindung. Ein Start oder eine reine Logmeldung genügt nicht.
+
+```sh
+docker build -t rampi-streaming-test -f tests/streaming/Dockerfile .
+python scripts/test-streaming.py
+```
+
+Die offiziellen amd64-/arm64-Sunshine-Pakete werden per veröffentlichtem SHA256
+geprüft. Die ARM64-CI führt den gleichen Rundlauf aus. Jeder Container hat ein
+1-GB-/Vier-CPU-Limit; Hostports und Hardwaregeräte werden nicht freigegeben.
+Sunshines vorhandene stdin-PIN-Funktion ersetzt ausschließlich im wegwerfbaren
+Test die manuelle Freigabe. Diese Abnahme belegt Linux-Softwarevideo und die
+Protokollkopplung, keine Windows-Bildschirmaufnahme, GPU-Decodierung, Audio,
+Streaming-Tastatureingabe oder gemessene Pi-Leistung. Sunshine bleibt eine
+Freigabe der aktiven Konsole und schafft keine getrennte Windows-Anmeldung.

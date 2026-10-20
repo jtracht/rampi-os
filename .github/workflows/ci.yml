@@ -22,6 +22,18 @@ jobs:
       - run: docker run --rm --memory=1g --memory-swap=1g --cpus=4 rampi-trixie-test timeout 60 xvfb-run -a -s '-screen 0 1600x900x24 -nolisten tcp' bash scripts/test-x11.sh
       - name: Real WireGuard peers with NetworkManager and Linux account isolation
         run: timeout 240 python3 scripts/test-wireguard.py
+      - run: docker build -t rampi-remote-test -f tests/remote/Dockerfile .
+      - name: Actual FreeRDP desktop frames, keyboard, reconnect and certificate rejection
+        run: timeout 240 python3 scripts/test-rdp.py
+      - run: docker build -t rampi-streaming-test -f tests/streaming/Dockerfile .
+      - name: Actual Sunshine pairing, unpaired profile rejection and changing Moonlight video
+        run: timeout 240 python3 scripts/test-streaming.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: remote-integration-arm64
+          path: artifacts/
+          if-no-files-found: ignore
   client:
     strategy:
       matrix:
@@ -91,6 +103,7 @@ jobs:
           if ((Get-FileHash psmux.zip -Algorithm SHA256).Hash.ToLower() -ne 'a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721') { throw 'psmux checksum mismatch' } # pragma: allowlist secret
           Expand-Archive psmux.zip -DestinationPath psmux
           ./scripts/test-persistence.ps1 -Psmux ./psmux/psmux.exe
+          ./scripts/test-session-controls.ps1 -Psmux ./psmux/psmux.exe
       - name: Real Windows OpenSSH reconnect and cross-user isolation
         shell: pwsh
         run: ./scripts/test-windows-ssh.ps1 -Psmux ./psmux/psmux.exe
