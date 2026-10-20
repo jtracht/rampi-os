@@ -26,6 +26,19 @@ packages=(python3 python3-gi gir1.2-nm-1.0 libqt6svg6 qt6-svg-plugins python3-py
     openssh-client freerdp3-x11 xfce4-terminal chromium wmctrl arandr lxinput
     lxpolkit libsecret-tools gnome-keyring libpam-gnome-keyring unclutter-xfixes dbus-x11
     plymouth plymouth-themes plymouth-label fonts-dejavu-core accountsservice whois)
+if [[ "$mode" != --image && -s /etc/X11/default-display-manager ]]; then
+    IFS= read -r display_manager < /etc/X11/default-display-manager
+    if [[ -x "$display_manager" && "$display_manager" != */lightdm ]]; then
+        reused_packages=()
+        for package in "${packages[@]}"; do
+            if [[ "$package" != lightdm && "$package" != lightdm-gtk-greeter ]]; then
+                reused_packages+=("$package")
+            fi
+        done
+        packages=("${reused_packages[@]}")
+        printf 'Vorhandener Displaymanager wird weiterverwendet: %s\n' "$display_manager"
+    fi
+fi
 missing=()
 for package in "${packages[@]}"; do
     if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q '^install ok installed$'; then

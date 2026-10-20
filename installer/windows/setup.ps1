@@ -42,9 +42,11 @@ if ($EnableOpenSsh) {
         [Security.Principal.WindowsBuiltInRole]::Administrator)
     if (-not $admin) { throw 'OpenSSH-Einrichtung benötigt eine erhöhte PowerShell.' }
     if ($PSCmdlet.ShouldProcess('Windows OpenSSH Server / TCP 22', 'Installieren und aktivieren')) {
-        $capability = Get-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0'
-        if ($capability.State -ne 'Installed') {
-            Add-WindowsCapability -Online -Name $capability.Name | Out-Null
+        if (-not (Get-Service sshd -ErrorAction SilentlyContinue)) {
+            $capability = Get-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0'
+            if ($capability.State -ne 'Installed') {
+                Add-WindowsCapability -Online -Name $capability.Name | Out-Null
+            }
         }
         Set-Service sshd -StartupType Automatic
         Start-Service sshd

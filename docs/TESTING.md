@@ -14,6 +14,9 @@ Am 19./20.10.2026 tatsächlich ausgeführt:
   Benutzer-ACL vor Speicherung, Autostart deaktiviert.
 - AccountsService/PAM im wegwerfbaren ARM64-Container: normales Konto angelegt,
   richtiges Passwort akzeptiert, falsches abgewiesen.
+- Tatsächlicher GNOME-Keyring-/Secret-Service-Rundlauf in isoliertem D-Bus:
+  Token gespeichert und gelesen, verschlüsselte Datei und persönliche Rechte
+  bestätigt (CI 39338203802).
 - Virtuelles X11 mit Openbox/Qt: Ctrl+Alt+Home wechselt vom zweiten Fenster
   zum Dashboard. Der Home-Tastendruck erreicht das andere Fenster nicht.
   X11 kann nach Ende des Grabs ein alleinstehendes KeyRelease liefern;
