@@ -101,9 +101,8 @@ source.write_text(
     ),
     encoding="utf-8",
 )
-backend.settings.board_source = str(source)
-backend.changed.emit()
-backend.refreshBoard()
+if not backend.save({"board_kind": "json", "board_source": str(source)}):
+    raise SystemExit("Could not configure the actual JSON connector")
 wait_until(lambda: backend.board["total"] == 3)
 window.setProperty("page", "kanban")
 app.processEvents()
