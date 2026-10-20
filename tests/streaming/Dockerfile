@@ -4,7 +4,8 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git cmake build-essential pkg-config libopus-dev libevdev-dev libudev-dev \
     libsdl2-dev libavcodec-dev libavutil-dev libasound2-dev libcurl4-openssl-dev \
-    libssl-dev libexpat1-dev libavahi-client-dev uuid-dev curl ca-certificates
+    libssl-dev libexpat1-dev libavahi-client-dev uuid-dev curl ca-certificates \
+    pulseaudio pulseaudio-utils
 # Official Sunshine package, pinned by release and publisher-provided asset digest.
 RUN architecture="$(dpkg --print-architecture)" \
     && case "$architecture" in \

@@ -10,6 +10,7 @@ Dialog {
   property var host: rampi.configuration.hosts.length ? rampi.configuration.hosts[rampi.configuration.active_host] : ({})
   property bool addingHost: false
   property int editIndex: -1
+  property string selectedVpnUuid: ""
   function loadHost(value) {
     hostName.text = value.name || "Windows";
     address.text = value.address || ""; username.text = value.username || "";
@@ -25,6 +26,7 @@ Dialog {
     spacing: 12
     TabBar {
       id: tabs; objectName: "settingsTabs"; Layout.fillWidth: true
+      onCurrentIndexChanged: if (currentIndex === 2) rampi.refreshVpnProfiles()
       TabButton { text: "Host & SSH" }
       TabButton { text: "System" }
       TabButton { text: "VPN" }
@@ -47,9 +49,9 @@ Dialog {
             onActivated: function(index) { dialog.addingHost = false; dialog.editIndex = index; dialog.loadHost(rampi.configuration.hosts[index]); }
           }
           RowLayout {
-            Button { objectName: "newHost"; text: "Neues Profil"; onClicked: { dialog.addingHost = true; dialog.editIndex = -1; dialog.loadHost({name: "Neuer Host"}); hostName.forceActiveFocus(); } }
-            Button { text: "Dieses Profil verwenden"; enabled: dialog.editIndex >= 0; onClicked: rampi.selectHost(dialog.editIndex) }
-            Button { text: "Profil entfernen"; enabled: dialog.editIndex >= 0; onClicked: removeProfile.open() }
+            RampiButton { objectName: "newHost"; text: "Neues Profil"; onClicked: { dialog.addingHost = true; dialog.editIndex = -1; dialog.loadHost({name: "Neuer Host"}); hostName.forceActiveFocus(); } }
+            RampiButton { text: "Dieses Profil verwenden"; enabled: dialog.editIndex >= 0; onClicked: rampi.selectHost(dialog.editIndex) }
+            RampiButton { text: "Profil entfernen"; enabled: dialog.editIndex >= 0; onClicked: removeProfile.open() }
           }
           Label { text: "Profilname" }
           TextField { id: hostName; objectName: "hostName"; Layout.fillWidth: true }
@@ -62,11 +64,11 @@ Dialog {
           SpinBox { id: port; from: 1; to: 65535; value: dialog.host.port || 22; editable: true }
           Label { text: "Persönlicher privater SSH-Schlüssel · nur Dateipfad" }
           TextField { id: identity; text: dialog.host.identity || ""; placeholderText: "~/.ssh/id_ed25519"; Layout.fillWidth: true }
-          Button { text: "SSH-Schlüssel mit OpenSSH erzeugen"; onClicked: rampi.action("ssh-key", "") }
-          Button { text: "SSH-Hostschlüssel abrufen"; onClicked: { verified.checked = false; rampi.scanHost(dialog.hostValues()); } }
+          RampiButton { text: "SSH-Schlüssel mit OpenSSH erzeugen"; onClicked: rampi.action("ssh-key", "") }
+          RampiButton { text: "SSH-Hostschlüssel abrufen"; onClicked: { verified.checked = false; rampi.scanHost(dialog.hostValues()); } }
           TextArea { text: rampi.hostKey.fingerprints; readOnly: true; selectByMouse: true; textFormat: TextEdit.PlainText; wrapMode: TextEdit.Wrap; Layout.fillWidth: true }
           CheckBox { id: verified; text: "Fingerprints unabhängig am Windows-Host verglichen" }
-          Button {
+          RampiButton {
             text: "Geprüfte Hostschlüssel speichern"
             enabled: verified.checked && rampi.hostKey.fingerprints !== ""
             onClicked: { rampi.trustHost(dialog.hostValues()); verified.checked = false; }
@@ -75,7 +77,7 @@ Dialog {
           TextField { id: project; text: dialog.host.project || ""; placeholderText: "C:\\Projects\\MeinProjekt"; Layout.fillWidth: true }
           Label { text: "Streaming-Auflösung · Breite x Höhe" }
           TextField { id: resolution; placeholderText: "1280x720"; Layout.fillWidth: true }
-          Button {
+          RampiButton {
             objectName: "saveHost"; text: dialog.addingHost || dialog.editIndex < 0 ? "Hostprofil hinzufügen" : "Hostprofil speichern"
             onClicked: {
               let creating = dialog.addingHost || dialog.editIndex < 0;
@@ -86,7 +88,7 @@ Dialog {
               }
             }
           }
-          Button { text: "Lokale Remote-Verbindungen schließen"; onClicked: rampi.disconnectClients() }
+          RampiButton { text: "Lokale Remote-Verbindungen schließen"; onClicked: rampi.disconnectClients() }
           Label { text: "Die offiziellen CLIs und psmux müssen im Windows-Benutzerkonto eingerichtet sein. Anmeldungen erfolgen in den jeweiligen offiziellen Programmen."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
       }
@@ -95,20 +97,20 @@ Dialog {
           width: parent.width - 20; spacing: 16
           Label { text: "Vorhandene Systemdienste"; font.pixelSize: 23; font.bold: true }
           Label { text: "Die Systemdialoge verwenden NetworkManager, BlueZ und polkit. Linux-Konten und Login bleiben unter PAM-Verwaltung."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-          Button { text: "WLANs suchen"; onClicked: rampi.action("wifi-scan", "") }
-          Button { text: "Netzwerkverbindungen einrichten"; onClicked: rampi.action("wifi-connect", "") }
-          Button { text: "Bluetooth · Geräte koppeln"; onClicked: rampi.action("bluetooth", "") }
-          Button { text: "HDMI · Anzeige einstellen"; onClicked: rampi.action("display", "") }
-          Button { text: "Tastatur und Maus"; onClicked: rampi.action("keyboard", "") }
-          Button { text: "Linux-Systemkonsole öffnen"; onClicked: rampi.launch("console") }
-          Button { text: "Abschlussdiagnose / installierte Programme"; onClicked: rampi.action("diagnostics", "") }
+          RampiButton { text: "WLANs suchen"; onClicked: rampi.action("wifi-scan", "") }
+          RampiButton { text: "Netzwerkverbindungen einrichten"; onClicked: rampi.action("wifi-connect", "") }
+          RampiButton { text: "Bluetooth · Geräte koppeln"; onClicked: rampi.action("bluetooth", "") }
+          RampiButton { text: "HDMI · Anzeige einstellen"; onClicked: rampi.action("display", "") }
+          RampiButton { text: "Tastatur und Maus"; onClicked: rampi.action("keyboard", "") }
+          RampiButton { text: "Linux-Systemkonsole öffnen"; onClicked: rampi.launch("console") }
+          RampiButton { text: "Abschlussdiagnose / installierte Programme"; onClicked: rampi.action("diagnostics", "") }
           CheckBox { id: reducedMotion; text: "Bewegung reduzieren"; checked: rampi.configuration.reduce_motion }
           Label { text: "Neues Linux-Systemkonto · polkit fragt nach Administratorfreigabe"; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           TextField { id: newUser; placeholderText: "Benutzername"; Layout.fillWidth: true }
           TextField { id: realName; placeholderText: "Anzeigename"; Layout.fillWidth: true }
           TextField { id: newPassword; placeholderText: "Passwort · mindestens 12 Zeichen"; echoMode: TextInput.Password; Layout.fillWidth: true }
           TextField { id: repeatPassword; placeholderText: "Passwort wiederholen"; echoMode: TextInput.Password; Layout.fillWidth: true }
-          Button {
+          RampiButton {
             text: "Linux-Konto anlegen"
             enabled: newUser.text !== "" && newPassword.text.length >= 12 && newPassword.text === repeatPassword.text
             onClicked: { rampi.createUser(newUser.text, realName.text, newPassword.text); newPassword.clear(); repeatPassword.clear(); }
@@ -122,18 +124,25 @@ Dialog {
           Label { text: "Tailscale & WireGuard"; font.pixelSize: 23; font.bold: true }
           Label { text: "VPN-Verbindungen verändern das systemweite Routing. polkit beziehungsweise der vorhandene Dienst entscheidet über Berechtigungen."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           RowLayout {
-            Button { text: "Tailscale verbinden"; onClicked: rampi.action("tailscale-up", "") }
-            Button { text: "Trennen"; onClicked: rampi.action("tailscale-down", "") }
-            Button { text: "Status"; onClicked: rampi.action("tailscale-status", "") }
+            RampiButton { text: "Tailscale verbinden"; onClicked: rampi.action("tailscale-up", "") }
+            RampiButton { text: "Trennen"; onClicked: rampi.action("tailscale-down", "") }
+            RampiButton { text: "Status"; onClicked: rampi.action("tailscale-status", "") }
           }
           Label { text: "WireGuard-Konfigurationsdatei" }
           TextField { id: wgFile; placeholderText: "/home/user/VPN.conf"; Layout.fillWidth: true }
-          Button { text: "In NetworkManager importieren"; onClicked: rampi.action("wg-import", wgFile.text) }
-          Button { text: "Profile anzeigen"; onClicked: rampi.action("wg-status", "") }
-          TextField { id: wgUuid; placeholderText: "UUID des NetworkManager-Profils"; Layout.fillWidth: true }
+          RampiButton { text: "In NetworkManager importieren"; enabled: !rampi.vpnProfiles.busy; onClicked: rampi.action("wg-import", wgFile.text) }
+          RampiButton { text: "Persönliche Profile aktualisieren"; onClicked: rampi.refreshVpnProfiles() }
+          Label { text: rampi.vpnProfiles.error; visible: text !== ""; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          ComboBox {
+            id: vpnPicker; objectName: "vpnPicker"; Layout.fillWidth: true
+            model: rampi.vpnProfiles.profiles; textRole: "label"; valueRole: "uuid"
+            currentIndex: model.findIndex(function(p) { return p.uuid === dialog.selectedVpnUuid; })
+            displayText: currentIndex < 0 ? "Persönliches WireGuard-Profil auswählen" : currentText
+            onActivated: dialog.selectedVpnUuid = currentValue
+          }
           RowLayout {
-            Button { text: "WireGuard verbinden"; onClicked: rampi.action("wg-up", wgUuid.text) }
-            Button { text: "Trennen"; onClicked: rampi.action("wg-down", wgUuid.text) }
+            RampiButton { objectName: "connectWireGuard"; text: "WireGuard verbinden"; enabled: vpnPicker.currentIndex >= 0 && !rampi.vpnProfiles.busy; onClicked: rampi.action("wg-up", vpnPicker.currentValue) }
+            RampiButton { text: "Trennen"; enabled: vpnPicker.currentIndex >= 0 && !rampi.vpnProfiles.busy; onClicked: rampi.action("wg-down", vpnPicker.currentValue) }
           }
           Label { text: "Persönliche VPN-Profile vor der Verwendung in NetworkManager auf den eigenen Linux-Benutzer beschränken. Tailscale hat eine systemweite Geräteidentität."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
@@ -145,11 +154,14 @@ Dialog {
           ComboBox { id: boardKind; model: ["json", "github", "trello", "jira", "asana", "notion"]; currentIndex: Math.max(0, model.indexOf(rampi.configuration.board_kind)) }
           Label { text: "Datenquelle · Datei oder Anbieter-Projekt-ID (Format siehe Dokumentation)" }
           TextField { id: boardSource; text: rampi.configuration.board_source; Layout.fillWidth: true }
+          Label { text: "Spaltenreihenfolge · ein Name pro Zeile; leer übernimmt die Datenquelle"; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          TextArea { id: boardColumns; objectName: "boardColumns"; text: rampi.configuration.board_columns.join("\n"); placeholderText: "Offen\nIn Arbeit\nReview\nErledigt"; Layout.fillWidth: true; wrapMode: TextEdit.Wrap }
+          Label { text: "Zusätzliche Statuswerte der Datenquelle erscheinen automatisch rechts. Die Aufgaben selbst werden nicht verändert."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
           Label { text: "Secret-Service-Profilname · kein Token im Konfigurationsfeld" }
           TextField { id: tokenKey; text: rampi.configuration.board_token_key; Layout.fillWidth: true }
           TextField { id: tokenAccount; visible: boardKind.currentText === "jira" || boardKind.currentText === "trello"; placeholderText: boardKind.currentText === "trello" ? "Trello API-Key" : "Jira E-Mail · bei OAuth leer lassen"; Layout.fillWidth: true }
           TextField { id: tokenValue; visible: boardKind.currentText !== "json"; placeholderText: "Persönliches Token · nur im Secret Service speichern"; echoMode: TextInput.Password; Layout.fillWidth: true }
-          Button {
+          RampiButton {
             text: "Zugang im persönlichen Schlüsselspeicher speichern"
             visible: boardKind.currentText !== "json"
             enabled: tokenKey.text !== "" && tokenValue.text !== ""
@@ -168,7 +180,7 @@ Dialog {
           Label { text: "Persistente Windows-KI-Sitzungen"; font.pixelSize: 23; font.bold: true }
           Label { text: "Host: " + (dialog.host.name || "Nicht eingerichtet") + (dialog.host.username ? " · " + dialog.host.username : ""); wrapMode: Text.WordWrap; Layout.fillWidth: true }
           Label { text: "Pro Anbieter und Windows-Benutzer bleibt eine Sitzung erhalten. Öffnen verbindet erneut. Ein geändertes Projekt gilt beim nächsten Sitzungsstart; eine vorhandene Sitzung zuerst bewusst beenden."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-          Button { text: "Sitzungen auf Windows prüfen"; onClicked: rampi.refreshSessions() }
+          RampiButton { text: "Sitzungen auf Windows prüfen"; onClicked: rampi.refreshSessions() }
           Repeater {
             model: rampi.sessions
             Frame {
@@ -178,26 +190,28 @@ Dialog {
                 Label { text: modelData.title; font.pixelSize: 20; font.bold: true }
                 Label { text: modelData.state; wrapMode: Text.WordWrap; Layout.fillWidth: true }
                 RowLayout {
-                  Button { text: "Öffnen / wiederverbinden"; onClicked: rampi.launch(modelData.module) }
-                  Button { text: "Windows-Sitzung beenden"; enabled: modelData.state === "Läuft auf Windows"; onClicked: { stopSession.module = modelData.module; stopSession.open(); } }
+                  RampiButton { text: "Öffnen / wiederverbinden"; onClicked: rampi.launch(modelData.module) }
+                  RampiButton { text: "Windows-Sitzung beenden"; enabled: modelData.state === "Läuft auf Windows"; onClicked: { stopSession.module = modelData.module; stopSession.open(); } }
                 }
               }
             }
           }
-          Button { text: "Nur lokale Verbindungen schließen"; onClicked: rampi.disconnectClients() }
+          RampiButton { text: "Nur lokale Verbindungen schließen"; onClicked: rampi.disconnectClients() }
         }
       }
     }
     RowLayout {
-      Button {
+      RampiButton {
+        objectName: "saveGeneral"
         text: "Allgemeine Einstellungen speichern"
         onClicked: {
           if (rampi.save({board_kind: boardKind.currentText,
               board_source: boardSource.text, board_token_key: tokenKey.text,
+              board_columns: boardColumns.text.split("\n").map(function(c) { return c.trim(); }).filter(function(c) { return c !== ""; }),
               browser_url: browserUrl.text, reduce_motion: reducedMotion.checked})) dialog.close();
         }
       }
-      Button { text: "Später einrichten"; onClicked: dialog.close() }
+      RampiButton { text: "Später einrichten"; onClicked: dialog.close() }
     }
   }
   Dialog {

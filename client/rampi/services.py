@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import getpass
 import json
 import os
 import re
@@ -110,6 +109,51 @@ def wireguard_profiles() -> str:
     return command(["nmcli", "-t", "-f", "UUID,NAME,TYPE,ACTIVE", "connection", "show"])
 
 
+def linux_username() -> str:
+    if os.name != "posix":
+        raise RuntimeError("Linux-Systemkonto benötigt.")
+    import pwd
+
+    return pwd.getpwuid(os.getuid()).pw_name  # type: ignore[attr-defined]
+
+
+def personal_wireguard_profiles() -> list[dict[str, object]]:
+    """Read libnm metadata only. Shared and other users' profiles are excluded."""
+    if os.name != "posix":
+        raise RuntimeError("NetworkManager-Profile sind nur unter Linux verfügbar.")
+    import gi
+
+    gi.require_version("NM", "1.0")
+    from gi.repository import NM
+
+    client = NM.Client.new(None)
+    if not client.get_nm_running():
+        raise RuntimeError("NetworkManager ist nicht erreichbar.")
+    active = {connection.get_uuid() for connection in client.get_active_connections()}
+    permissions = [f"user:{linux_username()}:"]
+    profiles = []
+    for connection in client.get_connections():
+        setting = connection.get_setting_connection()
+        if (
+            setting is None
+            or setting.get_connection_type() != "wireguard"
+            or list(setting.props.permissions) != permissions
+        ):
+            continue
+        identifier = setting.get_uuid()
+        name = setting.get_id()
+        connected = identifier in active
+        profiles.append(
+            {
+                "uuid": identifier,
+                "name": name,
+                "active": connected,
+                "label": name + (" · Verbunden" if connected else " · Getrennt"),
+            }
+        )
+    return sorted(profiles, key=lambda item: str(item["name"]).casefold())
+
+
 def wireguard_connection(filename: str, username: str):
     path = Path(filename).expanduser().resolve(strict=True)
     if path.suffix != ".conf" or path.stat().st_size > 65536:
@@ -133,7 +177,7 @@ def wireguard_connection(filename: str, username: str):
 
 
 def wireguard_import(filename: str) -> str:
-    connection = wireguard_connection(filename, getpass.getuser())
+    connection = wireguard_connection(filename, linux_username())
     from gi.repository import NM, Gio, GLib
 
     setting = connection.get_setting_connection()

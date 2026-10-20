@@ -152,6 +152,47 @@ def integration(image: str) -> None:
                 raise RuntimeError("Rampi import did not return a connection UUID")
             connection = match[1]
             connections.append(connection)
+            # Shared profiles must not leak into the personal picker. Read via
+            # real libnm and preserve names that would break delimiter parsers.
+            execute(
+                peer,
+                "nmcli",
+                "connection",
+                "add",
+                "type",
+                "wireguard",
+                "ifname",
+                "rampi-shared",
+                "con-name",
+                "Shared: lab",
+            )
+            execute(
+                peer,
+                "nmcli",
+                "connection",
+                "modify",
+                "uuid",
+                connection,
+                "connection.id",
+                "Personal: VPN\\Lab",
+            )
+            profile_code = (
+                "import json,os; from rampi.services import personal_wireguard_profiles; "
+                "os.environ['LOGNAME']='forged-name'; os.environ['USER']='forged-name'; "
+                "print(json.dumps(personal_wireguard_profiles()))"
+            )
+            own = json.loads(execute(peer, "python3", "-c", profile_code, user="rampi").stdout)
+            other = json.loads(
+                execute(peer, "python3", "-c", profile_code, user="rampi-other").stdout
+            )
+            if (
+                len(own) != 1
+                or own[0]["uuid"] != connection
+                or own[0]["name"] != "Personal: VPN\\Lab"
+                or own[0]["active"]
+                or other
+            ):
+                raise RuntimeError("Personal profile picker exposed shared/foreign metadata")
             autostart = execute(
                 peer, "nmcli", "-g", "connection.autoconnect", "connection", "show", connection
             )
@@ -203,15 +244,33 @@ def integration(image: str) -> None:
             )
             if foreign.returncode == 0:
                 raise RuntimeError("Another Linux user activated the private profile")
-            execute(
-                peer,
-                "python3",
-                "-c",
-                "from rampi.services import network_action; "
-                f"print(network_action('up', '{connection}'))",
-                user="rampi",
-                timeout=75,
-            )
+            if index == 0:
+                ui_result = execute(
+                    peer,
+                    "python3",
+                    "scripts/test-vpn-ui.py",
+                    "--uuid",
+                    connection,
+                    user="rampi",
+                    timeout=90,
+                    check=False,
+                )
+                if ui_result.returncode:
+                    raise RuntimeError("Actual VPN UI failed: " + ui_result.stderr[:3000])
+                print(ui_result.stdout.strip())
+            else:
+                execute(
+                    peer,
+                    "python3",
+                    "-c",
+                    "from rampi.services import network_action; "
+                    f"print(network_action('up', '{connection}'))",
+                    user="rampi",
+                    timeout=75,
+                )
+            active = json.loads(execute(peer, "python3", "-c", profile_code, user="rampi").stdout)
+            if not active[0]["active"]:
+                raise RuntimeError("Personal profile picker missed the active tunnel")
         for index, peer in enumerate(peers):
             other = 1 - index
             execute(peer, "ping", "-I", "rampi-ci", "-c", "3", "-W", "3", f"198.18.77.{other + 1}")

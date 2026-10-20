@@ -31,7 +31,7 @@ Dialog {
     ProgressBar { from: 0; to: wizard.steps.length; value: wizard.step + 1; Layout.fillWidth: true }
     Label { text: wizard.steps[wizard.step].title; font.pixelSize: 30; font.bold: true; Layout.fillWidth: true; wrapMode: Text.WordWrap }
     Label { text: wizard.steps[wizard.step].text; Layout.fillWidth: true; wrapMode: Text.WordWrap; font.pixelSize: 17; lineHeight: 1.5 }
-    Button {
+    RampiButton {
       visible: wizard.steps[wizard.step].label !== ""
       text: wizard.steps[wizard.step].label
       onClicked: {
@@ -43,9 +43,9 @@ Dialog {
     }
     Item { Layout.fillHeight: true }
     RowLayout {
-      Button { text: "Zurück"; enabled: wizard.step > 0; onClicked: wizard.step-- }
-      Button { text: wizard.step === wizard.steps.length - 1 ? "Abschließen" : "Weiter"; onClicked: { if (wizard.step < wizard.steps.length - 1) wizard.step++; else { rampi.finishSetup(); wizard.close(); } } }
-      Button { text: "Überspringen"; onClicked: wizard.close() }
+      RampiButton { text: "Zurück"; enabled: wizard.step > 0; onClicked: wizard.step-- }
+      RampiButton { text: wizard.step === wizard.steps.length - 1 ? "Abschließen" : "Weiter"; onClicked: { if (wizard.step < wizard.steps.length - 1) wizard.step++; else { rampi.finishSetup(); wizard.close(); } } }
+      RampiButton { text: "Überspringen"; onClicked: wizard.close() }
     }
   }
 }

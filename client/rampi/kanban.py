@@ -38,22 +38,36 @@ class Board:
     cached: bool = False
     warning: str = ""
 
-    def view(self, query: str = "") -> dict[str, Any]:
+    def view(
+        self,
+        query: str = "",
+        project: str = "",
+        priority: str = "",
+        status: str = "",
+        columns: list[str] | None = None,
+    ) -> dict[str, Any]:
         needle = query.casefold()
         visible = [
             c
             for c in self.cards
-            if needle in f"{c.title} {c.description} {c.project} {c.priority}".casefold()
+            if needle in f"{c.title} {c.description} {c.project} {c.priority} {c.status}".casefold()
+            and (not project or c.project == project)
+            and (not priority or c.priority == priority)
+            and (not status or c.status == status)
         ]
-        columns = list(dict.fromkeys([*self.columns, *(c.status for c in visible)]))
+        ordered = list(dict.fromkeys([*(columns or self.columns), *(c.status for c in self.cards)]))
         return {
             "title": self.title,
             "cached": self.cached,
             "warning": self.warning,
             "count": len(visible),
+            "total": len(self.cards),
+            "projects": sorted({c.project for c in self.cards if c.project}, key=str.casefold),
+            "priorities": sorted({c.priority for c in self.cards if c.priority}, key=str.casefold),
+            "statuses": ordered,
             "columns": [
                 {"name": col, "cards": [asdict(c) for c in visible if c.status == col]}
-                for col in columns
+                for col in ordered
             ],
         }
 

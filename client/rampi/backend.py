@@ -45,7 +45,12 @@ class Backend(QObject):
         self.jobs.failed.connect(self._failed)
         self._status = {"network": "Ungeprüft", "bluetooth": "Ungeprüft", "vpn": "Ungeprüft"}
         self._board = Board()
+        self._board_generation = 0
         self._query = ""
+        self._board_filters = ("", "", "")
+        self._vpn_profiles: list[dict] = []
+        self._vpn_error = "Noch nicht geprüft"
+        self._vpn_generation = 0
         self._host_key: dict = {"fingerprints": ""}
         self._host_generation = 0
         self._sessions = {name: "Ungeprüft" for name in ("codex", "claude", "antigravity")}
@@ -74,7 +79,35 @@ class Backend(QObject):
 
     @Property("QVariantMap", notify=boardChanged)
     def board(self):
-        return self._board.view(self._query)
+        view = self._board.view(
+            self._query, *self._board_filters, columns=self.settings.board_columns
+        )
+        project, priority, status = self._board_filters
+        view["filters"] = dict(project=project, priority=priority, status=status, query=self._query)
+        return view
+
+    @Property("QVariantMap", notify=changed)
+    def vpnProfiles(self):
+        return {
+            "profiles": self._vpn_profiles,
+            "error": self._vpn_error,
+            "busy": self._vpn_busy(),
+        }
+
+    def _vpn_busy(self) -> bool:
+        return any(name in self.jobs.pending for name in ("wg-up", "wg-down", "wg-import"))
+
+    @Slot()
+    def refreshVpnProfiles(self):
+        self._vpn_generation += 1
+        self.jobs.submit(
+            f"vpn-profiles-{self._vpn_generation}", services.personal_wireguard_profiles
+        )
+
+    @Slot(str, str, str)
+    def filterBoard(self, project, priority, status):
+        self._board_filters = (project, priority, status)
+        self.boardChanged.emit()
 
     @Property("QVariantMap", notify=changed)
     def previews(self):
@@ -248,7 +281,7 @@ class Backend(QObject):
             self.settings.board_source,
             self.settings.board_token_key,
         )
-        self.jobs.submit("board", lambda: load_board(kind, source, key))
+        self.jobs.submit(f"board-{self._board_generation}", lambda: load_board(kind, source, key))
 
     @Slot(str)
     def search(self, query: str):
@@ -291,8 +324,18 @@ class Backend(QObject):
 
     @Slot(str, object)
     def _result(self, name, value):
-        if name == "board":
+        if name.startswith("board-"):
+            if name != f"board-{self._board_generation}":
+                return
             self._board = value
+            choices = self._board.view(columns=self.settings.board_columns)
+            project, priority, status = (
+                selected if selected in choices[key] else ""
+                for selected, key in zip(
+                    self._board_filters, ("projects", "priorities", "statuses"), strict=True
+                )
+            )
+            self._board_filters = (project, priority, status)
             self.boardChanged.emit()
         elif name.startswith("host-key-"):
             if name != f"host-key-{self._host_generation}":
@@ -328,6 +371,16 @@ class Backend(QObject):
                 value = "Bereit" if "Powered: yes" in value else "Aus"
             self._status[name] = str(value)
             self.changed.emit()
+        elif name.startswith("vpn-profiles-"):
+            if name != f"vpn-profiles-{self._vpn_generation}":
+                return
+            self._vpn_profiles = value
+            self._vpn_error = "" if value else "Keine persönlichen WireGuard-Profile gefunden."
+            self.changed.emit()
+        elif name in {"wg-import", "wg-up", "wg-down"}:
+            self.message.emit(str(value))
+            self.refreshVpnProfiles()
+            self.changed.emit()
         elif name.startswith("preview-"):
             _, generation, module = name.split("-", 2)
             if generation != str(self._host_generation):
@@ -339,7 +392,19 @@ class Backend(QObject):
 
     @Slot(str, str)
     def _failed(self, name, error):
-        if name.startswith("preview-"):
+        if name.startswith("board-") and name != f"board-{self._board_generation}":
+            return
+        if name.startswith("vpn-profiles-"):
+            if name != f"vpn-profiles-{self._vpn_generation}":
+                return
+            self._vpn_profiles = []
+            self._vpn_error = str(error)
+            self.changed.emit()
+        elif name in {"wg-import", "wg-up", "wg-down"}:
+            self.message.emit(error)
+            self.refreshVpnProfiles()
+            self.changed.emit()
+        elif name.startswith("preview-"):
             _, generation, module = name.split("-", 2)
             if generation != str(self._host_generation):
                 return
@@ -376,9 +441,28 @@ class Backend(QObject):
             candidate.board_source = str(values.get("board_source", ""))
             candidate.board_kind = str(values.get("board_kind", "json"))
             candidate.board_token_key = str(values.get("board_token_key", ""))
+            if "board_columns" in values:
+                if not isinstance(values["board_columns"], list):
+                    raise ValueError("Kanban-Spalten müssen eine Liste sein.")
+                candidate.board_columns = values["board_columns"]
             candidate.reduce_motion = bool(values.get("reduce_motion", False))
+            source_changed = (
+                candidate.board_kind,
+                candidate.board_source,
+                candidate.board_token_key,
+            ) != (
+                self.settings.board_kind,
+                self.settings.board_source,
+                self.settings.board_token_key,
+            )
             candidate.setup_complete = True
             self._commit_profile(candidate)
+            if source_changed:
+                self._board_generation += 1
+                self._board = Board()
+                self._query = ""
+                self._board_filters = ("", "", "")
+            self.boardChanged.emit()
             self.refreshBoard()
             self.message.emit("Persönliche Einstellungen gespeichert.")
             return True
@@ -435,6 +519,10 @@ class Backend(QObject):
 
     @Slot(str, str)
     def action(self, action: str, value: str = ""):
+        if action in {"wg-import", "wg-up", "wg-down"} and self._vpn_busy():
+            self.message.emit("Eine WireGuard-Änderung läuft bereits.")
+            return
+
         def execute():
             if action == "wifi-scan":
                 return (
@@ -482,7 +570,11 @@ class Backend(QObject):
                     raise RuntimeError("Der benötigte Systemdialog ist nicht installiert.")
                 self._launch(action, args)
             else:
+                if action in {"wg-import", "wg-up", "wg-down"}:
+                    self._vpn_generation += 1
                 self.jobs.submit(action, execute)
+                if action in {"wg-import", "wg-up", "wg-down"}:
+                    self.changed.emit()
         except (ValueError, OSError, RuntimeError) as exc:
             self.message.emit(str(exc))
 

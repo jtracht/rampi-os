@@ -9,7 +9,7 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 | language | string / de | Vorgesehene UI-Sprache; der erste Stand ist deutsch |
 | setup_complete | bool / false | Einrichtungshinweis; keine Änderung an Linux-Konten |
 | active_host | int / 0 | Index des aktiven Hosts |
-| hosts | array / [] | Persönliche Windows-Profile; zusätzliche Hosts per JSON |
+| hosts | array / [] | Persönliche Windows-Profile; grafisch unter Host & SSH verwalten und aktivieren |
 | hosts[].name | string / Windows | Anzeigename des Hosts |
 | hosts[].address | string / leer | geprüfter DNS-Name/IP ohne Shellzeichen |
 | hosts[].username | string / leer | eigenes Windows-Konto |
@@ -21,6 +21,7 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 | board_source | string / leer | JSON-Dateipfad oder anbieterspezifische Projektkennung |
 | board_kind | enum / json | json, github, trello, jira, asana, notion |
 | board_token_key | string / leer | persönlicher Secret-Service-Profilname; niemals der Token selbst |
+| board_columns | string[] / [] | persönliche Spaltenreihenfolge; leer übernimmt Quelle; höchstens 32 eindeutige, nicht leere Namen mit je 1–80 Zeichen |
 | reduce_motion | bool / false | schaltet die Kachelverformung aus |
 
 Zugangsdaten können unter Einstellungen → Kanban im persönlichen Secret Service
@@ -47,6 +48,13 @@ Kanban-Cache: `$XDG_CACHE_HOME/rampi/board-<SHA256>.json`, sonst `~/.cache/rampi
 Der Hash trennt Anbieter, Quelle und Credential-Profil. Inhalte können vertraulich
 sein und gehören nur dem jeweiligen Linux-Benutzer. Cache kann manuell gelöscht
 werden. Browserprofil: `~/.config/rampi/browser/`.
+
+Die Kanban-Spalten stehen unter Einstellungen → Kanban & Browser, ein Name je
+Zeile. Zusätzliche Statuswerte aus den Karten werden rechts angefügt und niemals
+versteckt oder umgeschrieben. [Bedienung und Filter](KANBAN.md).
+Die drei Auswahlfilter und die Suchanfrage gelten für die laufende Oberfläche,
+werden gemeinsam angewendet und verändern keine Anbieter-Daten. Quellenwechsel
+setzt sie zurück; normale Aktualisierung erhält noch vorhandene Filterwerte.
 
 Moonlight-Kopplungsschlüssel: `~/.config/rampi/streaming/<SHA256>/`, getrennt nach
 Hostadresse, SSH-Port und Windows-Konto. Kopplung und Streaming verwenden denselben

@@ -8,7 +8,10 @@ Login, Terminals, Remote Desktop und Browser. Eigenentwickelter Code: Apache-2.0
 Konfiguration, Kanban-Adapter und Windows-ConPTY-Persistenz sind implementiert.
 Die [Softwareabnahme](docs/validation/software-acceptance-2026-10-20.md) dokumentiert
 die bisherigen Systemintegrationen und einen erfolgreichen virtuellen Image-Boot.
-Die aktuelle Testsuite enthält 45 Python-Tests.
+Die aktuelle Testsuite enthält 60 Python-Tests.
+Der gesamte Entwicklungsstand liegt bei **ca. 72 %** des vereinbarten Auftrags;
+[Bewertungsmaßstab und offene Punkte](docs/PROGRESS.md) unterscheiden das vom
+erfolgreich veröffentlichten Entwicklungsstand.
 Die Abnahme erfolgt auf ausdrücklichen Nutzerwunsch ausschließlich softwareseitig:
 ARM64-Docker, native Windows-CI und Image-/QEMU-Prüfungen. Physische Hardwaretests
 sind aus dem Umfang ausgeschlossen. [Funktionsstand](docs/STATUS.md) und
@@ -66,6 +69,10 @@ Sicherheitsdialoge. [Windows-Einrichtung](docs/INSTALL-WINDOWS11.md)
 
 Kanban ist schreibgeschützt. Browser und KI-Terminals starten erst bei Bedarf.
 Updates erfolgen ausschließlich durch manuelle Ausführung der Update-Skripte.
+Kanban kombiniert Suche mit Projekt-, Prioritäts- und Statusfiltern. Die
+Spaltenreihenfolge lässt sich in den Einstellungen ändern; zusätzliche Statuswerte
+bleiben sichtbar. Die VPN-Seite bietet eine Auswahl persönlicher WireGuard-Profile
+mit tatsächlichem Verbindungszustand.
 
 Unter **Einstellungen → Host & SSH** lassen sich mehrere persönliche Hosts mit
 Projektverzeichnis verwalten und ausdrücklich aktivieren. **KI-Sitzungen** prüft

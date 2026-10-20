@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import array
+import math
 import os
 import re
 import subprocess
@@ -35,12 +37,23 @@ def server():
     container_only()
     home = Path.home()
     os.umask(0o077)
+    run("pulseaudio", "--start", "--exit-idle-time=-1")
+    run(
+        "pactl",
+        "load-module",
+        "module-null-sink",
+        "sink_name=rampi_test",
+        "rate=48000",
+        "channels=2",
+    )
+    run("pactl", "set-default-sink", "rampi_test")
+    run("pactl", "load-module", "module-sine", "sink=rampi_test", "frequency=997")
     pipe = home / "sunshine-pin"
     os.mkfifo(pipe, 0o600)
     config = home / "sunshine.conf"
     config.write_text(
         "capture = x11\nencoder = software\nsw_preset = ultrafast\n"
-        "hevc_mode = 1\nav1_mode = 1\nstream_audio = disabled\n"
+        "hevc_mode = 1\nav1_mode = 1\nstream_audio = enabled\n"
         "keyboard = disabled\nmouse = disabled\ncontroller = disabled\n"
         "system_tray = disabled\nupnp = disabled\norigin_web_ui_allowed = pc\n"
     )
@@ -57,6 +70,10 @@ def server():
                             "Sunshine exited: " + (home / "sunshine.log").read_text()
                         )
                     run("xsetroot", "-solid", "#267bbd" if step % 2 else "#d3356a")
+                    # Follow Sunshine's virtual sink, as an application opened
+                    # after it changes the default output would do.
+                    for line in run("pactl", "list", "short", "sink-inputs").stdout.splitlines():
+                        run("pactl", "move-sink-input", line.split()[0], "@DEFAULT_SINK@")
                     time.sleep(2)
             finally:
                 process.terminate()
@@ -82,6 +99,8 @@ def client(address: str, action: str):
     from PySide6.QtGui import QGuiApplication
 
     app = QGuiApplication([])
+    audio_path = Path.home() / "received-audio.raw"
+    audio_path.unlink(missing_ok=True)
     log_path = Path.home() / "moonlight.log"
     with log_path.open("wb") as log:
         with subprocess.Popen(stream_args(host), stdout=log, stderr=log) as process:
@@ -99,14 +118,37 @@ def client(address: str, action: str):
                             for color in [(38, 123, 189), (211, 53, 106)]:
                                 if max(abs(a - b) for a, b in zip(pixel, color, strict=True)) < 10:
                                     seen.add(color)
-                            if len(seen) == 2:
+                            if len(seen) == 2 and verify_audio(audio_path):
                                 frame.save(str(Path.home() / "streaming-frame.png"))
                                 return 0
                     time.sleep(0.25)
-                raise RuntimeError("Both changing remote video frames did not reach SDL/FFmpeg")
+                raise RuntimeError("Changing video and the expected remote tone did not arrive")
             finally:
                 process.terminate()
                 process.wait(timeout=10)
+
+
+def verify_audio(path: Path) -> bool:
+    """Verify decoded PCM from SDL's existing disk output, not a packet/log counter."""
+    if not path.exists() or path.stat().st_size < 48000 * 4:
+        return False
+    raw = path.read_bytes()[-48000 * 4 :]
+    samples = array.array("h")
+    samples.frombytes(raw[: len(raw) // 4 * 4])
+    if os.sys.byteorder != "little":
+        samples.byteswap()
+    mono = samples[::2]
+    energy = sum(value * value for value in mono)
+    if not mono or energy / len(mono) < 10000:
+        return False
+
+    # Tone correlation rejects silence, arbitrary nonzero output and other tones.
+    def power(frequency):
+        sine = sum(v * math.sin(2 * math.pi * frequency * i / 48000) for i, v in enumerate(mono))
+        cosine = sum(v * math.cos(2 * math.pi * frequency * i / 48000) for i, v in enumerate(mono))
+        return sine * sine + cosine * cosine
+
+    return power(997) / (len(mono) * energy) > 0.20
 
 
 def integration(image: str):
@@ -148,7 +190,9 @@ def integration(image: str):
                     "-e",
                     "SDL_VIDEODRIVER=x11",
                     "-e",
-                    "SDL_AUDIODRIVER=dummy",
+                    "SDL_AUDIODRIVER=disk",
+                    "-e",
+                    "SDL_DISKAUDIOFILE=/home/rampi/received-audio.raw",
                     "-e",
                     "SDL_RENDER_DRIVER=software",
                     image,
@@ -248,7 +292,7 @@ def integration(image: str):
         )
         print(
             "PASS: real Sunshine/Moonlight pairing, unpaired profile rejection and changing "
-            "SDL/FFmpeg video frames over two connections. Linux software video only."
+            "SDL/FFmpeg video plus decoded 997-Hz audio over two connections. Linux software only."
         )
     except Exception:
         diagnostics = root / "artifacts/streaming-diagnostics"
@@ -258,6 +302,13 @@ def integration(image: str):
                 output = execute(container, "cat", "/home/rampi/" + name, check=False)
                 if output.returncode == 0:
                     (diagnostics / (container[:12] + "-" + name)).write_text(output.stdout)
+            run(
+                "docker",
+                "cp",
+                f"{container}:/home/rampi/received-audio.raw",
+                str(diagnostics / (container[:12] + "-audio.raw")),
+                check=False,
+            )
         raise
     finally:
         for container in containers:
