@@ -33,6 +33,13 @@ jobs:
       - name: Real headless Wayland session, no X11 and 1 GiB limit
         run: |
           set -euo pipefail
+          # Ubuntu's host policy also restricts nested user-namespace UID maps.
+          # Temporarily permit them only on this disposable GitHub-hosted VM;
+          # restore the original value even when Docker or acceptance fails.
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          namespace_policy=$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)
+          trap 'sudo sysctl -w "kernel.apparmor_restrict_unprivileged_userns=$namespace_policy"' EXIT
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           mkdir -p artifacts/rust
           chmod 777 artifacts/rust
           docker run --rm --network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined --user 1000:1000 --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v "$PWD/artifacts/rust:/artifacts" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 -e RAMPI_TEST_ARTIFACTS=/artifacts rampi-rust-dev dbus-run-session -- bash tests/rust/run-wayland.sh 2>&1 | tee artifacts/rust/wayland.log
@@ -43,6 +50,10 @@ jobs:
         run: |
           set -euo pipefail
           docker run --rm --network none --user 1000:1000 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-services.py | tee artifacts/rust/network-contract.log
+      - name: Rust GIO Bluetooth contract and discovery cleanup (no radio)
+        run: |
+          set -euo pipefail
+          docker run --rm --network none --user 1000:1000 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-bluetooth.py | tee artifacts/rust/bluetooth-contract.log
       - name: Require complete runtime evidence rather than a green wrapper command
         run: python3 scripts/check-native-evidence.py artifacts/rust
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

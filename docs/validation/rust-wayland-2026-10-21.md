@@ -1,6 +1,6 @@
 # Rust-/Wayland-Nachweis vom 21. Oktober 2026
 
-Revision: `3788dc1`, Entwicklungszweig `codex/software-acceptance-85`.
+Entwicklungszweig: `codex/software-acceptance-85`.
 Die Umstellung ist noch kein regulärer Release.
 
 Der bisherige CI-Lauf meldete grüne Jobs, obwohl die Log-Pipeline einen
@@ -12,7 +12,7 @@ Der nachfolgende Umfang ist lokal auf amd64 nachgewiesen; vollständige korrigie
 CI-Ergebnisse für beide Architekturen werden nach Abschluss ergänzt.
 
 - Rust-Code mit `Cargo.lock` kompiliert; Formatierung und Clippy ohne Warnungen.
-- Acht Rust-Core-Tests zu Konfiguration, Schreibrechten, URL-/Hostvalidierung,
+- Neun Rust-Core-Tests zu Konfiguration, Schreibrechten, URL-/Hostvalidierung,
   sicherer Befehlsübergabe, Kanban-Filtern und Wellenparametern.
 - Tatsächlicher labwc-Compositor mit virtuellem Ausgang und Pixman-Renderer;
   GTK meldet `GdkWaylandDisplay`; ein App-Fenster, sechs Hauptmodule und sechs
@@ -23,6 +23,11 @@ CI-Ergebnisse für beide Architekturen werden nach Abschluss ergänzt.
 - Rust/GIO gegen eine isolierte NetworkManager-Fixture: Suche, persönliche
   Profilberechtigung, übergebener WLAN-Schlüssel, vorhandenes Profil wiederverwenden,
   Trennen sowie Radiozustand. Keine Funk-/WPA-Abnahme durch diese Fixture.
+- Rust/GIO gegen eine isolierte BlueZ-Fixture: eigene Suchverbindung und ihre
+  Freigabe, Adapterprüfung, Koppeln, Verbinden/Trennen, Vertrauen/Entziehen und
+  Entfernen. Die tatsächliche GTK-Seite startet eine Suche; der Wechsel zum
+  WLAN-Tab schließt deren D-Bus-Client. Es bleibt genau ein App-Fenster.
+  Agent1-PIN/Passkey und echte Funkkopplung sind dadurch nicht abgenommen.
 - ShellCheck für Installer und Sitzung; Screenshot als CI-Artefakt.
 
 Der Laufzeitcontainer hat **1 GiB RAM, kein zusätzliches Swap** und vier virtuelle

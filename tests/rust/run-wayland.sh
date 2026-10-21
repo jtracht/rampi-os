@@ -37,6 +37,7 @@ sleep 1.2
 wtype -s 150 -k Escape
 wait "$keyboard_pid"
 /build/target/debug/rampi-native --embedded-test
+python3 tests/rust/test-bluetooth.py --ui
 pulseaudio --start --exit-idle-time=-1 --log-target="file:$test_home/audio.log"
 export PULSE_SINK=rampi_feedback
 pactl load-module module-null-sink sink_name=rampi_feedback >/dev/null

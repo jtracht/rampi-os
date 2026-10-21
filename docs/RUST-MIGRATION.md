@@ -51,6 +51,18 @@ WebKit-DOM-/JavaScript-Ausführung; Rust-/GIO-Aufrufe gegen eine private
 NetworkManager-Fixture; tatsächliche Klick-Audioausgabe über libcanberra/PulseAudio. Die Laufzeitprüfung verwendet ein Limit von
 1 GiB. Im Test laufen weder Xorg noch Xwayland noch `startx`.
 
+Bluetooth verwendet eine Adapterliste direkt in der Seite, ohne Ausklappfenster.
+Gefundene Geräte werden während der sichtbaren Seite automatisch aktualisiert;
+unveränderte Listen werden nicht neu aufgebaut. Eine eigene D-Bus-Verbindung
+besitzt die Suchsitzung und wird beim Tab-/Seitenwechsel geschlossen. Auch eine
+verspätete Antwort kann dadurch keine Suche im Hintergrund zurücklassen.
+`tests/rust/test-bluetooth.py` prüft die echten Rust-/GIO-Aufrufe gegen die
+isolierte BlueZ-Fixture: Adapterprüfung, Suche, Lebensdauer der Verbindung,
+Koppeln, Verbinden, Trennen, explizites Vertrauen und Entfernen. Mit `--ui`
+betätigt der Test die tatsächliche GTK-Suchschaltfläche und prüft die Freigabe
+beim Wechsel zum WLAN-Tab sowie genau ein App-Fenster. Dies belegt weder
+Funkkopplung noch die Agent1-PIN-/Passkey-Dialoge.
+
 Das ist keine vollständige Funktionsabnahme. Die bisherigen Python-/QML-,
 Windows-, Netzwerk- und Image-Nachweise gelten nicht automatisch für den Port.
 Noch offen sind insbesondere die umfassende Rust-D-Bus-/Pairing-Abnahme,
@@ -73,6 +85,10 @@ für diesen Test werden sein Seccomp-Filter und das Docker-AppArmor-Profil
 ausgesetzt. Die WebKit-Sandbox selbst
 bleibt eingeschaltet; `WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS` wird nicht gesetzt.
 Diese Containeroption gehört ausschließlich zur Testumgebung.
+Auf den kurzlebigen Ubuntu-24.04-GitHub-VMs wird außerdem die dortige
+[AppArmor-Beschränkung für unprivilegierte User-Namespaces](https://documentation.ubuntu.com/release-notes/24.04/)
+für den Laufzeittest vorübergehend aufgehoben und im selben Schritt per Trap
+wiederhergestellt. Diese Einstellung wird nicht vom Rampi-Installer verändert.
 
 Die Testszene prüft lokale DOM-/JavaScript-Funktionen. Sie belegt keine erfolgreiche
 HTTPS-Verbindung, keine GPU-Leistung und keine physische HDMI-/WLAN-/Bluetooth-

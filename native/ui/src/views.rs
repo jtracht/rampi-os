@@ -4,7 +4,11 @@ use rampi_core::{
     board::Board,
     config::{self, Host},
 };
-use std::{cell::RefCell, path::PathBuf, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    path::PathBuf,
+    rc::Rc,
+};
 use vte::prelude::*;
 use webkit6::prelude::*;
 
@@ -277,10 +281,19 @@ fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
 }
 fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
+    let discovery: Rc<RefCell<Option<bus::BluetoothDiscovery>>> = Rc::new(RefCell::new(None));
+    let generation = Rc::new(Cell::new(0u64));
+    let (owned, epoch) = (discovery.clone(), generation.clone());
+    page.connect_unmap(move |_| {
+        epoch.set(epoch.get().wrapping_add(1));
+        owned.borrow_mut().take();
+    });
     page.append(&label("Bluetooth · BlueZ"));
     let refresh = button("Adapter und Geräte aktualisieren", f);
     page.append(&refresh);
-    let picker = gtk::DropDown::from_strings(&[]);
+    page.append(&label("Adapter"));
+    let picker = gtk::ListBox::new();
+    picker.set_selection_mode(gtk::SelectionMode::Single);
     let adapters: Rc<RefCell<Vec<bus::BluetoothAdapter>>> = Rc::new(RefCell::new(vec![]));
     page.append(&picker);
     let list = gtk::ListBox::new();
@@ -306,22 +319,44 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         glib::MainContext::default().spawn_local(async move {
             match bus::bluetooth_snapshot().await {
                 Ok((aa, dd)) => {
-                    let names: Vec<String> = aa
-                        .iter()
-                        .map(|a| format!("{} · {}", a.label, if a.powered { "Ein" } else { "Aus" }))
-                        .collect();
-                    let model =
-                        gtk::StringList::new(&names.iter().map(String::as_str).collect::<Vec<_>>());
-                    p.set_model(Some(&model));
-                    p.set_selected(0);
-                    *a.borrow_mut() = aa;
-                    while let Some(child) = l.first_child() {
-                        l.remove(&child);
+                    if *a.borrow() != aa {
+                        let selected = p.selected_row().and_then(|r| {
+                            a.borrow().get(r.index() as usize).map(|a| a.path.clone())
+                        });
+                        while let Some(child) = p.first_child() {
+                            p.remove(&child);
+                        }
+                        for adapter in &aa {
+                            p.append(&label(&format!(
+                                "{} · {}",
+                                adapter.label,
+                                if adapter.powered { "Ein" } else { "Aus" }
+                            )));
+                        }
+                        let index = aa
+                            .iter()
+                            .position(|a| Some(&a.path) == selected.as_ref())
+                            .unwrap_or(0);
+                        p.select_row(p.row_at_index(index as i32).as_ref());
+                        *a.borrow_mut() = aa;
                     }
-                    for device in &dd {
-                        l.append(&label(&device.label));
+                    if *d.borrow() != dd {
+                        let selected = l.selected_row().and_then(|r| {
+                            d.borrow().get(r.index() as usize).map(|d| d.path.clone())
+                        });
+                        while let Some(child) = l.first_child() {
+                            l.remove(&child);
+                        }
+                        for device in &dd {
+                            l.append(&label(&device.label));
+                        }
+                        if let Some(index) =
+                            dd.iter().position(|d| Some(&d.path) == selected.as_ref())
+                        {
+                            l.select_row(l.row_at_index(index as i32).as_ref());
+                        }
+                        *d.borrow_mut() = dd;
                     }
-                    *d.borrow_mut() = dd;
                 }
                 Err(e) => stat.set_text(&e.to_string()),
             }
@@ -334,8 +369,6 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     for (title, op, value) in [
         ("Einschalten", "power", true),
         ("Ausschalten", "power", false),
-        ("Geräte suchen", "scan", false),
-        ("Suche beenden", "stop-scan", false),
         ("Koppeln", "pair", false),
         ("Verbinden", "connect", false),
         ("Trennen", "disconnect", false),
@@ -368,9 +401,9 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             } else {
                 value
             };
-            let object = if ["power", "scan", "stop-scan"].contains(&op) {
+            let object = if op == "power" {
                 a.borrow()
-                    .get(p.selected() as usize)
+                    .get(p.selected_row().map_or(usize::MAX, |r| r.index() as usize))
                     .map(|a| a.path.clone())
             } else {
                 l.selected_row()
@@ -398,6 +431,84 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             }
         });
     }
+    let search = button("Geräte suchen", f);
+    let stop = button("Suche beenden", f);
+    controls.insert(&search, -1);
+    controls.insert(&stop, -1);
+    let (owned, epoch, p, a, stat, weak_page) = (
+        discovery.clone(),
+        generation.clone(),
+        picker,
+        adapters,
+        status.clone(),
+        page.downgrade(),
+    );
+    search.connect_clicked(move |b| {
+        if owned.borrow().is_some() {
+            return;
+        }
+        let Some(adapter) = a
+            .borrow()
+            .get(p.selected_row().map_or(usize::MAX, |r| r.index() as usize))
+            .cloned()
+        else {
+            stat.set_text("Bitte zuerst einen Bluetooth-Adapter auswählen.");
+            return;
+        };
+        epoch.set(epoch.get().wrapping_add(1));
+        let ticket = epoch.get();
+        b.set_sensitive(false);
+        let (owned, epoch, stat, page, b) = (
+            owned.clone(),
+            epoch.clone(),
+            stat.clone(),
+            weak_page.clone(),
+            b.clone(),
+        );
+        glib::MainContext::default().spawn_local(async move {
+            match bus::BluetoothDiscovery::start(&adapter.path).await {
+                Ok(session)
+                    if epoch.get() == ticket && page.upgrade().is_some_and(|p| p.is_mapped()) =>
+                {
+                    *owned.borrow_mut() = Some(session);
+                    stat.set_text(
+                        "Bluetooth-Suche läuft. Gefundene Geräte erscheinen in dieser Seite.",
+                    );
+                }
+                Ok(_) => {} // Closing this client releases a late discovery reply.
+                Err(e) if epoch.get() == ticket => stat.set_text(&e.to_string()),
+                Err(_) => {}
+            }
+            b.set_sensitive(true);
+        });
+    });
+    let stat = status.clone();
+    stop.connect_clicked(move |_| {
+        generation.set(generation.get().wrapping_add(1));
+        let session = discovery.borrow_mut().take();
+        if let Some(session) = session {
+            let stat = stat.clone();
+            glib::MainContext::default().spawn_local(async move {
+                status_result(&stat, session.stop().await);
+            });
+        }
+    });
+    let weak_refresh = refresh.downgrade();
+    page.connect_map(move |_| {
+        if let Some(refresh) = weak_refresh.upgrade() {
+            refresh.emit_clicked();
+        }
+    });
+    let (weak_page, weak_refresh) = (page.downgrade(), refresh.downgrade());
+    glib::timeout_add_seconds_local(2, move || {
+        let (Some(page), Some(refresh)) = (weak_page.upgrade(), weak_refresh.upgrade()) else {
+            return glib::ControlFlow::Break;
+        };
+        if page.is_mapped() && refresh.is_sensitive() {
+            refresh.emit_clicked();
+        }
+        glib::ControlFlow::Continue
+    });
     page.append(&label("Kopplungen und Vertrauen gelten für das ganze Gerät. Neue Geräte erhalten nicht automatisch dauerhaftes Vertrauen."));
     page
 }

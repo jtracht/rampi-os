@@ -19,8 +19,13 @@ mod widgets;
 
 fn main() {
     #[cfg(target_os = "linux")]
-    if std::env::args().any(|a| a == "--service-check") {
-        if let Err(e) = service_checks::run() {
+    if std::env::args().any(|a| a == "--service-check" || a == "--bluetooth-check") {
+        let check = if std::env::args().any(|a| a == "--bluetooth-check") {
+            service_checks::bluetooth
+        } else {
+            service_checks::run
+        };
+        if let Err(e) = check() {
             eprintln!("Service contract failed: {e}");
             std::process::exit(1);
         }

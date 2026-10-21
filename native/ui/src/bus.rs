@@ -336,7 +336,7 @@ pub async fn wifi_connect(row: Wifi, password: String) -> Result<()> {
     bail!("WLAN-Verbindung hat zu lange gedauert")
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct BluetoothDevice {
     pub path: String,
     pub label: String,
@@ -344,11 +344,68 @@ pub struct BluetoothDevice {
     pub connected: bool,
     pub trusted: bool,
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct BluetoothAdapter {
     pub path: String,
     pub label: String,
     pub powered: bool,
+}
+/// A separate D-Bus client owns exactly this discovery session. Closing it
+/// releases the session in BlueZ even after page changes or a failed stop.
+pub struct BluetoothDiscovery {
+    connection: gio::DBusConnection,
+    adapter: String,
+}
+impl BluetoothDiscovery {
+    pub async fn start(adapter: &str) -> Result<Self> {
+        let (adapters, _) = bluetooth_snapshot().await?;
+        if !adapters.iter().any(|a| a.path == adapter && a.powered) {
+            bail!("Bluetooth-Adapter ist nicht verfügbar oder ausgeschaltet");
+        }
+        // System-bus address resolution reads local configuration; all actual
+        // connection establishment and service operations remain asynchronous.
+        let address =
+            gio::dbus_address_get_for_bus_sync(gio::BusType::System, None::<&gio::Cancellable>)?;
+        let connection = gio::DBusConnection::for_address_future(
+            &address,
+            gio::DBusConnectionFlags::AUTHENTICATION_CLIENT
+                | gio::DBusConnectionFlags::MESSAGE_BUS_CONNECTION,
+            None,
+        )
+        .await?;
+        connection.set_exit_on_close(false);
+        let session = Self {
+            connection,
+            adapter: adapter.into(),
+        };
+        call(
+            &session.connection,
+            "org.bluez",
+            adapter,
+            "org.bluez.Adapter1",
+            "StartDiscovery",
+            None,
+        )
+        .await?;
+        Ok(session)
+    }
+    pub async fn stop(self) -> Result<()> {
+        call(
+            &self.connection,
+            "org.bluez",
+            &self.adapter,
+            "org.bluez.Adapter1",
+            "StopDiscovery",
+            None,
+        )
+        .await?;
+        Ok(())
+    }
+}
+impl Drop for BluetoothDiscovery {
+    fn drop(&mut self) {
+        self.connection.close(None::<&gio::Cancellable>, |_| {});
+    }
 }
 pub async fn bluetooth_snapshot() -> Result<(Vec<BluetoothAdapter>, Vec<BluetoothDevice>)> {
     let bus = system().await?;
@@ -400,34 +457,16 @@ pub async fn bluetooth_snapshot() -> Result<(Vec<BluetoothAdapter>, Vec<Bluetoot
 pub async fn bluetooth_action(operation: &str, object: &str, value: bool) -> Result<()> {
     let (adapters, devices) = bluetooth_snapshot().await?;
     let bus = system().await?;
-    if ["power", "scan", "stop-scan"].contains(&operation)
-        && adapters.iter().any(|a| a.path == object)
-    {
-        if operation == "power" {
-            call(
-                &bus,
-                "org.bluez",
-                object,
-                "org.freedesktop.DBus.Properties",
-                "Set",
-                Some(&("org.bluez.Adapter1", "Powered", value.to_variant()).to_variant()),
-            )
-            .await?;
-        } else {
-            call(
-                &bus,
-                "org.bluez",
-                object,
-                "org.bluez.Adapter1",
-                if operation == "scan" {
-                    "StartDiscovery"
-                } else {
-                    "StopDiscovery"
-                },
-                None,
-            )
-            .await?;
-        }
+    if operation == "power" && adapters.iter().any(|a| a.path == object) {
+        call(
+            &bus,
+            "org.bluez",
+            object,
+            "org.freedesktop.DBus.Properties",
+            "Set",
+            Some(&("org.bluez.Adapter1", "Powered", value.to_variant()).to_variant()),
+        )
+        .await?;
     } else if devices.iter().any(|d| d.path == object) {
         match operation {
             "pair" | "connect" | "disconnect" | "cancel-pair" => {

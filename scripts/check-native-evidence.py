@@ -12,6 +12,7 @@ markers = [
     "RAMPI_RUST_WAYLAND_KEYBOARD_OK",
     "RAMPI_RUST_VTE_PTY_OK",
     "RAMPI_RUST_WEBKIT_DOM_JS_OK",
+    "RAMPI_RUST_BLUEZ_PAGE_OK",
     "RAMPI_RUST_SOUND_PCM_OK",
     "RAMPI_WAYLAND_WITHOUT_X11_OK",
 ]
@@ -20,6 +21,8 @@ if missing:
     raise SystemExit("Missing native acceptance stages: " + ", ".join(missing))
 if "RAMPI_RUST_NM_CONTRACT_OK" not in (directory / "network-contract.log").read_text():
     raise SystemExit("Rust/GIO NetworkManager contract did not pass")
+if "RAMPI_RUST_BLUEZ_CONTRACT_OK" not in (directory / "bluetooth-contract.log").read_text():
+    raise SystemExit("Rust/GIO BlueZ contract did not pass")
 peak = int((directory / "memory-peak-bytes.txt").read_text())
 if not 0 < peak <= 1024**3:
     raise SystemExit("Native runtime exceeded its declared 1-GiB memory limit")

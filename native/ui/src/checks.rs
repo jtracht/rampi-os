@@ -5,6 +5,104 @@ use std::rc::Rc;
 use vte::prelude::*;
 use webkit6::prelude::*;
 
+pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) {
+    if std::env::var("RAMPI_TEST_CONTAINER").as_deref() != Ok("1")
+        || std::env::var("DBUS_SYSTEM_BUS_ADDRESS").is_err()
+    {
+        eprintln!("Bluetooth UI check requires an isolated fixture bus");
+        std::process::exit(2);
+    }
+    let (app, stack, tabs) = (app.clone(), stack.clone(), tabs.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let outcome: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            let connection = crate::bus::system().await?;
+            let names = async || -> anyhow::Result<Vec<String>> {
+                crate::bus::call(
+                    &connection,
+                    "org.freedesktop.DBus",
+                    "/org/freedesktop/DBus",
+                    "org.freedesktop.DBus",
+                    "ListNames",
+                    None,
+                )
+                .await?
+                .child_value(0)
+                .get()
+                .context("No D-Bus names")
+            };
+            tabs.set_visible_child_name("bluetooth");
+            stack.set_visible_child_name("settings");
+            let page = tabs
+                .child_by_name("bluetooth")
+                .context("No Bluetooth page")?;
+            let search = find_button(&page, "Geräte suchen").context("No inline search")?;
+            let refresh =
+                find_button(&page, "Adapter und Geräte aktualisieren").context("No refresh")?;
+            for _ in 0..100 {
+                if page.is_mapped() && refresh.is_sensitive() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            // Wait for the page's automatic initial adapter discovery to finish.
+            glib::timeout_future(std::time::Duration::from_millis(150)).await;
+            let before = names().await?;
+            search.emit_clicked();
+            let mut client = None;
+            for _ in 0..100 {
+                let added: Vec<String> = names()
+                    .await?
+                    .into_iter()
+                    .filter(|n| !before.contains(n))
+                    .collect();
+                if search.is_sensitive() && added.len() == 1 {
+                    client = Some(added[0].clone());
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            let client = client.context("Actual Bluetooth page did not start its own discovery")?;
+            tabs.set_visible_child_name("wifi");
+            for _ in 0..100 {
+                if !names().await?.contains(&client) {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                !names().await?.contains(&client),
+                "Changing tabs left discovery running"
+            );
+            ensure!(app.windows().len() == 1, "Bluetooth opened another window");
+            println!("RAMPI_RUST_BLUEZ_PAGE_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(error) = outcome {
+            eprintln!("Bluetooth page check failed: {error}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
+
+fn find_button(widget: &gtk::Widget, title: &str) -> Option<gtk::Button> {
+    if let Ok(button) = widget.clone().downcast::<gtk::Button>()
+        && button.label().as_deref() == Some(title)
+    {
+        return Some(button);
+    }
+    let mut child = widget.first_child();
+    while let Some(widget) = child {
+        if let Some(button) = find_button(&widget, title) {
+            return Some(button);
+        }
+        child = widget.next_sibling();
+    }
+    None
+}
+
 pub fn keyboard(app: &gtk::Application, stack: &gtk::Stack) {
     let s = stack.clone();
     glib::timeout_add_local_once(std::time::Duration::from_millis(1600), move || {
