@@ -3,13 +3,30 @@
 Entwicklungszweig: `codex/software-acceptance-85`.
 Die Umstellung ist noch kein regulärer Release.
 
+Geprüfte Code-Revision: `187894bae8f05b8ec9ddd73497bc643b1ccf6fbb`.
+Die [Rust-/Wayland-CI](https://github.com/jtracht/rampi-os/actions/runs/39546481258)
+ist für amd64 und arm64 erfolgreich. Die [bestehende CI](https://github.com/jtracht/rampi-os/actions/runs/39546481296)
+ist mit allen sechs Jobs ebenfalls erfolgreich. Die Artefakte
+`rust-wayland-amd64` und `rust-wayland-arm64` wurden heruntergeladen und
+zusätzlich mit `scripts/check-native-evidence.py` geprüft. Beide enthalten alle
+acht Laufzeitmarkierungen, die NetworkManager-/BlueZ-Vertragsnachweise, den
+1280×720-Screenshot und den Speicherwert.
+
+| Kurzer Laufzeittest | amd64 | arm64 |
+|---|---:|---:|
+| Cgroup-Speicherspitze | 215,7 MiB | 162,7 MiB |
+| Speicherlimit, ohne Swap | 1 GiB | 1 GiB |
+
+Die Werte sind keine Langzeitlast- oder Raspberry-Pi-GPU-Messung.
+
 Der bisherige CI-Lauf meldete grüne Jobs, obwohl die Log-Pipeline einen
 Docker-Fehler beim Start der WebKit-Sandbox verdeckte. Die Artefaktprüfung hat
 diesen unvollständigen Lauf abgewiesen. Sein grüner Gesamtstatus ist **kein**
 Nachweis aller folgenden Schritte. Die korrigierte Pipeline verwendet `pipefail`
 und prüft jede Laufzeitmarkierung sowie Speicherwert und Screenshot ausdrücklich.
-Der nachfolgende Umfang ist lokal auf amd64 nachgewiesen; vollständige korrigierte
-CI-Ergebnisse für beide Architekturen werden nach Abschluss ergänzt.
+Der nachfolgende Umfang ist lokal auf amd64 und in der oben verlinkten
+korrigierten CI auf beiden Architekturen nachgewiesen. Die aktuelle Prüfung
+weist die unvollständigen historischen Artefakte weiterhin ausdrücklich ab.
 
 - Rust-Code mit `Cargo.lock` kompiliert; Formatierung und Clippy ohne Warnungen.
 - Neun Rust-Core-Tests zu Konfiguration, Schreibrechten, URL-/Hostvalidierung,
