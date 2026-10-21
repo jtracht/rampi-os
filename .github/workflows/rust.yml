@@ -42,7 +42,7 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           mkdir -p artifacts/rust
           chmod 777 artifacts/rust
-          docker run --rm --network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined --user 1000:1000 --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v "$PWD/artifacts/rust:/artifacts" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 -e RAMPI_TEST_ARTIFACTS=/artifacts rampi-rust-dev dbus-run-session -- bash tests/rust/run-wayland.sh 2>&1 | tee artifacts/rust/wayland.log
+          docker run --rm --network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined --security-opt systempaths=unconfined --user 1000:1000 --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v "$PWD/artifacts/rust:/artifacts" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 -e RAMPI_TEST_ARTIFACTS=/artifacts rampi-rust-dev dbus-run-session -- bash tests/rust/run-wayland.sh 2>&1 | tee artifacts/rust/wayland.log
       - name: Rust Wayland installer and session syntax
         run: |
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/setup.sh system/rampi system/rampi-session system/rampi-wayland-start system/rampi-health tests/rust/run-wayland.sh

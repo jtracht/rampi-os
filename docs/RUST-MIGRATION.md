@@ -91,7 +91,10 @@ Host-Eingabegeräte oder physischen Raspberry Pi. Der Container läuft als norma
 Benutzer mit deaktiviertem Netzwerk, schreibgeschütztem Quellcode und einem
 eigenen Ausgabeordner. Docker muss unprivilegierte User-Namespaces zulassen:
 für diesen Test werden sein Seccomp-Filter und das Docker-AppArmor-Profil
-ausgesetzt. Die WebKit-Sandbox selbst
+ausgesetzt. `systempaths=unconfined` hebt zusätzlich Dockers Maskierung von
+Systempfaden im Container auf, damit Bubblewrap ein eigenes `/proc` in seinem
+PID-Namespace einhängen kann; siehe [Docker-Laufzeitoptionen](https://docs.docker.com/reference/cli/docker/container/run).
+Die WebKit-Sandbox selbst
 bleibt eingeschaltet; `WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS` wird nicht gesetzt.
 Diese Containeroption gehört ausschließlich zur Testumgebung.
 Auf den kurzlebigen Ubuntu-24.04-GitHub-VMs wird außerdem die dortige
