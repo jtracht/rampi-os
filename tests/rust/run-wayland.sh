@@ -38,6 +38,16 @@ wtype -s 150 -k Escape
 wait "$keyboard_pid"
 /build/target/debug/rampi-native --embedded-test
 python3 tests/rust/test-bluetooth.py --ui
+python3 - "$HOME/rampi-board-test.json" <<'PY'
+import json, sys
+with open(sys.argv[1], 'w') as target:
+    json.dump({'title': 'Rust Kanban fixture', 'cards': [
+        {'title': 'Alpha VPN', 'project': 'Infra', 'priority': 'high', 'status': 'Review'},
+        {'title': 'Beta Layout', 'project': 'UI', 'priority': 'low', 'status': 'Offen'},
+        {'title': 'Gamma VPN', 'project': 'Infra', 'priority': 'low', 'status': 'Offen'},
+    ]}, target)
+PY
+timeout 20 /build/target/debug/rampi-native --board-ui-check
 pulseaudio --start --exit-idle-time=-1 --log-target="file:$test_home/audio.log"
 export PULSE_SINK=rampi_feedback
 pactl load-module module-null-sink sink_name=rampi_feedback >/dev/null

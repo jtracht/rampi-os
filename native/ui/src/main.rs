@@ -1,6 +1,8 @@
 #[cfg(target_os = "linux")]
 mod audio;
 #[cfg(target_os = "linux")]
+mod board_view;
+#[cfg(target_os = "linux")]
 mod browser_prompts;
 #[cfg(target_os = "linux")]
 mod bus;

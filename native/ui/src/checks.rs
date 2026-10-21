@@ -103,6 +103,146 @@ fn find_button(widget: &gtk::Widget, title: &str) -> Option<gtk::Button> {
     None
 }
 
+pub fn board(app: &gtk::Application, stack: &gtk::Stack, conf: &crate::widgets::Shared) {
+    if std::env::var("RAMPI_TEST_CONTAINER").as_deref() != Ok("1")
+        || !std::path::Path::new("/.dockerenv").exists()
+    {
+        eprintln!("Kanban UI checks require their disposable test container");
+        std::process::exit(2);
+    }
+    let source =
+        std::path::PathBuf::from(std::env::var_os("HOME").unwrap()).join("rampi-board-test.json");
+    conf.borrow_mut().board_source = source.to_string_lossy().into_owned();
+    conf.borrow_mut().board_kind = "json".into();
+    conf.borrow_mut().board_columns = vec!["Review".into(), "Offen".into()];
+    let (app, stack) = (app.clone(), stack.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let outcome: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            let original = std::fs::read(&source)?;
+            let page = stack
+                .child_by_name("kanban")
+                .context("Kanban page missing")?;
+            let result: gtk::Label = named(&page, "board-result")
+                .context("No summary")?
+                .downcast()
+                .ok()
+                .context("Summary type")?;
+            let mut entries = vec![];
+            for name in [
+                "board-query",
+                "board-project",
+                "board-priority",
+                "board-status",
+            ] {
+                entries.push(
+                    named(&page, name)
+                        .context("Missing filter")?
+                        .downcast::<gtk::Entry>()
+                        .ok()
+                        .context("Filter type")?,
+                );
+            }
+            stack.set_visible_child_name("kanban");
+            for _ in 0..100 {
+                if result.text().starts_with("3 von 3") {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                result.text().starts_with("3 von 3"),
+                "Board did not load on opening: {}",
+                result.text()
+            );
+            entries[0].set_text("VPN");
+            ensure!(result.text().starts_with("2 von 3"), "Search failed");
+            entries[1].set_text("Infra");
+            entries[2].set_text("high");
+            ensure!(
+                result.text().starts_with("1 von 3"),
+                "Combined priority/project failed"
+            );
+            entries[3].set_text("Offen");
+            ensure!(
+                result.text().starts_with("0 von 3"),
+                "Status did not combine with other filters"
+            );
+            entries[2].set_text("");
+            ensure!(
+                result.text().starts_with("1 von 3"),
+                "Clearing a filter failed"
+            );
+            for entry in &entries {
+                entry.set_text("");
+            }
+            ensure!(
+                std::fs::read(&source)? == original,
+                "Read-only board changed source tasks"
+            );
+            let mut changed: serde_json::Value = serde_json::from_slice(&original)?;
+            changed["cards"]
+                .as_array_mut()
+                .context("Fixture cards")?
+                .push(serde_json::json!({"title":"Delta", "status":"Review"}));
+            // Simulate an external provider update to this disposable fixture.
+            std::fs::write(&source, serde_json::to_vec(&changed)?)?;
+            let reload = find_button(&page, "Aufgaben neu laden").context("No inline reload")?;
+            reload.emit_clicked();
+            for _ in 0..100 {
+                if result.text().starts_with("4 von 4") {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                result.text().starts_with("4 von 4"),
+                "Updated source was not reloaded"
+            );
+            std::fs::write(&source, b"invalid JSON")?;
+            reload.emit_clicked();
+            for _ in 0..100 {
+                if result.text().contains("bleiben sichtbar") {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                result.text().contains("bleiben sichtbar"),
+                "Source failure did not show an inline error"
+            );
+            entries[0].set_text("Delta");
+            ensure!(
+                result.text().starts_with("1 von 4"),
+                "Source failure discarded loaded tasks"
+            );
+            ensure!(app.windows().len() == 1, "Kanban opened an external window");
+            println!("RAMPI_RUST_KANBAN_PAGE_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(error) = outcome {
+            eprintln!("Kanban page check failed: {error}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
+
+fn named(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
+    if root.widget_name() == name {
+        return Some(root.clone());
+    }
+    let mut child = root.first_child();
+    while let Some(widget) = child {
+        if let Some(found) = named(&widget, name) {
+            return Some(found);
+        }
+        child = widget.next_sibling();
+    }
+    None
+}
+
 pub fn keyboard(app: &gtk::Application, stack: &gtk::Stack) {
     let s = stack.clone();
     glib::timeout_add_local_once(std::time::Duration::from_millis(1600), move || {

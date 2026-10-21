@@ -29,6 +29,9 @@ CI-Ergebnisse für beide Architekturen werden nach Abschluss ergänzt.
   WLAN-Tab schließt deren D-Bus-Client. Es bleibt genau ein App-Fenster.
   Agent1-PIN/Passkey und echte Funkkopplung sind dadurch nicht abgenommen.
 - ShellCheck für Installer und Sitzung; Screenshot als CI-Artefakt.
+- Tatsächliche GTK-Kanban-Seite: Laden beim Öffnen, kombinierte Suche und drei
+  unabhängige Filter, unveränderte Quelldatei, Aktualisierung nach einer externen
+  Dateiänderung sowie Erhalt zuvor geladener Aufgaben bei ungültiger JSON-Quelle.
 
 Der Laufzeitcontainer hat **1 GiB RAM, kein zusätzliches Swap** und vier virtuelle
 CPUs. Er verwendet keine Host-Grafik- oder Eingabegeräte und kein Netzwerk.

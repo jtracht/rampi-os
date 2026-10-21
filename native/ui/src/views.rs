@@ -89,6 +89,11 @@ pub fn settings(
         .text(&conf.borrow().board_source)
         .build();
     data.append(&source);
+    let board_columns = gtk::Entry::builder()
+        .placeholder_text("Spalten in Reihenfolge, durch Komma getrennt")
+        .text(conf.borrow().board_columns.join(", "))
+        .build();
+    data.append(&board_columns);
     let browser_url = gtk::Entry::builder()
         .placeholder_text("Browser-Startseite · HTTPS")
         .text(&conf.borrow().browser_url)
@@ -99,6 +104,13 @@ pub fn settings(
     save.connect_clicked(move |_| {
         let mut candidate = c.borrow().clone();
         candidate.board_source = source.text().to_string();
+        candidate.board_columns = board_columns
+            .text()
+            .split(',')
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(String::from)
+            .collect();
         candidate.browser_url = browser_url.text().to_string();
         let result = config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
         if result.is_ok() {
@@ -600,50 +612,6 @@ pub fn terminal(
         println!("RAMPI_TERMINAL_EXIT={code}");
     });
     term.grab_focus();
-}
-pub fn board(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
-    let page = column();
-    let back = button("← Dashboard", f);
-    let s = stack.clone();
-    back.connect_clicked(move |_| s.set_visible_child_name("dashboard"));
-    page.append(&back);
-    let search = gtk::SearchEntry::new();
-    search.set_placeholder_text(Some("Aufgaben suchen · Nur lesen"));
-    page.append(&search);
-    let columns = row();
-    columns.set_homogeneous(true);
-    page.append(&scroll(&columns));
-    let (conf, stat, cols) = (conf.clone(), status.clone(), columns.clone());
-    search.connect_search_changed(move |entry| {
-        while let Some(child) = cols.first_child() {
-            cols.remove(&child);
-        }
-        let conf = conf.borrow();
-        if conf.board_source.is_empty() {
-            cols.append(&label("Keine Datenquelle eingerichtet."));
-            return;
-        }
-        match Board::load(&PathBuf::from(&conf.board_source)) {
-            Ok(board) => {
-                for name in board.columns(&conf.board_columns) {
-                    let column = column();
-                    column.add_css_class("panel");
-                    let heading = label(&name);
-                    heading.add_css_class("heading");
-                    column.append(&heading);
-                    for card in board.filtered(&entry.text(), "", "", &name) {
-                        column.append(&label(&format!(
-                            "{}\n{}\n{}",
-                            card.title, card.project, card.description
-                        )));
-                    }
-                    cols.append(&column);
-                }
-            }
-            Err(e) => stat.set_text(&e.to_string()),
-        }
-    });
-    page
 }
 pub fn board_preview(conf: &Shared) -> gtk::Box {
     let panel = column();

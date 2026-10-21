@@ -259,7 +259,7 @@ fn build(app: &gtk::Application) {
         });
     }
     stack.add_named(
-        &views::board(&stack, &settings, &status, &feedback),
+        &crate::board_view::build(&stack, &settings, &feedback),
         Some("kanban"),
     );
     stack.add_named(
@@ -336,6 +336,9 @@ fn build(app: &gtk::Application) {
     }
     if std::env::args().any(|a| a == "--bluetooth-ui-check") {
         crate::checks::bluetooth(app, &stack, &tabs);
+    }
+    if std::env::args().any(|a| a == "--board-ui-check") {
+        crate::checks::board(app, &stack, &settings);
     }
     if std::env::args().any(|a| a == "--sound-test") {
         let (app, f) = (app.clone(), feedback.clone());

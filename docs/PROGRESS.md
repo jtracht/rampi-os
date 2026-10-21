@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 49 %**.
-Rust-Umstellung: **ca. 40 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 50 %**.
+Rust-Umstellung: **ca. 42 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -18,7 +18,7 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Windows-Host und Persistenz | 4 |
 | Anbieter-CLIs | 3 |
 | Remote Desktop und Streaming | 2 |
-| Kanban | 2 |
+| Kanban | 3 |
 | Browser | 3 |
 | Installer und Reparatur | 2 |
 | Sicherheit und Isolation | 3 |
@@ -28,7 +28,14 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Manuelle Updates | 4 |
 | Dokumentation | 2 |
 | Performance | 1 |
-| **Summe** | **49 / 100** |
+| **Summe** | **50 / 100** |
+
+Kanban erhält einen zusätzlichen Punkt für die lokale Rust-Oberfläche mit
+sofortigem Laden, kombinierter Suche und Projekt-/Prioritäts-/Statusfiltern,
+konfigurierbarer Spaltenreihenfolge, begrenztem initialem Kartenaufbau mit
+Nachladen sowie Erhalt geladener Aufgaben bei Quellfehlern. Der tatsächliche
+GTK-Test prüft Filter, erneutes Laden und unveränderte Quelldaten. Die sechs
+geforderten Datenquellen sind damit noch nicht vollständig portiert.
 
 Nachweise und Grenzen: [Rust-Migration](RUST-MIGRATION.md).
 Die folgenden Tabellen dokumentieren den bisherigen Python-/QML-Stand.

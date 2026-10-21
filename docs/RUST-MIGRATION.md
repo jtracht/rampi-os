@@ -63,6 +63,15 @@ betätigt der Test die tatsächliche GTK-Suchschaltfläche und prüft die Freiga
 beim Wechsel zum WLAN-Tab sowie genau ein App-Fenster. Dies belegt weder
 Funkkopplung noch die Agent1-PIN-/Passkey-Dialoge.
 
+Das lokale JSON-Kanban lädt beim Öffnen und per eingebauter Schaltfläche im
+Hintergrund. Suche, Projekt, Priorität und Status werden kombiniert. Die
+Spaltenreihenfolge wird in den persönlichen Einstellungen gespeichert;
+zusätzliche Status bleiben sichtbar. Pro Spalte werden zunächst höchstens
+100 Karten aufgebaut und weitere auf Wunsch eingeblendet. Quellfehler behalten
+bereits geladene Aufgaben im Speicher. Der GTK-Test prüft die Filter, veränderte
+Quelldaten, Fehlererhalt und dass die Anwendung keine Aufgaben zurückschreibt.
+Cloud-Connectoren und ein persistenter Cloud-Offline-Cache sind noch nicht portiert.
+
 Das ist keine vollständige Funktionsabnahme. Die bisherigen Python-/QML-,
 Windows-, Netzwerk- und Image-Nachweise gelten nicht automatisch für den Port.
 Noch offen sind insbesondere die umfassende Rust-D-Bus-/Pairing-Abnahme,

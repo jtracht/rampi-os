@@ -1,6 +1,6 @@
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeSet, fs, path::Path};
+use std::{collections::BTreeSet, fs::File, io::Read, path::Path};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
@@ -19,11 +19,16 @@ pub struct Board {
 }
 impl Board {
     pub fn load(path: &Path) -> Result<Self> {
+        const MAX_BYTES: u64 = 5_242_880;
+        let file = File::open(path)?;
         ensure!(
-            fs::metadata(path)?.len() <= 5_242_880,
+            file.metadata()?.len() <= MAX_BYTES,
             "Kanban-Datei ist zu groß"
         );
-        let board: Self = serde_json::from_slice(&fs::read(path)?)?;
+        let mut data = Vec::new();
+        file.take(MAX_BYTES + 1).read_to_end(&mut data)?;
+        ensure!(data.len() as u64 <= MAX_BYTES, "Kanban-Datei ist zu groß");
+        let board: Self = serde_json::from_slice(&data)?;
         ensure!(board.cards.len() <= 10_000, "Zu viele Karten");
         Ok(board)
     }
