@@ -54,7 +54,15 @@ jobs:
         run: |
           set -euo pipefail
           docker run --rm --network none --user 1000:1000 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-bluetooth.py | tee artifacts/rust/bluetooth-contract.log
-      - name: Require complete runtime evidence rather than a green wrapper command
+      - name: Rust libnm WireGuard import and personal profile contract (no tunnel)
+        run: |
+          set -euo pipefail
+          docker run --rm --network none --user 1000:1000 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-wireguard.py | tee artifacts/rust/wireguard-contract.log
+      - name: Actual Rust and NetworkManager WireGuard peers with account isolation
+        run: |
+          set -euo pipefail
+          timeout 240 python3 scripts/test-native-wireguard.py 2>&1 | tee artifacts/rust/wireguard-peers.log
+      - name: Require complete runtime and tunnel evidence
         run: python3 scripts/check-native-evidence.py artifacts/rust
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

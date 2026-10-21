@@ -1,7 +1,7 @@
 FROM rust:1.98-slim-trixie@sha256:4cd829461bd5c4d511c32e269da9cb8929223b666519d8004e35fc8d1d771ab7
 ENV DEBIAN_FRONTEND=noninteractive CARGO_TARGET_DIR=/build/target
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgtk-4-dev libvte-2.91-gtk4-dev libwebkitgtk-6.0-dev \
+    libgtk-4-dev libvte-2.91-gtk4-dev libwebkitgtk-6.0-dev libnm-dev \
     labwc libglib2.0-bin dbus-daemon fonts-dejavu-core grim wtype wayland-utils procps shellcheck \
     network-manager bluez wlr-randr libcanberra0 pulseaudio-utils \
     && rm -rf /var/lib/apt/lists/*
@@ -15,4 +15,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3-dbusmoc
 RUN apt-get update && apt-get install -y --no-install-recommends gstreamer1.0-pulseaudio \
     && rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get install -y --no-install-recommends libcanberra-dev libcanberra-pulse \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends wireguard-tools iproute2 iputils-ping polkitd \
     && rm -rf /var/lib/apt/lists/*

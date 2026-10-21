@@ -17,9 +17,26 @@ mod service_checks;
 #[cfg(target_os = "linux")]
 mod views;
 #[cfg(target_os = "linux")]
+mod vpn_view;
+#[cfg(target_os = "linux")]
 mod widgets;
+#[cfg(target_os = "linux")]
+mod wireguard;
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--vpn-action" || a == "--wireguard-check") {
+        let result = if std::env::args().any(|a| a == "--vpn-action") {
+            service_checks::vpn_action()
+        } else {
+            service_checks::wireguard()
+        };
+        if let Err(error) = result {
+            eprintln!("VPN check failed: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--service-check" || a == "--bluetooth-check") {
         let check = if std::env::args().any(|a| a == "--bluetooth-check") {

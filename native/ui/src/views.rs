@@ -67,22 +67,11 @@ pub fn settings(
         Some("bluetooth"),
         "Bluetooth",
     );
-    let vpn = column();
-    vpn.append(&label("Tailscale & WireGuard\nBeide Dienste ändern systemweite Routen. Die vorhandenen Dienste prüfen deine Berechtigungen."));
-    for (name, args) in [
-        ("Tailscale-Status", vec!["tailscale", "status"]),
-        ("Tailscale verbinden", vec!["pkexec", "tailscale", "up"]),
-        ("Tailscale trennen", vec!["pkexec", "tailscale", "down"]),
-        ("WireGuard-Profile", vec!["nmcli", "connection", "show"]),
-    ] {
-        let b = button(name, f);
-        let (s, stat) = (stack.clone(), status.clone());
-        b.connect_clicked(move |_| {
-            terminal(&s, "vpn", args.iter().map(Into::into).collect(), &stat)
-        });
-        vpn.append(&b);
-    }
-    tabs.add_titled(&vpn, Some("vpn"), "VPN");
+    tabs.add_titled(
+        &scroll(&crate::vpn_view::build(stack, f)),
+        Some("vpn"),
+        "VPN",
+    );
     let data = column();
     let source = gtk::Entry::builder()
         .placeholder_text("Persönliche Kanban-JSON-Datei")

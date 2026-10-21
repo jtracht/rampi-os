@@ -18,3 +18,4 @@ serde_json.workspace = true
 gtk.workspace = true
 vte = { package = "vte4", version = "0.10", features = ["v0_76"] }
 webkit6 = "0.6.1"
+tempfile = "3"

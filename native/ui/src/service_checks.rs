@@ -3,7 +3,8 @@ use crate::bus;
 use anyhow::{Context, Result, ensure};
 fn isolated() -> Result<()> {
     ensure!(
-        std::env::var("RAMPI_TEST_CONTAINER").as_deref() == Ok("1"),
+        std::env::var("RAMPI_TEST_CONTAINER").as_deref() == Ok("1")
+            && std::path::Path::new("/.dockerenv").exists(),
         "Service checks require their isolated test container"
     );
     ensure!(
@@ -11,6 +12,85 @@ fn isolated() -> Result<()> {
         "An isolated bus address is required"
     );
     Ok(())
+}
+
+pub fn vpn_action() -> Result<()> {
+    ensure!(
+        std::env::var("RAMPI_TEST_CONTAINER").as_deref() == Ok("1")
+            && std::path::Path::new("/.dockerenv").exists(),
+        "VPN action checks require a disposable container"
+    );
+    let args: Vec<String> = std::env::args().collect();
+    let action = args.get(2).context("Missing action")?;
+    gtk::glib::MainContext::default().block_on(async {
+        match action.as_str() {
+            "list" => {
+                let profiles = crate::wireguard::profiles().await?;
+                let rows: Vec<_> = profiles.into_iter().map(|p| serde_json::json!({"uuid":p.uuid, "name":p.name, "active":p.state == 2, "state":p.state})).collect();
+                println!("{}", serde_json::to_string(&rows)?);
+            }
+            "import" => crate::wireguard::import(args.get(3).context("Missing filename")?.into()).await?,
+            "up" | "down" => crate::wireguard::change(args.get(3).context("Missing UUID")?, action == "up").await?,
+            _ => anyhow::bail!("Unknown test action"),
+        }
+        Ok(())
+    })
+}
+
+pub fn wireguard() -> Result<()> {
+    isolated()?;
+    gtk::glib::MainContext::default().block_on(async {
+        let path = std::path::PathBuf::from(std::env::var("RAMPI_TEST_WG_FILE")?);
+        let bad = std::path::PathBuf::from(std::env::var("RAMPI_TEST_WG_INVALID")?);
+        let original = std::fs::read(&path)?;
+        ensure!(
+            crate::wireguard::prepare(&bad).is_err(),
+            "Invalid WireGuard file accepted"
+        );
+        let rows = crate::wireguard::profiles().await?;
+        ensure!(
+            rows.len() == 1 && rows[0].name == "Personal: VPN\\Lab",
+            "Foreign/shared profile leaked into picker"
+        );
+        for uuid in std::env::var("RAMPI_TEST_WG_DENY_UUIDS")?.split(',') {
+            ensure!(
+                crate::wireguard::change(uuid, true).await.is_err(),
+                "Foreign/shared activation was accepted"
+            );
+        }
+        crate::wireguard::import(path.clone()).await?;
+        ensure!(
+            std::fs::read(&path)? == original,
+            "Import changed source file"
+        );
+        let rows = crate::wireguard::profiles().await?;
+        ensure!(rows.len() == 2, "Private import missing");
+        let row = rows
+            .iter()
+            .find(|p| p.name == "rampi-test")
+            .context("Imported profile missing")?;
+        ensure!(
+            row.active.is_empty(),
+            "Import automatically activated tunnel"
+        );
+        crate::wireguard::change(&row.uuid, true).await?;
+        let connected = crate::wireguard::profiles().await?;
+        ensure!(
+            connected.iter().any(|p| p.uuid == row.uuid && p.state == 2),
+            "Active state missing"
+        );
+        crate::wireguard::change(&row.uuid, true).await?;
+        crate::wireguard::change(&row.uuid, false).await?;
+        ensure!(
+            crate::wireguard::profiles()
+                .await?
+                .iter()
+                .all(|p| p.active.is_empty()),
+            "Disconnect failed"
+        );
+        println!("RAMPI_RUST_WIREGUARD_CONTRACT_OK");
+        Ok(())
+    })
 }
 pub fn run() -> Result<()> {
     isolated()?;

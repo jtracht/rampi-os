@@ -14,6 +14,7 @@ markers = [
     "RAMPI_RUST_WEBKIT_DOM_JS_OK",
     "RAMPI_RUST_BLUEZ_PAGE_OK",
     "RAMPI_RUST_KANBAN_PAGE_OK",
+    "RAMPI_RUST_VPN_PAGE_OK",
     "RAMPI_RUST_SOUND_PCM_OK",
     "RAMPI_WAYLAND_WITHOUT_X11_OK",
 ]
@@ -24,6 +25,10 @@ if "RAMPI_RUST_NM_CONTRACT_OK" not in (directory / "network-contract.log").read_
     raise SystemExit("Rust/GIO NetworkManager contract did not pass")
 if "RAMPI_RUST_BLUEZ_CONTRACT_OK" not in (directory / "bluetooth-contract.log").read_text():
     raise SystemExit("Rust/GIO BlueZ contract did not pass")
+if "RAMPI_RUST_WIREGUARD_CONTRACT_OK" not in (directory / "wireguard-contract.log").read_text():
+    raise SystemExit("Rust/libnm WireGuard import and profile contract did not pass")
+if "RAMPI_RUST_WIREGUARD_PEERS_OK" not in (directory / "wireguard-peers.log").read_text():
+    raise SystemExit("Actual Rust/NetworkManager WireGuard peer test did not pass")
 peak = int((directory / "memory-peak-bytes.txt").read_text())
 if not 0 < peak <= 1024**3:
     raise SystemExit("Native runtime exceeded its declared 1-GiB memory limit")

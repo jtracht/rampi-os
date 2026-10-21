@@ -646,6 +646,7 @@ dependencies = [
  "gtk4",
  "rampi-core",
  "serde_json",
+ "tempfile",
  "vte4",
  "webkit6",
 ]

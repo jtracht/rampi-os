@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 50 %**.
-Rust-Umstellung: **ca. 42 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 51 %**.
+Rust-Umstellung: **ca. 44 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -14,7 +14,7 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Linux-Konten und Login | 2 |
 | WLAN | 2 |
 | Bluetooth | 2 |
-| VPN | 2 |
+| VPN | 3 |
 | Windows-Host und Persistenz | 4 |
 | Anbieter-CLIs | 3 |
 | Remote Desktop und Streaming | 2 |
@@ -28,7 +28,15 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Manuelle Updates | 4 |
 | Dokumentation | 2 |
 | Performance | 1 |
-| **Summe** | **50 / 100** |
+| **Summe** | **51 / 100** |
+
+VPN erhält einen zusätzlichen Punkt für die eigene Rust-WireGuard-Seite mit
+persönlicher Profilauswahl, Status, Import, Verbinden und Trennen. Die tatsächliche
+GTK-Seite ist gegen eine isolierte NetworkManager-Fixture geprüft. Zusätzlich
+importiert und aktiviert derselbe Rust-Adapter zwei echte WireGuard-Gegenstellen
+mit NetworkManager: verschlüsselter Verkehr, falscher Schlüssel, Trennen und
+Linux-Benutzerisolation sind lokal nachgewiesen. Die vollständige grafische
+Tailscale-Einrichtung und weitere VPN-Abläufe bleiben offen.
 
 Kanban erhält einen zusätzlichen Punkt für die lokale Rust-Oberfläche mit
 sofortigem Laden, kombinierter Suche und Projekt-/Prioritäts-/Statusfiltern,

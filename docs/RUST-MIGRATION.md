@@ -72,10 +72,23 @@ bereits geladene Aufgaben im Speicher. Der GTK-Test prüft die Filter, veränder
 Quelldaten, Fehlererhalt und dass die Anwendung keine Aufgaben zurückschreibt.
 Cloud-Connectoren und ein persistenter Cloud-Offline-Cache sind noch nicht portiert.
 
+Die VPN-Seite bietet persönliche WireGuard-Profile direkt als Liste an, ohne
+externen Verbindungsmanager. Der libnm-Importer liest eine private, auf 64 KiB
+begrenzte Kopie der gewählten `.conf`-Datei. Erst danach setzt Rust die persönliche
+NetworkManager-Berechtigung anhand des tatsächlichen Linux-Kontos und deaktiviert
+Autostart; diese Werte werden zusammen mit dem Profil gespeichert. Rampi verändert
+die Quelldatei nicht und speichert keine eigene Schlüsselkopie dauerhaft.
+NetworkManager übernimmt seine vorhandene Schlüsselablage und Tunnelverwaltung.
+Gemeinsame, fremde und mehreren Benutzern zugewiesene Profile sind ausgeschlossen;
+jede Verbindung prüft die aktuelle Zuordnung erneut. Der GUI-Test und die
+[echten WireGuard-Gegenstellen](validation/rust-vpn-2026-10-21.md) prüfen getrennte
+Aspekte. Die Tailscale-Schaltflächen verwenden weiterhin die offizielle Software
+in einer eingebetteten Terminalseite; ihre vollständige grafische Einrichtung ist offen.
+
 Das ist keine vollständige Funktionsabnahme. Die bisherigen Python-/QML-,
 Windows-, Netzwerk- und Image-Nachweise gelten nicht automatisch für den Port.
 Noch offen sind insbesondere die umfassende Rust-D-Bus-/Pairing-Abnahme,
-WLAN-Sonderfälle, Setup-/Konten-/VPN-Funktionsgleichheit, alle Kanban-Anbieter,
+WLAN-Sonderfälle, Setup-/Konten-/Tailscale-Funktionsgleichheit, alle Kanban-Anbieter,
 Streaming, integrierte Remote-Desktop-Darstellung, grafische PAM-Anmeldung,
 Installer-Reparaturpfade, das neue ARM64-Systemimage und seine QEMU-Abnahme.
 Die persönlichen offiziellen Anbieteranmeldungen bleiben separat zu prüfen.

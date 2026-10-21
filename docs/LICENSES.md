@@ -16,6 +16,7 @@ vollständig archivieren. Die aktuelle Dokumentprüfung ersetzt das nicht.
 | LightDM | GPLv3 |
 | systemd | LGPLv2.1+ und Komponentenlizenzen |
 | NetworkManager | GPLv2+ |
+| libnm, einschließlich WireGuard-Importer | LGPLv2.1+; dynamische Systembibliothek |
 | BlueZ | GPLv2/LGPL je Komponente |
 | FreeRDP | Apache-2.0 |
 | xfce4-terminal/VTE | GPL/LGPL je Paket |

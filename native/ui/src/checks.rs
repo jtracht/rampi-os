@@ -243,6 +243,127 @@ fn named(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
     None
 }
 
+pub fn vpn(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) {
+    if std::env::var("RAMPI_TEST_CONTAINER").as_deref() != Ok("1")
+        || std::env::var("DBUS_SYSTEM_BUS_ADDRESS").is_err()
+        || !std::path::Path::new("/.dockerenv").exists()
+    {
+        eprintln!("VPN page check requires its private fixture container");
+        std::process::exit(2);
+    }
+    let (app, stack, tabs) = (app.clone(), stack.clone(), tabs.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let result: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            let page = tabs.child_by_name("vpn").context("No VPN page")?;
+            let list: gtk::ListBox = named(&page, "vpn-profiles")
+                .context("No profile list")?
+                .downcast()
+                .ok()
+                .context("List type")?;
+            let refresh = find_button(&page, "VPN-Profile aktualisieren").context("No refresh")?;
+            let status: gtk::Label = named(&page, "vpn-status")
+                .context("No VPN status")?
+                .downcast()
+                .ok()
+                .context("Status type")?;
+            tabs.set_visible_child_name("vpn");
+            stack.set_visible_child_name("settings");
+            for _ in 0..100 {
+                if list.row_at_index(0).is_some() && refresh.is_sensitive() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                list.row_at_index(0).is_some() && list.row_at_index(1).is_none(),
+                "Shared/foreign profiles visible or personal profile missing"
+            );
+            list.select_row(list.row_at_index(0).as_ref());
+            find_button(&page, "WireGuard verbinden")
+                .context("No connect")?
+                .emit_clicked();
+            let mut active = false;
+            for _ in 0..100 {
+                if crate::wireguard::profiles()
+                    .await?
+                    .first()
+                    .is_some_and(|p| p.state == 2)
+                {
+                    active = true;
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                active,
+                "Actual connect button did not activate selected profile"
+            );
+            for _ in 0..100 {
+                if refresh.is_sensitive() && status.text() == "Vorgang abgeschlossen." {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                list.selected_row().is_some(),
+                "Refresh lost profile selection"
+            );
+            let path: gtk::Entry = named(&page, "vpn-import-path")
+                .context("No inline import")?
+                .downcast()
+                .ok()
+                .context("Path type")?;
+            path.set_text(&std::env::var("RAMPI_TEST_WG_FILE")?);
+            find_button(&page, "WireGuard-Profil importieren")
+                .context("No import button")?
+                .emit_clicked();
+            let mut imported = false;
+            for _ in 0..100 {
+                if list.row_at_index(1).is_some() {
+                    imported = true;
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                imported && list.row_at_index(2).is_none(),
+                "Inline import did not update the private picker"
+            );
+            let selected = list.selected_row().context("Import lost prior selection")?;
+            ensure!(selected.index() == 0, "Import changed selected UUID");
+            find_button(&page, "WireGuard trennen")
+                .context("No disconnect")?
+                .emit_clicked();
+            let mut disconnected = false;
+            for _ in 0..100 {
+                if crate::wireguard::profiles()
+                    .await?
+                    .iter()
+                    .all(|p| p.active.is_empty())
+                {
+                    disconnected = true;
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                disconnected,
+                "Actual disconnect button did not release tunnel"
+            );
+            ensure!(app.windows().len() == 1, "VPN opened a second app window");
+            println!("RAMPI_RUST_VPN_PAGE_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(error) = result {
+            eprintln!("VPN page check failed: {error}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
+
 pub fn keyboard(app: &gtk::Application, stack: &gtk::Stack) {
     let s = stack.clone();
     glib::timeout_add_local_once(std::time::Duration::from_millis(1600), move || {

@@ -340,6 +340,9 @@ fn build(app: &gtk::Application) {
     if std::env::args().any(|a| a == "--board-ui-check") {
         crate::checks::board(app, &stack, &settings);
     }
+    if std::env::args().any(|a| a == "--vpn-ui-check") {
+        crate::checks::vpn(app, &stack, &tabs);
+    }
     if std::env::args().any(|a| a == "--sound-test") {
         let (app, f) = (app.clone(), feedback.clone());
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
