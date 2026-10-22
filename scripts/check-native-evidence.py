@@ -9,6 +9,7 @@ from pathlib import Path
 directory = Path(sys.argv[1])
 log = (directory / "wayland.log").read_text(encoding="utf-8")
 markers = [
+    "RAMPI_RUST_FIRST_RUN_KEYBOARD_OK",
     "RAMPI_RUST_UI_OK",
     "RAMPI_RUST_SETUP_HOSTS_OK",
     "RAMPI_RUST_WAYLAND_KEYBOARD_OK",

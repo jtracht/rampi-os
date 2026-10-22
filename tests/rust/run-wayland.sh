@@ -19,6 +19,7 @@ for _ in $(seq 1 100); do
     sleep 0.1
 done
 if [[ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]]; then cat "$test_home/compositor.log"; exit 1; fi
+bash tests/rust/test-first-run.sh
 /build/target/debug/rampi-native --self-test > "$test_home/application.log" 2>&1 &
 application_pid=$!
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then

@@ -36,7 +36,22 @@ for package in metadata["packages"]:
     for folder in ["LICENSES", "licenses"]:
         if (directory / folder).is_dir():
             texts.update(path for path in (directory / folder).rglob("*") if path.is_file())
-    if package["name"] in ["webkit6", "webkit6-sys", "javascriptcore6", "javascriptcore6-sys"]:
+    vcs_file = directory / ".cargo_vcs_info.json"
+    upstream_revision = (
+        json.loads(vcs_file.read_text())["git"]["sha1"] if vcs_file.is_file() else None
+    )
+    if not texts and package["name"] in [
+        "webkit6",
+        "webkit6-sys",
+        "javascriptcore6",
+        "javascriptcore6-sys",
+    ]:
+        reviewed_revisions = {
+            "16c6035a19f747322b1814b02ca482e12e23f5fd",  # pragma: allowlist secret
+            "33ddd822d2665546ee9d69ae006b5ad7541ef8a1",  # pragma: allowlist secret
+        }
+        if upstream_revision not in reviewed_revisions:
+            raise SystemExit("Review upstream license at changed revision: " + package["name"])
         texts.add(Path(__file__).resolve().parents[1] / "assets/licenses/rust/webkit6-rs-LICENSE")
     if not texts:
         missing.append(f"{package['name']} {package['version']}")
@@ -51,6 +66,7 @@ for package in metadata["packages"]:
             "version": package["version"],
             "license": package.get("license"),
             "source": package.get("source"),
+            "upstream_revision": upstream_revision,
             "texts": len(texts),
         }
     )

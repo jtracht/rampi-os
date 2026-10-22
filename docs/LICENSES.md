@@ -49,7 +49,7 @@ Distributionspakete; sie ersetzt deren Bedingungen nicht.
 
 Vier WebKit-/JavaScriptCore-Rust-Crates liefern den übergeordneten MIT-Lizenztext
 nicht im Crate-Archiv mit. Die unveränderte Datei stammt aus genau der in ihren
-Quellmetadaten angegebenen Upstream-Revision; Herkunft siehe
+Quellmetadaten angegebenen Upstream-Revisionen, deren Lizenzdateien identisch sind; Herkunft siehe
 `assets/licenses/rust/README.md`. Ein fehlender Original-Lizenztext bricht die
 Sammlung ab. Die bisherigen Release-Angaben weiter unten beziehen sich auf den
 historischen Python-/QML-Stand, soweit nicht ausdrücklich anders angegeben.

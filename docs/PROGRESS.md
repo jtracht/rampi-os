@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 56 %**.
-Rust-Umstellung: **ca. 53 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 58 %**.
+Rust-Umstellung: **ca. 56 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -20,7 +20,7 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Remote Desktop und Streaming | 2 |
 | Kanban | 3 |
 | Browser | 3 |
-| Installer und Reparatur | 2 |
+| Installer und Reparatur | 4 |
 | Sicherheit und Isolation | 3 |
 | Design und Branding | 3 |
 | GitHub und CI/CD | 4 |
@@ -28,7 +28,16 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Manuelle Updates | 4 |
 | Dokumentation | 3 |
 | Performance | 3 |
-| **Summe** | **56 / 100** |
+| **Summe** | **58 / 100** |
+
+Installer und Reparatur erreichen vier Punkte: Der tatsächliche ARM64-Installer
+ist mit echten Trixie-Paketen, gewöhnlichem Quellbesitz, rootgeschützten
+Programmdateien, wiederholter Installation ohne Überschreiben laufender Dateien,
+atomarem Versionswechsel, Rückwechsel, abgewiesenen ungültigen/veränderten
+Programmen und Deinstallation geprüft. Persönliche Daten bleiben unverändert;
+ein fremder Login-Dienst bleibt erhalten. Die vollständige grafische PAM-Anmeldung
+und der allgemeine native Release-Bootstrap bleiben offen.
+Nachweis: [native CI-Abnahme](validation/rust-native-2026-10-23.md).
 
 Performance erreicht drei Punkte durch einen tatsächlichen Wayland-Lauf mit
 600 überprüften Seitenwechseln über mehr als drei Minuten, drei VTE-Terminals,
