@@ -3,6 +3,12 @@ set -euo pipefail
 image="$(realpath "${1:?Image path required}")"
 output="$(realpath "${2:?Output directory required}")"
 mkdir -p "$output"
+# Verify the exact downloaded artifact, including older producer manifests that
+# recorded an absolute build path. Never use that path as a filesystem target.
+manifest="$(dirname "$image")/SHA256SUMS"
+expected="$(awk -v wanted="$(basename "$image")" '{name=$2; sub(/^.*\//,"",name); if(name==wanted) print $1}' "$manifest")"
+[[ "$expected" =~ ^[a-f0-9]{64}$ ]]
+printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 work="$(mktemp -d)"
 loop=''
 cleanup() {
@@ -26,6 +32,25 @@ test -f "$work/boot/kernel8.img"
 test -f "$work/boot/bcm2710-rpi-3-b.dtb"
 test -f "$work/root/opt/rampi/package-manifest.tsv"
 test -f "$work/root/etc/systemd/system/rampi-health.service"
+test -f "$work/boot/bcm2710-rpi-3-b-plus.dtb"
+test -f "$work/root/usr/share/wayland-sessions/rampi.desktop"
+test -f "$work/root/etc/xdg/rampi/labwc/rc.xml"
+test -f "$work/root/usr/share/doc/rampi/rust-licenses/packages.json"
+test -f "$work/root/usr/share/doc/rampi/rust-licenses/Rust-standard-library-COPYRIGHT.html"
+revision="$(sudo cat "$work/root/opt/rampi/source-revision.txt")"
+[[ "$revision" =~ ^[a-f0-9]{40}$ ]]
+if [[ -n "${IMAGE_PRODUCER_SHA:-}" && "$revision" != "$IMAGE_PRODUCER_SHA" ]]; then
+    echo 'Image-Quellrevision passt nicht zum erzeugenden Workflow.' >&2; exit 1
+fi
+binary_sha="$(sudo cat "$work/root/opt/rampi/binary-sha256.txt")"
+[[ "$binary_sha" =~ ^[a-f0-9]{64}$ ]]
+selected="$(sudo readlink "$work/root/opt/rampi/current")"
+[[ "$selected" == /opt/rampi/* && "$selected" != *..* ]]
+binary="$work/root$selected/rampi-native"
+printf '%s  %s\n' "$binary_sha" "$binary" | sudo sha256sum --check --status
+readelf -h "$binary" | grep -q AArch64
+printf 'source_revision=%s\nbinary_sha256=%s\n' "$revision" "$binary_sha" > "$output/native-image-provenance.txt"
+echo RAMPI_NATIVE_IMAGE_METADATA_OK
 sudo cp "$work/root/opt/rampi/package-manifest.tsv" "$output/package-manifest.tsv"
 sudo cp "$work/root/opt/rampi/dependency-licenses.tar.xz" "$output/dependency-licenses.tar.xz"
 cp "$work/boot/kernel8.img" "$work/kernel8.img"
@@ -75,5 +100,6 @@ done
 kill "$qemu_pid" 2>/dev/null || true
 wait "$qemu_pid" 2>/dev/null || true
 if ((success != 1)); then tail -60 "$output/qemu-boot.log"; exit 1; fi
+grep -q 'Rampi .*Rust / Wayland' "$output/qemu-boot.log"
 echo 'PASS: partition/filesystem checks and QEMU Pi-3 software boot reached RAMPI_BOOT_OK.'
 echo 'QEMU does not validate Wi-Fi, Bluetooth radio, HDMI, GPU decoding or real-device timing.'

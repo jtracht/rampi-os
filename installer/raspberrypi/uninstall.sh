@@ -5,7 +5,8 @@ systemctl disable rampi-health.service 2>/dev/null || true
 if [[ -f /opt/rampi/managed-greetd.sha256 && -f /etc/greetd/config.toml ]]; then
     expected="$(cat /opt/rampi/managed-greetd.sha256)"
     actual="$(sha256sum /etc/greetd/config.toml | cut -d ' ' -f 1)"
-    if [[ "$expected" == "$actual" ]]; then
+    manager="$(readlink -f /etc/systemd/system/display-manager.service || true)"
+    if [[ "$expected" == "$actual" && "$manager" == */greetd.service ]]; then
         systemctl disable greetd
         # Remove only our own default greeter route; retain the regular TTY login.
         systemctl set-default multi-user.target

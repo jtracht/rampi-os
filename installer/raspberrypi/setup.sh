@@ -56,8 +56,9 @@ if ((${#missing[@]})); then apt-get update; apt-get install --no-install-recomme
 version="$("$binary" --version | sed -n 's/^Rampi \([^ ]*\).*/\1/p')"
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]*)$ ]]; then echo 'Ungültige Binary-Version.' >&2; exit 1; fi
 # Serialize manual installs; prepare a complete version before activating it.
-install -d -m 755 /opt/rampi /run/lock
-exec 9>/run/lock/rampi-install.lock
+install -d -m 755 /opt/rampi
+install -d -m 700 /run/rampi-install
+exec 9>/run/rampi-install/lock
 flock -x 9
 fingerprint="$(sha256sum "$binary" | cut -d ' ' -f 1)"
 assets_hash="$(find "$source_root/client/rampi/branding" "$source_root/client/rampi/icons" "$source_root/client/rampi/sounds" -type f -print0 | sort -z | xargs -0 sha256sum | awk '{print $1}' | sha256sum | cut -d ' ' -f 1)"

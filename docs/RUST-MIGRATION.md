@@ -61,7 +61,16 @@ isolierte BlueZ-Fixture: Adapterprüfung, Suche, Lebensdauer der Verbindung,
 Koppeln, Verbinden, Trennen, explizites Vertrauen und Entfernen. Mit `--ui`
 betätigt der Test die tatsächliche GTK-Suchschaltfläche und prüft die Freigabe
 beim Wechsel zum WLAN-Tab sowie genau ein App-Fenster. Dies belegt weder
-Funkkopplung noch die Agent1-PIN-/Passkey-Dialoge.
+Funkkopplung noch die Agent1-PIN-/Passkey-Seiten. Diese werden separat durch
+`tests/rust/test-pairing.py` auf demselben privaten Testdienst geprüft: bewusster
+Codevergleich, tatsächliche PIN-/Passkey-Antworten, Abbruch mit gelöschter Eingabe
+und Abweisung eines fremden D-Bus-Absenders mit `AccessDenied`.
+
+Der fortsetzbare [Einrichtungsassistent](NATIVE-USER-GUIDE.de.md) verwendet die
+vorhandenen Einstellungsseiten. Die Hostverwaltung unterstützt mehrere persönliche
+Profile, Aktivierung, Validierung und bestätigtes Entfernen. Der lokale GTK-Test
+prüft diese Abläufe einschließlich gespeicherter Einrichtungsposition und
+Abschluss sowie der Diagnose, ohne ein zweites Fenster zu öffnen.
 
 Das lokale JSON-Kanban lädt beim Öffnen und per eingebauter Schaltfläche im
 Hintergrund. Suche, Projekt, Priorität und Status werden kombiniert. Die
@@ -95,7 +104,7 @@ echte CLI-/Dienstprüfungen von gezielten Ausgabe-/Timeout-Fixtures.
 
 Das ist keine vollständige Funktionsabnahme. Die bisherigen Python-/QML-,
 Windows-, Netzwerk- und Image-Nachweise gelten nicht automatisch für den Port.
-Noch offen sind insbesondere die umfassende Rust-D-Bus-/Pairing-Abnahme,
+Noch offen sind insbesondere zusätzliche Pairing-Fälle und Dienstneustarts,
 WLAN-Sonderfälle, Setup-/Konten-/Tailscale-Funktionsgleichheit, alle Kanban-Anbieter,
 Streaming, integrierte Remote-Desktop-Darstellung, grafische PAM-Anmeldung,
 Installer-Reparaturpfade, das neue ARM64-Systemimage und seine QEMU-Abnahme.
@@ -104,6 +113,18 @@ Die persönlichen offiziellen Anbieteranmeldungen bleiben separat zu prüfen.
 `packaging/readiness.json` hält reguläre Releases während der Umstellung zurück.
 Es wird kein neues Image als fertig ausgewiesen, solange diese Prüfungen fehlen.
 Das zuvor veröffentlichte v0.5.0 bleibt ein Python-/QML-Release.
+
+Die lokale Leistungsbaseline umfasst 600 überprüfte Seitenwechsel über mehr als
+drei Minuten mit drei echten VTE-PTYs und lokalem WebKit-Inhalt. Gemessen werden
+beobachtete Zeichenausgabe nach dem Start, Seitenwechsel, Prozess-CPU und
+residenter Speicher nach der Aufwärmphase. Die JSON-Messwerte und vollständigen
+Laufzeitmarker sind Pflicht für die native CI-Abnahme. Diese Pixman-/Cairo-Werte
+sind kein Nachweis für physische Pi-Geschwindigkeit, GPU oder echte Remote-Last.
+
+Der [native Betriebsleitfaden](NATIVE-OPERATIONS.de.md) beschreibt die vorbereiteten
+Versionsordner mit zusammengehörigen Grafiken, atomare Aktivierung, manuelle
+Reparatur, geprüften Rückwechsel und Deinstallation. Die ARM64-Installer-Abnahme
+läuft getrennt von der Benutzeroberfläche in einem eigenen Container.
 
 ## Isolierter Wayland-Test
 

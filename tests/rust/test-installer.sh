@@ -49,6 +49,14 @@ test ! -e /usr/local/bin/rampi-wayland-start
 test ! -e /usr/share/wayland-sessions/rampi.desktop
 test -x "$first/rampi-native"
 test -e /etc/greetd/config.toml
+test "$(readlink -f /etc/systemd/system/default.target)" = /usr/lib/systemd/system/multi-user.target
 test "$(sha256sum /home/rampi/.config/rampi/settings.json)" = "$personal_before"
+# A subsequently selected foreign display manager must keep its graphical boot.
+install -m 755 /build/target/debug/rampi-native "$workspace/native/bin/rampi-native"
+bash "$workspace/setup.sh" --image
+ln -sfn /usr/lib/systemd/system/foreign-test.service /etc/systemd/system/display-manager.service
+bash "$workspace/installer/raspberrypi/uninstall.sh"
+test "$(readlink /etc/systemd/system/display-manager.service)" = /usr/lib/systemd/system/foreign-test.service
+test "$(readlink -f /etc/systemd/system/default.target)" = /usr/lib/systemd/system/graphical.target
 echo RAMPI_RUST_INSTALLER_LIFECYCLE_OK
 echo 'ARM64 container: real packages, repeat install, atomic version activation, rollback, rejected input and non-destructive uninstall. No PAM login or physical boot proof.'

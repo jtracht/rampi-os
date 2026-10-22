@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 if [[ $EUID -ne 0 ]]; then echo 'Mit sudo ausführen.' >&2; exit 1; fi
-exec 9>/run/lock/rampi-install.lock
+install -d -m 700 /run/rampi-install
+exec 9>/run/rampi-install/lock
 flock -x 9
 previous="$(readlink -f /opt/rampi/previous)"
 current="$(readlink -f /opt/rampi/current)"
