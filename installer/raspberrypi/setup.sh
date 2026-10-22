@@ -2,7 +2,8 @@
 set -euo pipefail
 source_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 mode="${1:---check}"
-if [[ "$mode" != --check && "$mode" != --install && "$mode" != --image ]]; then echo 'Aufruf: setup.sh [--check|--install|--image]' >&2; exit 2; fi
+if [[ "$mode" == --repair ]]; then mode=--install; fi
+if [[ "$mode" != --check && "$mode" != --install && "$mode" != --image ]]; then echo 'Aufruf: setup.sh [--check|--install|--repair|--image]' >&2; exit 2; fi
 # shellcheck disable=SC1091
 source /etc/os-release
 if [[ "${VERSION_CODENAME:-}" != trixie || "$(dpkg --print-architecture)" != arm64 ]]; then echo 'Ziel: Raspberry Pi OS Lite Trixie arm64.' >&2; exit 1; fi
@@ -38,6 +39,12 @@ done
 printf 'Fehlende Wayland-Pakete: %s\n' "${missing[*]:-keine}"
 binary="${RAMPI_NATIVE_BINARY:-$source_root/native/bin/rampi-native}"
 if [[ ! -x "$binary" ]]; then echo 'ARM64-Rust-Binary fehlt. CI-Artefakt als native/bin/rampi-native bereitstellen.' >&2; exit 1; fi
+if ! readelf -h "$binary" | grep -q 'AArch64'; then echo 'Kein ARM64-Binary.' >&2; exit 1; fi
+if [[ -f "$source_root/native/bin/binary-sha256.txt" ]]; then
+    expected="$(cat "$source_root/native/bin/binary-sha256.txt")"
+    [[ "$expected" =~ ^[a-f0-9]{64}$ ]]
+    printf '%s  %s\n' "$expected" "$binary" | sha256sum --check --status
+fi
 if [[ "$mode" == --check ]]; then exit 0; fi
 if [[ $EUID -ne 0 ]]; then echo 'Installation mit sudo ausführen.' >&2; exit 1; fi
 if [[ "$mode" != --image ]]; then
@@ -46,16 +53,37 @@ if [[ "$mode" != --image ]]; then
     done
 fi
 if ((${#missing[@]})); then apt-get update; apt-get install --no-install-recommends -y "${missing[@]}"; fi
-if ! readelf -h "$binary" | grep -q 'AArch64'; then echo 'Kein ARM64-Binary.' >&2; exit 1; fi
 version="$("$binary" --version | sed -n 's/^Rampi \([^ ]*\).*/\1/p')"
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]*)$ ]]; then echo 'Ungültige Binary-Version.' >&2; exit 1; fi
-target="/opt/rampi/$version"
-install -d -m 755 "$target" /usr/local/bin /usr/share/wayland-sessions /etc/xdg/rampi/labwc /etc/systemd/user /usr/share/rampi
-install -m 755 "$binary" "$target/rampi-native"
-"$target/rampi-native" --version
-cp -a "$source_root/client/rampi/branding" "$source_root/client/rampi/icons" "$source_root/client/rampi/sounds" /usr/share/rampi/
-chown -hR root:root "$target" /usr/share/rampi
-chmod -R a+rX,go-w "$target" /usr/share/rampi
+# Serialize manual installs; prepare a complete version before activating it.
+install -d -m 755 /opt/rampi /run/lock
+exec 9>/run/lock/rampi-install.lock
+flock -x 9
+fingerprint="$(sha256sum "$binary" | cut -d ' ' -f 1)"
+assets_hash="$(find "$source_root/client/rampi/branding" "$source_root/client/rampi/icons" "$source_root/client/rampi/sounds" -type f -print0 | sort -z | xargs -0 sha256sum | awk '{print $1}' | sha256sum | cut -d ' ' -f 1)"
+target="/opt/rampi/$version-${fingerprint:0:12}-${assets_hash:0:12}"
+staging="$(mktemp -d /opt/rampi/.stage.XXXXXX)"
+trap 'rm -rf -- "$staging"' EXIT
+install -m 755 "$binary" "$staging/rampi-native"
+install -d -m 755 "$staging/assets"
+cp -a "$source_root/client/rampi/branding" "$source_root/client/rampi/icons" "$source_root/client/rampi/sounds" "$staging/assets/"
+printf '%s  rampi-native\n' "$fingerprint" > "$staging/SHA256SUMS"
+"$staging/rampi-native" --version
+chown -hR root:root "$staging"
+chmod -R a+rX,go-w "$staging"
+# A repeat install repairs an existing version by replacing its inactive directory.
+# Never overwrite a running executable in place.
+if [[ -e "$target" ]]; then
+    replacement="$(mktemp -d "${target}.repair.XXXXXX")"
+    rmdir -- "$replacement"
+    mv -- "$staging" "$replacement"
+    staging="$(mktemp -d /opt/rampi/.stage.XXXXXX)"
+    target="$replacement"
+else
+    mv -- "$staging" "$target"
+    staging="$(mktemp -d /opt/rampi/.stage.XXXXXX)"
+fi
+install -d -m 755 /usr/local/bin /usr/share/wayland-sessions /etc/xdg/rampi/labwc /etc/systemd/user
 for name in rampi rampi-session rampi-wayland-start rampi-health; do install -m 755 "$source_root/system/$name" "/usr/local/bin/$name"; done
 install -m 644 "$source_root/system/rampi.desktop" /usr/share/wayland-sessions/rampi.desktop
 install -m 644 "$source_root/system/rampi.service" /etc/systemd/user/rampi.service
@@ -64,11 +92,11 @@ install -m 644 "$source_root/system/rampi-health.service" /etc/systemd/system/ra
 install -d -m 755 /usr/share/doc/rampi
 cp -a "$source_root/docs/." /usr/share/doc/rampi/
 install -m 644 "$source_root/LICENSE" "$source_root/NOTICE" /usr/share/doc/rampi/
-ln -sfn "$target" /opt/rampi/current
 systemctl enable NetworkManager bluetooth
 if [[ "$new_login" == 1 ]]; then
     install -d -m 755 /etc/greetd /etc/xdg/rampi/greeter
     install -m 644 "$source_root/system/greetd.toml" /etc/greetd/config.toml
+    sha256sum /etc/greetd/config.toml | cut -d ' ' -f 1 > /opt/rampi/managed-greetd.sha256
     install -m 644 "$source_root/system/labwc/rc.xml" /etc/xdg/rampi/greeter/rc.xml
     systemctl enable greetd
     systemctl set-default graphical.target
@@ -76,4 +104,12 @@ fi
 if [[ "$mode" == --image ]]; then
     systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
 fi
+previous="$(readlink -f /opt/rampi/current || true)"
+if [[ "$previous" == /opt/rampi/* && "$previous" != "$target" && -x "$previous/rampi-native" ]]; then
+    ln -s "$previous" "$staging/previous"
+    mv -Tf "$staging/previous" /opt/rampi/previous
+fi
+ln -s "$target" "$staging/current"
+mv -Tf "$staging/current" /opt/rampi/current
+
 echo 'Rust-/Wayland-Sitzung installiert. Vorhandene Login-Konfigurationen bleiben außerhalb des Image-Builds erhalten. Updates sind manuell.'

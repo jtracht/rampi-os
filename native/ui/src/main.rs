@@ -15,6 +15,8 @@ mod linux;
 #[cfg(target_os = "linux")]
 mod pairing;
 #[cfg(target_os = "linux")]
+mod performance;
+#[cfg(target_os = "linux")]
 mod service_checks;
 #[cfg(target_os = "linux")]
 mod setup_view;
@@ -73,7 +75,7 @@ fn main() {
     #[cfg(not(target_os = "linux"))]
     {
         eprintln!(
-            "Die native Rampi-OberflÃ¤che lÃ¤uft unter Linux/Wayland. Windows ist das Hostsystem."
+            "Die native Rampi-Oberfläche läuft unter Linux/Wayland. Windows ist das Hostsystem."
         );
         std::process::exit(2);
     }

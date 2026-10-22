@@ -7,17 +7,18 @@ pub fn run() -> glib::ExitCode {
     let app = gtk::Application::builder()
         .application_id("org.rampi.Workstation")
         .build();
-    app.connect_activate(|app| {
+    let launched = std::time::Instant::now();
+    app.connect_activate(move |app| {
         if let Some(window) = app.active_window() {
             app.activate_action("dashboard", None);
             window.present();
         } else {
-            build(app);
+            build(app, launched);
         }
     });
     app.run_with_args::<&str>(&[])
 }
-fn build(app: &gtk::Application) {
+fn build(app: &gtk::Application, launched: std::time::Instant) {
     let css = gtk::CssProvider::new();
     css.load_from_string(include_str!("style.css"));
     if let Some(display) = gdk::Display::default() {
@@ -203,10 +204,10 @@ fn build(app: &gtk::Application) {
             .borrow()
             .hosts
             .get(settings.borrow().active_host)
-            .map(|h| format!("{} Ã‚Â· {}@{}", h.name, h.username, h.address))
+            .map(|h| format!("{} · {}@{}", h.name, h.username, h.address))
             .unwrap_or_else(|| "Windows-Host noch nicht eingerichtet".into());
         let text = if i == 3 {
-            format!("{} Ã‚Â· Lokaler Browser", settings.borrow().browser_url)
+            format!("{} · Lokaler Browser", settings.borrow().browser_url)
         } else {
             host
         };
@@ -229,12 +230,12 @@ fn build(app: &gtk::Application) {
     previews.append(&assistant_previews);
     dashboard.append(&previews);
     let footer = row();
-    let open_settings = button("Ã¢Å¡â„¢  Einstellungen", &feedback);
+    let open_settings = button("⚙  Einstellungen", &feedback);
     footer.append(&open_settings);
     let console = button("Konsole", &feedback);
     footer.append(&console);
     let version = label(&format!(
-        "Rampi {} Ã‚Â· Rust / Wayland",
+        "Rampi {} · Rust / Wayland",
         env!("CARGO_PKG_VERSION")
     ));
     version.set_hexpand(true);
@@ -292,9 +293,8 @@ fn build(app: &gtk::Application) {
     glib::MainContext::default().spawn_local(async move {
         match crate::pairing::register(s, stat.clone(), f).await {
             Ok(value) => *agent.borrow_mut() = Some(value),
-            Err(_) => stat.set_text(
-                "Bluetooth-Dienst nicht verfÃƒÂ¼gbar; die ÃƒÂ¼brigen Module bleiben nutzbar.",
-            ),
+            Err(_) => stat
+                .set_text("Bluetooth-Dienst nicht verfügbar; die übrigen Module bleiben nutzbar."),
         }
     });
     let keys = gtk::EventControllerKey::new();
@@ -355,6 +355,9 @@ fn build(app: &gtk::Application) {
     window.present();
     if stack.visible_child_name().as_deref() == Some("dashboard") {
         tile_buttons[0].grab_focus();
+    }
+    if std::env::args().any(|a| a == "--performance-test") {
+        crate::performance::run(app, &window, &stack, &settings, &feedback, launched);
     }
     if std::env::args().any(|a| a == "--setup-ui-check") {
         crate::checks::setup(app, &stack, &tabs, &settings);

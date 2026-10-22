@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 umask 077
-if [[ "${RAMPI_TEST_CONTAINER:-}" != 1 ]]; then echo 'Nur im isolierten Testcontainer ausfÃ¼hren.' >&2; exit 2; fi
+if [[ "${RAMPI_TEST_CONTAINER:-}" != 1 ]]; then echo 'Nur im isolierten Testcontainer ausfÃƒÆ’Ã‚Â¼hren.' >&2; exit 2; fi
 if [[ -n "${DISPLAY:-}" ]]; then echo 'Der Test darf keinen X11-Server verwenden.' >&2; exit 1; fi
 test_home="$(mktemp -d /tmp/rampi-wayland.XXXXXX)"
 export HOME="$test_home/home" XDG_RUNTIME_DIR="$test_home/runtime" XDG_CONFIG_HOME="$test_home/config" XDG_CACHE_HOME="$test_home/cache"
@@ -72,6 +72,7 @@ if len(data) < 1000 or peak < 50:
     raise SystemExit(f'Actual native click playback is silent or too quiet: peak={peak}')
 print(f'RAMPI_RUST_SOUND_PCM_OK peak={peak}')
 PY
+timeout 240 /build/target/debug/rampi-native --performance-test
 if pgrep -x Xorg || pgrep -x Xwayland || pgrep -x startx; then echo 'Unerlaubter X11-Prozess.' >&2; exit 1; fi
 echo RAMPI_WAYLAND_WITHOUT_X11_OK
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then

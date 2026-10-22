@@ -11,7 +11,7 @@ test -e "$root/boot/firmware/cmdline.txt"
 test -e "$root/boot/firmware/kernel8.img"
 test -e "$root/boot/firmware/bcm2710-rpi-3-b-plus.dtb"
 test "$(dpkg --print-architecture)" = arm64
-if find -L "$root/opt/rampi/current" "$root/usr/share/rampi" \( -perm /022 -o ! -uid 0 -o ! -gid 0 \) -print -quit | grep -q .; then
+if find -L "$root/opt/rampi/current" "$root/opt/rampi/current/assets" \( -perm /022 -o ! -uid 0 -o ! -gid 0 \) -print -quit | grep -q .; then
     echo 'Programmdateien müssen root gehören und für andere Benutzer schreibgeschützt sein.' >&2; exit 1
 fi
 if grep -qE '^pi:[^!*:]' "$root/etc/shadow"; then

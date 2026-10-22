@@ -18,6 +18,7 @@ markers = [
     "RAMPI_RUST_VPN_PAGE_OK",
     "RAMPI_RUST_TAILSCALE_PAGE_OK",
     "RAMPI_RUST_SOUND_PCM_OK",
+    "RAMPI_RUST_PERFORMANCE_OK",
     "RAMPI_WAYLAND_WITHOUT_X11_OK",
 ]
 missing = [marker for marker in markers if marker not in log]
