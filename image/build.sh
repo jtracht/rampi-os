@@ -2,7 +2,11 @@
 set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 revision="$(cat "$root/image/pi-gen-revision")"
-version="$(sed -n 's/^__version__ = "\([^"]*\)".*/\1/p' "$root/client/rampi/__init__.py")"
+version="$(sed -n 's/^version = "\([^"]*\)".*/\1/p' "$root/Cargo.toml")"
+binary="${RAMPI_NATIVE_BINARY:?ARM64-Rust-Binary aus demselben Checkout erforderlich}"
+binary="$(realpath "$binary")"
+test -x "$binary"
+readelf -h "$binary" | grep -q AArch64
 work="$root/.tools/pi-gen-build"
 if [[ ! "$revision" =~ ^[a-f0-9]{40}$ || -z "$version" ]]; then exit 1; fi
 if [[ -e "$work" ]]; then
@@ -12,6 +16,9 @@ git clone --branch arm64 https://github.com/RPi-Distro/pi-gen.git "$work"
 git -C "$work" checkout --detach "$revision"
 mkdir -p "$work/stage-rampi/00-rampi/files/source"
 git -C "$root" archive HEAD | tar -x -C "$work/stage-rampi/00-rampi/files/source"
+install -D -m 755 "$binary" "$work/stage-rampi/00-rampi/files/source/native/bin/rampi-native"
+git -C "$root" rev-parse HEAD > "$work/stage-rampi/00-rampi/files/source/native/bin/source-revision.txt"
+sha256sum "$binary" | awk '{print $1}' > "$work/stage-rampi/00-rampi/files/source/native/bin/binary-sha256.txt"
 cp "$root/image/stage-rampi/00-run.sh" "$work/stage-rampi/00-rampi/00-run.sh"
 cp "$root/image/stage-rampi/prerun.sh" "$work/stage-rampi/prerun.sh"
 chmod +x "$work/stage-rampi/00-rampi/00-run.sh"
