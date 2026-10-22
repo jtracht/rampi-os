@@ -1,8 +1,22 @@
 # Rust-Tailscale-Statusabnahme vom 23. Oktober 2026
 
-Entwicklungszweig: `codex/software-acceptance-85`. Lokal auf amd64 bestanden;
-aktuelle CI-Artefakte werden separat geprüft. Dies ist keine vollständige
-Tailscale-VPN-Abnahme und kein Nachweis einer persönlichen Kontoanmeldung.
+Entwicklungszweig: `codex/software-acceptance-85`.
+Geprüfte Code-Revision: `7a7df495a3d6279d59d6b96681c1f84226c79dc5`.
+Lokal auf amd64 sowie in der [nativen CI auf amd64 und arm64](https://github.com/jtracht/rampi-os/actions/runs/39862256708)
+bestanden. Auch die [bestehende CI](https://github.com/jtracht/rampi-os/actions/runs/39862256750)
+ist mit allen sechs Jobs erfolgreich. Die Artefakte beider Architekturen wurden
+heruntergeladen und mit `scripts/check-native-evidence.py` erneut geprüft:
+alle zehn Laufzeitmarkierungen, drei Dienstverträge, echte WireGuard-Gegenstellen,
+offizielle Tailscale-Statusprüfung, Screenshot und Speicherwert sind vorhanden.
+
+Der kurze Laufzeitcontainer blieb unter seinem 1-GiB-Limit ohne Swap:
+215,4 MiB Speicherspitze auf amd64 und 166,9 MiB auf arm64. Das sind keine
+Langzeitlast- oder Raspberry-Pi-GPU-Messungen. Die elf Rust-Core-Tests bestehen
+unter Windows und Linux. Die früheren 87 Python-Tests bleiben zusätzliche
+Regressionstests und belegen keine vollständige Rust-Funktionsgleichheit.
+
+Dies ist keine vollständige Tailscale-VPN-Abnahme und kein Nachweis einer
+persönlichen Kontoanmeldung.
 
 Die produktive Rust-Anwendung erkennt die installierte offizielle Tailscale-CLI
 und liest ihren Zustand mit `tailscale status --json --peers=false`. GIO startet
