@@ -243,6 +243,150 @@ fn named(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
     None
 }
 
+pub fn pairing(app: &gtk::Application, stack: &gtk::Stack) {
+    assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
+    let (app, stack) = (app.clone(), stack.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let result: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            use glib::variant::ToVariant;
+            let bus = crate::bus::system().await?;
+            let destination = bus.unique_name().context("No bus identity")?.to_string();
+            glib::timeout_future(std::time::Duration::from_millis(300)).await;
+            let device = crate::bus::path("/org/bluez/hci0/dev_02_00_00_00_00_01")?;
+            // A new connection with the same Unix user may not impersonate bluetoothd.
+            let foreign = gio::DBusConnection::for_address_future(
+                &std::env::var("DBUS_SYSTEM_BUS_ADDRESS")?,
+                gio::DBusConnectionFlags::AUTHENTICATION_CLIENT
+                    | gio::DBusConnectionFlags::MESSAGE_BUS_CONNECTION,
+                None,
+            )
+            .await?;
+            let rejected = foreign
+                .call_future(
+                    Some(&destination),
+                    "/org/rampi/PairingAgent",
+                    "org.bluez.Agent1",
+                    "RequestConfirmation",
+                    Some(&(device.clone(), 123456u32).to_variant()),
+                    None,
+                    gio::DBusCallFlags::NONE,
+                    1000,
+                )
+                .await;
+            let error = rejected.expect_err("Foreign process requested pairing");
+            ensure!(
+                gio::DBusError::remote_error(&error).as_deref()
+                    == Some("org.freedesktop.DBus.Error.AccessDenied"),
+                "Spoof rejection was not an identity check"
+            );
+            ensure!(stack.visible_child_name().as_deref() != Some("pairing"));
+            for (method, value, expected) in [
+                ("RequestConfirmation", "", "None"),
+                ("RequestPinCode", "12ab", "12ab"),
+                ("RequestPasskey", "000042", "42"),
+                ("RequestAuthorization", "", "rejected"),
+            ] {
+                let mut values = vec![device.to_variant()];
+                if method == "RequestConfirmation" {
+                    values.push(123456u32.to_variant());
+                }
+                let reply = Rc::new(std::cell::RefCell::new(None));
+                let (b, target, method_name, done) = (
+                    bus.clone(),
+                    destination.clone(),
+                    method.to_string(),
+                    reply.clone(),
+                );
+                glib::MainContext::default().spawn_local(async move {
+                    *done.borrow_mut() = Some(
+                        crate::bus::call(
+                            &b,
+                            "org.bluez",
+                            "/",
+                            "org.bluez.Mock",
+                            "CallAgent",
+                            Some(&(target, method_name, values).to_variant()),
+                        )
+                        .await,
+                    );
+                });
+                for _ in 0..200 {
+                    if stack.visible_child_name().as_deref() == Some("pairing") {
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(10)).await;
+                }
+                ensure!(
+                    stack.visible_child_name().as_deref() == Some("pairing"),
+                    "No actual {method} page"
+                );
+                let page = stack.child_by_name("pairing").unwrap();
+                let accept = find_button(&page, "Bestätigen").unwrap();
+                let input = named(&page, "pairing-input")
+                    .unwrap()
+                    .downcast::<gtk::PasswordEntry>()
+                    .unwrap();
+                if method == "RequestConfirmation" {
+                    ensure!(
+                        named(&page, "pairing-code")
+                            .unwrap()
+                            .downcast::<gtk::Label>()
+                            .unwrap()
+                            .text()
+                            == "123456"
+                    );
+                    accept.emit_clicked();
+                    ensure!(reply.borrow().is_none(), "Unreviewed confirmation accepted");
+                    named(&page, "pairing-reviewed")
+                        .unwrap()
+                        .downcast::<gtk::CheckButton>()
+                        .unwrap()
+                        .set_active(true);
+                    accept.emit_clicked();
+                } else if method == "RequestAuthorization" {
+                    input.set_text("discard-me");
+                    crate::views::go_back(&stack);
+                } else {
+                    input.set_text("invalid!!");
+                    accept.emit_clicked();
+                    ensure!(reply.borrow().is_none());
+                    input.set_text(value);
+                    accept.emit_clicked();
+                }
+                for _ in 0..200 {
+                    if reply.borrow().is_some() {
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(10)).await;
+                }
+                let answer = reply.borrow_mut().take().context("No actual BlueZ reply")?;
+                if expected == "rejected" {
+                    ensure!(answer.is_err());
+                } else {
+                    ensure!(
+                        answer?.child_value(0).str() == Some(expected),
+                        "Wrong {method} reply"
+                    );
+                }
+                ensure!(input.text().is_empty(), "Pairing input retained");
+                ensure!(
+                    app.windows().len() == 1
+                        && stack.visible_child_name().as_deref() != Some("pairing")
+                );
+            }
+            println!("RAMPI_RUST_PAIRING_AGENT_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(e) = result {
+            eprintln!("Pairing agent check failed: {e:#}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
+
 pub fn setup(
     app: &gtk::Application,
     stack: &gtk::Stack,

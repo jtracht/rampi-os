@@ -52,6 +52,15 @@ fn finish(
         return;
     }
     let p = pending.borrow_mut().take().unwrap();
+    if let Some(page) = stack.child_by_name("pairing") {
+        let mut child = page.first_child();
+        while let Some(widget) = child {
+            if let Ok(input) = widget.clone().downcast::<gtk::PasswordEntry>() {
+                input.set_text("");
+            }
+            child = widget.next_sibling();
+        }
+    }
     if let Some(invocation) = p.invocation {
         if let Some(answer) = answer {
             invocation.return_value(Some(&answer));
@@ -162,17 +171,20 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
                 "Kopplungsanfrage bewusst prüfen:"
             }));
             let digits = label(&code);
+            digits.set_widget_name("pairing-code");
             digits.add_css_class("brand");
             page.append(&digits);
             let input = gtk::PasswordEntry::builder()
                 .placeholder_text("PIN oder Passkey")
                 .build();
             let needs_input = kind == "RequestPinCode" || kind == "RequestPasskey";
+            input.set_widget_name("pairing-input");
             input.set_visible(needs_input);
             page.append(&input);
             let reviewed =
                 gtk::CheckButton::with_label("Codes bewusst verglichen / dieses Gerät zulassen");
             reviewed.set_visible(!display && !needs_input);
+            reviewed.set_widget_name("pairing-reviewed");
             page.append(&reviewed);
             let reject = button("Abbrechen", &feed);
             reject.set_widget_name("rampi-back");

@@ -359,6 +359,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--performance-test") {
         crate::performance::run(app, &window, &stack, &settings, &feedback, launched);
     }
+    if std::env::args().any(|a| a == "--pairing-ui-check") {
+        crate::checks::pairing(app, &stack);
+    }
     if std::env::args().any(|a| a == "--setup-ui-check") {
         crate::checks::setup(app, &stack, &tabs, &settings);
     }

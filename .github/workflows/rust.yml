@@ -66,14 +66,21 @@ jobs:
         run: |
           set -euo pipefail
           docker run --rm --network none --user 1000:1000 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-tailscale.py | tee artifacts/rust/tailscale-status.log
-      - name: Require complete runtime, tunnel and official CLI evidence
-        run: python3 scripts/check-native-evidence.py artifacts/rust
       - name: Actual ARM64 native installer lifecycle in a disposable container
         if: matrix.arch == 'arm64'
         run: |
           set -euo pipefail
           docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev bash tests/rust/test-installer.sh 2>&1 | tee artifacts/rust/installer-lifecycle.log
           grep -q RAMPI_RUST_INSTALLER_LIFECYCLE_OK artifacts/rust/installer-lifecycle.log
+      - name: Require complete runtime, tunnel, performance and installer evidence
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          if [[ "$ARCH" == arm64 ]]; then
+            python3 scripts/check-native-evidence.py artifacts/rust --require-installer
+          else
+            python3 scripts/check-native-evidence.py artifacts/rust
+          fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

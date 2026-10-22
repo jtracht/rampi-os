@@ -1,6 +1,6 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 52 %**.
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 53 %**.
 Rust-Umstellung: **ca. 48 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
@@ -13,7 +13,7 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Setup-Assistent | 2 |
 | Linux-Konten und Login | 2 |
 | WLAN | 2 |
-| Bluetooth | 2 |
+| Bluetooth | 3 |
 | VPN | 3 |
 | Windows-Host und Persistenz | 4 |
 | Anbieter-CLIs | 3 |
@@ -28,7 +28,13 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Manuelle Updates | 4 |
 | Dokumentation | 2 |
 | Performance | 1 |
-| **Summe** | **52 / 100** |
+| **Summe** | **53 / 100** |
+
+Bluetooth erreicht drei Punkte durch die tatsächliche Rust-Agent1-Abnahme für
+bewussten Codevergleich, PIN und Passkey, Abbruch mit gelöschter Eingabe sowie
+Abweisung fremder D-Bus-Absender. Die Prüfung verwendet einen privaten
+BlueZ-Testdienst; Funkkopplung und erneute Agentregistrierung nach einem
+Dienstneustart sind damit nicht nachgewiesen.
 
 Der Rust-Assistent speichert den aktuellen Schritt, kann unterbrochen und
 fortgesetzt werden und nutzt die vorhandenen Einstellungsseiten. Die tatsächliche

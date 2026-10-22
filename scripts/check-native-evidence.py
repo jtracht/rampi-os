@@ -1,6 +1,7 @@
 """Fail closed if a native run omitted any required executable acceptance stage."""
 
 import json
+import math
 import struct
 import sys
 from pathlib import Path
@@ -14,6 +15,7 @@ markers = [
     "RAMPI_RUST_VTE_PTY_OK",
     "RAMPI_RUST_WEBKIT_DOM_JS_OK",
     "RAMPI_RUST_BLUEZ_PAGE_OK",
+    "RAMPI_RUST_PAIRING_AGENT_OK",
     "RAMPI_RUST_KANBAN_PAGE_OK",
     "RAMPI_RUST_VPN_PAGE_OK",
     "RAMPI_RUST_TAILSCALE_PAGE_OK",
@@ -37,6 +39,22 @@ if "RAMPI_RUST_TAILSCALE_STATUS_OK" not in (directory / "tailscale-status.log").
 peak = int((directory / "memory-peak-bytes.txt").read_text())
 if not 0 < peak <= 1024**3:
     raise SystemExit("Native runtime exceeded its declared 1-GiB memory limit")
+performance = json.loads((directory / "performance.json").read_text(encoding="utf-8"))
+for key in ["startup_to_observed_paint_ms", "switch_p95_paint_ms", "process_peak_rss_mib"]:
+    if not isinstance(performance.get(key), (int, float)) or not math.isfinite(performance[key]):
+        raise SystemExit("Missing or invalid measured performance: " + key)
+if (
+    performance.get("module_switches", 0) < 600
+    or not 0 < performance["startup_to_observed_paint_ms"] < 10000
+    or not 0 < performance["switch_p95_paint_ms"] < 500
+    or not 0 < performance["process_peak_rss_mib"] < 900
+):
+    raise SystemExit("Sustained software performance budget did not pass")
+if "--require-installer" in sys.argv[2:]:
+    if "RAMPI_RUST_INSTALLER_LIFECYCLE_OK" not in (
+        directory / "installer-lifecycle.log"
+    ).read_text(encoding="utf-8"):
+        raise SystemExit("Actual ARM64 installer lifecycle did not pass")
 with (directory / "rust-wayland-dashboard.png").open("rb") as image:
     header = image.read(24)
 if header[:8] != b"\x89PNG\r\n\x1a\n" or len(header) != 24:
@@ -48,6 +66,7 @@ proof = {
     "required_stages": markers,
     "peak_mib": round(peak / 1024**2, 1),
     "screenshot": [width, height],
+    "performance": performance,
 }
 (directory / "native-acceptance.json").write_text(json.dumps(proof, indent=2) + "\n")
 print("PASS: every required native stage has executable evidence.")
