@@ -107,11 +107,17 @@ Windows-, Netzwerk- und Image-Nachweise gelten nicht automatisch für den Port.
 Noch offen sind insbesondere zusätzliche Pairing-Fälle und Dienstneustarts,
 WLAN-Sonderfälle, Setup-/Konten-/Tailscale-Funktionsgleichheit, alle Kanban-Anbieter,
 Streaming, integrierte Remote-Desktop-Darstellung, grafische PAM-Anmeldung,
-Installer-Reparaturpfade, das neue ARM64-Systemimage und seine QEMU-Abnahme.
+weitere Installer-/Loginfälle und die vollständige Freigabe eines nativen Releases.
 Die persönlichen offiziellen Anbieteranmeldungen bleiben separat zu prüfen.
 
 `packaging/readiness.json` hält reguläre Releases während der Umstellung zurück.
-Es wird kein neues Image als fertig ausgewiesen, solange diese Prüfungen fehlen.
+Ein tatsächliches natives Entwicklungsimage ist inzwischen
+[gebaut und zweimal in QEMU geprüft](validation/rust-image-2026-10-23.md),
+einschließlich Programm-/Quellzuordnung und verifiziertem lokalem Download.
+Die [ARM64-Installer-Abnahme](validation/rust-native-2026-10-23.md) prüft reale
+Pakete, wiederholte Installation, Versionswechsel, Rückwechsel, abgewiesene
+Fehlereingaben, erhaltene persönliche Daten und einen fremden Login-Dienst.
+Dies ersetzt weder die grafische PAM-Anmeldung noch die übrige Release-Abnahme.
 Das zuvor veröffentlichte v0.5.0 bleibt ein Python-/QML-Release.
 
 Die lokale Leistungsbaseline umfasst 600 überprüfte Seitenwechsel über mehr als

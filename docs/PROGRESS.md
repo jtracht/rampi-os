@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 58 %**.
-Rust-Umstellung: **ca. 56 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 60 %**.
+Rust-Umstellung: **ca. 58 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -24,11 +24,20 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Sicherheit und Isolation | 3 |
 | Design und Branding | 3 |
 | GitHub und CI/CD | 4 |
-| Systemimage | 1 |
+| Systemimage | 3 |
 | Manuelle Updates | 4 |
 | Dokumentation | 3 |
 | Performance | 3 |
-| **Summe** | **58 / 100** |
+| **Summe** | **60 / 100** |
+
+Systemimage erreicht drei Punkte: Ein tatsächliches flashbares Trixie-/ARM64-Image
+mit vorgebautem Rust-Programm, Wayland-Sitzung, Paketmanifest und ursprünglichen
+Rust-/Distributionslizenzen ist gebaut. Partitionen und Dateisysteme sind geprüft;
+QEMU startet den Pi-Kernel mit 1 GiB bis zur Diagnose des nativen Programms.
+Das heruntergeladene Image stimmt mit seiner SHA256-Prüfsumme überein.
+Die grafische Anmeldung und vollständige native Release-Funktionsgleichheit
+bleiben offen; es handelt sich um einen Entwicklungskandidaten, kein reguläres Release.
+Nachweis: [Image, Prüfsummen und QEMU-Abnahmen](validation/rust-image-2026-10-23.md).
 
 Installer und Reparatur erreichen vier Punkte: Der tatsächliche ARM64-Installer
 ist mit echten Trixie-Paketen, gewöhnlichem Quellbesitz, rootgeschützten

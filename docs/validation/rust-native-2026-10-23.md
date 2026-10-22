@@ -1,10 +1,10 @@
 # Native Softwareabnahme: Einrichtung, Kopplung, Belastung und Installer
 
 Geprüfter Programm-/Installer-Quellstand:
-`3be569e355f5998867a3edcb83e85a72b9c3fa89`.
+`ec7a88e65ab4aa9721fd3c68f3d29143f054e172`.
 
-- [Rust-/Wayland-CI mit beiden Architekturen](https://github.com/jtracht/rampi-os/actions/runs/39869714964).
-- [Alle sechs bisherigen CI-Jobs](https://github.com/jtracht/rampi-os/actions/runs/39869714937).
+- [Rust-/Wayland-CI mit beiden Architekturen](https://github.com/jtracht/rampi-os/actions/runs/39870928396).
+- [Alle sechs bisherigen CI-Jobs](https://github.com/jtracht/rampi-os/actions/runs/39870928431).
 
 Die vollständigen Artefakte `rust-wayland-amd64` und `rust-wayland-arm64` wurden
 nach dem erfolgreichen Lauf heruntergeladen und unabhängig erneut mit
@@ -13,7 +13,7 @@ nach dem erfolgreichen Lauf heruntergeladen und unabhängig erneut mit
 
 ## Tatsächliche grafische Anwendung
 
-Die 13 Pflichtmarker belegen je Architektur dieselbe GTK-Anwendung auf einer
+Die 14 Pflichtmarker belegen je Architektur dieselbe GTK-Anwendung auf einer
 echten labwc-/Wayland-Sitzung mit Pixman/Cairo, 1280 × 720, einem Rampi-Fenster,
 1 GiB Containerlimit und ohne Swap:
 
@@ -31,7 +31,7 @@ echten labwc-/Wayland-Sitzung mit Pixman/Cairo, 1280 × 720, einem Rampi-Fenster
 - Tatsächlich aufgezeichnete libcanberra-/Pulse-Klickausgabe.
 - Längerer Seitenwechseltest und Ausschluss von Xorg/Xwayland/startx.
 
-Zusätzlich wurde lokal der normale Start ohne Testargumente geprüft: Die
+Zusätzlich wird auch in beiden CI-Architekturen der normale Start ohne Testargumente geprüft: Die
 Einrichtungsseite erscheint, Tab/Enter wechseln zum nächsten Schritt und die
 persönliche Datei enthält `setup_step=1` bei `setup_complete=false`.
 
@@ -43,12 +43,12 @@ GTK-Zeichenereignis, nicht nur vom Aufruf einer Navigationsfunktion.
 
 | Messwert | AMD64 | ARM64 |
 |---|---:|---:|
-| Start bis beobachtete Zeichenausgabe | 92,7 ms | 78,8 ms |
-| 95. Perzentil Seitenwechsel | 18,4 ms | 16,6 ms |
-| Rampi-Prozess, maximal beobachteter RSS | 286,7 MiB | 226,7 MiB |
-| Gesamte Testlaufzeit, cgroup-Speicherspitze | 309,8 MiB | 231,2 MiB |
-| Prozess-CPU während Wechseln, Anteil eines Kerns | 21,4 % | 18,9 % |
-| Prozess-CPU mit reduzierter Bewegung im Ruheabschnitt | 0,40 % | 0,58 % |
+| Start bis beobachtete Zeichenausgabe | 88,6 ms | 79,7 ms |
+| 95. Perzentil Seitenwechsel | 19,1 ms | 18,4 ms |
+| Rampi-Prozess, maximal beobachteter RSS | 281,6 MiB | 229,7 MiB |
+| Gesamte Testlaufzeit, cgroup-Speicherspitze | 310,3 MiB | 230,9 MiB |
+| Prozess-CPU während Wechseln, Anteil eines Kerns | 19,7 % | 18,2 % |
+| Prozess-CPU mit reduzierter Bewegung im Ruheabschnitt | 0,36 % | 0,57 % |
 
 Die Speicherprüfung vergleicht zusätzlich die residenten Werte nach der
 Aufwärmphase und am Ende. Der Test erzwingt beobachtete Zeichenausgabe für jeden
