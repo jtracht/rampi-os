@@ -20,6 +20,8 @@ fi
 # Runtime probes must run inside the image, not resolve host libraries against a prefix.
 test "$root" = /
 /usr/local/bin/rampi-health
+test -s /usr/share/doc/rampi/rust-licenses/packages.json
+test -s /usr/share/doc/rampi/rust-licenses/Rust-standard-library-COPYRIGHT.html
 expected="$(cat /opt/rampi/binary-sha256.txt)"
 [[ "$expected" =~ ^[a-f0-9]{64}$ ]]
 printf '%s  %s\n' "$expected" /opt/rampi/current/rampi-native | sha256sum --check --status

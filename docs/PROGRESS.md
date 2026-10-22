@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 53 %**.
-Rust-Umstellung: **ca. 48 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 56 %**.
+Rust-Umstellung: **ca. 53 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -26,9 +26,23 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | GitHub und CI/CD | 4 |
 | Systemimage | 1 |
 | Manuelle Updates | 4 |
-| Dokumentation | 2 |
-| Performance | 1 |
-| **Summe** | **53 / 100** |
+| Dokumentation | 3 |
+| Performance | 3 |
+| **Summe** | **56 / 100** |
+
+Performance erreicht drei Punkte durch einen tatsächlichen Wayland-Lauf mit
+600 überprüften Seitenwechseln über mehr als drei Minuten, drei VTE-Terminals,
+lokalem WebKit-Inhalt, gezeichneten Frames, Start-/Wechsellatenz, Prozess-CPU,
+Speicherverlauf nach der Aufwärmphase und einer Phase mit reduzierter Bewegung.
+Die vollständige lokale Abnahme bleibt unter dem Containerlimit von 1 GiB.
+Das ist eine Software-Baseline mit labwc/Pixman und Cairo, keine Messung auf
+einem physischen Raspberry Pi und keine längere Arbeitslast mit echten KI-/Remote-Sitzungen.
+
+Dokumentation erreicht drei Punkte durch die vollständige Anleitung für die
+gegenwärtigen nativen Bedienabläufe und die gesonderte Betriebsanleitung für
+Installation, manuelle Updates, Reparatur, Versionswechsel und Deinstallation.
+Beide benennen die noch fehlenden Funktionen ausdrücklich:
+[Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb](NATIVE-OPERATIONS.de.md).
 
 Bluetooth erreicht drei Punkte durch die tatsächliche Rust-Agent1-Abnahme für
 bewussten Codevergleich, PIN und Passkey, Abbruch mit gelöschter Eingabe sowie

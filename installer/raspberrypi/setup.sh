@@ -92,6 +92,11 @@ install -m 644 "$source_root/system/rampi-health.service" /etc/systemd/system/ra
 install -d -m 755 /usr/share/doc/rampi
 cp -a "$source_root/docs/." /usr/share/doc/rampi/
 install -m 644 "$source_root/LICENSE" "$source_root/NOTICE" /usr/share/doc/rampi/
+if [[ -d "$source_root/native/bin/rust-licenses" ]]; then
+    cp -a "$source_root/native/bin/rust-licenses" /usr/share/doc/rampi/
+    chown -hR root:root /usr/share/doc/rampi/rust-licenses
+    chmod -R a+rX,go-w /usr/share/doc/rampi/rust-licenses
+fi
 systemctl enable NetworkManager bluetooth
 if [[ "$new_login" == 1 ]]; then
     install -d -m 755 /etc/greetd /etc/xdg/rampi/greeter
