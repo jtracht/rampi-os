@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 umask 077
-if [[ "${RAMPI_TEST_CONTAINER:-}" != 1 ]]; then echo 'Nur im isolierten Testcontainer ausführen.' >&2; exit 2; fi
+if [[ "${RAMPI_TEST_CONTAINER:-}" != 1 ]]; then echo 'Nur im isolierten Testcontainer ausfÃ¼hren.' >&2; exit 2; fi
 if [[ -n "${DISPLAY:-}" ]]; then echo 'Der Test darf keinen X11-Server verwenden.' >&2; exit 1; fi
 test_home="$(mktemp -d /tmp/rampi-wayland.XXXXXX)"
 export HOME="$test_home/home" XDG_RUNTIME_DIR="$test_home/runtime" XDG_CONFIG_HOME="$test_home/config" XDG_CACHE_HOME="$test_home/cache"
@@ -36,6 +36,7 @@ wtype -s 150 -k Right -s 100 -k Left -s 100 -k Return
 sleep 1.2
 wtype -s 150 -k Escape
 wait "$keyboard_pid"
+timeout 20 /build/target/debug/rampi-native --setup-ui-check
 /build/target/debug/rampi-native --embedded-test
 python3 tests/rust/test-bluetooth.py --ui
 python3 tests/rust/test-wireguard.py --ui

@@ -33,6 +33,12 @@ impl Default for Host {
 impl Host {
     pub fn validate(&self) -> Result<()> {
         ensure!(
+            !self.name.trim().is_empty()
+                && self.name.chars().count() <= 80
+                && !self.name.chars().any(char::is_control),
+            "Ungültiger Profilname"
+        );
+        ensure!(
             !self.address.is_empty()
                 && self.address.len() <= 253
                 && self
@@ -85,6 +91,7 @@ impl Host {
 pub struct Settings {
     pub language: String,
     pub setup_complete: bool,
+    pub setup_step: usize,
     pub active_host: usize,
     pub hosts: Vec<Host>,
     pub browser_url: String,
@@ -100,6 +107,7 @@ impl Default for Settings {
         Self {
             language: "de".into(),
             setup_complete: false,
+            setup_step: 0,
             active_host: 0,
             hosts: vec![],
             browser_url: "https://www.raspberrypi.com".into(),
@@ -157,6 +165,8 @@ impl Settings {
         Ok(h)
     }
     pub fn validate(&self) -> Result<()> {
+        ensure!(self.setup_step < 15, "Ungültiger Einrichtungsschritt");
+        ensure!(self.hosts.len() <= 64, "Zu viele Hostprofile");
         validate_https(&self.browser_url)?;
         ensure!(
             ["json", "github", "trello", "jira", "asana", "notion"]
@@ -273,5 +283,41 @@ mod tests {
                 0o600
             );
         }
+    }
+
+    #[test]
+    fn multiple_hosts_and_setup_resume() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        let mut settings = Settings {
+            setup_step: 7,
+            active_host: 1,
+            hosts: vec![
+                Host {
+                    address: "first.example".into(),
+                    username: "alice".into(),
+                    ..Host::default()
+                },
+                Host {
+                    name: "Laptop".into(),
+                    address: "second.example".into(),
+                    username: "bob".into(),
+                    port: 2222,
+                    ..Host::default()
+                },
+            ],
+            ..Settings::default()
+        };
+        settings.save(&path).unwrap();
+        let loaded = Settings::load(&path).unwrap();
+        assert_eq!(loaded.setup_step, 7);
+        assert!(!loaded.setup_complete);
+        assert_eq!(loaded.host().unwrap().username, "bob");
+        settings.setup_step = 15;
+        assert!(settings.save(&path).is_err());
+        assert_eq!(Settings::load(&path).unwrap().setup_step, 7);
+        settings.setup_step = 0;
+        settings.active_host = 2;
+        assert!(settings.validate().is_err());
     }
 }

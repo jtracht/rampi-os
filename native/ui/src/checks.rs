@@ -243,6 +243,126 @@ fn named(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
     None
 }
 
+pub fn setup(
+    app: &gtk::Application,
+    stack: &gtk::Stack,
+    tabs: &gtk::Stack,
+    conf: &crate::widgets::Shared,
+) {
+    assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
+    let (app, stack, tabs, conf) = (app.clone(), stack.clone(), tabs.clone(), conf.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let result: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            let setup = stack.child_by_name("setup").context("No wizard")?;
+            let click = |root: &gtk::Widget, title: &str| -> anyhow::Result<()> {
+                let b = find_button(root, title).context(format!("No button {title}"))?;
+                ensure!(b.is_sensitive(), "Button disabled: {title}");
+                b.emit_clicked();
+                Ok(())
+            };
+            stack.set_visible_child_name("setup");
+            click(&setup, "Weiter / Schritt überspringen")?;
+            click(&setup, "Weiter / Schritt überspringen")?;
+            click(&setup, "Jetzt einrichten")?;
+            ensure!(tabs.visible_child_name().as_deref() == Some("wifi"));
+            crate::views::go_back(&stack);
+            ensure!(stack.visible_child_name().as_deref() == Some("setup"));
+            click(&setup, "Später fortsetzen")?;
+            ensure!(!conf.borrow().setup_complete && conf.borrow().setup_step == 2);
+            let saved = rampi_core::config::Settings::load(
+                &rampi_core::config::config_dir()?.join("settings.json"),
+            )?;
+            ensure!(saved.setup_step == 2 && !saved.setup_complete);
+            let host = tabs.child_by_name("host").context("No host editor")?;
+            tabs.set_visible_child_name("host");
+            stack.set_visible_child_name("settings");
+            let field = |id: &str, value: &str| -> anyhow::Result<()> {
+                named(&host, &format!("host-{id}"))
+                    .context("Missing field")?
+                    .downcast::<gtk::Entry>()
+                    .map_err(|_| anyhow::anyhow!("Not entry"))?
+                    .set_text(value);
+                Ok(())
+            };
+            for (name, address, user) in [
+                ("Office", "office.example", "alice"),
+                ("Laptop", "laptop.example", "bob"),
+            ] {
+                click(&host, "Neues Hostprofil")?;
+                field("name", name)?;
+                field("address", address)?;
+                field("username", user)?;
+                field("port", "2222")?;
+                click(&host, "Hostprofil speichern")?;
+            }
+            ensure!(conf.borrow().hosts.len() == 2, "Profiles not saved");
+            click(&host, "Ausgewählten Host verwenden")?;
+            ensure!(conf.borrow().host()?.username == "bob");
+            field("port", "0")?;
+            click(&host, "Hostprofil speichern")?;
+            ensure!(
+                conf.borrow().host()?.port == 2222,
+                "Rejected input mutated configuration"
+            );
+            click(&host, "Entfernen vorbereiten")?;
+            click(&host, "Entfernen abbrechen")?;
+            ensure!(conf.borrow().hosts.len() == 2);
+            click(&host, "Entfernen vorbereiten")?;
+            click(&host, "Hostprofil endgültig entfernen")?;
+            ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.username == "alice");
+            stack.set_visible_child_name("setup");
+            for _ in 2..14 {
+                click(&setup, "Weiter / Schritt überspringen")?;
+            }
+            click(&setup, "Jetzt einrichten")?;
+            let diagnostics = stack
+                .child_by_name("diagnostics")
+                .context("No diagnostics")?;
+            click(&diagnostics, "Diagnose aktualisieren")?;
+            for _ in 0..200 {
+                if find_button(&diagnostics, "Diagnose aktualisieren")
+                    .unwrap()
+                    .is_sensitive()
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            let output = named(&diagnostics, "diagnostics-result")
+                .unwrap()
+                .downcast::<gtk::Label>()
+                .unwrap();
+            ensure!(
+                output.text().contains("Linux-Konto:") && output.text().contains("Hostprofile: 1")
+            );
+            crate::views::go_back(&stack);
+            click(&setup, "Einrichtung abschließen")?;
+            ensure!(
+                conf.borrow().setup_complete
+                    && stack.visible_child_name().as_deref() == Some("dashboard")
+            );
+            ensure!(
+                rampi_core::config::Settings::load(
+                    &rampi_core::config::config_dir()?.join("settings.json")
+                )?
+                .setup_complete
+            );
+            ensure!(app.windows().len() == 1, "Setup opened additional window");
+            // Other acceptance stages start with a fresh personal profile.
+            std::fs::remove_file(rampi_core::config::config_dir()?.join("settings.json"))?;
+            println!("RAMPI_RUST_SETUP_HOSTS_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(e) = result {
+            eprintln!("Setup/hosts check failed: {e:#}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
+
 pub fn vpn(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) {
     if std::env::var("RAMPI_TEST_CONTAINER").as_deref() != Ok("1")
         || std::env::var("DBUS_SYSTEM_BUS_ADDRESS").is_err()

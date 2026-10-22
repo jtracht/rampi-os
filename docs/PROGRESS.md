@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 51 %**.
-Rust-Umstellung: **ca. 45 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 52 %**.
+Rust-Umstellung: **ca. 48 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -10,7 +10,7 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 |---|---:|
 | Grafische Sitzung und Dashboard | 3 |
 | Tastatur und Maus | 3 |
-| Setup-Assistent | 1 |
+| Setup-Assistent | 2 |
 | Linux-Konten und Login | 2 |
 | WLAN | 2 |
 | Bluetooth | 2 |
@@ -28,7 +28,14 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Manuelle Updates | 4 |
 | Dokumentation | 2 |
 | Performance | 1 |
-| **Summe** | **51 / 100** |
+| **Summe** | **52 / 100** |
+
+Der Rust-Assistent speichert den aktuellen Schritt, kann unterbrochen und
+fortgesetzt werden und nutzt die vorhandenen Einstellungsseiten. Die tatsächliche
+GTK-Abnahme prüft Navigation, Speichern, Überspringen, Abschluss, lokale Diagnose
+und mehrere Hostprofile einschließlich Aktivierung, ungültiger Eingaben und
+bestätigtem Entfernen. Nicht portierte Einrichtungsschritte sind ausdrücklich
+gekennzeichnet; der Assistent erreicht deshalb erst zwei von fünf Punkten.
 
 VPN erhält einen zusätzlichen Punkt für die eigene Rust-WireGuard-Seite mit
 persönlicher Profilauswahl, Status, Import, Verbinden und Trennen. Die tatsächliche

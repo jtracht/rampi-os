@@ -203,10 +203,10 @@ fn build(app: &gtk::Application) {
             .borrow()
             .hosts
             .get(settings.borrow().active_host)
-            .map(|h| format!("{} · {}@{}", h.name, h.username, h.address))
+            .map(|h| format!("{} Ã‚Â· {}@{}", h.name, h.username, h.address))
             .unwrap_or_else(|| "Windows-Host noch nicht eingerichtet".into());
         let text = if i == 3 {
-            format!("{} · Lokaler Browser", settings.borrow().browser_url)
+            format!("{} Ã‚Â· Lokaler Browser", settings.borrow().browser_url)
         } else {
             host
         };
@@ -229,12 +229,12 @@ fn build(app: &gtk::Application) {
     previews.append(&assistant_previews);
     dashboard.append(&previews);
     let footer = row();
-    let open_settings = button("⚙  Einstellungen", &feedback);
+    let open_settings = button("Ã¢Å¡â„¢  Einstellungen", &feedback);
     footer.append(&open_settings);
     let console = button("Konsole", &feedback);
     footer.append(&console);
     let version = label(&format!(
-        "Rampi {} · Rust / Wayland",
+        "Rampi {} Ã‚Â· Rust / Wayland",
         env!("CARGO_PKG_VERSION")
     ));
     version.set_hexpand(true);
@@ -247,6 +247,23 @@ fn build(app: &gtk::Application) {
         .connect_clicked(move |_| views::terminal(&s, "console", vec!["/bin/bash".into()], &stat));
     let (settings_page, tabs) = views::settings(&stack, &settings, &status, &feedback);
     stack.add_named(&settings_page, Some("settings"));
+    stack.add_named(
+        &crate::setup_view::build(&stack, &tabs, &settings, &status, &feedback),
+        Some("setup"),
+    );
+    stack.add_named(
+        &crate::setup_view::diagnostics(&stack, &settings, &feedback),
+        Some("diagnostics"),
+    );
+    let setup_button = button("Einrichtung fortsetzen", &feedback);
+    let route = stack.clone();
+    setup_button.connect_clicked(move |_| route.set_visible_child_name("setup"));
+    footer.append(&setup_button);
+    let diagnose = button("Diagnose", &feedback);
+    let route = stack.clone();
+    diagnose.connect_clicked(move |_| route.set_visible_child_name("diagnostics"));
+    footer.append(&diagnose);
+
     for (b, page) in [
         (&wifi, "wifi"),
         (&bluetooth, "bluetooth"),
@@ -275,8 +292,9 @@ fn build(app: &gtk::Application) {
     glib::MainContext::default().spawn_local(async move {
         match crate::pairing::register(s, stat.clone(), f).await {
             Ok(value) => *agent.borrow_mut() = Some(value),
-            Err(_) => stat
-                .set_text("Bluetooth-Dienst nicht verfügbar; die übrigen Module bleiben nutzbar."),
+            Err(_) => stat.set_text(
+                "Bluetooth-Dienst nicht verfÃƒÂ¼gbar; die ÃƒÂ¼brigen Module bleiben nutzbar.",
+            ),
         }
     });
     let keys = gtk::EventControllerKey::new();
@@ -325,12 +343,22 @@ fn build(app: &gtk::Application) {
         }
     });
     window.add_controller(pointer);
-    stack.set_visible_child_name("dashboard");
+    let testing = std::env::args().any(|a| a.ends_with("-test") || a.ends_with("-check"));
+    stack.set_visible_child_name(if !settings.borrow().setup_complete && !testing {
+        "setup"
+    } else {
+        "dashboard"
+    });
     if !std::env::args().any(|a| a == "--windowed") {
         window.fullscreen();
     }
     window.present();
-    tile_buttons[0].grab_focus();
+    if stack.visible_child_name().as_deref() == Some("dashboard") {
+        tile_buttons[0].grab_focus();
+    }
+    if std::env::args().any(|a| a == "--setup-ui-check") {
+        crate::checks::setup(app, &stack, &tabs, &settings);
+    }
     if std::env::args().any(|a| a == "--keyboard-test") {
         crate::checks::keyboard(app, &stack);
     }

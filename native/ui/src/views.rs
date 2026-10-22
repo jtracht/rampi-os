@@ -2,7 +2,7 @@ use crate::{bus, widgets::*};
 use gtk::{gio, glib, prelude::*};
 use rampi_core::{
     board::Board,
-    config::{self, Host},
+    config::{self},
 };
 use std::{
     cell::{Cell, RefCell},
@@ -21,8 +21,19 @@ pub fn settings(
     let page = column();
     let header = row();
     let back = button("← Dashboard", f);
+    back.set_widget_name("rampi-back");
     let s = stack.clone();
-    back.connect_clicked(move |_| s.set_visible_child_name("dashboard"));
+    back.connect_clicked(move |_| {
+        let destination = if s
+            .child_by_name("setup")
+            .is_some_and(|p| p.widget_name() == "setup-return")
+        {
+            "setup"
+        } else {
+            "dashboard"
+        };
+        s.set_visible_child_name(destination);
+    });
     header.append(&back);
     let title = label("Einstellungen · persönliches Profil");
     title.add_css_class("heading");
@@ -36,7 +47,11 @@ pub fn settings(
     let switcher = gtk::StackSwitcher::builder().stack(&tabs).build();
     page.append(&switcher);
     page.append(&tabs);
-    tabs.add_titled(&scroll(&host(conf, status, f)), Some("host"), "Host & SSH");
+    tabs.add_titled(
+        &scroll(&crate::host_view::build(conf, status, f)),
+        Some("host"),
+        "Host & SSH",
+    );
     let system = column();
     let reduce = gtk::CheckButton::with_label("Bewegung reduzieren");
     reduce.set_active(conf.borrow().reduce_motion);
@@ -117,57 +132,6 @@ pub fn settings(
         child = widget.next_sibling();
     }
     (page, tabs)
-}
-fn host(conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
-    let page = column();
-    page.append(&label("Windows 11 Pro · persönliche Verbindung"));
-    let h = conf
-        .borrow()
-        .hosts
-        .get(conf.borrow().active_host)
-        .cloned()
-        .unwrap_or_default();
-    let mut fields = vec![];
-    for (title, value) in [
-        ("Profilname", h.name.as_str()),
-        ("Hostname / VPN-IP", &h.address),
-        ("Windows-Benutzername", &h.username),
-        ("Privater SSH-Schlüssel · Dateipfad", &h.identity),
-        ("Projektverzeichnis auf Windows", &h.project),
-    ] {
-        page.append(&label(title));
-        let field = gtk::Entry::builder().text(value).build();
-        page.append(&field);
-        fields.push(field);
-    }
-    page.append(&label("SSH verwendet geprüfte Hostschlüssel und persönliche Schlüssel. Unbekannte Hostschlüssel werden nicht automatisch akzeptiert. Die Anbieterprogramme laufen nativ unter Windows; psmux erhält ihre Prozesse bei Verbindungsabbrüchen."));
-    let save = button("Hostprofil speichern", f);
-    let (c, stat) = (conf.clone(), status.clone());
-    save.connect_clicked(move |_| {
-        let mut candidate = c.borrow().clone();
-        let h = Host {
-            name: fields[0].text().to_string(),
-            address: fields[1].text().to_string(),
-            username: fields[2].text().to_string(),
-            identity: fields[3].text().to_string(),
-            project: fields[4].text().to_string(),
-            ..h.clone()
-        };
-        if candidate.hosts.is_empty() {
-            candidate.hosts.push(h);
-            candidate.active_host = 0;
-        } else {
-            let i = candidate.active_host;
-            candidate.hosts[i] = h;
-        }
-        let result = config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
-        if result.is_ok() {
-            *c.borrow_mut() = candidate;
-        }
-        status_result(&stat, result);
-    });
-    page.append(&save);
-    page
 }
 fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
@@ -654,6 +618,21 @@ pub fn board_preview(conf: &Shared) -> gtk::Box {
 }
 pub fn remote(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
+    let back = button("← Zurück", f);
+    back.set_widget_name("rampi-back");
+    let s = stack.clone();
+    back.connect_clicked(move |_| {
+        s.set_visible_child_name(
+            if s.child_by_name("setup")
+                .is_some_and(|p| p.widget_name() == "setup-return")
+            {
+                "setup"
+            } else {
+                "dashboard"
+            },
+        )
+    });
+    page.append(&back);
     page.append(&label("Deine Windows-Workstation\nRDP meldet dich mit deinem Windows-Konto an. Sunshine teilt die aktive Windows-Konsole."));
     let b = button("RDP · nativer Wayland-Client", f);
     let (host_settings, s, stat) = (conf.clone(), stack.clone(), status.clone());
