@@ -82,8 +82,16 @@ NetworkManager übernimmt seine vorhandene Schlüsselablage und Tunnelverwaltung
 Gemeinsame, fremde und mehreren Benutzern zugewiesene Profile sind ausgeschlossen;
 jede Verbindung prüft die aktuelle Zuordnung erneut. Der GUI-Test und die
 [echten WireGuard-Gegenstellen](validation/rust-vpn-2026-10-21.md) prüfen getrennte
-Aspekte. Die Tailscale-Schaltflächen verwenden weiterhin die offizielle Software
-in einer eingebetteten Terminalseite; ihre vollständige grafische Einrichtung ist offen.
+Aspekte. Tailscale zeigt seinen Zustand nun direkt in den Einstellungen anhand
+von `tailscale status --json --peers=false`. Die Abfrage läuft asynchron, wird
+auf 256 KiB und fünf Sekunden begrenzt und wertet keine Anmelde-URLs aus. Für
+„Verbunden“ sind der Zustand `Running`, eine positive Online-Angabe und mindestens
+eine gültige VPN-Adresse erforderlich. Unbekannte oder unvollständige Zustände
+werden entsprechend angezeigt. Die vorhandenen Verbinden-/Trennen-/Diagnose-
+Schaltflächen verwenden weiterhin die offizielle Software in einer eingebetteten
+Terminalseite; die vollständige grafische Einrichtung ist offen.
+Die [Tailscale-Statusabnahme](validation/rust-tailscale-2026-10-23.md) unterscheidet
+echte CLI-/Dienstprüfungen von gezielten Ausgabe-/Timeout-Fixtures.
 
 Das ist keine vollständige Funktionsabnahme. Die bisherigen Python-/QML-,
 Windows-, Netzwerk- und Image-Nachweise gelten nicht automatisch für den Port.

@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
 Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 51 %**.
-Rust-Umstellung: **ca. 44 %** (separate Portierungsschätzung).
+Rust-Umstellung: **ca. 45 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -46,6 +46,9 @@ GTK-Test prüft Filter, erneutes Laden und unveränderte Quelldaten. Die sechs
 geforderten Datenquellen sind damit noch nicht vollständig portiert.
 
 Nachweise und Grenzen: [Rust-Migration](RUST-MIGRATION.md).
+Die eigene Tailscale-Statusanzeige ist zusätzlich mit offizieller CLI und einem
+isolierten Dienst geprüft. Das erhöht den Gesamtwert noch nicht: Kontoanmeldung,
+grafische Einrichtung und tatsächlicher Tailscale-Tunnelverkehr bleiben offen.
 Die folgenden Tabellen dokumentieren den bisherigen Python-/QML-Stand.
 
 Die Zahl bewertet den gesamten Masterprompt, einschließlich Integration,

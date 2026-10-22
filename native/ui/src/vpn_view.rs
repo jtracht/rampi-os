@@ -123,6 +123,7 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
     page.append(&import);
     page.append(&label("Gemeinsame Profile und Profile anderer Benutzer werden hier nicht angeboten. Ein Import verbindet den Tunnel nicht automatisch."));
     page.append(&label("Tailscale · vorhandene offizielle Software"));
+    page.append(&crate::tailscale::view(feedback));
     let tailscale = row();
     for (title, key, args) in [
         (

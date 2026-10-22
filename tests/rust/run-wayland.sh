@@ -39,6 +39,7 @@ wait "$keyboard_pid"
 /build/target/debug/rampi-native --embedded-test
 python3 tests/rust/test-bluetooth.py --ui
 python3 tests/rust/test-wireguard.py --ui
+python3 tests/rust/test-tailscale.py --ui
 python3 - "$HOME/rampi-board-test.json" <<'PY'
 import json, sys
 with open(sys.argv[1], 'w') as target:

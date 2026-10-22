@@ -37,6 +37,45 @@ pub fn vpn_action() -> Result<()> {
     })
 }
 
+pub fn tailscale() -> Result<()> {
+    ensure!(
+        std::env::var("RAMPI_TEST_CONTAINER").as_deref() == Ok("1")
+            && std::path::Path::new("/.dockerenv").exists(),
+        "Tailscale checks require a disposable container"
+    );
+    let case = std::env::args().nth(2).context("Missing status case")?;
+    gtk::glib::MainContext::default().block_on(async {
+        let result = crate::tailscale::status().await;
+        let valid = match case.as_str() {
+            "missing" => result
+                .as_ref()
+                .is_ok_and(|s| s.contains("nicht installiert")),
+            "needs-login" => result
+                .as_ref()
+                .is_ok_and(|s| s.contains("Anmeldung erforderlich")),
+            "unavailable" => result
+                .as_ref()
+                .is_err_and(|e| e.to_string().contains("Dienst nicht erreichbar")),
+            "timeout" => result
+                .as_ref()
+                .is_err_and(|e| e.to_string().contains("antwortet nicht")),
+            "oversized" => result
+                .as_ref()
+                .is_err_and(|e| e.to_string().contains("zu groß")),
+            "invalid" => result
+                .as_ref()
+                .is_err_and(|e| e.to_string().contains("Statusformat")),
+            _ => anyhow::bail!("Unknown status case"),
+        };
+        ensure!(
+            valid,
+            "Tailscale status case did not match expected outcome"
+        );
+        println!("RAMPI_RUST_TAILSCALE_CASE_OK {case}");
+        Ok(())
+    })
+}
+
 pub fn wireguard() -> Result<()> {
     isolated()?;
     gtk::glib::MainContext::default().block_on(async {

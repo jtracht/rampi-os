@@ -15,6 +15,8 @@ mod pairing;
 #[cfg(target_os = "linux")]
 mod service_checks;
 #[cfg(target_os = "linux")]
+mod tailscale;
+#[cfg(target_os = "linux")]
 mod views;
 #[cfg(target_os = "linux")]
 mod vpn_view;
@@ -24,6 +26,14 @@ mod widgets;
 mod wireguard;
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--tailscale-check") {
+        if let Err(error) = service_checks::tailscale() {
+            eprintln!("Tailscale check failed: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--vpn-action" || a == "--wireguard-check") {
         let result = if std::env::args().any(|a| a == "--vpn-action") {

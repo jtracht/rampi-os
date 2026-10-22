@@ -364,6 +364,67 @@ pub fn vpn(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) {
     });
 }
 
+pub fn tailscale(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) {
+    if std::env::var("RAMPI_TEST_CONTAINER").as_deref() != Ok("1")
+        || !std::path::Path::new("/.dockerenv").exists()
+    {
+        std::process::exit(2);
+    }
+    let (app, stack, tabs) = (app.clone(), stack.clone(), tabs.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let result: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            let page = tabs.child_by_name("vpn").context("No VPN page")?;
+            let output: gtk::Label = named(&page, "tailscale-status")
+                .context("No inline Tailscale status")?
+                .downcast()
+                .ok()
+                .context("Status type")?;
+            let refresh = find_button(&page, "Tailscale-Status aktualisieren")
+                .context("No inline refresh")?;
+            tabs.set_visible_child_name("vpn");
+            stack.set_visible_child_name("settings");
+            for _ in 0..250 {
+                if refresh.is_sensitive() && output.text().contains("Anmeldung erforderlich") {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                output.text().contains("Anmeldung erforderlich"),
+                "Actual daemon status was not shown in the page"
+            );
+            refresh.emit_clicked();
+            ensure!(
+                !refresh.is_sensitive(),
+                "Refresh did not start an asynchronous query"
+            );
+            for _ in 0..250 {
+                if refresh.is_sensitive() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                refresh.is_sensitive() && output.text().contains("Anmeldung erforderlich"),
+                "Actual status refresh failed"
+            );
+            ensure!(
+                app.windows().len() == 1,
+                "Tailscale status opened a second app window"
+            );
+            println!("RAMPI_RUST_TAILSCALE_PAGE_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(error) = result {
+            eprintln!("Tailscale page check failed: {error}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
+
 pub fn keyboard(app: &gtk::Application, stack: &gtk::Stack) {
     let s = stack.clone();
     glib::timeout_add_local_once(std::time::Duration::from_millis(1600), move || {
