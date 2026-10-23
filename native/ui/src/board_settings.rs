@@ -4,9 +4,13 @@ use rampi_core::config;
 const KINDS: [&str; 7] = [
     "json", "github", "trello", "jira", "asana", "notion", "gitea",
 ];
-pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
-    page.append(&label("Dein Aufgabenboard verbinden"));
+    let status = label("");
+    status.set_widget_name("board-setup-status");
+    let title = label("Dein Aufgabenboard verbinden");
+    title.add_css_class("heading");
+    page.append(&title);
     page.append(&label(
         "1 · Quelle wählen  →  2 · Zugang speichern  →  3 · Prüfen und Board öffnen",
     ));
@@ -51,6 +55,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         .text(&conf.borrow().board_token_key)
         .build();
     profile.set_widget_name("board-token-profile");
+    credentials.append(&label("Name dieses Zugangsprofils"));
     credentials.append(&profile);
     let columns = gtk::Entry::builder()
         .placeholder_text("Spalten in Reihenfolge, durch Komma getrennt")
@@ -214,6 +219,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         });
     });
     page.append(&check);
+    page.append(&status);
     let open = button("Board öffnen →", f);
     let s = stack.clone();
     open.connect_clicked(move |_| s.set_visible_child_name("kanban"));

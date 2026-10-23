@@ -144,7 +144,9 @@ pub fn actions(
         b.set_sensitive(false);
         let (b, s, stat, f) = (b.clone(), s.clone(), stat.clone(), f.clone());
         glib::MainContext::default().spawn_local(async move {
-            match snapshot().await {
+            let state = snapshot().await;
+            if !b.is_mapped() { b.set_sensitive(true); return; }
+            match state {
                 Ok(state) => match state.login_url() {
                     Some(url) => login_page(&s, url, &stat, &f),
                     None => stat.set_text("Kein offizieller Anmeldelink verfügbar. Zuerst ›Tailscale verbinden‹ wählen und Dienststatus prüfen."),

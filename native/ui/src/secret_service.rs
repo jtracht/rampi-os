@@ -156,6 +156,10 @@ pub async fn store(
         "github" | "asana" | "notion" | "jira" | "gitea" => token.into(),
         _ => anyhow::bail!("Unbekannter Anbieter"),
     };
+    ensure!(
+        value.len() <= 16384,
+        "Zugangsdaten überschreiten das Schlüsselbund-Limit"
+    );
     let bus = gio::bus_get_future(gio::BusType::Session).await?;
     let collection: ObjectPath = call(&bus, ROOT, SERVICE, "ReadAlias", &("default",).to_variant())
         .await?

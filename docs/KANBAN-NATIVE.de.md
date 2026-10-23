@@ -72,3 +72,12 @@ Offizielle Schnittstellen:
 [Asana](https://developers.asana.com/reference/gettasksforproject),
 [Notion](https://developers.notion.com/reference/query-a-data-source),
 [Secret Service](https://specifications.freedesktop.org/secret-service/latest-single/).
+
+## Tatsächliche Oberfläche
+
+![Geführte Gitea-Einrichtung](screenshots/gitea-guided-settings.png)
+
+Aufnahme der Rust-Anwendung unter Wayland, 1280×720, mit einer Beispielquelle.
+Der aktive Tab ist hervorgehoben. Das Formular lässt sich weiter nach unten
+scrollen. Die isolierte Aufnahme enthält keine persönlichen Zugänge und keine
+verbundenen Systemdienste.
