@@ -135,8 +135,8 @@ sudo udevadm settle
 # The emulator is stopped after sync, while ext4 may still be mounted in the
 # guest. Replay only the disposable copy's committed journal before reading it.
 set +e
-sudo e2fsck -p "${loop}p2" > "$output/working-copy-fsck.log" 2>&1
-fsck_result=$?
+sudo e2fsck -p "${loop}p2" 2>&1 | tee "$output/working-copy-fsck.log"
+fsck_result=${PIPESTATUS[0]}
 set -e
 if ((fsck_result > 1)); then cat "$output/working-copy-fsck.log"; exit 1; fi
 sudo mount -o ro "${loop}p2" "$work/root"
