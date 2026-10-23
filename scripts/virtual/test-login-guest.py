@@ -115,14 +115,14 @@ def configure_test_session():
     ).read_text()
     production = production.replace("/usr/local/bin/rampi-session", str(wrapper))
     if image_test:
-        # QEMU's Pi USB/logind handoff cannot provide a usable keyboard here.
-        # Use the existing Wayland virtual-keyboard tool before wlgreet starts,
-        # just as the test later uses it for real username/password input.
+        # Represent both designated input devices through existing Wayland
+        # tools. wlgreet 0.5 requests wl_pointer even during keyboard-only input;
+        # wlroots 0.20 rejects that unless a pointer capability has existed.
         helper = Path("/usr/local/bin/rampi-image-test-greeter")
         helper.write_text(
             "#!/bin/sh\nwtype -s 1500000 &\nkeyboard=$!\n"
             "trap 'kill \"$keyboard\" 2>/dev/null || true' EXIT\n"
-            'sleep 1\n/usr/sbin/wlgreet "$@"\n'
+            'sleep 1\nwlrctl pointer move 0 0\n/usr/sbin/wlgreet "$@"\n'
         )
         helper.chmod(0o755)
         production = production.replace("/usr/sbin/wlgreet", str(helper))
