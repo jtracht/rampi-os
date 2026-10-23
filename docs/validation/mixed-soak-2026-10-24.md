@@ -22,6 +22,28 @@ The 16 guard tests reject incomplete or invalid reports. The native CI and local
 full-suite harness both require this stage; partial local attempts do not count
 as a completed milestone. The accepted executable is bound by SHA-256.
 
-Current status: implementation complete; final runtime and both architecture CI
-results pending. Performance remains three points until those pass and are
-independently reviewed.
+Accepted head: `f33f7db83315eb850798c5f34a14c2ce934fb5f3`, merged as `b930aac`
+in PR #29. [Native CI 40032661668](https://github.com/jtracht/rampi-os/actions/runs/40032661668)
+and [general CI 40032661150](https://github.com/jtracht/rampi-os/actions/runs/40032661150)
+passed. Both downloaded native evidence sets passed the complete checker, with
+the installer requirement on ARM64. The package passed seven checksum checks;
+its executable digest equals the one measured in the ARM64 workload:
+`1c1c73f12456ce048f09d3180dbf121a266c5f8f4968161d21b806100a098a63`.
+
+| Measurement | AMD64 | ARM64 |
+|---|---:|---:|
+| Duration | 600.55 s | 600.21 s |
+| Actual page paints after switches | 1,050 | 1,050 |
+| Different remote pixel hashes | 150 | 150 |
+| Switch paint latency p95 | 30.83 ms | 27.83 ms |
+| Whole-client-container peak memory | 369.50 MiB | 305.11 MiB |
+| Mean container CPU, percent of one core | 32.48 % | 31.69 % |
+
+Ten periodic remote input tokens were received by the actual server on each
+architecture. Three PTY and 150 WebKit JavaScript roundtrips also passed.
+The independent review included the ARM64 remote capture. The merged implementation
+matches the tested head in `native`, `installer`, `system`, `scripts`, `tests`,
+workflow and package files; only milestone documentation differs.
+
+Performance moves from three to four points, raising the total from 78 to 79.
+The graphical Pi-image milestone remains separate and uncounted here.

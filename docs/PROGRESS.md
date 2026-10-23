@@ -1,6 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 78 %**.
+Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 79 %**.
+[79-Prozent-Erweiterung durch zehnminütigen Mischbetrieb](validation/mixed-soak-2026-10-24.md).
 [78-Prozent-Erweiterung durch grafische PAM-Anmeldung](validation/graphical-login-2026-10-23.md).
 [77-Prozent-Erweiterung durch den nativen Browser](validation/browser-modern-profile-2026-10-23.md).
 [76-Prozent-Erweiterung durch integriertes RDP](validation/embedded-rdp-2026-10-23.md).
@@ -35,12 +36,19 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Systemimage | 3 |
 | Manuelle Updates | 5 |
 | Dokumentation | 4 |
-| Performance | 3 |
-| **Summe** | **78 / 100** |
+| Performance | 4 |
+| **Summe** | **79 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
 Die GTK-Abnahme prüft Live-Änderungen und die direkten Wege zu den Einstellungen.
+
+Performance erreicht vier Punkte durch zehn Minuten tatsächlichen Mischbetrieb
+mit aktiver RDP-Verbindung, WebKit und drei VTE-Prozessen. Auf AMD64 und ARM64
+bestehen je 1.050 Seitenwechsel, wechselnde Remote-Bilder, bestätigte Eingaben und
+die Speichergrenzen unter 1 GiB ohne Swap. Die heruntergeladenen Nachweise und
+das identische ARM64-Paketprogramm sind unabhängig geprüft. Das ist eine
+Softwareabnahme; Pi-GPU-Leistung und Windows-Streaming-Timing bleiben offen.
 
 Linux-Konten und Login erreichen vier Punkte durch frische QEMU-Anmeldungen auf
 AMD64 und ARM64 mit dem tatsächlichen greetd-/PAM-Ablauf, falschem Kennwort,
