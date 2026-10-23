@@ -8,6 +8,9 @@ Er prüft die tatsächlichen Jobs, akzeptiert keinen älteren grünen Lauf statt
 eines neueren unvollständigen/fehlgeschlagenen Laufs und weist unvollständige
 API-Ergebnisse ab. Die Veröffentlichung prüft erneut live und liefert eine
 quellgebundene `release-ci.json` mit Prüfsumme aus.
+Die native CI startet automatisch für PRs und Hauptbranch-Pushes. Der zusätzliche
+Featurebranch-Push-Start entfällt, der zuvor beim Öffnen eines PRs denselben
+Lauf nochmals startete und den ersten Lauf abbrach. Der manuelle Start bleibt erhalten.
 
 ## Ausgeführt
 

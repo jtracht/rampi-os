@@ -4,6 +4,11 @@ Die Oberfläche ist Linux-Software. Windows kann `rampi-core` und die bestehende
 Windows-Hostintegration prüfen; GTK-/Wayland-Abläufe laufen in Linux-Docker.
 Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen.
 
+GitHub startet die native Abnahme für Pull Requests und für Pushes auf `main`.
+Damit gibt es für einen Feature-Commit mit offenem PR keinen zusätzlichen,
+gleichzeitig abbrechenden Push-Lauf. Andere Branches lassen sich bei Bedarf
+über den vorhandenen manuellen Workflow-Start prüfen.
+
 ## Gesamtlauf
 
 Benötigt werden Git, Python 3 und ein erreichbarer Linux-Docker-Dienst.
