@@ -1,17 +1,18 @@
 name: Release
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: [CI, 'Rust and Wayland']
     types: [completed]
     branches: [main]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: release
   cancel-in-progress: false
 jobs:
   readiness:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-24.04
     outputs:
       ready: ${{ steps.check.outputs.ready }}
@@ -20,12 +21,15 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if python3 scripts/check-release.py; then
+          if python3 scripts/check-release-ci.py --sha "$TESTED_SHA" && python3 scripts/check-release.py; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo 'Regular release withheld: see packaging/readiness.json' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Regular release withheld: matching general/native main CI or product readiness is incomplete.' >> "$GITHUB_STEP_SUMMARY"
           fi
   version:
     needs: readiness
@@ -64,6 +68,7 @@ jobs:
     environment: release
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -84,6 +89,7 @@ jobs:
           RELEASE_SHA: ${{ needs.version.outputs.sha }}
         run: |
           python3 scripts/check-release.py
+          python3 scripts/check-release-ci.py --sha "$RELEASE_SHA" --output artifacts/release/release-ci.json
           cp artifacts/image/* artifacts/release/
           cd artifacts/release
           rm -f SHA256SUMS
