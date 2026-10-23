@@ -6,6 +6,10 @@ on:
         description: 'Optional: validate an existing candidate artifact from this run; never used for releases'
         type: string
         default: ''
+      greeter_diagnostic:
+        description: 'Protocol diagnostics only; never counts as graphical acceptance'
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       ref:
@@ -65,6 +69,7 @@ jobs:
           IMAGE_PRODUCER_RUN: ${{ inputs.image_run_id || github.run_id }}
           VALIDATOR_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
+          RAMPI_IMAGE_GREETER_DIAGNOSTIC: ${{ inputs.greeter_diagnostic && '1' || '0' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-arm dosfstools e2fsprogs device-tree-compiler file python3-pil

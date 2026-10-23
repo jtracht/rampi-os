@@ -132,6 +132,11 @@ def configure_test_session():
         "WLR_HEADLESS_OUTPUTS=1 LIBSEAT_BACKEND=logind ",
         1,
     )
+    if "--greeter-diagnostic" in sys.argv:
+        production = production.replace(
+            "env WLR_BACKENDS=", "env WAYLAND_DEBUG=server WLR_BACKENDS="
+        )
+        production = production.replace("/usr/bin/labwc ", "/usr/bin/labwc -d ")
     uid = pwd.getpwnam("_greetd").pw_uid
     production = production.replace("'\"", f"' >> /run/user/{uid}/rampi-greeter.log 2>&1\"")
     Path("/etc/greetd/config.toml").write_text(production)
@@ -173,6 +178,11 @@ def main():
         run("chpasswd", data=f"{user}:{passwords[user]}\n".encode())
     run("systemctl", "restart", "greetd")
     greeter_ready()
+    if "--greeter-diagnostic" in sys.argv:
+        # No password or username input in protocol diagnostics. This mode is
+        # intentionally insufficient for the normal acceptance checker.
+        time.sleep(15)
+        raise RuntimeError("Diagnostic-only greeter run; no authentication attempted")
     as_user("_greetd", "wtype", "-M", "ctrl", "-M", "alt", "-k", "Home", "-m", "alt", "-m", "ctrl")
     time.sleep(1)
     if (
@@ -304,6 +314,9 @@ if __name__ == "__main__":
         log = Path(f"/run/user/{uid}/rampi-greeter.log")
         if log.is_file():
             print(log.read_text(errors="replace")[-6000:], flush=True)
+            if "--greeter-diagnostic" in sys.argv:
+                shutil.copyfile(log, CAPTURES / "greeter-diagnostic.log")
+                (CAPTURES / "greeter-diagnostic.log").chmod(0o644)
         diagnostic = run("journalctl", "-b", "-u", "greetd", "--no-pager", "-n", "30", check=False)
         print(diagnostic.stdout.decode(errors="replace"), flush=True)
         diagnostic = run(

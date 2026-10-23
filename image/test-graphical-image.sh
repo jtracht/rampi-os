@@ -68,6 +68,9 @@ sudo umount "$work/root/proc" "$work/root/dev"
 sudo install -d -m 755 "$work/root/opt/rampi-source/scripts/virtual" "$work/root/opt/rampi-captures"
 sudo install -m 644 "$source_root/scripts/virtual/test-login-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
 sudo install -m 644 "$source_root/scripts/check-login-evidence.py" "$work/root/opt/rampi-source/scripts/"
+if [[ "${RAMPI_IMAGE_GREETER_DIAGNOSTIC:-0}" == 1 ]]; then
+    sudo touch "$work/root/etc/rampi-greeter-diagnostic"
+fi
 sudo touch "$work/root/etc/rampi-acceptance-vm" "$work/root/etc/rampi-image-acceptance-vm"
 # Record the image's installed implementation before any guest test. Its config,
 # executable, assets and launchers must still match after login and logout.
@@ -77,7 +80,9 @@ sudo tee "$work/root/usr/local/bin/rampi-image-login-test" > /dev/null <<'SH'
 #!/bin/bash
 set -uo pipefail
 mkdir -p /opt/rampi-captures
-python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image > /opt/rampi-captures/guest.log 2>&1
+extra=()
+if [[ -f /etc/rampi-greeter-diagnostic ]]; then extra=(--greeter-diagnostic); fi
+python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image "${extra[@]}" > /opt/rampi-captures/guest.log 2>&1
 result=$?
 if sha256sum --check --status /opt/rampi-source/installed-files.sha256; then
     echo RAMPI_INSTALLED_FILES_UNCHANGED_OK
