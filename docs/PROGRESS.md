@@ -1,6 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 75 %**.
+Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 76 %**.
+[76-Prozent-Erweiterung durch integriertes RDP](validation/embedded-rdp-2026-10-23.md).
 [75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
 Das zuletzt erreichte Zwischenziel von mindestens 75 % ist belegt. Der erneut
 aktive Auftrag verlangt mindestens 80 %. Dieses Ziel und ein CI-/QEMU-geprüfter nativer
@@ -22,7 +23,7 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | VPN | 4 |
 | Windows-Host und Persistenz | 4 |
 | Anbieter-CLIs | 3 |
-| Remote Desktop und Streaming | 2 |
+| Remote Desktop und Streaming | 3 |
 | Kanban | 4 |
 | Browser | 4 |
 | Installer und Reparatur | 4 |
@@ -33,11 +34,18 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Manuelle Updates | 5 |
 | Dokumentation | 4 |
 | Performance | 3 |
-| **Summe** | **75 / 100** |
+| **Summe** | **76 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
 Die GTK-Abnahme prüft Live-Änderungen und die direkten Wege zu den Einstellungen.
+
+Remote Desktop erreicht drei Punkte durch die integrierte RDW-/IronRDP-Fläche,
+unabhängige Zertifikatsprüfung vor der Anmeldung, echte Desktop-Frames und
+serverseitig bestätigte Tastatureingaben. Dashboard-Wechsel, Wiederverbindung und
+erzwungener Serverabbruch sind auf AMD64 und ARM64 geprüft. Die heruntergeladenen
+Nachweise und das ARM64-Paket sind unabhängig erneut geprüft. Windows-NLA,
+zusätzliche Maus-/Clipboard-Abnahmen und eingebettetes Streaming bleiben offen.
 
 WLAN erreicht vier Punkte durch die zusätzliche [native QEMU-Abnahme](validation/rust-wlan-qemu-2026-10-23.md). Die bisherige Grundlage: Neben sichtbaren Netzen sind versteckte SSIDs mit
 Adapterauswahl und WPA2/WPA3 beziehungsweise offenem Netz integriert. Passende
