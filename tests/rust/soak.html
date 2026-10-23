@@ -1,0 +1,17 @@
+<!doctype html>
+<title>Rampi mixed workload</title>
+<canvas width="640" height="360"></canvas>
+<script>
+window.probe = 0;
+let n = 0;
+const c = document.querySelector('canvas').getContext('2d');
+function draw() {
+  c.fillStyle = `hsl(${n++ % 360} 80% 40%)`;
+  c.fillRect(0, 0, 640, 360);
+  c.fillStyle = 'white';
+  c.font = '30px sans-serif';
+  c.fillText('Mixed workload ' + n, 30, 80);
+  requestAnimationFrame(draw);
+}
+draw();
+</script>

@@ -4,6 +4,7 @@ import http.server
 import os
 import ssl
 import subprocess
+import sys
 import tempfile
 import threading
 from pathlib import Path
@@ -30,6 +31,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(b"Rampi upload received" if valid else b"Upload mismatch")
 
     def do_GET(self):
+        if self.path == "/soak":
+            body = Path("/src/tests/rust/soak.html").read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if self.path == "/download":
             body = b"Rampi actual HTTPS download\n"
             self.send_response(200)
@@ -130,6 +139,10 @@ with tempfile.TemporaryDirectory(prefix="rampi-browser-") as directory:
     server.socket = context.wrap_socket(server.socket, server_side=True)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
+        if "--serve-only" in sys.argv:
+            Path("/run/rampi-browser-ready").touch()
+            threading.Event().wait(900)
+            raise SystemExit(0)
         # Normal systemd Linux creates this root-owned shared socket directory.
         # The disposable Docker image has no tmpfiles service.
         x11_directory = Path("/tmp/.X11-unix")  # noqa: S108 - standard OS socket directory

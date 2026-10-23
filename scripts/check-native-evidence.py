@@ -2,11 +2,15 @@
 
 import json
 import math
+import runpy
 import struct
 import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+runpy.run_path(str(Path(__file__).with_name("check-soak-evidence.py")))["check"](
+    directory / "mixed-soak"
+)
 rdp_log = (directory / "rdp-acceptance.log").read_text(encoding="utf-8")
 for marker in [
     "RAMPI_RUST_RDP_BAD_CERTIFICATE_OK",

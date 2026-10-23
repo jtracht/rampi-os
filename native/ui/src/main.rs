@@ -33,6 +33,8 @@ mod kanban_checks;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
+mod mixed_soak;
+#[cfg(target_os = "linux")]
 mod pairing;
 #[cfg(target_os = "linux")]
 mod pairing_checks;

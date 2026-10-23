@@ -75,6 +75,16 @@ jobs:
           set -euo pipefail
           docker build --build-arg BASE_IMAGE=rampi-rust-dev -f tests/remote/Dockerfile -t rampi-rdp-fixture .
           python3 tests/rust/test-rdp.py --image rampi-rust-dev --artifacts artifacts/rust 2>&1 | tee artifacts/rust/rdp-acceptance.log
+      - name: Ten-minute mixed RDP, WebKit and three-PTY workload in 1 GiB
+        run: |
+          set -euo pipefail
+          namespace_policy=$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)
+          trap 'sudo sysctl -w "kernel.apparmor_restrict_unprivileged_userns=$namespace_policy"' EXIT
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          mkdir -p artifacts/rust/mixed-soak
+          chmod 777 artifacts/rust/mixed-soak
+          python3 tests/rust/test-rdp.py --soak --image rampi-rust-dev --artifacts artifacts/rust/mixed-soak 2>&1 | tee artifacts/rust/mixed-soak/acceptance.log
+          python3 scripts/check-soak-evidence.py artifacts/rust/mixed-soak
       - name: Actual HTTPS native bootstrap and archive/provenance rejection
         run: |
           set -euo pipefail
