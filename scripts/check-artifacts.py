@@ -2,7 +2,9 @@
 
 import argparse
 import hashlib
+import json
 import re
+import runpy
 import tarfile
 import tomllib
 import zipfile
@@ -34,6 +36,7 @@ if args.image:
             "partitions.json",
             "pi-gen-revision.txt",
             "readiness.json",
+            "release-ci.json",
             f"rampi-linux-arm64-{version}.tar.xz",
         ]
     )
@@ -57,6 +60,8 @@ with tarfile.open(directory / source) as archive:
     for name in [
         ".github/workflows/ci.yml",
         ".github/workflows/release.yml",
+        ".github/workflows/rust.yml",
+        "scripts/check-release-ci.py",
         "LICENSE",
         "client/rampi/qml/Main.qml",
         "client/rampi/icons/LICENSE",
@@ -101,6 +106,17 @@ if args.image or (directory / f"rampi-linux-arm64-{version}.tar.xz").is_file():
             raise SystemExit("Native bundle and source revisions differ")
         read_native("rust-licenses/packages.json")
         read_native("rust-licenses/Rust-standard-library-COPYRIGHT.html")
+if args.image:
+    verifier = runpy.run_path(str(Path(__file__).with_name("check-release-ci.py")))
+    try:
+        verifier["validate_proof"](
+            json.loads((directory / "release-ci.json").read_text(encoding="utf-8")), revision,
+            tomllib.loads((Path(__file__).resolve().parents[1] / "Cargo.toml").read_text(
+                encoding="utf-8"
+            ))["workspace"]["package"]["repository"].removeprefix("https://github.com/")
+        )
+    except (ValueError, KeyError, TypeError) as error:
+        raise SystemExit(f"Release CI proof invalid: {error}") from error
 with zipfile.ZipFile(directory / host) as archive:
     for name in [
         "setup.ps1",
