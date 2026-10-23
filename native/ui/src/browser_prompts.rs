@@ -100,11 +100,7 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, status: &gtk::Label, 
         no.grab_focus();
         true
     });
-    let (s, feed, stat) = (stack.clone(), f.clone(), status.clone());
-    web.connect_run_file_chooser(move |_,request|{
-        let p=page(&s,"Datei für die Webseite auswählen");p.append(&label("Vollständigen Pfad zur gewünschten Datei eingeben. Erst mit Bestätigen erhält die Webseite Zugriff."));let path=gtk::Entry::builder().placeholder_text("/home/user/Datei").build();p.append(&path);let no=button("Abbrechen",&feed);no.set_widget_name("rampi-back");let yes=button("Diese Datei auswählen",&feed);p.append(&no);p.append(&yes);
-        let(r,back_stack)=(request.clone(),s.clone());no.connect_clicked(move |_|{r.cancel();back_stack.set_visible_child_name("browser");});let(r,s,stat)=(request.clone(),s.clone(),stat.clone());yes.connect_clicked(move |_|{let selected=path.text();let file=std::path::Path::new(selected.as_str());if file.is_absolute()&&file.is_file(){r.select_files(&[selected.as_str()]);s.set_visible_child_name("browser");}else{stat.set_text("Bitte den vollständigen Pfad zu einer vorhandenen Datei eingeben.");}});no.grab_focus();true
-    });
+    crate::uploads::install(web, stack, f);
     let stat = status.clone();
     web.connect_permission_request(move |_,request|{request.deny();stat.set_text("Die Webseite benötigt eine zusätzliche Geräteberechtigung. Diese ist in diesem Entwicklungsstand noch nicht freigeschaltet.");true});
 }

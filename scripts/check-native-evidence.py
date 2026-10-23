@@ -82,10 +82,12 @@ if (
     or "RAMPI_RUST_ACCOUNT_PAGE_OK" not in account_log
 ):
     raise SystemExit("Actual native account page and PAM check did not pass")
-if "RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK" not in (directory / "browser-https.log").read_text(
+browser_log = (directory / "browser-https.log").read_text(
     encoding="utf-8"
-):
-    raise SystemExit("Actual browser HTTPS and download acceptance did not pass")
+)
+for required in ["RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK", "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK"]:
+    if required not in browser_log:
+        raise SystemExit("Actual browser acceptance missing: " + required)
 if "RAMPI_RUST_NM_CONTRACT_OK" not in (directory / "network-contract.log").read_text():
     raise SystemExit("Rust/GIO NetworkManager contract did not pass")
 if "RAMPI_RUST_BLUEZ_CONTRACT_OK" not in (directory / "bluetooth-contract.log").read_text():

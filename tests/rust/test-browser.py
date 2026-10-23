@@ -21,12 +21,28 @@ def run(*args):
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(min(length, 4096))
+        valid = self.path == "/upload" and body == b"Rampi consented upload\n"
+        self.send_response(200 if valid else 400)
+        self.end_headers()
+        self.wfile.write(b"Rampi upload received" if valid else b"Upload mismatch")
+
     def do_GET(self):
         if self.path == "/download":
             body = b"Rampi actual HTTPS download\n"
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Disposition", 'attachment; filename="../fixture.bin"')
+        elif self.path == "/uploads":
+            body = (
+                b'<!doctype html><title>Rampi upload fixture</title>'
+                b'<input id="single" type="file" accept="text/plain">'
+                b'<input id="multiple" type="file" multiple>'
+            )
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
         else:
             title = "Rampi HTTPS second" if self.path == "/second" else "Rampi HTTPS start"
             body = (
@@ -125,14 +141,16 @@ with tempfile.TemporaryDirectory(prefix="rampi-browser-") as directory:
             text=True,
             timeout=70,
         )
-        if result.returncode:
+        if result.returncode or "Gtk-CRITICAL" in result.stderr:
             raise RuntimeError(result.stdout + result.stderr)
         assert "RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK" in result.stdout
+        assert "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK" in result.stdout
         print(result.stdout.strip())
     finally:
         server.shutdown()
         server.server_close()
 print(
     "PASS: actual trusted HTTPS, hostname rejection, navigation, inline JavaScript dialogs "
-    "and consent-gated WebKit downloads; no external windows."
+    "and consent-gated WebKit downloads/uploads, multiple selection and navigation cancellation; "
+    "no external windows."
 )

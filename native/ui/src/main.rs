@@ -55,6 +55,8 @@ mod system_settings;
 #[cfg(target_os = "linux")]
 mod tailscale;
 #[cfg(target_os = "linux")]
+mod uploads;
+#[cfg(target_os = "linux")]
 mod views;
 #[cfg(target_os = "linux")]
 mod vpn_view;
