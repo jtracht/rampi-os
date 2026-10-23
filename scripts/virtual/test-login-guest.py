@@ -10,6 +10,7 @@ import runpy
 import secrets
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -94,6 +95,10 @@ def install():
         Path("/etc/xdg/rampi").chmod(0o755)
         directory.chmod(0o755)
         (directory / "rc.xml").chmod(0o644)
+    configure_test_session()
+
+
+def configure_test_session():
     wrapper = Path("/usr/local/bin/rampi-login-test-session")
     wrapper.write_text(
         "#!/bin/sh\nset -eu\numask 077\n"
@@ -103,7 +108,11 @@ def install():
         "exec /usr/local/bin/rampi-session\n"
     )
     wrapper.chmod(0o755)
-    production = (SOURCE / "system/greetd.toml").read_text()
+    production = (
+        Path("/etc/greetd/config.toml")
+        if "--installed-image" in sys.argv
+        else SOURCE / "system/greetd.toml"
+    ).read_text()
     production = production.replace("/usr/local/bin/rampi-session", str(wrapper))
     production = production.replace(
         'command = "',
@@ -119,15 +128,27 @@ def install():
 
 
 def main():
+    image_test = (
+        "--installed-image" in sys.argv
+        and Path("/etc/rampi-image-acceptance-vm").is_file()
+        and "rampi.image_acceptance=1" in Path("/proc/cmdline").read_text()
+    )
     if (
         not Path("/etc/rampi-acceptance-vm").is_file()
-        or run("systemd-detect-virt", "--vm", "--quiet", check=False).returncode
+        or not image_test
+        and run("systemd-detect-virt", "--vm", "--quiet", check=False).returncode
     ):
         raise SystemExit("Only inside the designated isolated QEMU guest")
     os.umask(0o077)
     if shutil.which("wlrctl") is None:
         run("apt-get", "install", "-y", "--no-install-recommends", "wlrctl")
-    install()
+    if image_test:
+        # The image's actual installed program, assets, launchers and greeter
+        # profile stay in place. Only fixture accounts and headless test input
+        # are added to a disposable disk copy by the external validator.
+        configure_test_session()
+    else:
+        install()
     users = ["rampi-login", "rampi-other"]
     passwords = {}
     for user in users:
