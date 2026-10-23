@@ -7,7 +7,7 @@ werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
 weiterhin vorhandene Systemdienste. Eigenentwickelter Code: Apache-2.0.
 
 **Aktuell: Rust-Port in Entwicklung; noch kein neuer regulärer Release.**
-Geschätzter Gesamtstand: **71 %**; Bewertung und offene Arbeiten stehen in
+Geschätzter Gesamtstand: **74 %**; Bewertung und offene Arbeiten stehen in
 [PROGRESS.md](docs/PROGRESS.md).
 Die [Migrationsübersicht](docs/RUST-MIGRATION.md) nennt Quellcode, Start,
 softwareseitige Nachweise und verbleibende Funktionen. Der frühere Stand von

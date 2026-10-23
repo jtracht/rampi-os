@@ -39,7 +39,12 @@ done
 printf 'Fehlende Wayland-Pakete: %s\n' "${missing[*]:-keine}"
 binary="${RAMPI_NATIVE_BINARY:-$source_root/native/bin/rampi-native}"
 if [[ ! -x "$binary" ]]; then echo 'ARM64-Rust-Binary fehlt. CI-Artefakt als native/bin/rampi-native bereitstellen.' >&2; exit 1; fi
-if ! readelf -h "$binary" | grep -q 'AArch64'; then echo 'Kein ARM64-Binary.' >&2; exit 1; fi
+# Inspect the fixed ELF header with Coreutils before installing dependencies.
+# A fresh Lite system need not have the optional binutils/readelf package yet.
+header="$(od -An -N64 -tx1 "$binary" | tr -d '[:space:]')"
+if [[ ${#header} -ne 128 || "$header" != 7f454c46020101* || "${header:36:4}" != b700 || "${header:40:8}" != 01000000 || "${header:104:4}" != 4000 ]]; then
+    echo 'Kein vollständiger ARM64-ELF-Header.' >&2; exit 1
+fi
 if [[ -f "$source_root/native/bin/binary-sha256.txt" ]]; then
     expected="$(cat "$source_root/native/bin/binary-sha256.txt")"
     [[ "$expected" =~ ^[a-f0-9]{64}$ ]]

@@ -61,21 +61,24 @@ async fn close(bus: &gio::DBusConnection, path: &ObjectPath) {
     )
     .await;
 }
-fn attributes(profile: &str) -> HashMap<String, String> {
+fn attributes(profile: &str, kind: &str, source: &str) -> HashMap<String, String> {
     HashMap::from([
         ("application".into(), "rampi".into()),
         ("profile".into(), profile.into()),
+        ("provider".into(), kind.into()),
+        ("source".into(), source.into()),
     ])
 }
-pub async fn load(profile: &str) -> Result<String> {
+pub async fn load(profile: &str, kind: &str, source: &str) -> Result<String> {
     validate_profile(profile)?;
+    rampi_core::connectors::Connector::new(kind, source, "source-validation".into())?;
     let bus = gio::bus_get_future(gio::BusType::Session).await?;
     let found = call(
         &bus,
         ROOT,
         SERVICE,
         "SearchItems",
-        &(attributes(profile),).to_variant(),
+        &(attributes(profile, kind, source),).to_variant(),
     )
     .await?;
     let unlocked: Vec<ObjectPath> = found
@@ -122,8 +125,15 @@ pub async fn load(profile: &str) -> Result<String> {
     close(&bus, &session).await;
     result
 }
-pub async fn store(profile: &str, kind: &str, account: &str, token: &str) -> Result<()> {
+pub async fn store(
+    profile: &str,
+    kind: &str,
+    source: &str,
+    account: &str,
+    token: &str,
+) -> Result<()> {
     validate_profile(profile)?;
+    rampi_core::connectors::Connector::new(kind, source, "source-validation".into())?;
     ensure!(
         !token.is_empty()
             && token.len() <= 8192
@@ -146,6 +156,10 @@ pub async fn store(profile: &str, kind: &str, account: &str, token: &str) -> Res
         "github" | "asana" | "notion" | "jira" | "gitea" => token.into(),
         _ => anyhow::bail!("Unbekannter Anbieter"),
     };
+    ensure!(
+        value.len() <= 16384,
+        "Zugangsdaten überschreiten das Schlüsselbund-Limit"
+    );
     let bus = gio::bus_get_future(gio::BusType::Session).await?;
     let collection: ObjectPath = call(&bus, ROOT, SERVICE, "ReadAlias", &("default",).to_variant())
         .await?
@@ -181,7 +195,7 @@ pub async fn store(profile: &str, kind: &str, account: &str, token: &str) -> Res
             ),
             (
                 "org.freedesktop.Secret.Item.Attributes".into(),
-                attributes(profile).to_variant(),
+                attributes(profile, kind, source).to_variant(),
             ),
         ]);
         let secret: Secret = (

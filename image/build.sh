@@ -56,4 +56,10 @@ if ((${#images[@]} != 1)); then echo 'Genau ein Image erwartet.' >&2; exit 1; fi
 xz -t "${images[0]}"
 printf '%s\n' "$revision" > "$root/artifacts/image/pi-gen-revision.txt"
 cp "$root/packaging/readiness.json" "$root/artifacts/image/readiness.json"
-sha256sum "${images[0]}" > "$root/artifacts/image/SHA256SUMS"
+bundle="$root/artifacts/image/rampi-linux-arm64-$version.tar.xz"
+# Check --version in the supported target userspace, not the Ubuntu build host.
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+    -v "$root:/src" -v "$binary:/tmp/rampi-binary:ro" -v "$licenses:/tmp/rampi-licenses:ro" \
+    rampi-rust-dev python3 scripts/package-native.py --binary /tmp/rampi-binary \
+    --licenses /tmp/rampi-licenses --output /src/artifacts/image
+(cd "$root/artifacts/image"; sha256sum -- "$(basename "${images[0]}")" "$(basename "$bundle")" > SHA256SUMS)

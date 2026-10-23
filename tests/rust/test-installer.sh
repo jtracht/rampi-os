@@ -14,7 +14,11 @@ install -m 755 /build/target/debug/rampi-native "$workspace/native/bin/rampi-nat
 printf '%s\n' '{"setup_complete":true,"language":"de"}' > /home/rampi/.config/rampi/settings.json
 personal_before="$(sha256sum /home/rampi/.config/rampi/settings.json)"
 chown -hR 1000:1000 "$workspace"
-bash "$workspace/setup.sh" --image
+# The initial installer must work before optional binutils is present.
+mkdir "$workspace/prerequisites"
+printf '#!/bin/sh\nexit 127\n' > "$workspace/prerequisites/readelf"
+chmod 755 "$workspace/prerequisites/readelf"
+PATH="$workspace/prerequisites:$PATH" bash "$workspace/setup.sh" --image
 first="$(readlink -f /opt/rampi/current)"
 test -x "$first/rampi-native"
 test -r "$first/assets/branding/logo.png"

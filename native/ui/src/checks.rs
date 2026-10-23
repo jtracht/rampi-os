@@ -814,9 +814,58 @@ pub fn setup(
             click(&host, "Hostprofil endgültig entfernen")?;
             ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.username == "alice");
             stack.set_visible_child_name("setup");
-            for _ in 2..14 {
-                click(&setup, "Weiter / Schritt überspringen")?;
+            for _ in 0..2 {
+                click(&setup, "Vorheriger Schritt")?;
             }
+            let destinations = [
+                "system",
+                "system",
+                "wifi",
+                "bluetooth",
+                "system",
+                "vpn",
+                "host",
+                "host",
+                "host",
+                "host",
+                "host",
+                "remote",
+                "remote",
+                "board",
+                "diagnostics",
+            ];
+            for (index, destination) in destinations.into_iter().enumerate() {
+                ensure!(
+                    conf.borrow().setup_step == index,
+                    "Wizard lost the current step"
+                );
+                click(&setup, "Jetzt einrichten")?;
+                if ["remote", "diagnostics"].contains(&destination) {
+                    ensure!(
+                        stack.visible_child_name().as_deref() == Some(destination),
+                        "Wrong setup destination"
+                    );
+                } else {
+                    ensure!(
+                        stack.visible_child_name().as_deref() == Some("settings")
+                            && tabs.visible_child_name().as_deref() == Some(destination),
+                        "Wrong settings tab"
+                    );
+                }
+                ensure!(
+                    app.windows().len() == 1,
+                    "Setup navigation opened another window"
+                );
+                crate::views::go_back(&stack);
+                ensure!(
+                    stack.visible_child_name().as_deref() == Some("setup"),
+                    "Setup return path lost"
+                );
+                if index < 14 {
+                    click(&setup, "Weiter / Schritt überspringen")?;
+                }
+            }
+            println!("RAMPI_RUST_SETUP_ALL_ROUTES_OK");
             click(&setup, "Jetzt einrichten")?;
             let diagnostics = stack
                 .child_by_name("diagnostics")
@@ -1035,6 +1084,73 @@ pub fn tailscale(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
                 app.windows().len() == 1,
                 "Tailscale status opened a second app window"
             );
+            if std::env::var("RAMPI_TEST_TS_ACTION_UI").as_deref() == Ok("1") {
+                find_button(&page, "Tailscale verbinden")
+                    .context("Connect missing")?
+                    .emit_clicked();
+                ensure!(
+                    stack.visible_child_name().as_deref() == Some("confirmation"),
+                    "Systemwide change lacks confirmation page"
+                );
+                find_button(
+                    &stack.child_by_name("confirmation").unwrap(),
+                    "Bewusst bestätigen",
+                )
+                .unwrap()
+                .emit_clicked();
+                let status: gtk::Label = named(&page, "vpn-status").unwrap().downcast().unwrap();
+                for _ in 0..250 {
+                    if status.text().contains("Weiter mit") {
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                }
+                ensure!(
+                    status.text().contains("Weiter mit"),
+                    "Login guidance missing"
+                );
+                find_button(&page, "Tailscale-Anmeldung öffnen")
+                    .unwrap()
+                    .emit_clicked();
+                for _ in 0..250 {
+                    if stack.visible_child_name().as_deref() == Some("tailscale-login") {
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                }
+                let login = stack
+                    .child_by_name("tailscale-login")
+                    .context("No integrated login page")?;
+                ensure!(
+                    named(&login, "tailscale-login-webview").is_some() && app.windows().len() == 1,
+                    "Login created another window"
+                );
+                find_button(&login, "← Zurück zu VPN")
+                    .unwrap()
+                    .emit_clicked();
+                ensure!(
+                    stack.visible_child_name().as_deref() == Some("settings")
+                        && stack.child_by_name("tailscale-login").is_none(),
+                    "Login page retained after leaving"
+                );
+                find_button(&page, "Tailscale trennen")
+                    .unwrap()
+                    .emit_clicked();
+                find_button(
+                    &stack.child_by_name("confirmation").unwrap(),
+                    "Bewusst bestätigen",
+                )
+                .unwrap()
+                .emit_clicked();
+                for _ in 0..250 {
+                    if status.text().contains("Getrennt") {
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                }
+                ensure!(status.text().contains("Getrennt"), "Disconnect not shown");
+                println!("RAMPI_RUST_TAILSCALE_ACTION_PAGE_OK");
+            }
             println!("RAMPI_RUST_TAILSCALE_PAGE_OK");
             Ok(())
         }

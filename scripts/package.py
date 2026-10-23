@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import hashlib
-import re
 import shutil
 import subprocess
+import tomllib
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-version = re.search(
-    r'__version__ = "([^"]+)"', (ROOT / "client/rampi/__init__.py").read_text()
-).group(1)
+version = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"][
+    "version"
+]
+revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+
 output = ROOT / "artifacts/release"
 output.mkdir(parents=True, exist_ok=True)
 for options in [["diff", "--quiet"], ["diff", "--cached", "--quiet"]]:
@@ -57,6 +59,7 @@ subprocess.run(
         "archive",
         "--format=tar.gz",
         "--prefix=rampi-os/",
+        "--add-virtual-file=rampi-os/source-revision.txt:" + revision,
         "--output=" + str(output / f"rampi-source-{version}.tar.gz"),
         "HEAD",
     ],

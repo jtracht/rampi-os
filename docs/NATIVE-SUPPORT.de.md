@@ -10,15 +10,15 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
 | Einrichtung | Fortsetzbare 15 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
 | Linux-Konto | PAM/passwd, eigenes Kennwort, bestätigte Abmeldung | Weitere Konten und grafischer Greeter-Durchlauf |
-| WLAN | Sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private neue Profile | Unternehmensnetze benötigen vorhandenes NM-Profil; Rust-Funknachweis fehlt |
+| WLAN | Sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private neue Profile | Unternehmensnetze benötigen vorhandenes NM-Profil; WPA2/DHCP und Kontentrennung in QEMU belegt; WPA3-/ARM64-Funkabnahme offen |
 | Bluetooth | Eigener Tab, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart | Zusätzliche virtuelle Controller-Abnahme; physischer Funk ist ausgeschlossen |
-| WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status | Grafische TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
+| WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
 | Windows/KI | Persönliche Hosts, OpenSSH-Schlüssel/Trust, bestehender nativer psmux-/ConPTY-Adapter | Zusammenhängende Windows-11-Pro-Abnahme mit neuer Oberfläche und Anbieteranmeldungen |
 | Antigravity | Kachel und Diagnose fehlender Unterstützung | Verfügbare offizielle native CLI ist nicht nachgewiesen |
-| Kanban | Lokales JSON, Suche, kombinierte Filter, Spalten, Nachladen, Fehlererhalt | Fünf Cloud-Connectoren und persistenter Offline-Cache im Rust-Port |
+| Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen und Downloads als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
 | RDP/Streaming | Aufruf vorhandener Wayland-Clients und Windows-Integration | Eine integrierte Fläche, Windows-NLA, Streaming-Eingabe und Pi-Decoderpfad |
-| Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Allgemeiner nativer Release-Bootstrap |
+| Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
 | Image/Release | Gebauter nativer Kandidat, Lizenzen/Provenienz und QEMU-Boot | Grafischer Login und reguläre native Release-Funktionsgleichheit |
 
 ## Fehler eingrenzen

@@ -23,3 +23,5 @@ list row:selected { background: #12538a; }
 .lane-3 { background: #153c34; }
 .lane-title { font-size: 12px; font-weight: 700; }
 .board-card { background: #d1dce5; color: #101923; border-radius: 8px; padding: 10px; font-size: 12px; }
+
+stackswitcher button:checked { background: #12538a; color: #ffffff; font-weight: 700; }

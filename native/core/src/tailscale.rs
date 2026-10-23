@@ -11,6 +11,8 @@ pub struct Status {
     pub addresses: Option<Vec<IpAddr>>,
     #[serde(rename = "Self", default)]
     pub node: Option<Node>,
+    #[serde(rename = "AuthURL", default)]
+    pub auth_url: Option<String>,
     #[serde(rename = "Health", default)]
     pub health: Option<Vec<String>>,
 }
@@ -27,6 +29,15 @@ impl Status {
         })?;
         ensure!(status.backend.len() <= 128, "Ungültiger Tailscale-Status.");
         Ok(status)
+    }
+    pub fn login_url(&self) -> Option<&str> {
+        self.auth_url.as_deref().filter(|url| {
+            url.len() <= 8192
+                && url.starts_with("https://login.tailscale.com/")
+                && !url
+                    .chars()
+                    .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
+        })
     }
     pub fn connected(&self) -> bool {
         self.backend == "Running"
@@ -93,6 +104,30 @@ mod tests {
         let status = Status::parse(br#"{"BackendState":"Running","Self":{"Online":true},"TailscaleIPs":["100.64.0.1","fd7a:115c:a1e0::1"]}"#).unwrap();
         assert!(status.connected());
         assert!(status.description().contains("100.64.0.1"));
+    }
+    #[test]
+    fn login_links_only_use_the_official_https_origin() {
+        for url in [
+            "http://login.tailscale.com/a/test",
+            "https://login.tailscale.com.evil.invalid/a/test",
+            "https://login.tailscale.com@evil.invalid/a/test",
+            "https://other.invalid/",
+            "https://login.tailscale.com/\\evil",
+        ] {
+            let data = serde_json::json!({"BackendState":"NeedsLogin","AuthURL":url});
+            assert!(
+                Status::parse(data.to_string().as_bytes())
+                    .unwrap()
+                    .login_url()
+                    .is_none()
+            );
+        }
+        let data =
+            br#"{"BackendState":"NeedsLogin","AuthURL":"https://login.tailscale.com/a/test"}"#;
+        assert_eq!(
+            Status::parse(data).unwrap().login_url(),
+            Some("https://login.tailscale.com/a/test")
+        );
     }
     #[test]
     fn login_states_and_invalid_output_fail_closed() {

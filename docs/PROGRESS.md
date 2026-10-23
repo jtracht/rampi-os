@@ -14,11 +14,11 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 |---|---:|
 | Grafische Sitzung und Dashboard | 4 |
 | Tastatur und Maus | 4 |
-| Setup-Assistent | 3 |
+| Setup-Assistent | 4 |
 | Linux-Konten und Login | 3 |
-| WLAN | 3 |
+| WLAN | 4 |
 | Bluetooth | 4 |
-| VPN | 3 |
+| VPN | 4 |
 | Windows-Host und Persistenz | 4 |
 | Anbieter-CLIs | 3 |
 | Remote Desktop und Streaming | 2 |
@@ -32,13 +32,13 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Manuelle Updates | 4 |
 | Dokumentation | 4 |
 | Performance | 3 |
-| **Summe** | **71 / 100** |
+| **Summe** | **74 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
 Die GTK-Abnahme prüft Live-Änderungen und die direkten Wege zu den Einstellungen.
 
-WLAN erreicht drei Punkte: Neben sichtbaren Netzen sind versteckte SSIDs mit
+WLAN erreicht vier Punkte durch die zusätzliche [native QEMU-Abnahme](validation/rust-wlan-qemu-2026-10-23.md). Die bisherige Grundlage: Neben sichtbaren Netzen sind versteckte SSIDs mit
 Adapterauswahl und WPA2/WPA3 beziehungsweise offenem Netz integriert. Passende
 Profile werden wiederverwendet; Mehrdeutigkeit und ungültige Eingaben werden
 abgewiesen. Die Rust-/GIO-Abnahme prüft die tatsächlichen D-Bus-Aufrufe einschließlich
@@ -122,8 +122,9 @@ Der Rust-Assistent speichert den aktuellen Schritt, kann unterbrochen und
 fortgesetzt werden und nutzt die vorhandenen Einstellungsseiten. Die tatsächliche
 GTK-Abnahme prüft Navigation, Speichern, Überspringen, Abschluss, lokale Diagnose
 und mehrere Hostprofile einschließlich Aktivierung, ungültiger Eingaben und
-bestätigtem Entfernen. Nicht portierte Einrichtungsschritte sind ausdrücklich
-gekennzeichnet; der Assistent erreicht deshalb drei von fünf Punkten.
+bestätigtem Entfernen. Mit den nativen Cloud- und Tailscale-Seiten sowie der Abnahme aller 15 Hin- und
+Rückwege erreicht der Assistent vier Punkte. Die Einrichtung persönlicher
+Windows-Anbieterzugänge und Sprachwechsel bleiben offen.
 
 VPN erhält einen zusätzlichen Punkt für die eigene Rust-WireGuard-Seite mit
 persönlicher Profilauswahl, Status, Import, Verbinden und Trennen. Die tatsächliche

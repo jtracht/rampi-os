@@ -120,20 +120,29 @@ eindeutig deinem Konto zugeordnete Profile. Importierte Profile verbinden sich
 nicht automatisch. Wähle das Profil und verbinde beziehungsweise trenne es.
 Die ursprüngliche Konfigurationsdatei bleibt erhalten.
 
-Tailscale zeigt den Status der vorhandenen offiziellen CLI an. Ein fehlender
-Dienst, eine notwendige Anmeldung oder ein unvollständiger Status gilt nicht als
-Verbindung. Status, Verbinden und Trennen verwenden vorhandene Tailscale-Funktionen;
-die vollständig grafische Kontoanmeldung und ein tatsächlicher Tailscale-Tunnel
-sind noch nicht abgenommen.
+Tailscale bleibt im selben Einstellungsbereich: Status prüfen, **Tailscale verbinden**
+wählen und die systemweite Änderung auf der Bestätigungsseite freigeben. Wenn
+Anmeldung erforderlich ist, **Tailscale-Anmeldung öffnen** wählen. Die offizielle
+Anmeldung erscheint in einer eigenen Rampi-Seite mit temporärem Browserprofil.
+**Zurück zu VPN** verwirft diese Ansicht; anschließend den Status aktualisieren.
+Eine angezeigte Anmeldeseite bestätigt noch keinen erfolgreichen Tunnel.
+
+Ein Administrator muss das tatsächlich verwendete Linux-Konto einmalig als
+Tailscale-Operator freigeben, beispielsweise bewusst mit
+`sudo tailscale set --operator=BENUTZER`. Rampi erweitert diese Rechte nicht selbst
+und setzt bestehende Tailscale-Optionen nicht zurück. Tailscale und seine Routen
+wirken systemweit. Benutzerkonten des Anbieters werden von dessen Anmeldung geprüft.
+Headscale und eigene Login-Server sind in diesem Anmeldeweg nicht vorgesehen.
 
 ## Kanban, Browser und Remote Desktop
 
-Unter **Kanban & Browser** hinterlegst du eine persönliche Kanban-JSON-Datei,
-optional Spalten in Reihenfolge und eine HTTPS-Startseite. Das Kanban-Modul ist
-schreibgeschützt. Suche sowie Projekt-, Prioritäts- und Statusfilter lassen sich
-kombinieren. **Aufgaben neu laden** liest Änderungen aus der Quelle. Bei einem
-Quellfehler bleiben bereits geladene Karten erhalten. Cloud-Adapter und deren
-Cache sind im Rust-Port noch nicht vollständig verfügbar.
+Unter **Kanban & Browser** führt die Einrichtung durch **Quelle → Zugang → Prüfung**.
+Eine lokale JSON-Datei sowie GitHub, Gitea, Trello, Jira, Asana oder Notion sind
+verfügbar. [Quellenformate und Zugang einrichten](KANBAN-NATIVE.de.md).
+Das Kanban-Modul bleibt schreibgeschützt. Suche sowie Projekt-, Prioritäts- und
+Statusfilter lassen sich kombinieren. **Aufgaben neu laden** aktualisiert die
+Quelle. Bei Fehlern erscheint der passende private Offline-Cache mit sichtbarem
+Hinweis; ein Profilwechsel übernimmt keine Daten des vorherigen Boards.
 
 Der Browser verwendet WebKitGTK mit persönlichem Profil. Er unterstützt
 Adresszeile, zurück, vorwärts und neu laden. Unterstützte Webseitenabfragen
