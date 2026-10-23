@@ -1,6 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 77 %**.
+Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 78 %**.
+[78-Prozent-Erweiterung durch grafische PAM-Anmeldung](validation/graphical-login-2026-10-23.md).
 [77-Prozent-Erweiterung durch den nativen Browser](validation/browser-modern-profile-2026-10-23.md).
 [76-Prozent-Erweiterung durch integriertes RDP](validation/embedded-rdp-2026-10-23.md).
 [75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
@@ -18,7 +19,7 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Grafische Sitzung und Dashboard | 4 |
 | Tastatur und Maus | 4 |
 | Setup-Assistent | 4 |
-| Linux-Konten und Login | 3 |
+| Linux-Konten und Login | 4 |
 | WLAN | 4 |
 | Bluetooth | 4 |
 | VPN | 4 |
@@ -35,11 +36,17 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Manuelle Updates | 5 |
 | Dokumentation | 4 |
 | Performance | 3 |
-| **Summe** | **77 / 100** |
+| **Summe** | **78 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
 Die GTK-Abnahme prüft Live-Änderungen und die direkten Wege zu den Einstellungen.
+
+Linux-Konten und Login erreichen vier Punkte durch frische QEMU-Anmeldungen auf
+AMD64 und ARM64 mit dem tatsächlichen greetd-/PAM-Ablauf, falschem Kennwort,
+zwei normalen Linux-Identitäten, privaten Konfigurationen und Rückkehr zur
+Anmeldung. Sichtbare native Frames werden geprüft; schwarze Compositor-Bilder
+werden abgewiesen. Image-Boot, Login-Branding und weitere Kontooberflächen bleiben offen.
 
 Browser erreicht fünf Punkte durch integrierte Navigation, echte HTTPS-/JavaScript-,
 Tastatur-, Maus-, Vollbild- und Download-/Upload-Abnahmen sowie persistente,
