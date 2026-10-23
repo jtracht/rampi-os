@@ -107,6 +107,11 @@ def client():
             raise RuntimeError("X11 was started in the client container")
     finally:
         path.unlink(missing_ok=True)
+        captured = Path(os.environ["RAMPI_TEST_ARTIFACTS"])
+        (captured / "rdp-disconnect-ready").unlink(missing_ok=True)
+        screenshot = captured / "rust-rdp.png"
+        if screenshot.is_file():
+            screenshot.chmod(0o644)
 
 
 def orchestrate(args):
@@ -216,6 +221,7 @@ def orchestrate(args):
         receipt_path = artifacts / "keyboard-receipts.txt"
         run("docker", "cp", f"{name}:/home/rdpuser/.rampi-input", str(receipt_path))
         receipt = receipt_path.read_text(encoding="utf-8")
+        receipt_path.chmod(0o644)
         for attempt in range(2):
             if f"rampirdp{attempt}" not in receipt:
                 raise RuntimeError(f"Actual remote keyboard receipt missing: {attempt}")
