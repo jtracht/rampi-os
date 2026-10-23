@@ -14,6 +14,7 @@ fi
 packages=(libgtk-4-1 libvte-2.91-gtk4-0 libwebkitgtk-6.0-4 libgtk-4-media-gstreamer librsvg2-common
     gstreamer1.0-plugins-good gstreamer1.0-pulseaudio libcanberra0 libcanberra-pulse labwc greetd wlgreet dbus-user-session
     network-manager libnm0 bluez wireguard-tools openssh-client libgstreamer-plugins-base1.0-0 libssl3t64
+    libusbredirparser1t64 libusb-1.0-0
     wlr-randr libsecret-tools gnome-keyring libpam-gnome-keyring curl
     plymouth plymouth-themes fonts-dejavu-core accountsservice whois binutils)
 if ! dpkg-query -W -f='${Status}' pulseaudio 2>/dev/null | grep -q '^install ok installed$'; then
