@@ -1,6 +1,6 @@
 # Embedded Rust RDP software acceptance
 
-Development branch: `codex/embedded-rdp`. Physical hardware tests are excluded.
+Merged PR: [#22](https://github.com/jtracht/rampi-os/pull/22). Physical hardware tests are excluded.
 This evidence does not establish Windows 11 Pro/NLA or Pi decoding performance.
 
 The actual Rampi connection page embeds the existing RDW GTK4 widget using
@@ -44,5 +44,30 @@ Dynamic remote resizing is disabled: an early headless resize produced an
 IronRDP display-control encoding error. The established desktop is scaled by GTK.
 The fixed upstream initial desktop is 1920×1080. Configurable initial resolution,
 mouse/clipboard integration acceptance, Windows NLA and integrated Moonlight
-streaming remain open. No additional progress point is awarded before the
-complete native regression and ARM64 checks pass.
+streaming remain open.
+
+## Completed CI and independent artifact validation
+
+Accepted feature head: `40c92ca08adc3c474b086cd6952aa74b2038fc01`.
+Merge on main: `308785f5350c261a4d0dff4c3bf547e822bc21e9`.
+Both have the exact Git tree `9d3fa18b14a7a396320d0231ead5d711bf95cee7`.
+
+* [General CI](https://github.com/jtracht/rampi-os/actions/runs/39989933263): all six jobs successful.
+* [Native AMD64/ARM64 CI](https://github.com/jtracht/rampi-os/actions/runs/39989933231): both jobs successful,
+  including actual RDP, ARM64 installer lifecycle and QEMU virtual WLAN.
+* Both downloaded runtime artifacts pass `scripts/check-native-evidence.py`;
+  ARM64 additionally passes `--require-installer`.
+* The downloaded ARM64 installer/source/Windows bundle passes
+  `scripts/check-artifacts.py`: all seven SHA256 checksums and archive checks pass.
+* Original license texts for 418 locked dependencies are collected. The MPL
+  build dependency's corresponding source remains in the source archive.
+* The full local native regression also passes. It used a changed source snapshot
+  `94552b14689cadf044c53014fdb0873cb7ad75436a06071a8c703c271e27121e`;
+  the exact accepted commit is established by CI above, not by that local snapshot.
+
+The initial CI attempt passed its software checks but failed uploading a private
+temporary fixture flag. The flag is now removed after the test; the non-secret
+screenshot is readable by the uploader. The fresh run above is fully successful.
+
+This adds one point to Remote Desktop (2 → 3), making **76/100**. It is a software
+development milestone, not a regular native release or Windows NLA certification.
