@@ -21,30 +21,169 @@ pub fn settings(
     let header = row();
     let back = button("← Dashboard", f);
     back.set_widget_name("rampi-back");
-    let s = stack.clone();
+    let tabs = gtk::Stack::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .transition_type(gtk::StackTransitionType::Crossfade)
+        .transition_duration(if conf.borrow().reduce_motion { 0 } else { 150 })
+        .build();
+    let (s, categories) = (stack.clone(), tabs.clone());
     back.connect_clicked(move |_| {
         let destination = if s
             .child_by_name("setup")
             .is_some_and(|p| p.widget_name() == "setup-return")
         {
             "setup"
+        } else if categories.visible_child_name().as_deref() != Some("categories") {
+            categories.set_visible_child_name("categories");
+            return;
         } else {
             "dashboard"
         };
         s.set_visible_child_name(destination);
     });
+    let (root, pages) = (stack.clone(), tabs.clone());
+    back.connect_map(move |button| {
+        let wizard = root
+            .child_by_name("setup")
+            .is_some_and(|p| p.widget_name() == "setup-return");
+        button.set_label(if wizard {
+            "← Einrichtung"
+        } else if pages.visible_child_name().as_deref() == Some("categories") {
+            "← Dashboard"
+        } else {
+            "← Einstellungen"
+        });
+    });
     header.append(&back);
-    let title = label("Einstellungen · persönliches Profil");
+    let title = label("Einstellungen");
     title.add_css_class("heading");
     header.append(&title);
     page.append(&header);
-    let tabs = gtk::Stack::builder()
-        .hexpand(true)
-        .vexpand(true)
-        .transition_type(gtk::StackTransitionType::Crossfade)
-        .build();
-    let switcher = gtk::StackSwitcher::builder().stack(&tabs).build();
-    page.append(&switcher);
+    let menu = column();
+    menu.add_css_class("settings-categories");
+    menu.append(&label("Wähle einen Bereich. Mit Escape kommst du zurück."));
+    let mut choices = Vec::new();
+    let last_category = Rc::new(Cell::new(0usize));
+    for (name, heading, hint, icon) in [
+        (
+            "host",
+            "Host & SSH",
+            "Windows-PC und persönliche Verbindung einrichten",
+            "computer-symbolic",
+        ),
+        (
+            "wifi",
+            "WLAN",
+            "Netzwerke suchen und verbinden",
+            "network-wireless-symbolic",
+        ),
+        (
+            "bluetooth",
+            "Bluetooth",
+            "Tastatur, Maus und weitere Geräte koppeln",
+            "bluetooth-symbolic",
+        ),
+        (
+            "vpn",
+            "VPN",
+            "Tailscale oder WireGuard verwalten",
+            "network-vpn-symbolic",
+        ),
+        (
+            "board",
+            "Kanban & Browser",
+            "Aufgabenquelle und Browserstartseite festlegen",
+            "view-list-symbolic",
+        ),
+        (
+            "system",
+            "System",
+            "Anzeige, Klang, Bedienung und Konto anpassen",
+            "preferences-system-symbolic",
+        ),
+    ] {
+        let choice = button("", f);
+        choice.set_widget_name(&format!("settings-category-{name}"));
+        choice.add_css_class("settings-category");
+        let content = row();
+        let image = gtk::Image::from_icon_name(icon);
+        image.set_pixel_size(28);
+        content.append(&image);
+        let text = gtk::Box::new(gtk::Orientation::Vertical, 3);
+        text.set_hexpand(true);
+        let heading_label = label(heading);
+        heading_label.add_css_class("preview-title");
+        text.append(&heading_label);
+        let description = label(hint);
+        description.add_css_class("status");
+        text.append(&description);
+        content.append(&text);
+        content.append(&label("›"));
+        choice.set_child(Some(&content));
+        let target = tabs.clone();
+        let (last, index) = (last_category.clone(), choices.len());
+        choice.connect_clicked(move |_| {
+            last.set(index);
+            target.set_visible_child_name(name);
+        });
+        menu.append(&choice);
+        choices.push(choice);
+    }
+    let choices = Rc::new(choices);
+    let (focus_choices, selected) = (choices.clone(), last_category.clone());
+    menu.connect_map(move |_| {
+        focus_choices[selected.get()].grab_focus();
+    });
+    for (index, choice) in choices.iter().enumerate() {
+        let keys = gtk::EventControllerKey::new();
+        let buttons = choices.clone();
+        keys.connect_key_pressed(move |_, key, _, _| {
+            let next = match key {
+                gtk::gdk::Key::Down => (index + 1) % buttons.len(),
+                gtk::gdk::Key::Up => (index + buttons.len() - 1) % buttons.len(),
+                _ => return glib::Propagation::Proceed,
+            };
+            buttons[next].grab_focus();
+            glib::Propagation::Stop
+        });
+        choice.add_controller(keys);
+    }
+    tabs.add_named(&scroll(&menu), Some("categories"));
+    let (heading, back_button, root, buttons) =
+        (title.clone(), back.clone(), stack.clone(), choices);
+    tabs.connect_visible_child_name_notify(move |pages| {
+        let name = pages.visible_child_name().unwrap_or_default();
+        if let Some(index) = ["host", "wifi", "bluetooth", "vpn", "board", "system"]
+            .iter()
+            .position(|category| *category == name.as_str())
+        {
+            last_category.set(index);
+        }
+        let caption = match name.as_str() {
+            "host" => "Host & SSH",
+            "wifi" => "WLAN",
+            "bluetooth" => "Bluetooth",
+            "vpn" => "VPN",
+            "board" => "Kanban & Browser",
+            "system" => "System",
+            _ => "Einstellungen",
+        };
+        heading.set_text(caption);
+        let wizard = root
+            .child_by_name("setup")
+            .is_some_and(|p| p.widget_name() == "setup-return");
+        back_button.set_label(if wizard {
+            "← Einrichtung"
+        } else if name == "categories" {
+            "← Dashboard"
+        } else {
+            "← Einstellungen"
+        });
+        if name == "categories" {
+            buttons[last_category.get()].grab_focus();
+        }
+    });
     page.append(&tabs);
     tabs.add_titled(
         &scroll(&crate::host_view::build(stack, conf, status, f)),
@@ -59,9 +198,11 @@ pub fn settings(
     sound.set_active(conf.borrow().sound_effects);
     system.append(&sound);
     let (c, s) = (conf.clone(), stack.clone());
+    let navigation = tabs.clone();
     reduce.connect_toggled(move |b| {
         c.borrow_mut().reduce_motion = b.is_active();
         s.set_transition_duration(if b.is_active() { 0 } else { 150 });
+        navigation.set_transition_duration(if b.is_active() { 0 } else { 150 });
     });
     let c = conf.clone();
     sound.connect_toggled(move |b| c.borrow_mut().sound_effects = b.is_active());
@@ -93,16 +234,6 @@ pub fn settings(
         Some("board"),
         "Kanban & Browser",
     );
-    let mut child = switcher.first_child();
-    let mut tab_index = 0;
-    while let Some(widget) = child {
-        if let Ok(button) = widget.clone().downcast::<gtk::Button>() {
-            button.set_widget_name(&format!("settings-tab-{tab_index}"));
-            tab_index += 1;
-            wire_button(&button, f);
-        }
-        child = widget.next_sibling();
-    }
     (page, tabs)
 }
 fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {

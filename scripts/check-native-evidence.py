@@ -61,6 +61,7 @@ captures = ["startup-" + suffix for suffix in "abcdef"] + [
     "reduced-a",
     "reduced-b",
     "settings-host",
+    "settings-categories",
     "dashboard-1600",
 ]
 for capture in captures:

@@ -24,4 +24,8 @@ list row:selected { background: #12538a; }
 .lane-title { font-size: 12px; font-weight: 700; }
 .board-card { background: #d1dce5; color: #101923; border-radius: 8px; padding: 10px; font-size: 12px; }
 
-stackswitcher button:checked { background: #12538a; color: #ffffff; font-weight: 700; }
+.settings-categories { margin: 8px 64px; }
+button.settings-category { background: transparent; border-radius: 12px; padding: 12px 22px; }
+button.settings-category:hover, button.settings-category:focus { background: #12538a; }
+button.settings-category:active { background: #2177b8; }
+button.settings-category:focus .status, button.settings-category:hover .status { color: #edf3fa; }

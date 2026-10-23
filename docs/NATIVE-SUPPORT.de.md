@@ -11,7 +11,7 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Einrichtung | Fortsetzbare 15 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
 | Linux-Konto | PAM/passwd, eigenes Kennwort, bestätigte Abmeldung | Weitere Konten und grafischer Greeter-Durchlauf |
 | WLAN | Sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private neue Profile | Unternehmensnetze benötigen vorhandenes NM-Profil; WPA2/DHCP und Kontentrennung in QEMU belegt; WPA3-/ARM64-Funkabnahme offen |
-| Bluetooth | Eigener Tab, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart | Zusätzliche virtuelle Controller-Abnahme; physischer Funk ist ausgeschlossen |
+| Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart | Zusätzliche virtuelle Controller-Abnahme; physischer Funk ist ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
 | Windows/KI | Persönliche Hosts, OpenSSH-Schlüssel/Trust, bestehender nativer psmux-/ConPTY-Adapter | Zusammenhängende Windows-11-Pro-Abnahme mit neuer Oberfläche und Anbieteranmeldungen |
 | Antigravity | Kachel und Diagnose fehlender Unterstützung | Verfügbare offizielle native CLI ist nicht nachgewiesen |
@@ -36,7 +36,7 @@ Eine neue Kennworteingabe ersetzt dessen gespeichertes Geheimnis nicht automatis
 Für versteckte Netze sind SSID und Sicherheit exakt anzugeben; mehrere passende
 Profile werden nicht automatisch priorisiert. Kein zweiter Netzwerkmanager ist nötig.
 
-**Bluetooth-Dienst startet neu:** Im eigenen Tab erneut suchen. Alte Anfragen und
+**Bluetooth-Dienst startet neu:** Auf der Bluetooth-Seite erneut suchen. Alte Anfragen und
 PINs werden verworfen; der eigene Agent meldet sich beim neuen Dienst an.
 Vertrauen und Entfernen betreffen den gemeinsamen Adapter und brauchen Bestätigung.
 

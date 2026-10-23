@@ -294,10 +294,13 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         (&wifi, "wifi"),
         (&bluetooth, "bluetooth"),
         (&vpn, "vpn"),
-        (&open_settings, "host"),
+        (&open_settings, "categories"),
     ] {
         let (s, t) = (stack.clone(), tabs.clone());
         b.connect_clicked(move |_| {
+            if let Some(wizard) = s.child_by_name("setup") {
+                wizard.set_widget_name("setup");
+            }
             t.set_visible_child_name(page);
             s.set_visible_child_name("settings");
         });
