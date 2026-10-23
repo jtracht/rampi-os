@@ -1,4 +1,4 @@
-use crate::{views, widgets::*, wireguard};
+use crate::{widgets::*, wireguard};
 use gtk::{glib, prelude::*};
 use std::{
     cell::{Cell, RefCell},
@@ -124,32 +124,7 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
     page.append(&label("Gemeinsame Profile und Profile anderer Benutzer werden hier nicht angeboten. Ein Import verbindet den Tunnel nicht automatisch."));
     page.append(&label("Tailscale · vorhandene offizielle Software"));
     page.append(&crate::tailscale::view(feedback));
-    let tailscale = row();
-    for (title, key, args) in [
-        (
-            "Tailscale-Status",
-            "tailscale-status",
-            vec!["tailscale", "status"],
-        ),
-        (
-            "Tailscale verbinden",
-            "tailscale-up",
-            vec!["pkexec", "tailscale", "up"],
-        ),
-        (
-            "Tailscale trennen",
-            "tailscale-down",
-            vec!["pkexec", "tailscale", "down"],
-        ),
-    ] {
-        let action = button(title, feedback);
-        let (route, s) = (stack.clone(), status.clone());
-        action.connect_clicked(move |_| {
-            views::terminal(&route, key, args.iter().map(Into::into).collect(), &s)
-        });
-        tailscale.append(&action);
-    }
-    page.append(&tailscale);
+    page.append(&crate::tailscale::actions(stack, &status, feedback));
     let refresh_on_map = refresh.downgrade();
     page.connect_map(move |_| {
         if let Some(r) = refresh_on_map.upgrade() {

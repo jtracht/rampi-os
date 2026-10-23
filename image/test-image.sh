@@ -50,6 +50,31 @@ binary="$work/root$selected/rampi-native"
 printf '%s  %s\n' "$binary_sha" "$binary" | sudo sha256sum --check --status
 readelf -h "$binary" | grep -q AArch64
 printf 'source_revision=%s\nbinary_sha256=%s\n' "$revision" "$binary_sha" > "$output/native-image-provenance.txt"
+# New candidates ship the same executable as a separately installable bundle.
+# Historical candidates without a bundle remain usable for diagnostic reruns;
+# the regular release artifact gate always requires the bundle.
+shopt -s nullglob
+bundles=("$(dirname "$image")"/rampi-linux-arm64-*.tar.xz)
+if ((${#bundles[@]})); then
+    ((${#bundles[@]} == 1))
+    python3 - "${bundles[0]}" "$revision" "$binary_sha" <<'PY'
+import hashlib
+import sys
+import tarfile
+with tarfile.open(sys.argv[1]) as bundle:
+    def read(name):
+        item = bundle.getmember("bin/" + name)
+        if not item.isfile():
+            raise SystemExit("Native bundle member is not a regular file")
+        return bundle.extractfile(item).read()
+    if read("source-revision.txt").decode().strip() != sys.argv[2]:
+        raise SystemExit("Native bundle source differs from image")
+    if hashlib.sha256(read("rampi-native")).hexdigest() != sys.argv[3]:
+        raise SystemExit("Native bundle binary differs from image")
+    read("rust-licenses/packages.json")
+print("RAMPI_NATIVE_IMAGE_BUNDLE_OK")
+PY
+fi
 echo RAMPI_NATIVE_IMAGE_METADATA_OK
 sudo cp "$work/root/opt/rampi/package-manifest.tsv" "$output/package-manifest.tsv"
 sudo cp "$work/root/opt/rampi/dependency-licenses.tar.xz" "$output/dependency-licenses.tar.xz"

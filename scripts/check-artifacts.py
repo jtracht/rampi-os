@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import re
 import tarfile
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -13,10 +14,9 @@ parser.add_argument("--image", action="store_true")
 args = parser.parse_args()
 directory = args.directory
 required = {"setup.sh", "setup.ps1", "LICENSE", "NOTICE"}
-version = re.search(
-    r'__version__ = "([^"]+)"',
-    (Path(__file__).resolve().parents[1] / "client/rampi/__init__.py").read_text(),
-).group(1)
+version = tomllib.loads(
+    (Path(__file__).resolve().parents[1] / "Cargo.toml").read_text(encoding="utf-8")
+)["workspace"]["package"]["version"]
 source = f"rampi-source-{version}.tar.gz"
 host = f"rampi-windows-host-{version}.zip"
 required.update([source, host])
@@ -24,11 +24,19 @@ if args.image:
     images = list(directory.glob("*.img.xz"))
     if len(images) != 1:
         raise SystemExit("Exactly one flashable image required")
-    required.update([
-        images[0].name, "package-manifest.tsv", "dependency-licenses.tar.xz",
-        "qemu-boot.log", "qemu-environment.txt", "partitions.json",
-        "pi-gen-revision.txt", "readiness.json",
-    ])
+    required.update(
+        [
+            images[0].name,
+            "package-manifest.tsv",
+            "dependency-licenses.tar.xz",
+            "qemu-boot.log",
+            "qemu-environment.txt",
+            "partitions.json",
+            "pi-gen-revision.txt",
+            "readiness.json",
+            f"rampi-linux-arm64-{version}.tar.xz",
+        ]
+    )
 checksums = {}
 for line in (directory / "SHA256SUMS").read_text().splitlines():
     digest, name = line.split("  ", 1)
@@ -47,17 +55,58 @@ for name, expected in checksums.items():
 with tarfile.open(directory / source) as archive:
     entries = set(archive.getnames())
     for name in [
-        ".github/workflows/ci.yml", ".github/workflows/release.yml", "LICENSE",
-        "client/rampi/qml/Main.qml", "client/rampi/icons/LICENSE", "image/build.sh",
-        "installer/raspberrypi/setup.sh", "docs/INSTALL-RASPBERRYPI.md", "setup.sh",
-        "Cargo.toml", "Cargo.lock", "native/ui/src/linux.rs", "native/core/src/config.rs",
-        "system/labwc/rc.xml", "docs/RUST-MIGRATION.md",
+        ".github/workflows/ci.yml",
+        ".github/workflows/release.yml",
+        "LICENSE",
+        "client/rampi/qml/Main.qml",
+        "client/rampi/icons/LICENSE",
+        "image/build.sh",
+        "installer/raspberrypi/setup.sh",
+        "docs/INSTALL-RASPBERRYPI.md",
+        "setup.sh",
+        "source-revision.txt",
+        "Cargo.toml",
+        "Cargo.lock",
+        "native/ui/src/linux.rs",
+        "native/core/src/config.rs",
+        "system/labwc/rc.xml",
+        "docs/RUST-MIGRATION.md",
     ]:
         if "rampi-os/" + name not in entries:
             raise SystemExit(f"Source archive incomplete: {name}")
+if args.image or (directory / f"rampi-linux-arm64-{version}.tar.xz").is_file():
+    with tarfile.open(directory / f"rampi-linux-arm64-{version}.tar.xz") as native:
+        for item in native.getmembers():
+            path = Path(item.name)
+            if path.is_absolute() or ".." in path.parts or not (item.isfile() or item.isdir()):
+                raise SystemExit("Unsafe native bundle member")
+
+        def read_native(name):
+            item = native.getmember("bin/" + name)
+            if not item.isfile():
+                raise SystemExit("Native bundle metadata must be regular files")
+            return native.extractfile(item).read()
+
+        binary = read_native("rampi-native")
+        if binary[:5] != b"\x7fELF\x02" or int.from_bytes(binary[18:20], "little") != 183:
+            raise SystemExit("Native bundle is not ARM64 ELF")
+        if hashlib.sha256(binary).hexdigest() != read_native("binary-sha256.txt").decode().strip():
+            raise SystemExit("Native bundle binary checksum mismatch")
+        with tarfile.open(directory / source) as sources:
+            revision = sources.extractfile("rampi-os/source-revision.txt").read().decode().strip()
+        if (
+            not re.fullmatch(r"[a-f0-9]{40}", revision)
+            or revision != read_native("source-revision.txt").decode().strip()
+        ):
+            raise SystemExit("Native bundle and source revisions differ")
+        read_native("rust-licenses/packages.json")
+        read_native("rust-licenses/Rust-standard-library-COPYRIGHT.html")
 with zipfile.ZipFile(directory / host) as archive:
     for name in [
-        "setup.ps1", "installer/windows/setup.ps1", "host/windows/rampi-session.ps1", "STREAMING.md"
+        "setup.ps1",
+        "installer/windows/setup.ps1",
+        "host/windows/rampi-session.ps1",
+        "STREAMING.md",
     ]:
         if name not in archive.namelist():
             raise SystemExit(f"Windows package incomplete: {name}")

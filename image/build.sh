@@ -56,4 +56,6 @@ if ((${#images[@]} != 1)); then echo 'Genau ein Image erwartet.' >&2; exit 1; fi
 xz -t "${images[0]}"
 printf '%s\n' "$revision" > "$root/artifacts/image/pi-gen-revision.txt"
 cp "$root/packaging/readiness.json" "$root/artifacts/image/readiness.json"
-sha256sum "${images[0]}" > "$root/artifacts/image/SHA256SUMS"
+bundle="$root/artifacts/image/rampi-linux-arm64-$version.tar.xz"
+python3 "$root/scripts/package-native.py" --binary "$binary" --licenses "$licenses" --output "$root/artifacts/image"
+(cd "$root/artifacts/image"; sha256sum -- "$(basename "${images[0]}")" "$(basename "$bundle")" > SHA256SUMS)

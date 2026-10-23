@@ -43,6 +43,8 @@ Die GitHub-Matrix verwendet dafür einen nativen ARM64-Runner.
 | `build.log` | Gesperrte Cargo-Auflösung, Format, Core-Tests, Clippy, Linux-Build | Keine Windows-GUI |
 | `wayland.log` | GTK-Seiten, Assistent, SSH, VTE, WebKit, Klickton und 600 Seitenwechsel | Pixman/Cairo statt Pi-GPU |
 | `interaction-*.png`, `visual-acceptance.json` | Reale Wayland-Eingabe, vier Kanten bei Start/Hover/Fokus, reduzierte Bewegung, 1280×720 und 1600×900 | Keine physischen Eingabegeräte oder HDMI-Messung |
+| `cloud-kanban.log` | Tatsächliches GTK, curl/TLS und verschlüsselter Schlüsselbund, sechs Anbieter-Verträge, Offline-/Quellen-/Token-Trennung | Keine persönlichen Cloudkonten |
+| `bootstrap-tls.log` | Reales curl/HTTPS, Quellen-/Binary-Abgleich, manipulierte Archive, Prüfsummen und Pfadschutz | Installer-Stub; echte ARM64-Lifecycle-Abnahme separat |
 | `network-contract.log` | Rust/GIO, versteckte SSIDs, ACL, Profilwiederverwendung | Private NM-Fixture, kein Funk/DHCP |
 | `bluetooth-contract.log` und Agent-Marker | Suche, PIN/Passkey, eingegebene Stellen, fremder Absender, Cancel/Release, echter Fixture-Prozesswechsel | Private BlueZ-Fixture, keine Funkkopplung |
 | `account-pam.log` | Unprivilegiertes passwd im VTE, altes/falsches/neues Kennwort gegen PAM, zweites Linux-Konto | Kein grafischer greetd-Durchlauf |
@@ -86,3 +88,11 @@ Build allein reicht nicht. Nach Cargo-Abhängigkeitsänderungen müssen der
 Linux-Abhängigkeitsgraph, ursprüngliche Lizenztexte und Image-Lizenzsammler
 erneut geprüft werden. Die historische Python-Suite bleibt eine zusätzliche
 Regression und ersetzt keine Rust-GUI-Abnahme.
+
+## Virtuelle WLAN-Geräte
+
+Die native QEMU-Stufe baut das Prüfprogramm aus demselben produktiven `bus.rs`.
+Sie prüft WPA2, DHCP, echten IP-Verkehr, falsches Kennwort, Wiederverbindung und
+einen zweiten Linux-Benutzer. [Nachweis und Wiederholung](validation/rust-wlan-qemu-2026-10-23.md).
+Die CI verwendet einen frischen offiziellen Debian-Gast; der lokale optionale
+`--prepared`-Cache ist ausschließlich für Entwicklung und wird im Nachweis markiert.

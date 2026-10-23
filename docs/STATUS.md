@@ -1,5 +1,5 @@
 > **Architekturwechsel am 21.10.2026:** Die Anwendung wird auf Rust/GTK 4/Wayland
-> portiert. Aktueller Gesamtstand nach neuem Maßstab: ca. 71 %; Rust-Port ca. 68 %.
+> portiert. Aktueller Gesamtstand nach neuem Maßstab: ca. 74 %; Rust-Port ca. 68 %.
 > Die nachfolgenden Angaben zum Python-/QML-Prototyp sind historische Nachweise.
 > Aktueller Umfang und offene Arbeiten: [native Funktionsmatrix](NATIVE-SUPPORT.de.md),
 > [Rust-Migration](RUST-MIGRATION.md), [Fortschrittsmaßstab](PROGRESS.md).

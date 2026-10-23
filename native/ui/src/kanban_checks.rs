@@ -38,8 +38,8 @@ pub fn run() -> Result<()> {
                 .as_str()
                 .context("Fixture token missing")?;
             let account = credentials[kind]["account"].as_str().unwrap_or("");
-            crate::secret_service::store(&profile, kind, account, token).await?;
-            let secret = crate::secret_service::load(&profile).await?;
+            crate::secret_service::store(&profile, kind, source, account, token).await?;
+            let secret = crate::secret_service::load(&profile, kind, source).await?;
             ensure!(secret.contains(token), "Actual keyring roundtrip failed");
             let settings = Settings {
                 board_kind: kind.into(),
@@ -108,6 +108,7 @@ pub fn run() -> Result<()> {
         crate::secret_service::store(
             "native-jira-oauth",
             "jira",
+            "https://api.atlassian.com/ex/jira/01234567-89ab-cdef-0123-456789abcdef#RAMPI",
             "",
             credentials["jira"]["token"].as_str().unwrap(),
         )
@@ -138,6 +139,14 @@ pub fn run() -> Result<()> {
                 board_token_key: "native-github".into(),
                 ..Default::default()
             };
+            crate::secret_service::store(
+                "native-github",
+                "github",
+                &settings.board_source,
+                "",
+                credentials["github"]["token"].as_str().unwrap(),
+            )
+            .await?;
             let error = crate::board_data::load(settings)
                 .await
                 .err()
@@ -147,6 +156,26 @@ pub fn run() -> Result<()> {
                 "Provider failure was not classified: {number}: {error}"
             );
         }
+        ensure!(
+            crate::secret_service::load(
+                "native-gitea",
+                "gitea",
+                "https://other.invalid#repos/fixture/repo/1"
+            )
+            .await
+            .is_err(),
+            "Gitea token crossed server origin"
+        );
+        ensure!(
+            crate::secret_service::load(
+                "native-github",
+                "gitea",
+                "https://gitea.fixture.test#repos/fixture/repo/1"
+            )
+            .await
+            .is_err(),
+            "Token crossed provider boundary"
+        );
         // Reject a symlink before creating anything inside its target.
         let cache_root = glib::user_cache_dir().join("rampi");
         let backup = glib::user_cache_dir().join("rampi-verified-backup");
@@ -198,13 +227,21 @@ pub fn run() -> Result<()> {
         )
         .await?;
         ensure!(
-            crate::secret_service::load("native-github").await.is_err(),
+            crate::secret_service::load("native-github", "github", "organization/fixture/1")
+                .await
+                .is_err(),
             "Locked keyring was read"
         );
         ensure!(
-            crate::secret_service::store("native-github", "github", "", "replacement")
-                .await
-                .is_err(),
+            crate::secret_service::store(
+                "native-github",
+                "github",
+                "organization/fixture/1",
+                "",
+                "replacement"
+            )
+            .await
+            .is_err(),
             "Locked keyring was written"
         );
         let files = std::fs::read_dir(glib::user_cache_dir().join("rampi/boards"))?;
@@ -272,7 +309,10 @@ pub fn ui(
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             ensure!(
-                input.text().is_empty() && crate::secret_service::load("native-ui").await? == token,
+                input.text().is_empty()
+                    && crate::secret_service::load("native-ui", "github", "organization/fixture/1")
+                        .await?
+                        == token,
                 "UI did not store the actual keyring secret"
             );
             find_button(&page, "Datenquelle und Startseite speichern")

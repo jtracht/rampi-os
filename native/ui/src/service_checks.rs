@@ -45,6 +45,20 @@ pub fn tailscale() -> Result<()> {
     );
     let case = std::env::args().nth(2).context("Missing status case")?;
     gtk::glib::MainContext::default().block_on(async {
+        if case.starts_with("action-") {
+            let result = crate::tailscale::change(case != "action-down").await;
+            let valid = match case.as_str() {
+                "action-login" => result
+                    .as_ref()
+                    .is_ok_and(|s| s.backend == "NeedsLogin" && s.login_url().is_some()),
+                "action-down" => result.as_ref().is_ok_and(|s| s.backend == "Stopped"),
+                "action-denied" => result.is_err(),
+                _ => false,
+            };
+            ensure!(valid, "Tailscale action did not match expected state");
+            println!("RAMPI_RUST_TAILSCALE_ACTION_OK {case}");
+            return Ok(());
+        }
         let result = crate::tailscale::status().await;
         let valid = match case.as_str() {
             "missing" => result

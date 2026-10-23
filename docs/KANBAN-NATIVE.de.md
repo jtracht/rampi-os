@@ -34,7 +34,10 @@ persönliche Gitea-Projekte sind in dieser ersten Anbindung nicht unterstützt.
 Es gibt keinen stillen Ersatz durch ein anders aufgebautes Issue-Board.
 
 Tokens liegen im vorhandenen Secret Service mit den Attributen
-`application=rampi` und `profile=PROFILNAME`. Sie stehen weder in Einstellungen
+`application=rampi`, `profile=PROFILNAME`, `provider=ANBIETER` und der exakten
+Quellenkennung `source`. Derselbe Profilname überträgt damit keinen Token an
+einen anderen Anbieter oder Gitea-Server. Nach einem Quellenwechsel den Zugang
+für diese Quelle ausdrücklich erneut speichern. Sie stehen weder in Einstellungen
 noch in Prozessargumenten, URLs oder Cache-Dateinamen. Netzwerkzugriffe verwenden
 das installierte curl mit Zertifikatsprüfung und ohne automatische Weiterleitung.
 Die Anwendung verändert keine Tickets, Spalten oder Anbieterberechtigungen.

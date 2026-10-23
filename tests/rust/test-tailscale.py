@@ -66,6 +66,26 @@ with tempfile.TemporaryDirectory(prefix="rampi-ts-") as directory:
                 else:
                     raise RuntimeError("Timed-out CLI fixture was not reaped")
 
+    if not ui:
+        for case, state, code in [
+            ("action-login", "NeedsLogin", 1),
+            ("action-down", "Stopped", 0),
+            ("action-denied", "Stopped", 1),
+        ]:
+            fixture.write_text(
+                "#!/usr/bin/python3\nimport sys,json\n"
+                + "args=sys.argv[1:]\n"
+                + "if args[0]=='status':\n"
+                + f" print(json.dumps({{'BackendState': {state!r}, 'AuthURL': 'https://login.tailscale.com/a/test'}}))\n"
+                + "else:\n"
+                + " assert args == (['down'] if "
+                + repr(case)
+                + " == 'action-down' else ['up','--timeout=3s','--json'])\n"
+                + f" sys.exit({code})\n"
+            )
+            fixture.chmod(0o700)
+            check(case, PATH=str(fixture_bin))
+
     with (root / "daemon.log").open("w") as output:
         daemon = subprocess.Popen(
             [
@@ -116,4 +136,42 @@ with tempfile.TemporaryDirectory(prefix="rampi-ts-") as directory:
                 daemon.kill()
                 daemon.wait(timeout=5)
 
-print("PASS: official Tailscale CLI/daemon NeedsLogin status; no authentication or tunnel proof.")
+    if ui:
+        fixture_bin = root / "action-bin"
+        fixture_bin.mkdir()
+        fixture = fixture_bin / "tailscale"
+        state_file = root / "ui-actions.json"
+        fixture.write_text(
+            "#!/usr/bin/python3\nimport sys,json\nfrom pathlib import Path\n"
+            + f"state = Path({str(state_file)!r})\n"
+            + "args=sys.argv[1:]\n"
+            + "if args[0]=='status':\n"
+            + " last=json.loads(state.read_text()) if state.exists() else []\n"
+            + " print(json.dumps({'BackendState':'Stopped' if last==['down'] else 'NeedsLogin','AuthURL':'https://login.tailscale.com/a/test'}))\n"
+            + "else:\n"
+            + " assert args in [['down'],['up','--timeout=3s','--json']]\n"
+            + " state.write_text(json.dumps(args))\n"
+            + " sys.exit(0 if args==['down'] else 1)\n"
+        )
+        fixture.chmod(0o700)
+        result = subprocess.run(
+            [BINARY, "--tailscale-ui-check"],
+            env={
+                **os.environ,
+                "PATH": str(fixture_bin) + ":" + os.environ["PATH"],
+                "RAMPI_TEST_TS_ACTION_UI": "1",
+            },
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode:
+            raise RuntimeError(result.stdout + result.stderr)
+        assert json.loads(state_file.read_text()) == ["down"]
+        assert "RAMPI_RUST_TAILSCALE_ACTION_PAGE_OK" in result.stdout
+        print(result.stdout.strip())
+
+print(
+    "PASS: official Tailscale daemon status; separate CLI action/UI fixtures; "
+    "no personal authentication or tunnel proof."
+)

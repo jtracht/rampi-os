@@ -69,6 +69,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
     let save = button("Datenquelle und Startseite speichern", f);
     page.append(&save);
     let (c, stat, k, p) = (conf.clone(), status.clone(), kind.clone(), profile.clone());
+    let source_for_save = source.clone();
     save.connect_clicked(move |_| {
         let result = (|| -> anyhow::Result<()> {
             let mut candidate = c.borrow().clone();
@@ -76,7 +77,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
                 .get(k.selected() as usize)
                 .ok_or_else(|| anyhow::anyhow!("Anbieter auswählen"))?
                 .to_string();
-            candidate.board_source = source.text().trim().to_string();
+            candidate.board_source = source_for_save.text().trim().to_string();
             candidate.board_token_key = p.text().trim().to_string();
             if candidate.board_kind != "json" {
                 crate::secret_service::validate_profile(&candidate.board_token_key)?;
@@ -117,7 +118,12 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
     credentials.append(&store);
     page.insert_child_after(&credentials, Some(&hint));
     let update = {
-        let (hint, account, credentials) = (hint.clone(), account.clone(), credentials.clone());
+        let (hint, account, credentials, token) = (
+            hint.clone(),
+            account.clone(),
+            credentials.clone(),
+            token.clone(),
+        );
         move |selected: u32| {
             let (message, placeholder) = match selected {
                 1 => (
@@ -150,6 +156,8 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
                 ),
             };
             hint.set_text(&format!("{message}\nBeispiel: {placeholder}"));
+            account.set_text("");
+            token.set_text("");
             credentials.set_visible(selected != 0);
             account.set_visible(selected == 2 || selected == 3);
         }
@@ -162,6 +170,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         let Some(kind) = KINDS.get(kind.selected() as usize) else {
             return;
         };
+        let source = source.text().trim().to_string();
         let (name, account_value, secret) = (
             profile.text().trim().to_string(),
             account.text().to_string(),
@@ -174,7 +183,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         glib::MainContext::default().spawn_local(async move {
             status_result(
                 &stat,
-                crate::secret_service::store(&name, kind, &account_value, &secret).await,
+                crate::secret_service::store(&name, kind, &source, &account_value, &secret).await,
             );
             b.set_sensitive(true);
         });

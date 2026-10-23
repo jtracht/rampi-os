@@ -32,7 +32,7 @@ const STEPS: [(&str, &str, &str); 15] = [
     ),
     (
         "VPN",
-        "Tailscale-Status prüfen oder ein persönliches WireGuard-Profil importieren und verbinden. Eine vollständig grafische Tailscale-Anmeldung fehlt noch.",
+        "VPN wählen: Tailscale innerhalb der Seite verbinden und bei Bedarf beim Anbieter anmelden, oder ein persönliches WireGuard-Profil importieren und verbinden. Die Statusanzeige zeigt den tatsächlichen Dienstzustand; Routen gelten systemweit.",
         "vpn",
     ),
     (

@@ -12,6 +12,7 @@ markers = [
     "RAMPI_RUST_FIRST_RUN_KEYBOARD_OK",
     "RAMPI_RUST_UI_OK",
     "RAMPI_RUST_SETUP_HOSTS_OK",
+    "RAMPI_RUST_SETUP_ALL_ROUTES_OK",
     "RAMPI_RUST_SSH_TRUST_OK",
     "RAMPI_RUST_DASHBOARD_STATUS_OK",
     "RAMPI_RUST_SYSTEM_SETTINGS_OK",
@@ -26,6 +27,7 @@ markers = [
     "RAMPI_RUST_KANBAN_PAGE_OK",
     "RAMPI_RUST_VPN_PAGE_OK",
     "RAMPI_RUST_TAILSCALE_PAGE_OK",
+    "RAMPI_RUST_TAILSCALE_ACTION_PAGE_OK",
     "RAMPI_RUST_SOUND_PCM_OK",
     "RAMPI_RUST_PERFORMANCE_OK",
     "RAMPI_WAYLAND_WITHOUT_X11_OK",
@@ -33,6 +35,10 @@ markers = [
 missing = [marker for marker in markers if marker not in log]
 if missing:
     raise SystemExit("Missing native acceptance stages: " + ", ".join(missing))
+if "RAMPI_RUST_BOOTSTRAP_TLS_OK" not in (directory / "bootstrap-tls.log").read_text(
+    encoding="utf-8"
+):
+    raise SystemExit("Native HTTPS bootstrap acceptance missing")
 cloud_log = (directory / "cloud-kanban.log").read_text(encoding="utf-8")
 for required in ["RAMPI_RUST_CLOUD_KANBAN_TLS_KEYRING_OK", "RAMPI_RUST_CLOUD_KANBAN_PAGE_OK"]:
     if required not in cloud_log:

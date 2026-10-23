@@ -2,8 +2,12 @@
 
 Zielsystem ist Raspberry Pi OS Lite Trixie ARM64 auf dem Pi 3 B+.
 Der Installer verwendet ein vorab gebautes ARM64-Programm; er kompiliert nicht
-auf dem Gerät. Die bisherige Release-Bootstrap-Datei liefert noch kein reguläres
-natives Release. Verwende bis zur Freigabe einen nachgewiesenen Entwicklungsbau.
+auf dem Gerät. Es gibt noch kein reguläres natives Release. Verwende bis zur Freigabe einen
+nachgewiesenen Entwicklungsbau. Das CI-Artefakt `native-installer-arm64` enthält
+Quellarchiv, ARM64-Paket, Installer und Prüfsummen für denselben Stand.
+Das einzelne veröffentlichte `setup.sh` lädt künftig beide passenden Archive über
+HTTPS, prüft jede SHA256-Summe und gleicht Quellrevision und Binary ab, bevor der
+Installer läuft. Es installiert niemals selbstständig zu einem späteren Zeitpunkt.
 
 ## Installation aus einem geprüften Checkout
 

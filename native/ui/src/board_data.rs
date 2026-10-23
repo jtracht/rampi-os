@@ -182,7 +182,12 @@ async fn fresh(settings: &Settings) -> Result<Board> {
             .await
             .map_err(|_| anyhow::anyhow!("Kanban-Datei konnte nicht geladen werden"))??
     } else {
-        let token = crate::secret_service::load(&settings.board_token_key).await?;
+        let token = crate::secret_service::load(
+            &settings.board_token_key,
+            &settings.board_kind,
+            &settings.board_source,
+        )
+        .await?;
         let mut connector = Connector::new(&settings.board_kind, &settings.board_source, token)?;
         loop {
             let response = request(connector.request()?).await?;

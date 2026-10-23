@@ -144,6 +144,14 @@ def acceptance(options):
             require(result)
             stages = [
                 (
+                    "bootstrap-tls.log",
+                    base
+                    + frozen
+                    + guarded
+                    + budget
+                    + [options.image, "python3", "tests/rust/test-bootstrap.py"],
+                ),
+                (
                     "cloud-kanban.log",
                     base
                     + frozen
