@@ -28,6 +28,12 @@ their lazy compatibility sockets. No Xorg/Xwayland process is required or launch
 
 New required markers: `RAMPI_RUST_BROWSER_MODERN_INPUT_FULLSCREEN_OK`,
 `RAMPI_RUST_BROWSER_PROFILE_RESTART_OK`, `RAMPI_RUST_BROWSER_OTHER_ACCOUNT_EMPTY_OK`.
-The existing evidence checker now requires these in addition to upload/download
-markers. Full native regression and both CI architectures remain required before
-the browser milestone can be accepted.
+The existing evidence checker requires these in addition to upload/download
+markers. Full native regression passed on AMD64 and ARM64 in
+[native run 40023113975](https://github.com/jtracht/rampi-os/actions/runs/40023113975).
+[General CI 40023114019](https://github.com/jtracht/rampi-os/actions/runs/40023114019)
+also passed. The downloaded artifacts were independently checked with
+`check-native-evidence.py` on both architectures and `--require-installer` on ARM64;
+the installer archives passed all seven checksum checks. Accepted head:
+`196b9300f76a552cd0bd9090fc0ff5d66dc292af`, merged in PR #24 as `fc965e7`.
+Browser moves from four to five points; the total moves from 76 to 77.
