@@ -29,3 +29,5 @@ button.settings-category { background: transparent; border-radius: 12px; padding
 button.settings-category:hover, button.settings-category:focus { background: #12538a; }
 button.settings-category:active { background: #2177b8; }
 button.settings-category:focus .status, button.settings-category:hover .status { color: #edf3fa; }
+listview.upload-files, listview.upload-files row { background: #101e28; color: #edf3fa; }
+listview.upload-files row:selected { background: #12538a; }

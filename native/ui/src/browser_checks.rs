@@ -14,6 +14,222 @@ async fn wait_title(web: &webkit6::WebView, title: &str) -> anyhow::Result<()> {
     }
     anyhow::bail!("Trusted HTTPS page did not load: {title}")
 }
+async fn uploads(
+    app: &gtk::Application,
+    stack: &gtk::Stack,
+    web: &webkit6::WebView,
+) -> anyhow::Result<()> {
+    use crate::checks::{find_button, named};
+    web.load_uri("https://localhost:22225/uploads");
+    wait_title(web, "Rampi upload fixture").await?;
+    let keyboard = gtk::gio::Subprocess::newv(
+        &["wtype".as_ref(), "-s".as_ref(), "45000".as_ref()],
+        gtk::gio::SubprocessFlags::STDOUT_SILENCE | gtk::gio::SubprocessFlags::STDERR_SILENCE,
+    )?;
+    glib::timeout_future(std::time::Duration::from_millis(200)).await;
+    let directory = tempfile::tempdir()?;
+    let file = directory.path().join("consented.txt");
+    std::fs::write(&file, "Rampi consented upload\n")?;
+    for cancel in [true, false] {
+        web.grab_focus();
+        web.evaluate_javascript_future("document.getElementById('single').focus()", None, None)
+            .await?;
+        ensure!(
+            crate::process::output("wtype", &["-k".into(), "Return".into()], 5, 32768)
+                .await?
+                .0
+        );
+        for _ in 0..200 {
+            if stack.visible_child_name().as_deref() == Some("browser-upload") {
+                break;
+            }
+            glib::timeout_future(std::time::Duration::from_millis(20)).await;
+        }
+        ensure!(
+            stack.visible_child_name().as_deref() == Some("browser-upload"),
+            "Actual file input did not open the inline chooser"
+        );
+        let page = stack.visible_child().unwrap();
+        let location = named(&page, "browser-upload-folder")
+            .unwrap()
+            .downcast::<gtk::Entry>()
+            .unwrap();
+        location.set_text(&directory.path().to_string_lossy());
+        location.emit_activate();
+        let list = named(&page, "browser-upload-files")
+            .context("No embedded GTK file list")?
+            .downcast::<gtk::ListView>()
+            .unwrap();
+        let model = list.model().unwrap();
+        ensure!(model.is::<gtk::SingleSelection>());
+        find_button(&page, "Auswählen").unwrap().emit_clicked();
+        ensure!(
+            stack.visible_child_name().as_deref() == Some("browser-upload"),
+            "An empty selection was accepted"
+        );
+        for _ in 0..100 {
+            if model.n_items() == 1 {
+                break;
+            }
+            glib::timeout_future(std::time::Duration::from_millis(20)).await;
+        }
+        ensure!(
+            model.n_items() == 1,
+            "GTK did not enumerate the actual file"
+        );
+        model.select_item(0, true);
+        let count = web
+            .evaluate_javascript_future(
+                "document.getElementById('single').files.length",
+                None,
+                None,
+            )
+            .await?;
+        ensure!(count.to_int32() == 0, "File exposed before consent");
+        if cancel {
+            // Leaving the page through the global route must cancel its pending request.
+            stack.set_visible_child_name("dashboard");
+            glib::timeout_future(std::time::Duration::from_millis(200)).await;
+            stack.set_visible_child_name("browser");
+        } else {
+            find_button(&page, "Auswählen").unwrap().grab_focus();
+            ensure!(
+                crate::process::output("wtype", &["-k".into(), "Return".into()], 5, 32768)
+                    .await?
+                    .0
+            );
+        }
+        glib::timeout_future(std::time::Duration::from_millis(200)).await;
+        let count = web
+            .evaluate_javascript_future(
+                "document.getElementById('single').files.length",
+                None,
+                None,
+            )
+            .await?;
+        ensure!(
+            count.to_int32() == i32::from(!cancel),
+            "Upload consent/cancellation mismatch"
+        );
+        ensure!(
+            app.windows().len() == 1,
+            "Upload selection opened another window"
+        );
+    }
+    web.evaluate_javascript_future("document.getElementById('single').files[0].text().then(body => fetch('/upload', {method:'POST', body})).then(response=>response.text()).then(text=>document.title=text); null", None, None).await?;
+    wait_title(web, "Rampi upload received").await?;
+    std::fs::write(directory.path().join("second.txt"), "Second consented file")?;
+    web.grab_focus();
+    web.evaluate_javascript_future("document.getElementById('multiple').focus()", None, None)
+        .await?;
+    ensure!(
+        crate::process::output("wtype", &["-k".into(), "Return".into()], 5, 32768)
+            .await?
+            .0
+    );
+    for _ in 0..200 {
+        if stack.visible_child_name().as_deref() == Some("browser-upload") {
+            break;
+        }
+        glib::timeout_future(std::time::Duration::from_millis(20)).await;
+    }
+    ensure!(stack.visible_child_name().as_deref() == Some("browser-upload"));
+    let page = stack.visible_child().unwrap();
+    let location = named(&page, "browser-upload-folder")
+        .unwrap()
+        .downcast::<gtk::Entry>()
+        .unwrap();
+    location.set_text(&directory.path().to_string_lossy());
+    location.emit_activate();
+    let list = named(&page, "browser-upload-files")
+        .unwrap()
+        .downcast::<gtk::ListView>()
+        .unwrap();
+    let model = list.model().unwrap();
+    ensure!(model.is::<gtk::MultiSelection>());
+    for _ in 0..100 {
+        if model.n_items() == 2 {
+            break;
+        }
+        glib::timeout_future(std::time::Duration::from_millis(20)).await;
+    }
+    ensure!(model.n_items() == 2, "Multiple files were not enumerated");
+    list.grab_focus();
+    ensure!(
+        crate::process::output(
+            "wtype",
+            &[
+                "-M".into(),
+                "ctrl".into(),
+                "-k".into(),
+                "a".into(),
+                "-m".into(),
+                "ctrl".into()
+            ],
+            5,
+            32768
+        )
+        .await?
+        .0
+    );
+    ensure!(
+        model.is_selected(0) && model.is_selected(1),
+        "Actual Ctrl+A did not select both files"
+    );
+    if let Ok(output) = std::env::var("RAMPI_TEST_ARTIFACTS") {
+        glib::timeout_future(std::time::Duration::from_millis(200)).await;
+        ensure!(
+            crate::process::output(
+                "grim",
+                &[format!("{output}/browser-upload.png").into()],
+                5,
+                32768
+            )
+            .await?
+            .0
+        );
+    }
+    find_button(&page, "Auswählen").unwrap().emit_clicked();
+    glib::timeout_future(std::time::Duration::from_millis(200)).await;
+    ensure!(
+        web.evaluate_javascript_future(
+            "document.getElementById('multiple').files.length",
+            None,
+            None
+        )
+        .await?
+        .to_int32()
+            == 2,
+        "Multiple files did not reach WebKit after consent"
+    );
+    // A navigation while selection is open must cancel and close the old request.
+    web.grab_focus();
+    web.evaluate_javascript_future("document.getElementById('multiple').focus()", None, None)
+        .await?;
+    ensure!(
+        crate::process::output("wtype", &["-k".into(), "Return".into()], 5, 32768)
+            .await?
+            .0
+    );
+    for _ in 0..200 {
+        if stack.visible_child_name().as_deref() == Some("browser-upload") {
+            break;
+        }
+        glib::timeout_future(std::time::Duration::from_millis(20)).await;
+    }
+    ensure!(stack.visible_child_name().as_deref() == Some("browser-upload"));
+    web.load_uri("https://localhost:22225/second");
+    wait_title(web, "Rampi HTTPS second").await?;
+    ensure!(
+        stack.visible_child_name().as_deref() == Some("browser"),
+        "Navigation left the previous site's upload request open"
+    );
+    ensure!(app.windows().len() == 1);
+    println!("RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK");
+    keyboard.force_exit();
+    let _ = keyboard.wait_future().await;
+    Ok(())
+}
 pub fn run(
     app: &gtk::Application,
     stack: &gtk::Stack,
@@ -147,6 +363,7 @@ pub fn run(
                 }
                 stack.set_visible_child_name("browser");
             }
+            uploads(&app, &stack, &web).await?;
             status.set_text("");
             web.load_uri("https://127.0.0.1:22225/start");
             for _ in 0..300 {

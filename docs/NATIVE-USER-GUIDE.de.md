@@ -165,6 +165,17 @@ nicht überschrieben und Dateien nicht automatisch geöffnet. Ohne Zielentscheid
 wird nach einer Minute abgebrochen; nach Abschluss lässt sich die Liste leeren.
 Weitere moderne Webseiten und Geräteberechtigungen bleiben zu prüfen.
 
+Beim Hochladen öffnet sich eine eigene **Dateien für die Webseite auswählen**-Seite.
+Öffne Ordner mit Enter oder einem Doppelklick; über den Ordnerpfad kannst du
+direkt wechseln. Markiere die gewünschten Dateien und bestätige **Auswählen**.
+Wenn die Webseite mehrere Dateien erlaubt, funktioniert auch Strg+A in der Liste.
+Der Dateitypfilter stammt von der Webseite; **Alle Dateitypen anzeigen** hebt ihn
+für diese Auswahl auf. Versteckte Einträge bleiben ausgeblendet.
+**Abbrechen**, Escape, Verlassen der Auswahl oder eine neue Navigation im Browser
+verwerfen die ausstehende Anfrage. Ohne ausdrückliche Bestätigung bekommt die
+Webseite keine neue Datei. Höchstens 128 lesbare lokale Dateien werden gemeinsam
+übernommen; Ordner und Spezialdateien werden abgewiesen.
+
 Remote Desktop startet den vorhandenen nativen Wayland-FreeRDP-Client; Streaming
 verwendet Moonlight mit Sunshine auf Windows. Diese grafischen Programme sind
 noch eigene Wayland-Oberflächen. Die gewünschte vollständige Integration aller
