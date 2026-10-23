@@ -413,6 +413,16 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--browser-https-check") {
         crate::browser_checks::run(app, &stack, &settings, &status, &feedback);
     }
+    for (flag, expected) in [
+        ("--browser-profile-check", true),
+        ("--browser-profile-empty-check", false),
+    ] {
+        if std::env::args().any(|a| a == flag) {
+            crate::browser_modern_checks::profile(
+                app, &stack, &settings, &status, &feedback, expected,
+            );
+        }
+    }
     if std::env::args().any(|a| a == "--rdp-ui-check") {
         crate::rdp_checks::run(app, &stack, &settings, &feedback);
     }

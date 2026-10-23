@@ -5,7 +5,7 @@ use std::{
     rc::Rc,
 };
 use webkit6::prelude::*;
-async fn wait_title(web: &webkit6::WebView, title: &str) -> anyhow::Result<()> {
+pub(crate) async fn wait_title(web: &webkit6::WebView, title: &str) -> anyhow::Result<()> {
     for _ in 0..300 {
         if web.title().as_deref() == Some(title) && !web.is_loading() {
             return Ok(());
@@ -266,6 +266,7 @@ pub fn run(
             wait_title(&web, "Rampi HTTPS start").await?;
             find_button(&browser, "→").unwrap().emit_clicked();
             wait_title(&web, "Rampi HTTPS second").await?;
+            crate::browser_modern_checks::interactive(&app, &browser, &web).await?;
             for (script, answer) in [
                 ("confirm('Confirm fixture')", "true"),
                 ("prompt('Prompt fixture','old')", "typed response"),

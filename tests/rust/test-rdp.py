@@ -64,6 +64,9 @@ def server():
     )
     Path("/etc/xrdp/startwm.sh").chmod(0o755)
     Path("/run/xrdp").mkdir(exist_ok=True)
+    # The package already supplies cert.pem. Its existence does not mean the
+    # fresh per-test certificate above has been generated and configured yet.
+    Path("/run/rampi-rdp-server-ready").touch()
     sessions = subprocess.Popen(["xrdp-sesman", "--nodaemon"])
     try:
         subprocess.run(["xrdp", "--nodaemon"], check=True)
@@ -146,10 +149,14 @@ def orchestrate(args):
             "--server",
         )
         for _ in range(100):
-            ready = run("docker", "exec", name, "test", "-f", "/etc/xrdp/cert.pem", check=False)
+            ready = run(
+                "docker", "exec", name, "test", "-f", "/run/rampi-rdp-server-ready", check=False
+            )
             if ready.returncode == 0:
                 break
             time.sleep(0.2)
+        else:
+            raise RuntimeError("RDP fixture did not finish certificate setup")
         password = secrets.token_urlsafe(24)
         run("docker", "exec", "-i", name, "chpasswd", data=f"rdpuser:{password}\n".encode())
         der = run(

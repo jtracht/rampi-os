@@ -92,7 +92,13 @@ if (
 ):
     raise SystemExit("Actual native account page and PAM check did not pass")
 browser_log = (directory / "browser-https.log").read_text(encoding="utf-8")
-for required in ["RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK", "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK"]:
+for required in [
+    "RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK",
+    "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK",
+    "RAMPI_RUST_BROWSER_MODERN_INPUT_FULLSCREEN_OK",
+    "RAMPI_RUST_BROWSER_PROFILE_RESTART_OK",
+    "RAMPI_RUST_BROWSER_OTHER_ACCOUNT_EMPTY_OK",
+]:
     if required not in browser_log:
         raise SystemExit("Actual browser acceptance missing: " + required)
 if "RAMPI_RUST_NM_CONTRACT_OK" not in (directory / "network-contract.log").read_text():
