@@ -35,6 +35,8 @@ for phase in ["startup", "hover", "focus"]:
     samples = [mask(phase + "-b")]
     if phase == "startup":
         samples += [mask("startup-" + suffix) for suffix in "cdef"]
+    if phase == "focus":
+        samples += [mask("focus-" + suffix) for suffix in "cd"]
     height, width = len(first), len(first[0])
     regions = {
         "top": (range(40, width - 40), range(0, 30)),
@@ -57,4 +59,5 @@ for name in ["host", "wifi", "bluetooth", "system", "board"]:
     image = Image.open(root / f"interaction-settings-{name}.png")
     assert image.width >= 1280 and image.height >= 720
 (root / "visual-acceptance.json").write_text(json.dumps(evidence, indent=2) + "\n")
+(root / "visual-acceptance.json").chmod(0o644)
 print("RAMPI_RUST_FOUR_EDGE_VISUAL_OK " + json.dumps(evidence, separators=(",", ":")))

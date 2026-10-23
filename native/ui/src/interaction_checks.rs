@@ -1,7 +1,7 @@
 //! Actual Wayland input and compositor screenshots, never fabricated UI images.
 use anyhow::{Context, ensure};
 use gtk::{glib, prelude::*};
-use std::{cell::RefCell, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, os::unix::fs::PermissionsExt, path::PathBuf, rc::Rc};
 use vte::prelude::*;
 async fn tool(program: &str, args: &[&str]) -> anyhow::Result<()> {
     let args = args.iter().map(|s| (*s).into()).collect::<Vec<_>>();
@@ -46,6 +46,7 @@ pub fn run(
                 async move {
                     let path = directory.join(format!("interaction-{name}.png"));
                     tool("grim", &[path.to_str().context("Capture path")?]).await?;
+                    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644))?;
                     let bounds = blue.compute_bounds(&window).context("Tile bounds missing")?;
                     records.borrow_mut().insert(name.into(), serde_json::json!({"width":window.width(),"height":window.height(),"tile":{"x":bounds.x(),"y":bounds.y(),"width":bounds.width(),"height":bounds.height()}}));
                     Ok::<(), anyhow::Error>(())
@@ -69,7 +70,9 @@ pub fn run(
             tool("wlrctl", &["pointer", "move", "10000", "10000"]).await?;
             tool("wtype", &["-k", "Right", "-s", "50", "-k", "Left"]).await?;
             delay(50).await; capture("focus-a").await?;
-            delay(240).await; capture("focus-b").await?;
+            for name in ["focus-c", "focus-d", "focus-b"] {
+                delay(90).await; capture(name).await?;
+            }
             ensure!(window.cursor().is_some_and(|c| c.name().as_deref() == Some("none")), "Keyboard did not hide cursor");
             conf.borrow_mut().reduce_motion = true;
             blue.queue_draw(); delay(300).await; capture("reduced-a").await?;
@@ -113,9 +116,11 @@ pub fn run(
             for tab in ["wifi", "bluetooth", "system", "board"] {
                 stack.set_visible_child_name("settings"); tabs.set_visible_child_name(tab); delay(170).await;
                 let path = directory.join(format!("interaction-settings-{tab}.png")); tool("grim", &[path.to_str().unwrap()]).await?;
+                std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644))?;
             }
             ensure!(app.windows().len() == 1);
             std::fs::write(directory.join("interaction-geometry.json"), serde_json::to_vec_pretty(&*records.borrow())?)?;
+            std::fs::set_permissions(directory.join("interaction-geometry.json"), std::fs::Permissions::from_mode(0o644))?;
             std::fs::remove_file(rampi_core::config::config_dir()?.join("settings.json"))?;
             tool("wlr-randr", &["--output","HEADLESS-1","--custom-mode","1280x720"]).await?;
             let _ = f;

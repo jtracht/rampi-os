@@ -259,7 +259,9 @@ pub(crate) fn confirm(
         glib::MainContext::default().spawn_local(async move {
             let result = apply(&o.name, &o.current).await;
             status_result(&stat, result);
-            s.set_visible_child_name("settings");
+            if s.visible_child_name().as_deref() == Some("display-confirm") {
+                s.set_visible_child_name("settings");
+            }
             if let Some(page) = s.child_by_name("display-confirm") {
                 s.remove(&page);
             }

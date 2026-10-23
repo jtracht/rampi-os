@@ -85,7 +85,7 @@ pub fn run(
             ensure!(find_button(&page, &format!("{} · {}", output.name, output.current)).is_some());
             // A headless output advertises one mode. Exercise confirmation and
             // rollback with that real mode, without claiming HDMI mode changes.
-            for action in ["timeout", "cancel", "accept"] {
+            for action in ["timeout", "cancel", "accept", "dashboard"] {
                 crate::system_settings::confirm(&stack, output, &output.current, &status, &f);
                 let confirm = stack
                     .child_by_name("display-confirm")
@@ -101,6 +101,7 @@ pub fn run(
                 match action {
                     "cancel" => crate::views::go_back(&stack),
                     "accept" => yes.emit_clicked(),
+                    "dashboard" => app.activate_action("dashboard", None),
                     _ => (),
                 }
                 for _ in 0..600 {
@@ -114,6 +115,15 @@ pub fn run(
                     "Display confirmation did not resolve: {action}"
                 );
                 ensure!(crate::system_settings::outputs().await?[0].current == output.current);
+                ensure!(
+                    stack.visible_child_name().as_deref()
+                        == Some(if action == "dashboard" {
+                            "dashboard"
+                        } else {
+                            "settings"
+                        }),
+                    "Rollback changed the requested destination"
+                );
                 ensure!(app.windows().len() == 1);
             }
             println!("RAMPI_RUST_SYSTEM_SETTINGS_OK");

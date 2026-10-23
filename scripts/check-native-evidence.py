@@ -33,6 +33,38 @@ markers = [
 missing = [marker for marker in markers if marker not in log]
 if missing:
     raise SystemExit("Missing native acceptance stages: " + ", ".join(missing))
+visual = json.loads((directory / "visual-acceptance.json").read_text(encoding="utf-8"))
+for phase in ["startup", "hover", "focus"]:
+    counts = visual.get(phase, {})
+    if set(counts) != {"top", "bottom", "left", "right"} or not all(
+        isinstance(value, int) and value >= 4 for value in counts.values()
+    ):
+        raise SystemExit("Missing actual four-edge contour evidence: " + phase)
+geometry = json.loads((directory / "interaction-geometry.json").read_text(encoding="utf-8"))
+captures = ["startup-" + suffix for suffix in "abcdef"] + [
+    "hover-a",
+    "hover-b",
+    "focus-a",
+    "focus-b",
+    "focus-c",
+    "focus-d",
+    "reduced-a",
+    "reduced-b",
+    "settings-host",
+    "dashboard-1600",
+]
+for capture in captures:
+    record = geometry[capture]
+    expected = (1600, 900) if capture == "dashboard-1600" else (1280, 720)
+    with (directory / f"interaction-{capture}.png").open("rb") as generated:
+        header = generated.read(24)
+    if header[:8] != b"\x89PNG\r\n\x1a\n" or len(header) != 24:
+        raise SystemExit("Missing actual interaction screenshot: " + capture)
+    if (
+        struct.unpack(">II", header[16:24]) != expected
+        or (record["width"], record["height"]) != expected
+    ):
+        raise SystemExit("Unexpected interaction screenshot dimensions: " + capture)
 account_log = (directory / "account-pam.log").read_text(encoding="utf-8")
 if (
     "RAMPI_RUST_ACCOUNT_PAM_OK" not in account_log
