@@ -103,7 +103,7 @@ jobs:
           docker cp "$container:/build/installer-licenses" artifacts/native/licenses
           docker rm "$container"
           chmod 755 artifacts/native/rampi-native
-          python3 scripts/package-native.py --binary artifacts/native/rampi-native --licenses artifacts/native/licenses --output artifacts/native
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/src" rampi-rust-dev python3 scripts/package-native.py --binary artifacts/native/rampi-native --licenses artifacts/native/licenses --output artifacts/native
           mkdir -p artifacts/release
           cp artifacts/native/rampi-linux-arm64-*.tar.xz artifacts/release/
           python3 scripts/package.py
