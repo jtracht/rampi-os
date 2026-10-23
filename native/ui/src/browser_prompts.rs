@@ -21,10 +21,12 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, status: &gtk::Label, 
     web.connect_script_dialog(move |_, dialog| {
         let p = page(&s, "Nachricht der Webseite");
         p.append(&label(dialog.message().as_deref().unwrap_or("")));
-        let input = gtk::Entry::builder()
-            .text(dialog.prompt_get_default_text().as_deref().unwrap_or(""))
-            .build();
+        let input = gtk::Entry::new();
+        if dialog.dialog_type() == webkit6::ScriptDialogType::Prompt {
+            input.set_text(dialog.prompt_get_default_text().as_deref().unwrap_or(""));
+        }
         input.set_visible(dialog.dialog_type() == webkit6::ScriptDialogType::Prompt);
+        input.set_widget_name("browser-prompt-input");
         p.append(&input);
         let no = button("Abbrechen", &feed);
         no.set_widget_name("rampi-back");

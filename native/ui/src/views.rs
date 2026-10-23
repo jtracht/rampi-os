@@ -76,6 +76,7 @@ pub fn settings(
     });
     system.append(&save);
     crate::system_settings::append(&system, stack, status, f);
+    crate::account_view::append(&system, stack, status, f);
     tabs.add_titled(&scroll(&system), Some("system"), "System");
     tabs.add_titled(&scroll(&wifi(status, f)), Some("wifi"), "WLAN");
     tabs.add_titled(
@@ -126,8 +127,11 @@ pub fn settings(
     data.append(&save);
     tabs.add_titled(&data, Some("board"), "Kanban & Browser");
     let mut child = switcher.first_child();
+    let mut tab_index = 0;
     while let Some(widget) = child {
         if let Ok(button) = widget.clone().downcast::<gtk::Button>() {
+            button.set_widget_name(&format!("settings-tab-{tab_index}"));
+            tab_index += 1;
             wire_button(&button, f);
         }
         child = widget.next_sibling();
@@ -706,12 +710,51 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
     }
     let session =
         webkit6::NetworkSession::new(directory.to_str(), directory.join("cache").to_str());
+    session.set_tls_errors_policy(webkit6::TLSErrorsPolicy::Fail);
+    crate::downloads::install(&session, stack, f);
     let web = webkit6::WebView::builder()
         .network_session(&session)
         .hexpand(true)
         .vexpand(true)
         .build();
     crate::browser_prompts::install(&web, stack, status, f);
+    web.set_widget_name("browser-webview");
+    let downloads = button("Downloads", f);
+    let s = stack.clone();
+    downloads.connect_clicked(move |_| s.set_visible_child_name("browser-downloads"));
+    bar.append(&downloads);
+    let stat = status.clone();
+    web.connect_load_failed_with_tls_errors(move |_, _, _, _| {
+        stat.set_text(
+            "HTTPS-Zertifikat konnte nicht überprüft werden. Die Verbindung wurde abgewiesen.",
+        );
+        true
+    });
+    let stat = status.clone();
+    web.connect_decide_policy(move |_, decision, kind| {
+        if matches!(
+            kind,
+            webkit6::PolicyDecisionType::NavigationAction
+                | webkit6::PolicyDecisionType::NewWindowAction
+        ) && let Some(navigation) = decision.downcast_ref::<webkit6::NavigationPolicyDecision>()
+            && let Some(uri) = navigation
+                .navigation_action()
+                .and_then(|a| a.request())
+                .and_then(|r| r.uri())
+            && rampi_core::config::validate_https(&uri).is_err()
+        {
+            decision.ignore();
+            stat.set_text("Diese Navigation wurde abgewiesen. Bitte eine HTTPS-Adresse verwenden.");
+            return true;
+        }
+        false
+    });
+    let entry = address.clone();
+    web.connect_uri_notify(move |web| {
+        if let Some(uri) = web.uri() {
+            entry.set_text(&uri);
+        }
+    });
     let w = web.clone();
     back.connect_clicked(move |_| w.go_back());
     let w = web.clone();

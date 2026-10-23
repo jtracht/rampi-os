@@ -150,6 +150,23 @@ Auf den kurzlebigen Ubuntu-24.04-GitHub-VMs wird außerdem die dortige
 für den Laufzeittest vorübergehend aufgehoben und im selben Schritt per Trap
 wiederhergestellt. Diese Einstellung wird nicht vom Rampi-Installer verändert.
 
-Die Testszene prüft lokale DOM-/JavaScript-Funktionen. Sie belegt keine erfolgreiche
-HTTPS-Verbindung, keine GPU-Leistung und keine physische HDMI-/WLAN-/Bluetooth-
-Funktion. Physische Hardwaretests bleiben gemäß Nutzerentscheidung ausgeschlossen.
+Die ursprüngliche eingebettete Testszene prüft lokale DOM-/JavaScript-Funktionen.
+Eine zusätzliche Stufe prüft jetzt einen echten vertrauenswürdigen HTTPS-Server,
+Zertifikatsfehler und Downloads. Keine dieser Stufen belegt GPU-Leistung oder
+physische HDMI-/WLAN-/Bluetooth-Funktion. Physische Hardwaretests bleiben gemäß Nutzerentscheidung ausgeschlossen.
+
+## Erweiterter nativer Stand vom 23.10.2026
+
+OpenSSH-Schlüsselerstellung und Hostvertrauen, Live-Dashboard, versteckte WLANs,
+persönliche Tastatur-/Monitor-Einstellungen, passwd/PAM-Kontoaktionen, integrierte
+WebKit-Downloads und erneute Agentregistrierung nach BlueZ-Prozesswechsel sind
+implementiert. Tatsächliche Wayland-Eingabe prüft Formular und Tab-Navigation,
+Escape im VTE und das Compositor-Kürzel ohne Weitergabe in die PTY. Compositor-PNGs
+prüfen Start/Hover/Fokus an vier unabhängigen Kanten und stillstehende reduzierte
+Bewegung. Der Startimpuls wird beim Sichtbarwerden begonnen; frühere Bildstände
+sind keine Nachweise dieser Korrektur. Der lokale Gesamtlauf besteht alle 20
+verpflichtenden Laufzeitmarker, PAM-/HTTPS-Prüfungen, Dienstverträge, echte
+WireGuard-Gegenstellen und die offizielle Tailscale-Statusprüfung unter 1 GiB.
+
+[Reproduzierbare Entwicklung](NATIVE-DEVELOPMENT.de.md),
+[Funktionsmatrix und Fehlerhilfe](NATIVE-SUPPORT.de.md), [Architektur](ARCHITECTURE.md).

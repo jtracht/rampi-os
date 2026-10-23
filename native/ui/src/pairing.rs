@@ -47,6 +47,7 @@ fn finish(
     stack: &gtk::Stack,
     id: u64,
     answer: Option<glib::Variant>,
+    cancel_display: bool,
 ) {
     if !pending.borrow().as_ref().is_some_and(|p| p.id == id) {
         return;
@@ -67,7 +68,7 @@ fn finish(
         } else {
             invocation.return_dbus_error("org.bluez.Error.Rejected", "User rejected pairing");
         }
-    } else if answer.is_none() {
+    } else if answer.is_none() && cancel_display {
         let device = p.device.clone();
         glib::MainContext::default().spawn_local(async move {
             let _ = bus::bluetooth_action("cancel-pair", &device, false).await;
@@ -75,6 +76,37 @@ fn finish(
     }
     if stack.visible_child_name().is_some_and(|n| n == "pairing") {
         stack.set_visible_child_name(&p.previous);
+    }
+}
+async fn register_owner(
+    bus: gio::DBusConnection,
+    owner: Rc<RefCell<String>>,
+    target: String,
+    status: gtk::Label,
+) {
+    // A newly owned bus name can appear before AgentManager1 is exported.
+    // Retry that startup gap, pinned to the same unique service identity.
+    for attempt in 0..5 {
+        if *owner.borrow() != target {
+            return;
+        }
+        if bus::call(
+            &bus,
+            &target,
+            "/org/bluez",
+            "org.bluez.AgentManager1",
+            "RegisterAgent",
+            Some(&(bus::path(PATH).unwrap(), "KeyboardDisplay").to_variant()),
+        )
+        .await
+        .is_ok()
+        {
+            return;
+        }
+        glib::timeout_future(std::time::Duration::from_millis(100 * (1 << attempt))).await;
+    }
+    if *owner.borrow() == target {
+        status.set_text("Bluetooth-Agent nicht verfügbar. Bluetooth-Dienst prüfen.");
     }
 }
 pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> anyhow::Result<Agent> {
@@ -105,7 +137,7 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
             if method == "Cancel" || method == "Release" {
                 let id = p.borrow().as_ref().map(|p| p.id);
                 if let Some(id) = id {
-                    finish(&p, &s, id, None);
+                    finish(&p, &s, id, None, false);
                 }
                 invocation.return_value(None);
                 return;
@@ -115,7 +147,7 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
             if p.borrow().is_some() {
                 if display {
                     let id = p.borrow().as_ref().unwrap().id;
-                    finish(&p, &s, id, Some(().to_variant()));
+                    finish(&p, &s, id, Some(().to_variant()), false);
                 } else {
                     invocation.return_dbus_error(
                         "org.bluez.Error.Rejected",
@@ -174,6 +206,18 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
             digits.set_widget_name("pairing-code");
             digits.add_css_class("brand");
             page.append(&digits);
+            if method == "DisplayPasskey" {
+                let entered = parameters.child_value(2).get::<u16>().unwrap_or(0).min(6);
+                let progress = label(&format!("{entered} / 6 Zeichen eingegeben"));
+                progress.set_widget_name("pairing-entered");
+                page.append(&progress);
+            }
+            if method == "AuthorizeService" {
+                page.append(&label(&format!(
+                    "Angefragter Dienst: {}",
+                    parameters.child_value(1).str().unwrap_or("unbekannt")
+                )));
+            }
             let input = gtk::PasswordEntry::builder()
                 .placeholder_text("PIN oder Passkey")
                 .build();
@@ -193,7 +237,7 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
             page.append(&reject);
             page.append(&accept);
             let (p1, s1) = (p.clone(), s.clone());
-            reject.connect_clicked(move |_| finish(&p1, &s1, id, None));
+            reject.connect_clicked(move |_| finish(&p1, &s1, id, None, true));
             let (p1, s1, stat) = (p.clone(), s.clone(), st.clone());
             accept.connect_clicked(move |_| {
                 let value = input.text().to_string();
@@ -221,7 +265,7 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
                 };
                 if answer.is_some() {
                     input.set_text("");
-                    finish(&p1, &s1, id, answer);
+                    finish(&p1, &s1, id, answer, false);
                 } else {
                     stat.set_text("PIN/Passkey eingeben oder die Anfrage bewusst bestätigen.");
                 }
@@ -231,11 +275,12 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
             reject.grab_focus();
             let (p1, s1) = (p.clone(), s.clone());
             glib::timeout_add_local_once(std::time::Duration::from_secs(60), move || {
-                finish(&p1, &s1, id, None)
+                finish(&p1, &s1, id, None, true)
             });
         })
         .build()?;
     let initial_owner = owner.clone();
+    let initial_status = status.clone();
     let (o, p, s, stat) = (owner, pending.clone(), stack, status);
     let subscription = bus.subscribe_to_signal(
         Some("org.freedesktop.DBus"),
@@ -251,25 +296,15 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
             *o.borrow_mut() = new.clone();
             let id = p.borrow().as_ref().map(|p| p.id);
             if let Some(id) = id {
-                finish(&p, &s, id, None);
+                finish(&p, &s, id, None, false);
             }
             if !new.is_empty() {
-                let (bus, stat) = (bus.clone(), stat.clone());
-                glib::MainContext::default().spawn_local(async move {
-                    if bus::call(
-                        &bus,
-                        "org.bluez",
-                        "/org/bluez",
-                        "org.bluez.AgentManager1",
-                        "RegisterAgent",
-                        Some(&(bus::path(PATH).unwrap(), "KeyboardDisplay").to_variant()),
-                    )
-                    .await
-                    .is_err()
-                    {
-                        stat.set_text("Bluetooth-Agent nach Dienstneustart nicht verfügbar.");
-                    }
-                });
+                glib::MainContext::default().spawn_local(register_owner(
+                    bus.clone(),
+                    o.clone(),
+                    new,
+                    stat.clone(),
+                ));
             }
         },
     );
@@ -290,17 +325,11 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
         Some(&("org.bluez",).to_variant()),
     )
     .await
+        && initial_owner.borrow().is_empty()
     {
-        *initial_owner.borrow_mut() = get.child_value(0).str().unwrap_or("").to_string();
-        let _ = bus::call(
-            &bus,
-            "org.bluez",
-            "/org/bluez",
-            "org.bluez.AgentManager1",
-            "RegisterAgent",
-            Some(&(bus::path(PATH)?, "KeyboardDisplay").to_variant()),
-        )
-        .await;
+        let target = get.child_value(0).str().unwrap_or("").to_string();
+        *initial_owner.borrow_mut() = target.clone();
+        register_owner(bus, initial_owner, target, initial_status).await;
     }
     Ok(agent)
 }

@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 import runpy
 import time
 import uuid
@@ -12,7 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 run = runpy.run_path(str(ROOT / "scripts/test-wireguard.py"))["run"]
 
 
-def integration(image):
+def integration(image, build_volume="rampi-rust-build"):
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", build_volume):
+        raise ValueError("Invalid Docker build volume name")
     suffix = uuid.uuid4().hex[:12]
     network = ""
     peers = []
@@ -49,7 +52,7 @@ def integration(image):
                 "--mount",
                 f"type=bind,source={ROOT},target=/src,readonly",
                 "--mount",
-                "type=volume,source=rampi-rust-build,target=/build,readonly",
+                f"type=volume,source={build_volume},target=/build,readonly",
                 "-e",
                 "RAMPI_TEST_CONTAINER=1",
                 image,
@@ -225,4 +228,6 @@ def integration(image):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", default="rampi-rust-dev")
-    integration(parser.parse_args().image)
+    parser.add_argument("--build-volume", default="rampi-rust-build")
+    options = parser.parse_args()
+    integration(options.image, options.build_volume)

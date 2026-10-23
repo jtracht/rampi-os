@@ -16,6 +16,27 @@ pub fn edges(seconds: f64, selected: bool, impulse_age: Option<f64>, reduced: bo
         -pulse * 0.93 + idle * (phase * 3.0 + 0.6).cos(),
     ]
 }
+/// Independent control points for top/right/bottom/left; no mirrored edge pairs.
+pub fn shape(
+    seconds: f64,
+    selected: bool,
+    impulse_age: Option<f64>,
+    reduced: bool,
+) -> [[f64; 2]; 4] {
+    let first = edges(seconds, selected, impulse_age, reduced);
+    let second = edges(
+        seconds + 0.37,
+        selected,
+        impulse_age.map(|age| age * 1.17),
+        reduced,
+    );
+    [
+        [first[0], second[2] * 0.83],
+        [first[1], second[3] * 0.91],
+        [first[2], second[0] * 0.72],
+        [first[3], second[1] * 1.09],
+    ]
+}
 #[cfg(test)]
 mod tests {
     use super::*;

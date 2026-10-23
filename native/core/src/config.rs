@@ -207,6 +207,9 @@ impl Settings {
     }
     pub fn save(&self, path: &Path) -> Result<()> {
         self.validate()?;
+        if path.try_exists()? {
+            Self::load(path).context("Vorhandene Konfiguration ist fehlerhaft. Datei zuerst sichern und korrigieren; sie wurde nicht überschrieben")?;
+        }
         let dir = path.parent().context("Konfigurationsordner fehlt")?;
         fs::create_dir_all(dir)?;
         #[cfg(unix)]
@@ -283,6 +286,15 @@ mod tests {
                 0o600
             );
         }
+    }
+    #[test]
+    fn malformed_existing_configuration_is_preserved() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        let original = b"{broken personal configuration";
+        fs::write(&path, original).unwrap();
+        assert!(Settings::default().save(&path).is_err());
+        assert_eq!(fs::read(path).unwrap(), original);
     }
 
     #[test]

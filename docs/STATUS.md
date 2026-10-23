@@ -1,9 +1,15 @@
 > **Architekturwechsel am 21.10.2026:** Die Anwendung wird auf Rust/GTK 4/Wayland
-> portiert. Aktueller Gesamtstand nach neuem Maßstab: ca. 60 %; Rust-Port ca. 58 %.
+> portiert. Aktueller Gesamtstand nach neuem Maßstab: ca. 70 %; Rust-Port ca. 68 %.
 > Die nachfolgenden Angaben zum Python-/QML-Prototyp sind historische Nachweise.
-> Aktueller Umfang und offene Arbeiten: [Rust-Migration](RUST-MIGRATION.md).
+> Aktueller Umfang und offene Arbeiten: [native Funktionsmatrix](NATIVE-SUPPORT.de.md),
+> [Rust-Migration](RUST-MIGRATION.md), [Fortschrittsmaßstab](PROGRESS.md).
+>
+> Aktuell hinzugekommen: OpenSSH-Schlüsselerstellung und bewusstes Hostvertrauen,
+> Live-Dashboard, versteckte WLANs, persönliche Tastatur-/Monitor-Einstellungen,
+> passwd/PAM-Kontoaktionen, HTTPS-Downloads, Bluetooth-Neustarts und echte
+> Wayland-Eingabe-/Vierkanten-Bildprüfungen. Reguläre Releases bleiben gesperrt.
 
-# Implementierungs- und Abnahmestand
+# Historischer Implementierungs- und Abnahmestand
 
 Stand: 20. Oktober 2026. Physische Hardwaretests sind auf Nutzerwunsch durch
 [Softwareabnahme](VALIDATION-SCOPE.md) ersetzt.

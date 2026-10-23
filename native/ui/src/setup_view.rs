@@ -27,7 +27,7 @@ const STEPS: [(&str, &str, &str); 15] = [
     ),
     (
         "Linux-Konto",
-        "Dein vorhandenes Linux-Konto und die PAM-Anmeldung bestimmen deine Rechte. Eine grafische Kontenverwaltung ist noch nicht portiert.",
+        "Dein vorhandenes Linux-Konto und die PAM-Anmeldung bestimmen deine Rechte. Unter System kannst du dein Kennwort im eingebetteten Systemterminal ändern und dich abmelden. Die Verwaltung weiterer Konten ist noch nicht portiert.",
         "system",
     ),
     (

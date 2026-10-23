@@ -1,7 +1,13 @@
 #[cfg(target_os = "linux")]
+mod account_checks;
+#[cfg(target_os = "linux")]
+mod account_view;
+#[cfg(target_os = "linux")]
 mod audio;
 #[cfg(target_os = "linux")]
 mod board_view;
+#[cfg(target_os = "linux")]
+mod browser_checks;
 #[cfg(target_os = "linux")]
 mod browser_prompts;
 #[cfg(target_os = "linux")]
@@ -11,11 +17,17 @@ mod checks;
 #[cfg(target_os = "linux")]
 mod dashboard_status;
 #[cfg(target_os = "linux")]
+mod downloads;
+#[cfg(target_os = "linux")]
 mod host_view;
+#[cfg(target_os = "linux")]
+mod interaction_checks;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
 mod pairing;
+#[cfg(target_os = "linux")]
+mod pairing_checks;
 #[cfg(target_os = "linux")]
 mod performance;
 #[cfg(target_os = "linux")]

@@ -109,10 +109,15 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     header.append(&wifi);
     header.append(&bluetooth);
     let vpn = button("VPN · ungeprüft", &feedback);
+    if let Some(label) = vpn.child().and_downcast::<gtk::Label>() {
+        label.set_max_width_chars(17);
+        label.set_wrap(true);
+    }
     vpn.set_widget_name("dashboard-vpn");
     header.append(&vpn);
     let clock = label("");
     clock.set_widget_name("dashboard-clock");
+    clock.add_css_class("clock");
     header.append(&clock);
     dashboard.append(&header);
     let modules = [
@@ -219,6 +224,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
             host
         };
         let panel = column();
+        panel.set_spacing(8);
         panel.add_css_class("panel");
         panel.set_hexpand(true);
         panel.set_vexpand(true);
@@ -228,6 +234,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         heading.add_css_class("preview-title");
         panel.append(&heading);
         let detail = label(&text);
+        detail.set_wrap(false);
         detail.set_max_width_chars(25);
         detail.set_lines(2);
         detail.set_ellipsize(gtk::pango::EllipsizeMode::End);
@@ -320,16 +327,20 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     keys.set_propagation_phase(gtk::PropagationPhase::Capture);
     let (s, buttons, weak) = (stack.clone(), tile_buttons.clone(), window.downgrade());
     keys.connect_key_pressed(move |_, key, _, mods| {
-        if (key == gdk::Key::Escape
+        if let Some(w) = weak.upgrade() {
+            w.set_cursor_from_name(Some("none"));
+        }
+        let page = s.visible_child_name();
+        let owns_escape = page
+            .as_deref()
+            .is_some_and(|name| name.starts_with("terminal-") || name == "browser");
+        if ((key == gdk::Key::Escape && !owns_escape)
             || (key == gdk::Key::Home
                 && mods.contains(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::ALT_MASK)))
             && s.visible_child_name().is_some_and(|n| n != "dashboard")
         {
             views::go_back(&s);
             return glib::Propagation::Stop;
-        }
-        if let Some(w) = weak.upgrade() {
-            w.set_cursor_from_name(Some("none"));
         }
         if s.visible_child_name().is_some_and(|n| n == "dashboard")
             && [gdk::Key::Left, gdk::Key::Right].contains(&key)
@@ -393,8 +404,17 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--system-ui-check") {
         crate::system_checks::run(app, &stack, &tabs, &status, &feedback);
     }
+    if std::env::args().any(|a| a == "--account-ui-check") {
+        crate::account_checks::run(app, &stack, &tabs);
+    }
+    if std::env::args().any(|a| a == "--browser-https-check") {
+        crate::browser_checks::run(app, &stack, &settings, &status, &feedback);
+    }
     if std::env::args().any(|a| a == "--keyboard-test") {
         crate::checks::keyboard(app, &stack);
+    }
+    if std::env::args().any(|a| a == "--interaction-check") {
+        crate::interaction_checks::run(app, &window, &stack, &tabs, &settings, &feedback);
     }
     if std::env::args().any(|a| a == "--bluetooth-ui-check") {
         crate::checks::bluetooth(app, &stack, &tabs);

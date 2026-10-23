@@ -732,6 +732,7 @@ pub fn pairing(app: &gtk::Application, stack: &gtk::Stack) {
                         && stack.visible_child_name().as_deref() != Some("pairing")
                 );
             }
+            crate::pairing_checks::extended(&bus, &stack).await?;
             println!("RAMPI_RUST_PAIRING_AGENT_OK");
             Ok(())
         }

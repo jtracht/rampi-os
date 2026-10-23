@@ -84,6 +84,9 @@ pub fn install(
     clock: &gtk::Label,
     previews: &[gtk::Label],
 ) {
+    if let Ok(now) = glib::DateTime::now_local() {
+        clock.set_text(now.format("%H:%M").as_deref().unwrap_or(""));
+    }
     let weak = clock.downgrade();
     glib::timeout_add_seconds_local(1, move || {
         let Some(clock) = weak.upgrade() else {

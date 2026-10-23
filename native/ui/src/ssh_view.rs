@@ -78,6 +78,7 @@ pub fn build(
         status_result(&stat, result);
     });
     let (s, c, stat, feed) = (stack.clone(), conf.clone(), status.clone(), f.clone());
+    let source_page = page.downgrade();
     scan.connect_clicked(move |button| {
         let host = match c.borrow().host() {
             Ok(h) => h.clone(),
@@ -87,10 +88,26 @@ pub fn build(
             }
         };
         button.set_sensitive(false);
-        let (s, stat, f, button) = (s.clone(), stat.clone(), feed.clone(), button.clone());
+        let (s, stat, f, button, page, current) = (
+            s.clone(),
+            stat.clone(),
+            feed.clone(),
+            button.clone(),
+            source_page.clone(),
+            c.clone(),
+        );
         glib::MainContext::default().spawn_local(async move {
             match crate::ssh_setup::scan(host).await {
-                Ok(scanned) => confirmation(&s, scanned, &stat, &f),
+                Ok(scanned) => {
+                    let same = current.borrow().host().is_ok_and(|h| {
+                        h.address == scanned.host.address
+                            && h.port == scanned.host.port
+                            && h.username == scanned.host.username
+                    });
+                    if same && page.upgrade().is_some_and(|p| p.is_mapped()) {
+                        confirmation(&s, scanned, &stat, &f);
+                    }
+                }
                 Err(e) => stat.set_text(&e.to_string()),
             }
             button.set_sensitive(true);
@@ -153,7 +170,9 @@ fn confirmation(
                     stat.set_text(
                         "Geprüfter Hostschlüssel in der persönlichen OpenSSH-Datei gespeichert.",
                     );
-                    s.set_visible_child_name("settings");
+                    if s.visible_child_name().as_deref() == Some("ssh-trust") {
+                        s.set_visible_child_name("settings");
+                    }
                 }
                 Err(e) => {
                     stat.set_text(&e.to_string());

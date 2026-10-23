@@ -8,6 +8,7 @@ button.tile { background: transparent; padding: 0; border: none; outline: none; 
 .light-ink { color: white; }
 .dark-ink { color: #101820; }
 .brand { font-size: 58px; font-weight: 800; letter-spacing: -2px; }
+.clock { font-size: 25px; font-weight: 700; }
 .heading { font-size: 24px; font-weight: 700; }
 .preview-title { font-weight: 700; }
 .panel { background: #101e28; border-radius: 18px; padding: 22px; }

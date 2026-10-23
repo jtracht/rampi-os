@@ -6,8 +6,12 @@ Ersatzumfang: [VALIDATION-SCOPE.md](VALIDATION-SCOPE.md).
 Die aktuelle native Softwareabnahme ist unter
 [Rust-/Wayland-Abnahme](validation/rust-native-2026-10-23.md) und
 [Rust-Image/QEMU](validation/rust-image-2026-10-23.md) dokumentiert.
-Sie umfasst zwölf Rust-Core-Tests, tatsächliche GTK-/Wayland-Abläufe,
+Sie umfasst 13 Rust-Core-Tests, tatsächliche GTK-/Wayland-Abläufe,
 Dienst-/Protokollprüfungen, 600 Seitenwechsel unter 1 GiB und den ARM64-Installer.
+Neue Prüfungen ergänzen echten OpenSSH-Schlüsselaustausch, passwd/PAM,
+vertrauenswürdiges lokales HTTPS mit WebKit-Downloads, Bluetooth-Prozessneustarts,
+reale Wayland-Eingabe und gemessene Vierkanten-Konturen aus Compositor-PNGs.
+Der wiederholbare Gesamtlauf steht unter [nativer Entwicklung](NATIVE-DEVELOPMENT.de.md).
 Die folgenden Prototyp-Nachweise bleiben historisch; die Python-Regressionssuite
 enthält inzwischen 87 Tests und ersetzt keine Rust-Abnahme.
 

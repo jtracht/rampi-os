@@ -27,7 +27,9 @@ Pfeil links/rechts wechselt zwischen den sechs Hauptkacheln, Enter öffnet das
 Modul. Tab bewegt den Fokus zwischen Bedienelementen. Escape führt von einer
 Bestätigungsseite zurück beziehungsweise zum Dashboard; aus einem während der
 Einrichtung geöffneten Einstellungsbereich geht es zurück zur Einrichtung.
-Strg+Alt+Pos1 ist für die Rückkehr zu Rampi reserviert.
+Strg+Alt+Pos1 ist für die Rückkehr zu Rampi reserviert und wird nicht an die
+Terminal-PTY weitergegeben. Im Terminal und Browser bleibt Escape für deren eigene
+Bedienung verfügbar; verwende dort Strg+Alt+Pos1 für das Dashboard.
 
 WLAN und Bluetooth erscheinen jeweils einmal oben im Dashboard. Ein Klick führt
 zum zugehörigen Tab. Suche, Kennworteingabe, Kopplung und Bestätigungen bleiben
@@ -36,6 +38,10 @@ Mauszeiger; Mausbewegung zeigt ihn wieder.
 
 Unter **System** kannst du Bewegung reduzieren und Klickklänge abschalten.
 Speichere die persönlichen Einstellungen mit der entsprechenden Schaltfläche.
+Unter **Eigenes Linux-Kennwort ändern** fragt das offizielle passwd im eingebetteten
+Terminal nach altem und neuem Kennwort. Rampi speichert diese Eingaben nicht.
+**Von Rampi abmelden** öffnet eine Bestätigungsseite. Lokale Anwendungen und
+Verbindungen werden geschlossen; persistente Windows-Prozesse laufen weiter.
 Die Klangwiedergabe verwendet den vorhandenen Pulse-kompatiblen Audiodienst.
 
 Im selben Tab eine persönliche Tastaturbelegung wählen und anwenden. Andere
@@ -100,7 +106,8 @@ Im Bluetooth-Tab wählst du Adapter und Gerät, startest die Suche und koppelst.
 Die Suche wird beim Verlassen der Seite freigegeben. Ein Codevergleich verlangt
 eine bewusste Bestätigung. PIN und Passkey werden verdeckt eingegeben und nach
 Bestätigung oder Abbruch geleert. Vertrauen und entfernte Kopplungen wirken
-geräteweit; beachte die Bestätigungsseite.
+geräteweit; beachte die Bestätigungsseite. Bei einem Dienstneustart verwirft Rampi
+alte Kopplungsanfragen samt Eingaben und meldet seinen Agenten erneut an.
 
 Die bisherigen Rust-Prüfungen verwenden isolierte D-Bus-Testdienste. Sie belegen
 Bedienabläufe und Schnittstellen, keine tatsächliche Funkkopplung.
@@ -130,8 +137,12 @@ Cache sind im Rust-Port noch nicht vollständig verfügbar.
 
 Der Browser verwendet WebKitGTK mit persönlichem Profil. Er unterstützt
 Adresszeile, zurück, vorwärts und neu laden. Unterstützte Webseitenabfragen
-erscheinen als Rampi-Seite. Downloads und weitere Browserabläufe sind noch nicht
-vollständig portiert und abgenommen.
+erscheinen als Rampi-Seite. HTTPS-Zertifikatsfehler werden abgewiesen. Navigationen verwenden HTTPS.
+**Downloads** öffnet die integrierte Liste. Prüfe den vollständigen Zielpfad und
+wähle **Download speichern** oder **Download abbrechen**. Vorhandene Dateien werden
+nicht überschrieben und Dateien nicht automatisch geöffnet. Ohne Zielentscheidung
+wird nach einer Minute abgebrochen; nach Abschluss lässt sich die Liste leeren.
+Weitere moderne Webseiten und Geräteberechtigungen bleiben zu prüfen.
 
 Remote Desktop startet den vorhandenen nativen Wayland-FreeRDP-Client; Streaming
 verwendet Moonlight mit Sunshine auf Windows. Diese grafischen Programme sind

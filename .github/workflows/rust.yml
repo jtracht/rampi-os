@@ -50,6 +50,18 @@ jobs:
         run: |
           set -euo pipefail
           docker run --rm --network none --user 1000:1000 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-services.py | tee artifacts/rust/network-contract.log
+      - name: Actual unprivileged passwd, PAM and account isolation
+        run: |
+          set -euo pipefail
+          docker run --rm --network none --memory=1g --memory-swap=1g -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-accounts.py 2>&1 | tee artifacts/rust/account-pam.log
+      - name: Actual trusted HTTPS and integrated WebKit downloads
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          namespace_policy=$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)
+          trap 'sudo sysctl -w "kernel.apparmor_restrict_unprivileged_userns=$namespace_policy"' EXIT
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          docker run --rm --network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined --security-opt systempaths=unconfined --memory=1g --memory-swap=1g -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-browser.py 2>&1 | tee artifacts/rust/browser-https.log
       - name: Rust GIO Bluetooth contract and discovery cleanup (no radio)
         run: |
           set -euo pipefail

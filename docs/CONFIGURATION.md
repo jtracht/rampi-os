@@ -1,5 +1,43 @@
 # Persönliche Konfiguration
 
+## Aktuelle native Rust-Anwendung
+
+Die folgende gemeinsame Einstellungstabelle wird vom Rust-Core validiert.
+`setup_step` ist zusätzlich eine Zahl von 0 bis 14, Standard 0;
+`sound_effects` ist ein boolescher Wert, Standard true. `language` ist vorgesehen,
+die Oberfläche gegenwärtig deutsch. Höchstens 64 Hosts sind zulässig.
+Eine Konfiguration über 1 MiB wird abgewiesen. Fehlerhafte bestehende Dateien
+werden auch beim Speichern nicht durch Standardwerte überschrieben; zuerst
+privat sichern und korrigieren.
+
+Im Rust-Port ist aktuell ausschließlich `board_kind=json` nutzbar. Die übrigen
+Enumwerte bleiben zur Schema-Kompatibilität erkannt, sind keine Zusage verfügbarer
+Cloud-Connectoren oder einer nativen Tokenoberfläche. Eine lokale Kanban-Datei
+darf höchstens 5 MiB und 10.000 Karten enthalten. Spalten stehen im nativen
+Formular durch Komma getrennt; zusätzliche Statuswerte bleiben sichtbar.
+
+Native persönliche Pfade:
+
+| Pfad | Inhalt und Zuständigkeit |
+|---|---|
+| `$XDG_CONFIG_HOME/rampi/settings.json` | Atomare Einstellungen; sonst `~/.config/rampi/settings.json` |
+| `~/.ssh/rampi_ed25519` und `.pub` | Mit OpenSSH erzeugtes Schlüsselpaar; privater Schlüssel mit gewählter Passphrase |
+| `~/.ssh/known_hosts` | Unabhängig geprüfte, mit OpenSSH eingelesene Hostschlüssel; vorhandene Einträge bleiben erhalten |
+| `$XDG_CONFIG_HOME/rampi/labwc/environment` | Persönliche `XKB_DEFAULT_LAYOUT`-Zeile; fremde Zeilen bleiben erhalten |
+| `$XDG_CONFIG_HOME/rampi/browser-native/` | Persönliche WebKit-Daten; `cache/` darunter |
+| Expliziter Download-Zielpfad | Vom Benutzer bestätigte Datei; kein automatisches Öffnen oder Überschreiben |
+
+WLAN-/WireGuard-Geheimnisse verwaltet NetworkManager mit seinen vorhandenen
+Mechanismen. Linux-Kennwörter gehören PAM/passwd, Anbieteranmeldungen den
+offiziellen Windows-CLIs. Keine dieser Zugangsdaten gehört in `settings.json`.
+Bildschirmänderungen gelten gegenwärtig bis zur Abmeldung und werden nicht als
+dauerhafte Firmware- oder Bootkonfiguration gespeichert.
+
+[Native Bedienung](NATIVE-USER-GUIDE.de.md), [Architektur](ARCHITECTURE.md),
+[Fehlerhilfe](NATIVE-SUPPORT.de.md).
+
+## Gemeinsames Schema
+
 Datei: `$XDG_CONFIG_HOME/rampi/settings.json`, sonst `~/.config/rampi/settings.json`.
 Atomare Ersetzung; Linux-Verzeichnis 0700 und Datei 0600. Fehlerhafte Dateien
 werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
@@ -23,6 +61,11 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 | board_token_key | string / leer | persönlicher Secret-Service-Profilname; niemals der Token selbst |
 | board_columns | string[] / [] | persönliche Spaltenreihenfolge; leer übernimmt Quelle; höchstens 32 eindeutige, nicht leere Namen mit je 1–80 Zeichen |
 | reduce_motion | bool / false | schaltet die Kachelverformung aus |
+
+## Historische Prototyp-Funktionen
+
+Die folgenden Connector-, Secret-Service-, Cache- und Streamingpfade beschreiben
+den Python-/QML-Prototyp; sie sind nicht automatisch auf die Rust-Oberfläche portiert.
 
 Zugangsdaten können unter Einstellungen → Kanban im persönlichen Secret Service
 gespeichert werden. Der Profilname wird in der Konfiguration gespeichert, der

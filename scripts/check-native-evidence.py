@@ -20,6 +20,9 @@ markers = [
     "RAMPI_RUST_WEBKIT_DOM_JS_OK",
     "RAMPI_RUST_BLUEZ_PAGE_OK",
     "RAMPI_RUST_PAIRING_AGENT_OK",
+    "RAMPI_RUST_PAIRING_RESTART_OK",
+    "RAMPI_RUST_INTERACTION_KEYBOARD_OK",
+    "RAMPI_RUST_FOUR_EDGE_VISUAL_OK",
     "RAMPI_RUST_KANBAN_PAGE_OK",
     "RAMPI_RUST_VPN_PAGE_OK",
     "RAMPI_RUST_TAILSCALE_PAGE_OK",
@@ -30,6 +33,16 @@ markers = [
 missing = [marker for marker in markers if marker not in log]
 if missing:
     raise SystemExit("Missing native acceptance stages: " + ", ".join(missing))
+account_log = (directory / "account-pam.log").read_text(encoding="utf-8")
+if (
+    "RAMPI_RUST_ACCOUNT_PAM_OK" not in account_log
+    or "RAMPI_RUST_ACCOUNT_PAGE_OK" not in account_log
+):
+    raise SystemExit("Actual native account page and PAM check did not pass")
+if "RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK" not in (directory / "browser-https.log").read_text(
+    encoding="utf-8"
+):
+    raise SystemExit("Actual browser HTTPS and download acceptance did not pass")
 if "RAMPI_RUST_NM_CONTRACT_OK" not in (directory / "network-contract.log").read_text():
     raise SystemExit("Rust/GIO NetworkManager contract did not pass")
 if "RAMPI_RUST_BLUEZ_CONTRACT_OK" not in (directory / "bluetooth-contract.log").read_text():
@@ -55,9 +68,9 @@ if (
 ):
     raise SystemExit("Sustained software performance budget did not pass")
 if "--require-installer" in sys.argv[2:]:
-    if "RAMPI_RUST_INSTALLER_LIFECYCLE_OK" not in (
-        directory / "installer-lifecycle.log"
-    ).read_text(encoding="utf-8"):
+    if "RAMPI_RUST_INSTALLER_LIFECYCLE_OK" not in (directory / "installer-lifecycle.log").read_text(
+        encoding="utf-8"
+    ):
         raise SystemExit("Actual ARM64 installer lifecycle did not pass")
 with (directory / "rust-wayland-dashboard.png").open("rb") as image:
     header = image.read(24)

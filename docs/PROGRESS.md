@@ -1,7 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 64 %**.
-Rust-Umstellung: **ca. 62 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 70 %**.
+Rust-Umstellung: **ca. 68 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
@@ -9,26 +9,26 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Bereich | Rust-Stand / 5 |
 |---|---:|
 | Grafische Sitzung und Dashboard | 4 |
-| Tastatur und Maus | 3 |
+| Tastatur und Maus | 4 |
 | Setup-Assistent | 3 |
-| Linux-Konten und Login | 2 |
+| Linux-Konten und Login | 3 |
 | WLAN | 3 |
-| Bluetooth | 3 |
+| Bluetooth | 4 |
 | VPN | 3 |
 | Windows-Host und Persistenz | 4 |
 | Anbieter-CLIs | 3 |
 | Remote Desktop und Streaming | 2 |
 | Kanban | 3 |
-| Browser | 3 |
+| Browser | 4 |
 | Installer und Reparatur | 4 |
 | Sicherheit und Isolation | 4 |
-| Design und Branding | 3 |
+| Design und Branding | 4 |
 | GitHub und CI/CD | 4 |
 | Systemimage | 3 |
 | Manuelle Updates | 4 |
-| Dokumentation | 3 |
+| Dokumentation | 4 |
 | Performance | 3 |
-| **Summe** | **64 / 100** |
+| **Summe** | **70 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
@@ -81,17 +81,38 @@ Die vollständige lokale Abnahme bleibt unter dem Containerlimit von 1 GiB.
 Das ist eine Software-Baseline mit labwc/Pixman und Cairo, keine Messung auf
 einem physischen Raspberry Pi und keine längere Arbeitslast mit echten KI-/Remote-Sitzungen.
 
-Dokumentation erreicht drei Punkte durch die vollständige Anleitung für die
-gegenwärtigen nativen Bedienabläufe und die gesonderte Betriebsanleitung für
-Installation, manuelle Updates, Reparatur, Versionswechsel und Deinstallation.
-Beide benennen die noch fehlenden Funktionen ausdrücklich:
-[Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb](NATIVE-OPERATIONS.de.md).
+Dokumentation erreicht vier Punkte: Bedienung, Betrieb, native Architektur mit
+Vertrauensgrenzen, aktuelles Konfigurationsschema, Funktionsmatrix, Fehlerhilfe
+und ein wiederholbarer Docker-Gesamtlauf mit eingefrorenen Quellen sind dokumentiert.
+Historische Prototypangaben sind getrennt; jede Nachweisart nennt ihre Grenze.
+[Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb](NATIVE-OPERATIONS.de.md),
+[Entwicklung](NATIVE-DEVELOPMENT.de.md), [Umfang und Hilfe](NATIVE-SUPPORT.de.md).
 
-Bluetooth erreicht drei Punkte durch die tatsächliche Rust-Agent1-Abnahme für
-bewussten Codevergleich, PIN und Passkey, Abbruch mit gelöschter Eingabe sowie
-Abweisung fremder D-Bus-Absender. Die Prüfung verwendet einen privaten
-BlueZ-Testdienst; Funkkopplung und erneute Agentregistrierung nach einem
-Dienstneustart sind damit nicht nachgewiesen.
+Linux-Konten erreichen drei Punkte durch persönliche Kontoanzeige, tatsächliches
+passwd im VTE und bestätigte Abmeldung. Ein unprivilegierter Containerbenutzer
+ändert sein Kennwort; PAM weist danach altes und falsches Kennwort ab und akzeptiert
+das neue. Ein zweites Linux-Konto kann private Daten nicht lesen. Der vollständige
+grafische greetd-Login und die Verwaltung weiterer Konten bleiben offen.
+
+Browser erreicht vier Punkte durch tatsächliches vertrauenswürdiges HTTPS,
+Zertifikatsfehler-Abweisung, Navigation, JavaScript-Abfragen als Seiten und
+WebKit-Downloads mit Zielentscheidung, Überschreibschutz und Abbruch. Weitere
+moderne Webseiten und Berechtigungsabläufe bleiben zu prüfen.
+
+Tastatur und Design erreichen je vier Punkte: Tatsächliche Wayland-Eingaben
+prüfen Hostformular, Tab-Reihenfolge, alle Einstellungs-Tabs, Cursorwechsel und
+Escape im VTE. Das Compositor-Kürzel kehrt zum Dashboard zurück, ohne den Tastendruck
+in die PTY weiterzuleiten. Echte Compositor-PNGs belegen unterschiedliche Bewegung
+aller vier Kanten bei Start, Hover und Fokus; reduzierte Bewegung bleibt still.
+1280×720 und 1600×900 werden geprüft. Der Startimpuls beginnt erst beim Sichtbarwerden;
+Fokusverlust und reduzierte Bewegung zeichnen die Fläche korrekt neu. Die vollständige
+Windows-Remote-Eingabe und deren integrierte Ansichten bleiben offen.
+
+Bluetooth erreicht vier Punkte: Zusätzlich zu Vergleich, PIN/Passkey, Abbruch
+und fremden Absendern werden angezeigte Codes, eingegebene Stellen, Cancel/Release
+und ein wirklicher Neustart des Fixture-Prozesses geprüft. Der Agent meldet sich
+beim neuen Dienst an und verwirft alte Eingaben. Die private BlueZ-Fixture ist
+weiterhin kein Funknachweis; zusätzliche virtuelle Controller-Fälle bleiben offen.
 
 Der Rust-Assistent speichert den aktuellen Schritt, kann unterbrochen und
 fortgesetzt werden und nutzt die vorhandenen Einstellungsseiten. Die tatsächliche

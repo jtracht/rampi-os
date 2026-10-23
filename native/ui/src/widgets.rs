@@ -66,7 +66,9 @@ pub fn icon_button(text: &str, icon: &str, f: &Feedback) -> gtk::Button {
     content.set_halign(gtk::Align::Center);
     let image = icon_image(icon, 24);
     content.append(&image);
-    content.append(&label(text));
+    let text = label(text);
+    text.set_max_width_chars(18);
+    content.append(&text);
     b.set_child(Some(&content));
     b.set_valign(gtk::Align::Center);
     b
@@ -139,8 +141,8 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
     let content = column();
     content.set_halign(gtk::Align::Center);
     content.set_valign(gtk::Align::Center);
-    content.set_margin_start(28);
-    content.set_margin_end(28);
+    content.set_margin_start(12);
+    content.set_margin_end(12);
     let icon = match title {
         "Kanban Board" => "columns-3",
         "ChatGPT" => "terminal",
@@ -165,29 +167,41 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
     content.add_css_class(if dark { "dark-ink" } else { "light-ink" });
     overlay.add_overlay(&content);
     b.set_child(Some(&overlay));
-    let start = Instant::now();
+    let start = Rc::new(Cell::new(Instant::now()));
+    let first_map = Rc::new(Cell::new(true));
+    let (clock, first) = (start.clone(), first_map);
+    b.connect_map(move |_| {
+        if first.replace(false) {
+            clock.set(Instant::now());
+        }
+    });
     let pulse = Rc::new(Cell::new(-10.0));
     let selected = Rc::new(Cell::new(false));
     let settings = settings.clone();
-    let (p, s, conf) = (pulse.clone(), selected.clone(), settings.clone());
+    let (p, s, conf, clock) = (
+        pulse.clone(),
+        selected.clone(),
+        settings.clone(),
+        start.clone(),
+    );
     area.set_draw_func(move |_, cr, width, height| {
-        let t = start.elapsed().as_secs_f64();
+        let t = clock.get().elapsed().as_secs_f64();
         let impulse = if t < delay + 0.24 && t >= delay {
             Some(t - delay)
         } else {
             Some(t - p.get())
         };
-        let [a, b, c, d] = motion::edges(t, s.get(), impulse, conf.borrow().reduce_motion);
-        let (w, h, r) = (width as f64 - 36.0, height as f64 - 36.0, 28.0);
-        cr.translate(18.0, 18.0);
+        let [a, b, c, d] = motion::shape(t, s.get(), impulse, conf.borrow().reduce_motion);
+        let (w, h, r) = (width as f64 - 20.0, height as f64 - 20.0, 26.0);
+        cr.translate(10.0, 10.0);
         cr.move_to(r, 0.0);
-        cr.curve_to(w * 0.23, a, w * 0.71, b, w - r, 0.0);
+        cr.curve_to(w * 0.23, a[0], w * 0.71, a[1], w - r, 0.0);
         cr.curve_to(w, 0.0, w, 0.0, w, r);
-        cr.curve_to(w + c, h * 0.29, w + d, h * 0.73, w, h - r);
+        cr.curve_to(w + b[0], h * 0.29, w + b[1], h * 0.73, w, h - r);
         cr.curve_to(w, h, w, h, w - r, h);
-        cr.curve_to(w * 0.68, h - b, w * 0.31, h - a, r, h);
+        cr.curve_to(w * 0.68, h + c[0], w * 0.31, h + c[1], r, h);
         cr.curve_to(0.0, h, 0.0, h, 0.0, h - r);
-        cr.curve_to(-d, h * 0.64, -c, h * 0.24, 0.0, r);
+        cr.curve_to(d[0], h * 0.64, d[1], h * 0.24, 0.0, r);
         cr.curve_to(0.0, 0.0, 0.0, 0.0, r, 0.0);
         cr.close_path();
         let light = if s.get() { 1.1 } else { 1.0 };
@@ -201,13 +215,18 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
     let (p, s) = (pulse.clone(), selected.clone());
     let focus = gtk::EventControllerFocus::new();
     let draw = area.clone();
+    let clock = start.clone();
     focus.connect_enter(move |_| {
-        p.set(start.elapsed().as_secs_f64());
+        p.set(clock.get().elapsed().as_secs_f64());
         s.set(true);
         draw.queue_draw();
     });
     let s = selected.clone();
-    focus.connect_leave(move |_| s.set(false));
+    let draw = area.clone();
+    focus.connect_leave(move |_| {
+        s.set(false);
+        draw.queue_draw();
+    });
     b.add_controller(focus);
     let hover = gtk::EventControllerMotion::new();
     let weak = b.downgrade();
@@ -217,11 +236,14 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         }
     });
     b.add_controller(hover);
+    let previous_reduced = Cell::new(settings.borrow().reduce_motion);
     area.add_tick_callback(move |area, _| {
-        let t = start.elapsed().as_secs_f64();
-        if !settings.borrow().reduce_motion
-            && (selected.get() || t < delay + 0.3 || t - pulse.get() < 0.3)
-        {
+        let t = start.get().elapsed().as_secs_f64();
+        let reduced = settings.borrow().reduce_motion;
+        if previous_reduced.replace(reduced) != reduced {
+            area.queue_draw();
+        }
+        if !reduced && (selected.get() || t < delay + 0.3 || t - pulse.get() < 0.3) {
             area.queue_draw();
         }
         glib::ControlFlow::Continue

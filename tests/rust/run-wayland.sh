@@ -11,6 +11,9 @@ export GDK_BACKEND=wayland GSK_RENDERER=cairo RAMPI_ASSETS=/src/client/rampi
 export WAYLAND_DISPLAY=wayland-0 GTK_A11Y=none
 mkdir "$test_home/compositor"
 cp /src/system/labwc/rc.xml "$test_home/compositor/rc.xml"
+# The installed launcher resolves the selected release. In this container it is
+# replaced only in the temporary config by the actual development binary.
+sed -i 's@/usr/local/bin/rampi@/build/target/debug/rampi-native@g' "$test_home/compositor/rc.xml"
 mkdir -p "$XDG_CONFIG_HOME/rampi/labwc"
 labwc -C "$XDG_CONFIG_HOME/rampi/labwc" -c "$test_home/compositor/rc.xml" > "$test_home/compositor.log" 2>&1 &
 compositor_pid=$!
@@ -43,6 +46,12 @@ python3 tests/rust/test-dashboard.py
 python3 tests/rust/test-ssh-setup.py
 timeout 20 /build/target/debug/rampi-native --setup-ui-check
 timeout 40 /build/target/debug/rampi-native --system-ui-check
+if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then
+    timeout 45 /build/target/debug/rampi-native --interaction-check > "$test_home/interaction.log" 2>&1 || { cat "$test_home/interaction.log"; exit 1; }
+    cat "$test_home/interaction.log"
+    if grep -qE 'Gtk-WARNING|CRITICAL' "$test_home/interaction.log"; then exit 1; fi
+    python3 tests/rust/check-visual.py
+fi
 /build/target/debug/rampi-native --embedded-test
 python3 tests/rust/test-bluetooth.py --ui
 python3 tests/rust/test-pairing.py
