@@ -130,8 +130,15 @@ if kill -0 "$qemu_pid" 2>/dev/null; then kill "$qemu_pid"; fi
 wait "$qemu_pid"
 qemu_result=$?
 set -e
-loop="$(sudo losetup --read-only --partscan --find --show "$work/disk.img")"
+loop="$(sudo losetup --partscan --find --show "$work/disk.img")"
 sudo udevadm settle
+# The emulator is stopped after sync, while ext4 may still be mounted in the
+# guest. Replay only the disposable copy's committed journal before reading it.
+set +e
+sudo e2fsck -p "${loop}p2" > "$output/working-copy-fsck.log" 2>&1
+fsck_result=$?
+set -e
+if ((fsck_result > 1)); then cat "$output/working-copy-fsck.log"; exit 1; fi
 sudo mount -o ro "${loop}p2" "$work/root"
 sudo cp -a "$work/root/opt/rampi-captures/." "$output/captures/"
 sudo chown -R "$(id -u):$(id -g)" "$output/captures"

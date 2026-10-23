@@ -99,24 +99,36 @@ def install():
 
 
 def configure_test_session():
+    image_test = "--installed-image" in sys.argv
+    backends = "headless" if image_test else "headless,libinput"
     wrapper = Path("/usr/local/bin/rampi-login-test-session")
     wrapper.write_text(
         "#!/bin/sh\nset -eu\numask 077\n"
         'id -u > "$HOME/.rampi-login-uid"\n'
-        "export WLR_BACKENDS=headless,libinput WLR_RENDERER=pixman "
+        f"export WLR_BACKENDS={backends} WLR_RENDERER=pixman "
         "WLR_HEADLESS_OUTPUTS=1 LIBSEAT_BACKEND=logind\n"
         "exec /usr/local/bin/rampi-session\n"
     )
     wrapper.chmod(0o755)
     production = (
-        Path("/etc/greetd/config.toml")
-        if "--installed-image" in sys.argv
-        else SOURCE / "system/greetd.toml"
+        Path("/etc/greetd/config.toml") if image_test else SOURCE / "system/greetd.toml"
     ).read_text()
     production = production.replace("/usr/local/bin/rampi-session", str(wrapper))
+    if image_test:
+        # QEMU's Pi USB/logind handoff cannot provide a usable keyboard here.
+        # Use the existing Wayland virtual-keyboard tool before wlgreet starts,
+        # just as the test later uses it for real username/password input.
+        helper = Path("/usr/local/bin/rampi-image-test-greeter")
+        helper.write_text(
+            "#!/bin/sh\nwtype -s 1500000 &\nkeyboard=$!\n"
+            "trap 'kill \"$keyboard\" 2>/dev/null || true' EXIT\n"
+            'sleep 1\n/usr/sbin/wlgreet "$@"\n'
+        )
+        helper.chmod(0o755)
+        production = production.replace("/usr/sbin/wlgreet", str(helper))
     production = production.replace(
         'command = "',
-        'command = "env WLR_BACKENDS=headless,libinput WLR_RENDERER=pixman '
+        f'command = "env WLR_BACKENDS={backends} WLR_RENDERER=pixman '
         "WLR_HEADLESS_OUTPUTS=1 LIBSEAT_BACKEND=logind ",
         1,
     )

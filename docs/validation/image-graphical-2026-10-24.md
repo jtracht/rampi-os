@@ -5,6 +5,12 @@ installed Rust workstation under the QEMU `raspi3b` machine with 1 GiB and four
 virtual CPUs. It verifies actual greetd/wlgreet/PAM login, wrong-password rejection,
 two isolated Linux accounts, visible native frames and return to the greeter.
 
+The first image attempt reached the native boot probe, but QEMU's emulated Pi
+USB/logind handoff did not provide wlgreet a usable keyboard. The image test uses
+the existing `wtype` Wayland virtual keyboard before starting the real greeter,
+then sends actual login input through that same supported compositor protocol.
+The headless image test does not claim USB or physical keyboard-driver coverage.
+
 The compressed original image is checksum-verified before and after the test.
 Only a disposable decompressed copy receives official test-input packages,
 ephemeral accounts, a test service and headless compositor backend settings.
