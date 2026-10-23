@@ -6,6 +6,24 @@ use crate::{
 use anyhow::{Context, ensure};
 use gtk::{glib, prelude::*};
 use rdw::DisplayExt;
+pub(crate) async fn type_remote(text: &str) -> anyhow::Result<()> {
+    // wtype assigns physical codes in first-use order. Release-only commands
+    // declare US evdev positions before sending actual scan-code input.
+    let positions = "Escape 1 2 3 4 5 6 7 8 9 0 minus equal BackSpace Tab q w e r t y u i o p bracketleft bracketright Return Control_L a s d f g h j k l semicolon apostrophe grave Shift_L backslash z x c v b n m comma period slash Shift_R KP_Multiply Alt_L space";
+    let mut keys: Vec<std::ffi::OsString> = positions
+        .split_whitespace()
+        .flat_map(|key| ["-p".into(), key.into()])
+        .collect();
+    for key in text.chars() {
+        keys.extend(["-k".into(), key.to_string().into()]);
+    }
+    keys.extend(["-k".into(), "Return".into()]);
+    ensure!(
+        crate::process::output("wtype", &keys, 5, 32768).await?.0,
+        "Keyboard injection failed"
+    );
+    Ok(())
+}
 async fn until(mut predicate: impl FnMut() -> bool) -> anyhow::Result<()> {
     for _ in 0..1500 {
         if predicate() {
@@ -105,24 +123,11 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedba
                     "No actual remote frame received"
                 );
                 ensure!(app.windows().len() == 1, "External RDP window opened");
-                display.grab_focus();
-                // wtype assigns physical codes in first-use order. Predeclare
-                // US evdev positions using release-only commands so this test
-                // exercises RDW's physical scan-code path, not Unicode typing.
-                let positions = "Escape 1 2 3 4 5 6 7 8 9 0 minus equal BackSpace Tab q w e r t y u i o p bracketleft bracketright Return Control_L a s d f g h j k l semicolon apostrophe grave Shift_L backslash z x c v b n m comma period slash Shift_R KP_Multiply Alt_L space";
-                let mut keys: Vec<std::ffi::OsString> = positions.split_whitespace().flat_map(|key| ["-p".into(), key.into()]).collect();
-                for key in format!("rampirdp{attempt}").chars() {
-                    keys.extend(["-k".into(), key.to_string().into()]);
+                if attempt == 0 && std::env::args().any(|a| a == "--mixed-soak-check") {
+                    crate::mixed_soak::run(&app, &stack, &settings, &feedback, &display).await?;
                 }
-                keys.extend(["-k".into(), "Return".into()]);
-                let (ok, _) = crate::process::output(
-                    "wtype",
-                    &keys,
-                    5,
-                    32768,
-                )
-                .await?;
-                ensure!(ok, "Keyboard injection failed");
+                display.grab_focus();
+                type_remote(&format!("rampirdp{attempt}")).await?;
                 glib::timeout_future(std::time::Duration::from_millis(800)).await;
                 if attempt == 0 {
                     if let Ok(directory) = std::env::var("RAMPI_TEST_ARTIFACTS") {
@@ -165,7 +170,11 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedba
                 if attempt == 0 {
                     stop.emit_clicked();
                 } else {
-                    std::fs::write(std::path::Path::new(&std::env::var("RAMPI_TEST_ARTIFACTS")?).join("rdp-disconnect-ready"), "ready")?;
+                    std::fs::write(
+                        std::path::Path::new(&std::env::var("RAMPI_TEST_ARTIFACTS")?)
+                            .join("rdp-disconnect-ready"),
+                        "ready",
+                    )?;
                 }
                 until(|| connect.is_sensitive()).await?;
                 ensure!(!display.property::<bool>("rdp-connected"));

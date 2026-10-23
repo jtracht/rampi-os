@@ -34,6 +34,8 @@ def server():
     isolated()
     run("useradd", "--create-home", "rdpuser")
     Path("/run/rampi-rdp-fixture").touch()
+    if options.soak:
+        Path("/run/rampi-rdp-soak").touch()
     Path("/run/dbus").mkdir(exist_ok=True)
     run("dbus-daemon", "--system", "--fork")
     run(
@@ -79,6 +81,17 @@ def fixture():
         raise SystemExit("Missing fixture marker")
     os.umask(0o077)
     print("RAMPI: actual TLS authenticated remote desktop", flush=True)
+    if Path("/run/rampi-rdp-soak").is_file():
+
+        def update_frames():
+            # Hide the terminal cursor: frame differences must come from remote
+            # content, not a client-side cursor blink.
+            print("\033[?25l", end="", flush=True)
+            for counter in range(4000):
+                print(f"\0337\033[3;1HActual remote frame {counter:06}\0338", end="", flush=True)
+                time.sleep(0.25)
+
+        threading.Thread(target=update_frames, daemon=True).start()
     for line in sys.stdin:
         with Path.home().joinpath(".rampi-input").open("a") as receipt:
             receipt.write(line)
@@ -87,6 +100,22 @@ def fixture():
 
 def client():
     isolated()
+    web_server = None
+    if options.soak:
+        ready = Path("/run/rampi-browser-ready")
+        ready.unlink(missing_ok=True)
+        web_server = subprocess.Popen(
+            ["python3", "/src/tests/rust/test-browser.py", "--serve-only"]
+        )
+        for _ in range(300):
+            if ready.is_file():
+                break
+            if web_server.poll() is not None:
+                raise RuntimeError("Disposable HTTPS fixture exited")
+            time.sleep(0.1)
+        else:
+            web_server.terminate()
+            raise RuntimeError("Disposable HTTPS fixture did not become ready")
     descriptor, filename = tempfile.mkstemp(prefix="rampi-rdp-")
     os.close(descriptor)
     path = Path(filename)
@@ -99,7 +128,11 @@ def client():
         .read_text()
         .split("bash tests/rust/test-first-run.sh")[0]
     )
-    prefix += "\ntimeout 110 /build/target/debug/rampi-native --rdp-ui-check\n"
+    mode = " --mixed-soak-check" if options.soak else ""
+    prefix += (
+        f"\ntimeout {800 if options.soak else 110} "
+        f"/build/target/debug/rampi-native --rdp-ui-check{mode}\n"
+    )
     try:
         subprocess.run(
             ["runuser", "-u", "rampi", "--", "dbus-run-session", "--", "bash", "-c", prefix],
@@ -109,10 +142,16 @@ def client():
         if run("pgrep", "-x", "Xorg", check=False).returncode == 0:
             raise RuntimeError("X11 was started in the client container")
     finally:
+        if web_server is not None:
+            web_server.terminate()
+            web_server.wait(timeout=5)
         path.unlink(missing_ok=True)
         captured = Path(os.environ["RAMPI_TEST_ARTIFACTS"])
         (captured / "rdp-disconnect-ready").unlink(missing_ok=True)
         screenshot = captured / "rust-rdp.png"
+        if screenshot.is_file():
+            screenshot.chmod(0o644)
+        screenshot = captured / "mixed-remote.png"
         if screenshot.is_file():
             screenshot.chmod(0o644)
 
@@ -147,6 +186,7 @@ def orchestrate(args):
             "python3",
             "/src/tests/rust/test-rdp.py",
             "--server",
+            *(["--soak"] if args.soak else []),
         )
         for _ in range(100):
             ready = run(
@@ -202,7 +242,17 @@ def orchestrate(args):
             "python3",
             "/src/tests/rust/test-rdp.py",
             "--client",
+            *(["--soak"] if args.soak else []),
         ]
+        if args.soak:
+            command[3:3] = [
+                "--security-opt",
+                "seccomp=unconfined",
+                "--security-opt",
+                "apparmor=unconfined",
+                "--security-opt",
+                "systempaths=unconfined",
+            ]
         finished = threading.Event()
 
         def interrupt_server():
@@ -214,7 +264,7 @@ def orchestrate(args):
         watcher = threading.Thread(target=interrupt_server)
         watcher.start()
         try:
-            result = run(*command, data=credentials, check=False, timeout=140)
+            result = run(*command, data=credentials, check=False, timeout=850 if args.soak else 140)
         finally:
             finished.set()
             watcher.join(timeout=10)
@@ -232,6 +282,12 @@ def orchestrate(args):
         for attempt in range(2):
             if f"rampirdp{attempt}" not in receipt:
                 raise RuntimeError(f"Actual remote keyboard receipt missing: {attempt}")
+        if args.soak:
+            report = json.loads((artifacts / "mixed-soak.json").read_text())
+            for token in report["remote_input_tokens"]:
+                if token not in receipt.splitlines():
+                    raise RuntimeError("Missing server-side mixed workload input: " + token)
+            print("RAMPI_MIXED_SOAK_SERVER_RECEIPTS_OK")
         if "Gtk-CRITICAL" in log.decode() or "panicked at" in log.decode():
             raise RuntimeError("Native RDP runtime error")
         print("RAMPI_RUST_RDP_SERVER_RECEIPTS_OK")
@@ -259,6 +315,7 @@ if __name__ == "__main__":
     parser.add_argument("--server", action="store_true")
     parser.add_argument("--fixture", action="store_true")
     parser.add_argument("--client", action="store_true")
+    parser.add_argument("--soak", action="store_true")
     parser.add_argument("--image", default="rampi-rust-rdp")
     parser.add_argument("--server-image", default="rampi-rdp-fixture")
     parser.add_argument("--build-volume", default="rampi-rust-build")

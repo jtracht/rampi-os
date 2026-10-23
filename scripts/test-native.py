@@ -280,6 +280,27 @@ def acceptance(options):
                         if item.is_file():
                             shutil.copy2(item, output / item.name)
                 require(result)
+            soak = output / "mixed-soak"
+            soak.mkdir()
+            print("Running ten-minute mixed RDP/WebKit/PTY workload …", flush=True)
+            result = run(
+                [
+                    sys.executable,
+                    str(source / "tests/rust/test-rdp.py"),
+                    "--soak",
+                    "--image",
+                    options.image,
+                    "--server-image",
+                    "rampi-native-rdp-fixture",
+                    "--build-volume",
+                    volume,
+                    "--artifacts",
+                    str(soak),
+                ],
+                timeout=900,
+            )
+            (soak / "acceptance.log").write_text(result.stdout + result.stderr, encoding="utf-8")
+            require(result)
             require(
                 run(
                     base
