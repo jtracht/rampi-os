@@ -1,11 +1,13 @@
 # Entwicklungsfortschritt
 
-Aktuelle [70-Prozent-Abnahme mit beiden Architekturen](validation/rust-native-70-2026-10-23.md).
+Aktuelle Erweiterung: [Kanban mit Gitea und geführter Einrichtung](KANBAN-NATIVE.de.md).
+Die [70-Prozent-Basis](validation/rust-native-70-2026-10-23.md) ist zusätzlich auf beiden Architekturen belegt.
+Neue Cloud-Verträge, TLS, Schlüsselbund, Cache und GTK sind lokal in Docker geprüft; die neue CI folgt.
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 70 %**.
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 71 %**.
 Rust-Umstellung: **ca. 68 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
-Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
+Das aktuelle Nutzerziel ist mindestens 75 %; das frühere 85-Prozent-Ziel ist ersetzt. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
 
 | Bereich | Rust-Stand / 5 |
@@ -20,7 +22,7 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Windows-Host und Persistenz | 4 |
 | Anbieter-CLIs | 3 |
 | Remote Desktop und Streaming | 2 |
-| Kanban | 3 |
+| Kanban | 4 |
 | Browser | 4 |
 | Installer und Reparatur | 4 |
 | Sicherheit und Isolation | 4 |
@@ -30,7 +32,7 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Manuelle Updates | 4 |
 | Dokumentation | 4 |
 | Performance | 3 |
-| **Summe** | **70 / 100** |
+| **Summe** | **71 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
@@ -135,8 +137,11 @@ Kanban erhält einen zusätzlichen Punkt für die lokale Rust-Oberfläche mit
 sofortigem Laden, kombinierter Suche und Projekt-/Prioritäts-/Statusfiltern,
 konfigurierbarer Spaltenreihenfolge, begrenztem initialem Kartenaufbau mit
 Nachladen sowie Erhalt geladener Aufgaben bei Quellfehlern. Der tatsächliche
-GTK-Test prüft Filter, erneutes Laden und unveränderte Quelldaten. Die sechs
-geforderten Datenquellen sind damit noch nicht vollständig portiert.
+GTK-Test prüft Filter, erneutes Laden und unveränderte Quelldaten. Zusätzlich sind nun GitHub, Gitea, Trello, Jira, Asana und Notion nativ angebunden,
+mit persönlichen Schlüsselbund-Profilen und persistentem Offline-Cache. Die reale
+GTK-Seite, curl/TLS und ein verschlüsselter GNOME-Schlüsselbund sind in Docker
+geprüft. Dies erhöht Kanban auf vier Punkte. Persönliche Anbieteranmeldungen
+bleiben offen; Vertragstests sind kein Nachweis solcher Konten.
 
 Nachweise und Grenzen: [Rust-Migration](RUST-MIGRATION.md).
 Die eigene Tailscale-Statusanzeige ist zusätzlich mit offizieller CLI und einem

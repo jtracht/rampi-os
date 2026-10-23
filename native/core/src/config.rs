@@ -169,8 +169,10 @@ impl Settings {
         ensure!(self.hosts.len() <= 64, "Zu viele Hostprofile");
         validate_https(&self.browser_url)?;
         ensure!(
-            ["json", "github", "trello", "jira", "asana", "notion"]
-                .contains(&self.board_kind.as_str()),
+            [
+                "json", "github", "trello", "jira", "asana", "notion", "gitea"
+            ]
+            .contains(&self.board_kind.as_str()),
             "Unbekannter Kanban-Anbieter"
         );
         ensure!(self.board_columns.len() <= 32, "Zu viele Kanban-Spalten");

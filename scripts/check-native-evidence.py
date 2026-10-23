@@ -33,6 +33,10 @@ markers = [
 missing = [marker for marker in markers if marker not in log]
 if missing:
     raise SystemExit("Missing native acceptance stages: " + ", ".join(missing))
+cloud_log = (directory / "cloud-kanban.log").read_text(encoding="utf-8")
+for required in ["RAMPI_RUST_CLOUD_KANBAN_TLS_KEYRING_OK", "RAMPI_RUST_CLOUD_KANBAN_PAGE_OK"]:
+    if required not in cloud_log:
+        raise SystemExit("Missing actual native cloud Kanban/keyring acceptance: " + required)
 visual = json.loads((directory / "visual-acceptance.json").read_text(encoding="utf-8"))
 for phase in ["startup", "hover", "focus"]:
     counts = visual.get(phase, {})

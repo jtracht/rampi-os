@@ -46,6 +46,10 @@ jobs:
       - name: Rust Wayland installer and session syntax
         run: |
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/setup.sh system/rampi system/rampi-session system/rampi-wayland-start system/rampi-health tests/rust/run-wayland.sh
+      - name: Actual encrypted keyring, cloud HTTPS contracts and GTK Kanban
+        run: |
+          set -euo pipefail
+          docker run --rm --network none --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-cloud-kanban.py 2>&1 | tee artifacts/rust/cloud-kanban.log
       - name: Rust GIO network contract on an isolated system bus (no radio)
         run: |
           set -euo pipefail

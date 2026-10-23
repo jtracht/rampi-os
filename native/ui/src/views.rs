@@ -6,7 +6,6 @@ use rampi_core::{
 };
 use std::{
     cell::{Cell, RefCell},
-    path::PathBuf,
     rc::Rc,
 };
 use vte::prelude::*;
@@ -89,43 +88,11 @@ pub fn settings(
         Some("vpn"),
         "VPN",
     );
-    let data = column();
-    let source = gtk::Entry::builder()
-        .placeholder_text("Persönliche Kanban-JSON-Datei")
-        .text(&conf.borrow().board_source)
-        .build();
-    data.append(&source);
-    let board_columns = gtk::Entry::builder()
-        .placeholder_text("Spalten in Reihenfolge, durch Komma getrennt")
-        .text(conf.borrow().board_columns.join(", "))
-        .build();
-    data.append(&board_columns);
-    let browser_url = gtk::Entry::builder()
-        .placeholder_text("Browser-Startseite · HTTPS")
-        .text(&conf.borrow().browser_url)
-        .build();
-    data.append(&browser_url);
-    let save = button("Datenquelle und Startseite speichern", f);
-    let (c, stat) = (conf.clone(), status.clone());
-    save.connect_clicked(move |_| {
-        let mut candidate = c.borrow().clone();
-        candidate.board_source = source.text().to_string();
-        candidate.board_columns = board_columns
-            .text()
-            .split(',')
-            .map(str::trim)
-            .filter(|name| !name.is_empty())
-            .map(String::from)
-            .collect();
-        candidate.browser_url = browser_url.text().to_string();
-        let result = config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
-        if result.is_ok() {
-            *c.borrow_mut() = candidate;
-        }
-        status_result(&stat, result);
-    });
-    data.append(&save);
-    tabs.add_titled(&data, Some("board"), "Kanban & Browser");
+    tabs.add_titled(
+        &scroll(&crate::board_settings::build(stack, conf, status, f)),
+        Some("board"),
+        "Kanban & Browser",
+    );
     let mut child = switcher.first_child();
     let mut tab_index = 0;
     while let Some(widget) = child {
@@ -584,41 +551,64 @@ pub fn board_preview(conf: &Shared) -> gtk::Box {
     columns.set_vexpand(true);
     panel.append(&columns);
     let (c, cols) = (conf.clone(), columns.clone());
+    let serial = Rc::new(Cell::new(0u64));
     panel.connect_map(move |_| {
+        serial.set(serial.get().wrapping_add(1));
+        let ticket = serial.get();
+        let serial = serial.clone();
         while let Some(child) = cols.first_child() {
             cols.remove(&child);
         }
-        let conf = c.borrow();
-        let board = if conf.board_source.is_empty() {
-            Board::default()
-        } else {
-            match Board::load(&PathBuf::from(&conf.board_source)) {
-                Ok(b) => b,
-                Err(_) => {
-                    cols.append(&label(
-                        "Datenquelle nicht verfügbar. In den Einstellungen prüfen.",
-                    ));
-                    return;
+        let settings = c.borrow().clone();
+        let (cols, current) = (cols.clone(), c.clone());
+        glib::MainContext::default().spawn_local(async move {
+            let board = if settings.board_source.is_empty() {
+                Board::default()
+            } else {
+                match crate::board_data::preview(settings.clone()).await {
+                    Ok(board) => board,
+                    Err(_) => {
+                        if serial.get() != ticket
+                            || crate::board_data::key(&current.borrow())
+                                != crate::board_data::key(&settings)
+                        {
+                            return;
+                        }
+                        cols.append(&label(
+                            "Keine Vorschau verfügbar. Kanban öffnen oder Datenquelle prüfen.",
+                        ));
+                        return;
+                    }
                 }
+            };
+            if serial.get() != ticket
+                || crate::board_data::key(&current.borrow()) != crate::board_data::key(&settings)
+            {
+                return;
             }
-        };
-        for (index, status) in board.columns(&conf.board_columns).iter().enumerate() {
-            let lane = column();
-            lane.set_hexpand(true);
-            lane.add_css_class("board-lane");
-            lane.add_css_class(&format!("lane-{}", index % 4));
-            let heading = label(status);
-            heading.set_max_width_chars(10);
-            heading.add_css_class("lane-title");
-            lane.append(&heading);
-            for card in board.cards.iter().filter(|c| c.status == *status).take(3) {
-                let text = label(&card.title);
-                text.set_max_width_chars(14);
-                text.add_css_class("board-card");
-                lane.append(&text);
+            for (index, status) in board
+                .columns(&settings.board_columns)
+                .iter()
+                .take(4)
+                .enumerate()
+            {
+                let lane = column();
+                lane.set_hexpand(true);
+                lane.add_css_class("board-lane");
+                lane.add_css_class(&format!("lane-{}", index % 4));
+                let heading = label(status);
+                heading.set_max_width_chars(10);
+                heading.add_css_class("lane-title");
+                lane.append(&heading);
+                for card in board.cards.iter().filter(|c| c.status == *status).take(3) {
+                    let text = label(&card.title);
+                    text.set_max_width_chars(14);
+                    text.add_css_class("board-card");
+                    lane.append(&text);
+                }
+                cols.append(&lane);
             }
-            cols.append(&lane);
-        }
+        });
     });
     panel
 }

@@ -72,7 +72,7 @@ const STEPS: [(&str, &str, &str); 15] = [
     ),
     (
         "Kanban und Browser",
-        "Eine persönliche Kanban-JSON-Datei, Spalten und eine HTTPS-Startseite eintragen. Cloud-Datenquellen sind noch nicht vollständig portiert.",
+        "Aufgabenquelle wählen: lokale Datei, GitHub, Gitea, Trello, Jira, Asana oder Notion. Die drei Schritte führen durch Quelle, persönlichen Zugang und Verbindungsprüfung. Danach das Board direkt öffnen.",
         "board",
     ),
     (

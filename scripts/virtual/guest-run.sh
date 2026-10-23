@@ -42,7 +42,8 @@ cat > /etc/polkit-1/rules.d/49-rampi-acceptance.rules <<'RULE'
 polkit.addRule(function(action, subject) {
   if (subject.user === 'rampi' &&
       (action.id === 'org.freedesktop.NetworkManager.settings.modify.own' ||
-       action.id === 'org.freedesktop.NetworkManager.network-control')) return polkit.Result.YES;
+       action.id === 'org.freedesktop.NetworkManager.network-control' ||
+       action.id === 'org.freedesktop.NetworkManager.wifi.scan')) return polkit.Result.YES;
 });
 RULE
 rfkill unblock all
@@ -60,6 +61,10 @@ ip netns exec rampi-ap dnsmasq --no-daemon --port=0 --interface=wlan1 --bind-int
     >/run/rampi-acceptance-root/dnsmasq.log 2>&1 &
 dns_pid=$!
 trap 'kill "$bt_pid" "$dns_pid" 2>/dev/null || true' EXIT
+if [[ -f /opt/rampi-source/rampi-network-acceptance ]]; then
+    runuser -u rampi -- /opt/rampi-source/rampi-network-acceptance
+    runuser -u rampi-other -- /opt/rampi-source/rampi-network-acceptance --other
+fi
 runuser -u rampi -- env PYTHONPATH=/opt/rampi-source/client \
     python3 /opt/rampi-source/scripts/virtual/test-wifi-live.py
 echo RAMPI_VIRTUAL_ACCEPTANCE_OK

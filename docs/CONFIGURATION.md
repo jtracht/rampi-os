@@ -10,11 +10,12 @@ Eine Konfiguration über 1 MiB wird abgewiesen. Fehlerhafte bestehende Dateien
 werden auch beim Speichern nicht durch Standardwerte überschrieben; zuerst
 privat sichern und korrigieren.
 
-Im Rust-Port ist aktuell ausschließlich `board_kind=json` nutzbar. Die übrigen
-Enumwerte bleiben zur Schema-Kompatibilität erkannt, sind keine Zusage verfügbarer
-Cloud-Connectoren oder einer nativen Tokenoberfläche. Eine lokale Kanban-Datei
-darf höchstens 5 MiB und 10.000 Karten enthalten. Spalten stehen im nativen
-Formular durch Komma getrennt; zusätzliche Statuswerte bleiben sichtbar.
+Die native Oberfläche unterstützt `json`, `github`, `gitea`, `trello`, `jira`,
+`asana` und `notion`. Einrichtung, Quellenformate, Tokenrechte und Grenzen stehen
+in [Kanban einrichten](KANBAN-NATIVE.de.md). Boards sind auf 5 MiB und 10.000
+Karten begrenzt. Eine gespeicherte Quelle wird ausschließlich gelesen.
+Spalten stehen im nativen Formular durch Komma getrennt; zusätzliche Statuswerte
+und leere Anbieterspalten bleiben sichtbar.
 
 Native persönliche Pfade:
 

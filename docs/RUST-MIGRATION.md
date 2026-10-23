@@ -79,7 +79,8 @@ zusätzliche Status bleiben sichtbar. Pro Spalte werden zunächst höchstens
 100 Karten aufgebaut und weitere auf Wunsch eingeblendet. Quellfehler behalten
 bereits geladene Aufgaben im Speicher. Der GTK-Test prüft die Filter, veränderte
 Quelldaten, Fehlererhalt und dass die Anwendung keine Aufgaben zurückschreibt.
-Cloud-Connectoren und ein persistenter Cloud-Offline-Cache sind noch nicht portiert.
+GitHub, Gitea, Trello, Jira, Asana und Notion verwenden nun native lesende Adapter,
+System-Schlüsselbund und privaten persistenten Cache. [Einrichtung und Grenzen](KANBAN-NATIVE.de.md).
 
 Die VPN-Seite bietet persönliche WireGuard-Profile direkt als Liste an, ohne
 externen Verbindungsmanager. Der libnm-Importer liest eine private, auf 64 KiB

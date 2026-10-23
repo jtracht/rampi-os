@@ -1,10 +1,9 @@
 //! Read-only local Kanban view; GTK owns layout, scrolling and input.
 use crate::widgets::*;
-use gtk::{gio, glib, prelude::*};
+use gtk::{glib, prelude::*};
 use rampi_core::board::Board;
 use std::{
     cell::{Cell, RefCell},
-    path::PathBuf,
     rc::Rc,
 };
 
@@ -55,6 +54,8 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
     columns.set_vexpand(true);
     page.append(&scroll(&columns));
     let board = Rc::new(RefCell::new(Board::default()));
+    let cached = Rc::new(Cell::new(false));
+    let identity = Rc::new(RefCell::new(String::new()));
     let (b, c, cols, e, summary) = (
         board.clone(),
         conf.clone(),
@@ -63,6 +64,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
         message.clone(),
     );
     let feedback = feedback.clone();
+    let render_cached = cached.clone();
     let render: Rc<dyn Fn()> = Rc::new(move || {
         while let Some(child) = cols.first_child() {
             cols.remove(&child);
@@ -78,10 +80,15 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
         }
         let cards = board.filtered(&values[0], &values[1], &values[2], &values[3]);
         summary.set_text(&format!(
-            "{} von {} Aufgaben · {}",
+            "{} von {} Aufgaben · {}{}",
             cards.len(),
             board.cards.len(),
-            board.title
+            board.title,
+            if render_cached.get() {
+                " · Offline-Cache (Aktualisierung fehlgeschlagen)"
+            } else {
+                ""
+            }
         ));
         for (index, name) in board
             .columns(&c.borrow().board_columns)
@@ -125,23 +132,41 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
     }
     let serial = Rc::new(Cell::new(0u64));
     let (c, msg) = (conf.clone(), message.clone());
+    let load_filters = entries.iter().map(|e| e.downgrade()).collect::<Vec<_>>();
     let load: Rc<dyn Fn()> = Rc::new(move || {
         serial.set(serial.get().wrapping_add(1));
         let ticket = serial.get();
         let settings = c.borrow().clone();
+        let key = crate::board_data::key(&settings);
+        if *identity.borrow() != key {
+            *identity.borrow_mut() = key.clone();
+            *board.borrow_mut() = Board::default();
+            cached.set(false);
+            for filter in &load_filters {
+                if let Some(filter) = filter.upgrade() {
+                    filter.set_text("");
+                }
+            }
+            render();
+        }
+        let current = c.clone();
+        let cache_state = cached.clone();
         let (b, serial, render, msg) = (board.clone(), serial.clone(), render.clone(), msg.clone());
         msg.set_text("Aufgaben werden geladen …");
         glib::MainContext::default().spawn_local(async move {
-            let loaded = gio::spawn_blocking(move || -> anyhow::Result<Board> {
-                anyhow::ensure!(settings.board_kind == "json", "Dieser Connector ist noch nicht nach Rust portiert. Bitte eine lokale JSON-Datei wählen.");
-                anyhow::ensure!(!settings.board_source.is_empty(), "Keine Datenquelle eingerichtet.");
-                Board::load(&PathBuf::from(settings.board_source))
-            }).await;
-            if serial.get() != ticket { return; }
+            let loaded = crate::board_data::load(settings).await;
+            if serial.get() != ticket || crate::board_data::key(&current.borrow()) != key {
+                return;
+            }
             match loaded {
-                Ok(Ok(loaded)) => { *b.borrow_mut() = loaded; render(); }
-                Ok(Err(error)) => msg.set_text(&format!("{error} · Bereits geladene Aufgaben bleiben sichtbar.")),
-                Err(_) => msg.set_text("Die Datenquelle konnte nicht geladen werden."),
+                Ok(loaded) => {
+                    cache_state.set(loaded.cached);
+                    *b.borrow_mut() = loaded.board;
+                    render();
+                }
+                Err(error) => msg.set_text(&format!(
+                    "{error} · Bereits geladene Aufgaben bleiben sichtbar."
+                )),
             }
         });
     });

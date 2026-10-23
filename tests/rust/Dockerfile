@@ -22,3 +22,5 @@ COPY tests/rust/install-test-tailscale.py /tmp/install-test-tailscale.py
 RUN python3 /tmp/install-test-tailscale.py && install -d -o rampi -g rampi -m 700 /run/tailscale
 RUN apt-get update && apt-get install -y --no-install-recommends openssh-client openssh-server pamtester python3-pil wlrctl \
     && install -d -m 755 /run/sshd && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl gnome-keyring libsecret-tools python3-graphql-core \
+    && rm -rf /var/lib/apt/lists/*

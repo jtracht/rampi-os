@@ -1,5 +1,6 @@
 [package]
 name = "rampi-ui"
+default-run = "rampi-native"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,6 +9,10 @@ license.workspace = true
 [[bin]]
 name = "rampi-native"
 path = "src/main.rs"
+
+[[bin]]
+name = "rampi-network-acceptance"
+path = "src/bin/network-acceptance.rs"
 
 [dependencies]
 rampi-core = { path = "../core" }

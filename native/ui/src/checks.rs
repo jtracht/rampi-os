@@ -202,14 +202,14 @@ pub fn board(app: &gtk::Application, stack: &gtk::Stack, conf: &crate::widgets::
             std::fs::write(&source, b"invalid JSON")?;
             reload.emit_clicked();
             for _ in 0..100 {
-                if result.text().contains("bleiben sichtbar") {
+                if result.text().contains("Offline-Cache") {
                     break;
                 }
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             ensure!(
-                result.text().contains("bleiben sichtbar"),
-                "Source failure did not show an inline error"
+                result.text().contains("Offline-Cache"),
+                "Source failure did not show persistent offline recovery"
             );
             entries[0].set_text("Delta");
             ensure!(

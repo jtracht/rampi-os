@@ -144,6 +144,14 @@ def acceptance(options):
             require(result)
             stages = [
                 (
+                    "cloud-kanban.log",
+                    base
+                    + frozen
+                    + guarded
+                    + budget
+                    + [options.image, "python3", "tests/rust/test-cloud-kanban.py"],
+                ),
+                (
                     "wayland.log",
                     base
                     + frozen

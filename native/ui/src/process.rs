@@ -9,12 +9,30 @@ pub async fn output(
     seconds: u64,
     limit: usize,
 ) -> Result<(bool, Vec<u8>)> {
+    output_with_input(program, arguments, None, seconds, limit).await
+}
+
+/// Input is piped, never placed in arguments or temporary files. Intended for
+/// tools that consume their complete configuration before producing a result.
+pub async fn output_with_input(
+    program: &str,
+    arguments: &[OsString],
+    input: Option<Vec<u8>>,
+    seconds: u64,
+    limit: usize,
+) -> Result<(bool, Vec<u8>)> {
     let program = glib::find_program_in_path(program).context("Benötigtes Systemprogramm fehlt")?;
     let mut argv = vec![program.as_os_str()];
     argv.extend(arguments.iter().map(|a| a.as_os_str()));
     let child = gio::Subprocess::newv(
         &argv,
-        gio::SubprocessFlags::STDOUT_PIPE | gio::SubprocessFlags::STDERR_SILENCE,
+        gio::SubprocessFlags::STDOUT_PIPE
+            | gio::SubprocessFlags::STDERR_SILENCE
+            | if input.is_some() {
+                gio::SubprocessFlags::STDIN_PIPE
+            } else {
+                gio::SubprocessFlags::NONE
+            },
     )
     .context("Systemprogramm konnte nicht gestartet werden")?;
     let expired = Rc::new(Cell::new(false));
@@ -26,6 +44,22 @@ pub async fn output(
         }
     });
     let read: Result<Vec<u8>> = async {
+        if let Some(input) = input {
+            ensure!(input.len() <= 65536, "Programmeingabe ist zu groß");
+            let stream = child.stdin_pipe().context("Programmeingabe fehlt")?;
+            let (_, written, error) = stream
+                .write_all_future(input, glib::Priority::DEFAULT)
+                .await
+                .map_err(|(_, error)| error)?;
+            if let Some(error) = error {
+                return Err(error.into());
+            }
+            ensure!(
+                written > 0,
+                "Programmeingabe konnte nicht übertragen werden"
+            );
+            stream.close_future(glib::Priority::DEFAULT).await?;
+        }
         let stream = child.stdout_pipe().context("Programmausgabe fehlt")?;
         let mut bytes = vec![];
         loop {

@@ -5,6 +5,10 @@ mod account_view;
 #[cfg(target_os = "linux")]
 mod audio;
 #[cfg(target_os = "linux")]
+mod board_data;
+#[cfg(target_os = "linux")]
+mod board_settings;
+#[cfg(target_os = "linux")]
 mod board_view;
 #[cfg(target_os = "linux")]
 mod browser_checks;
@@ -23,6 +27,8 @@ mod host_view;
 #[cfg(target_os = "linux")]
 mod interaction_checks;
 #[cfg(target_os = "linux")]
+mod kanban_checks;
+#[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
 mod pairing;
@@ -32,6 +38,8 @@ mod pairing_checks;
 mod performance;
 #[cfg(target_os = "linux")]
 mod process;
+#[cfg(target_os = "linux")]
+mod secret_service;
 #[cfg(target_os = "linux")]
 mod service_checks;
 #[cfg(target_os = "linux")]
@@ -58,6 +66,14 @@ mod wifi_hidden;
 mod wireguard;
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--kanban-cloud-check") {
+        if let Err(error) = kanban_checks::run() {
+            eprintln!("Cloud Kanban acceptance failed: {error:#}");
+            std::process::exit(1);
+        }
+        return;
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--tailscale-check") {
         if let Err(error) = service_checks::tailscale() {

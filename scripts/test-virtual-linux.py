@@ -30,6 +30,9 @@ def main():
     parser.add_argument("--timeout", type=int, default=1800)
     parser.add_argument("--probe", action="store_true")
     parser.add_argument(
+        "--native-binary", type=Path, help="Built Rust NetworkManager acceptance executable"
+    )
+    parser.add_argument(
         "--prepared", action="store_true", help="Local development only: reuse a prepared OS cache"
     )
     parser.add_argument("--prepare-cache", action="store_true")
@@ -74,6 +77,16 @@ def main():
         )
     for name in ("setup.sh", "LICENSE", "NOTICE", "pyproject.toml"):
         shutil.copy2(root / name, source / name)
+    native_digest = None
+    if options.native_binary:
+        if options.probe or not options.native_binary.is_file():
+            raise SystemExit("Native acceptance requires a built executable and a full guest run")
+        native_target = source / "rampi-network-acceptance"
+        shutil.copy2(options.native_binary, native_target)
+        native_target.chmod(0o755)
+        native_digest = hashlib.sha256(native_target.read_bytes()).hexdigest()
+    elif (source / "rampi-network-acceptance").exists():
+        (source / "rampi-network-acceptance").unlink()
     config = {
         "hostname": "rampi-acceptance",
         "manage_etc_hosts": True,
@@ -155,6 +168,7 @@ def main():
                 "memory_mib": 1024,
                 "cpus": 4,
                 "physical_devices": False,
+                "native_binary_sha256": native_digest,
                 "prepared_development_cache": options.prepared,
                 "qemu": run(qemu, "--version").splitlines()[0],
             },
@@ -178,6 +192,10 @@ def main():
         if "RAMPI_" in line:
             print(line[line.index("RAMPI_") :])
     marker = "RAMPI_VIRTUAL_PROBE_OK" if options.probe else "RAMPI_VIRTUAL_ACCEPTANCE_OK"
+    if options.native_binary and not all(
+        m in text for m in ["RAMPI_RUST_WIFI_LIVE_OK", "RAMPI_RUST_WIFI_OTHER_USER_OK"]
+    ):
+        raise SystemExit("Native virtual WLAN evidence missing; inspect serial.log")
     if marker not in text or "RAMPI_GUEST_EXIT=0" not in text:
         raise SystemExit(
             "Virtual Linux acceptance failed; inspect artifacts/virtual-linux/serial.log"
