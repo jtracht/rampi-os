@@ -282,6 +282,9 @@ def acceptance(options):
                 require(result)
             soak = output / "mixed-soak"
             soak.mkdir()
+            # Runtime UID 1000 writes only nonsecret test captures here; the
+            # invoking CI user also needs to collect receipts and logs.
+            soak.chmod(0o777)
             print("Running ten-minute mixed RDP/WebKit/PTY workload …", flush=True)
             result = run(
                 [

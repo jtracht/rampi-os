@@ -82,6 +82,7 @@ jobs:
           trap 'sudo sysctl -w "kernel.apparmor_restrict_unprivileged_userns=$namespace_policy"' EXIT
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           mkdir -p artifacts/rust/mixed-soak
+          chmod 777 artifacts/rust/mixed-soak
           python3 tests/rust/test-rdp.py --soak --image rampi-rust-dev --artifacts artifacts/rust/mixed-soak 2>&1 | tee artifacts/rust/mixed-soak/acceptance.log
           python3 scripts/check-soak-evidence.py artifacts/rust/mixed-soak
       - name: Actual HTTPS native bootstrap and archive/provenance rejection
