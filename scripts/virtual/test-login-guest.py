@@ -16,6 +16,7 @@ from pathlib import Path
 
 SOURCE = Path("/opt/rampi-source")
 CAPTURES = Path("/opt/rampi-captures")
+DISPLAYS: dict[str, str] = {}
 
 
 def run(*args, data=None, check=True):
@@ -43,7 +44,7 @@ def as_user(user, *args, data=None, check=True):
         "--",
         "env",
         f"XDG_RUNTIME_DIR=/run/user/{uid}",
-        "WAYLAND_DISPLAY=wayland-0",
+        f"WAYLAND_DISPLAY={DISPLAYS.get(user, 'wayland-0')}",
         f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
         *args,
         data=data,
@@ -53,8 +54,30 @@ def as_user(user, *args, data=None, check=True):
 
 def greeter_ready():
     uid = pwd.getpwnam("_greetd").pw_uid
-    wait(lambda: Path(f"/run/user/{uid}/wayland-0").is_socket(), "greeter Wayland socket")
-    time.sleep(2)
+    runtime = Path(f"/run/user/{uid}")
+    visible_capture = runpy.run_path(str(SOURCE / "scripts/check-login-evidence.py"))[
+        "visible_capture"
+    ]
+    picture = runtime / "rampi-greeter-ready.png"
+
+    def ready():
+        # A socket pathname can predate the compositor accepting connections,
+        # and a restarted session can select a different display number.
+        sockets = [item for item in runtime.glob("wayland-*") if item.is_socket()]
+        for item in sorted(sockets, key=lambda item: item.stat().st_mtime, reverse=True):
+            DISPLAYS["_greetd"] = item.name
+            try:
+                if as_user("_greetd", "wlrctl", "toplevel", "list", check=False).returncode:
+                    continue
+                if as_user("_greetd", "grim", str(picture), check=False).returncode:
+                    continue
+                visible_capture(picture)
+                return True
+            except (ValueError, subprocess.TimeoutExpired):
+                continue
+        return False
+
+    wait(ready, "reachable compositor with a visibly painted greeter")
 
 
 def login(user, password):
