@@ -152,8 +152,8 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
                     "Data-Source-ID",
                 ),
                 6 => (
-                    "Gitea: Server und Repository-Projekt angeben. Bestehende Spalten samt Reihenfolge werden übernommen. Der Server muss die Projekt-API bereitstellen.",
-                    "https://SERVER#repos/EIGENTÜMER/REPOSITORY/PROJEKT-ID",
+                    "Gitea-Projekt öffnen und seine HTTPS-Adresse hier einfügen. Rampi übernimmt die vorhandenen Spalten und Aufgaben. Dein Server muss die Projekt-Anbindung unterstützen.",
+                    "https://git.example.org/team/app/projects/7",
                 ),
                 _ => (
                     "Lokale JSON-Datei: Pfad angeben. Dafür werden keine Zugangsdaten benötigt.",

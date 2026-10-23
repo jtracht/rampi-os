@@ -19,7 +19,7 @@ Schritte und bleibt dabei im Rampi-Fenster. Aufgaben werden ausschließlich gele
 |---|---|---|
 | Lokale Datei | `~/aufgaben.json` | Kein Token; normalisiertes Board-JSON |
 | GitHub Projects | `organization/NAME/NUMMER` oder `user/NAME/NUMMER` | Token mit Zugriff auf das Projekt und dessen Inhalte; Status/Priorität aus Projektfeldern |
-| Gitea | `https://SERVER#repos/EIGENTÜMER/REPOSITORY/PROJEKT-ID` | Token mit Lesezugriff auf das Repository-Projekt; vorhandene Projektspalten und deren Reihenfolge, einschließlich leerer Spalten |
+| Gitea | `https://SERVER/EIGENTÜMER/REPOSITORY/projects/ID` | Token mit Lesezugriff auf das Repository-Projekt; vorhandene Projektspalten und deren Reihenfolge, einschließlich leerer Spalten |
 | Trello | Board-ID | API-Key und Token; offene Listen und Karten |
 | Jira Cloud | `https://SITE.atlassian.net#PROJEKT` | E-Mail und API-Token mit Issue-Lesezugriff |
 | Jira OAuth | `https://api.atlassian.com/ex/jira/CLOUD-UUID#PROJEKT` | OAuth-Token mit Issue-Lesezugriff; E-Mail leer lassen |
@@ -27,7 +27,10 @@ Schritte und bleibt dabei im Rampi-Fenster. Aufgaben werden ausschließlich gele
 | Notion | Data-Source-ID | Data Source für die Integration freigeben; Titel- und Status-Eigenschaft |
 
 Gitea unterstützt HTTPS-Server mit optionalem Port und Installationspräfix,
-beispielsweise `https://git.example.org:8443/gitea#repos/team/app/7`.
+beispielsweise `https://git.example.org:8443/gitea/team/app/projects/7`.
+Du kannst die Adresse des geöffneten Repository-Projekts direkt kopieren.
+Das bisherige Format `https://SERVER#repos/EIGENTÜMER/REPOSITORY/ID` bleibt
+kompatibel; beim Wechsel des Quellenformats den Zugang erneut zuordnen.
 Die Repository-Projekt-API muss auf der Instanz verfügbar sein; ältere Server
 ohne diese Endpunkte liefern einen erklärten Fehler. Organisations- und
 persönliche Gitea-Projekte sind in dieser ersten Anbindung nicht unterstützt.

@@ -113,6 +113,23 @@ fn gitea_preserves_project_columns_and_server_page_limits() {
     ] {
         assert!(Connector::new("gitea", source, "fixture".into()).is_err());
     }
+    let copied = Connector::new(
+        "gitea",
+        "https://gitea.test:8443/git/owner/repo/projects/7/",
+        "fixture".into(),
+    )
+    .unwrap();
+    assert_eq!(
+        copied.request().unwrap().url,
+        "https://gitea.test:8443/git/api/v1/repos/owner/repo/projects/7"
+    );
+    for source in [
+        "https://gitea.test/owner/repo/projects/7?other=1",
+        "https://user@gitea.test/owner/repo/projects/7",
+        "https://gitea.test/../owner/repo/projects/7",
+    ] {
+        assert!(Connector::new("gitea", source, "fixture".into()).is_err());
+    }
     let mut c = Connector::new(
         "gitea",
         "https://gitea.test:8443/git#repos/owner/repo/7",

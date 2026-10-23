@@ -363,7 +363,7 @@ pub fn ui(
             for (id, value) in [
                 (
                     "board-source",
-                    "https://gitea.fixture.test#repos/fixture/repo/1",
+                    "https://gitea.fixture.test/fixture/repo/projects/1",
                 ),
                 ("board-token-profile", "native-ui-gitea"),
             ] {

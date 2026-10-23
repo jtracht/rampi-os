@@ -21,9 +21,23 @@ fn segment(s: &str) -> bool {
 }
 impl Project {
     pub fn new(source: &str) -> Result<Self> {
-        let (site, path) = source
-            .split_once('#')
-            .context("Gitea: https://SERVER#repos/EIGENTÜMER/REPOSITORY/PROJEKT-ID")?;
+        let expanded;
+        let (site, path) = if let Some(parts) = source.split_once('#') {
+            parts
+        } else {
+            let (repository, id) = source
+                .trim_end_matches('/')
+                .rsplit_once("/projects/")
+                .context("Die HTTPS-Adresse des Gitea-Repository-Projekts einfügen")?;
+            let (owner_path, repo) = repository
+                .rsplit_once('/')
+                .context("Gitea-Repository fehlt")?;
+            let (site, owner) = owner_path
+                .rsplit_once('/')
+                .context("Gitea-Eigentümer fehlt")?;
+            expanded = format!("repos/{owner}/{repo}/{id}");
+            (site, expanded.as_str())
+        };
         crate::config::validate_https(site)?;
         let site = site.trim_end_matches('/');
         let mut parts = site[8..].split('/');
