@@ -1,0 +1,163 @@
+# Rampi mit Rust und Wayland bedienen
+
+Diese Anleitung gilt für den Entwicklungszweig mit `rampi-native`. Das öffentliche
+Release v0.5.0 enthält noch den früheren Python-/QML-Prototyp. Ein reguläres natives
+Release ist weiterhin gesperrt. Physische Hardwaretests sind auf Wunsch ausgeschlossen.
+
+## Erster Start und Anmeldung
+
+Die Sitzung verwendet labwc unter Wayland. Der System-Login übernimmt die
+Authentifizierung über greetd und PAM; Rampi speichert kein eigenes Linux-Kennwort.
+Ein grafischer Login ist noch nicht vollständig softwareseitig abgenommen.
+Der reguläre TTY-Zugang bleibt vorhanden.
+
+Beim ersten Start erscheint die Einrichtung. **Weiter / Schritt überspringen**
+speichert den aktuellen Schritt. **Später fortsetzen** öffnet das Dashboard,
+ohne die Einrichtung als abgeschlossen zu markieren. Über **Einrichtung fortsetzen**
+im Dashboard gelangst du zurück. **Einrichtung abschließen** ist am letzten Schritt
+möglich und bestätigt deinen Durchlauf; Verbindungen werden dadurch nicht als
+erfolgreich geprüft markiert.
+
+Die 15 Stationen zeigen auch fehlende Funktionen ausdrücklich an. Insbesondere
+Sprachwechsel und Kontenverwaltung sind noch nicht vollständig portiert.
+
+## Dashboard und Navigation
+
+Pfeil links/rechts wechselt zwischen den sechs Hauptkacheln, Enter öffnet das
+Modul. Tab bewegt den Fokus zwischen Bedienelementen. Escape führt von einer
+Bestätigungsseite zurück beziehungsweise zum Dashboard; aus einem während der
+Einrichtung geöffneten Einstellungsbereich geht es zurück zur Einrichtung.
+Strg+Alt+Pos1 ist für die Rückkehr zu Rampi reserviert und wird nicht an die
+Terminal-PTY weitergegeben. Im Terminal und Browser bleibt Escape für deren eigene
+Bedienung verfügbar; verwende dort Strg+Alt+Pos1 für das Dashboard.
+
+WLAN und Bluetooth erscheinen jeweils einmal oben im Dashboard. Ein Klick führt
+zum zugehörigen Tab. Suche, Kennworteingabe, Kopplung und Bestätigungen bleiben
+innerhalb desselben Rampi-Fensters. Bei Tastaturbedienung verschwindet der
+Mauszeiger; Mausbewegung zeigt ihn wieder.
+
+Unter **System** kannst du Bewegung reduzieren und Klickklänge abschalten.
+Speichere die persönlichen Einstellungen mit der entsprechenden Schaltfläche.
+Unter **Eigenes Linux-Kennwort ändern** fragt das offizielle passwd im eingebetteten
+Terminal nach altem und neuem Kennwort. Rampi speichert diese Eingaben nicht.
+**Von Rampi abmelden** öffnet eine Bestätigungsseite. Lokale Anwendungen und
+Verbindungen werden geschlossen; persistente Windows-Prozesse laufen weiter.
+Die Klangwiedergabe verwendet den vorhandenen Pulse-kompatiblen Audiodienst.
+
+Im selben Tab eine persönliche Tastaturbelegung wählen und anwenden. Andere
+persönliche Compositor-Einstellungen bleiben erhalten. Das Eingabefeld dient zum
+sofortigen Prüfen; bei einer fremden Sitzung gilt die Datei gegebenenfalls erst
+nach der nächsten Rampi-Anmeldung. Die Oberfläche bleibt derzeit deutsch.
+**Bildschirme und Auflösungen anzeigen** zeigt die vom laufenden Wayland-System
+angebotenen Modi. Eine Änderung muss innerhalb von 15 Sekunden bestätigt werden;
+sonst erfolgt die Rücksetzung. Die Auflösung gilt bis zur Abmeldung.
+
+## Persönliche Windows-Hosts
+
+Unter **Host & SSH** kannst du mehrere Profile anlegen. Wähle einen vorhandenen
+Eintrag oder **Neues Hostprofil**. Trage Profilname, Hostname/VPN-IP,
+Windows-Benutzername, SSH-Port, den Pfad eines vorhandenen persönlichen
+SSH-Schlüssels, Projektverzeichnis und Streaming-Auflösung ein.
+
+**Hostprofil speichern** validiert und speichert. **Ausgewählten Host verwenden**
+setzt den Host für anschließend gestartete Verbindungen. Ein Wechsel der Auswahl
+verwirft ungespeicherte Formularänderungen. Bereits laufende Terminals behalten
+ihre bestehende Verbindung. **Entfernen vorbereiten** verlangt anschließend eine
+Bestätigung; dabei werden weder Schlüsseldateien noch Daten auf Windows gelöscht.
+
+Windows benötigt die bestehende Integration aus
+[INSTALL-WINDOWS11.md](INSTALL-WINDOWS11.md). OpenSSH muss deinen persönlichen
+Schlüssel akzeptieren. Der verifizierte Windows-Hostschlüssel muss bereits in
+deiner persönlichen OpenSSH-Konfiguration bekannt sein. Rampi akzeptiert unbekannte
+Hostschlüssel nicht automatisch.
+
+Unterhalb der Hostprofile kannst du einen persönlichen Rampi-Schlüssel mit
+OpenSSH erstellen. Die Passphrase wird im eingebetteten Terminal eingegeben.
+Über **Schlüsselerstellung fortsetzen** kehrst du zum selben Prozess zurück;
+vorhandene Schlüssel werden nicht überschrieben. **Rampi-Schlüssel in Formular
+übernehmen** trägt den Pfad ein; anschließend das Hostprofil speichern.
+**Öffentlichen Rampi-Schlüssel anzeigen** zeigt nur die öffentliche Datei zur
+Übertragung in das persönliche Windows-Konto.
+
+**Hostschlüssel des aktiven Profils prüfen** liest den Ed25519-Schlüssel mit
+OpenSSH. Vergleiche den SHA256-Fingerabdruck direkt am Windows-Host oder über
+einen anderen vertrauenswürdigen Kanal und gib diesen unabhängig geprüften
+Wert ein. Rampi speichert nur bei Übereinstimmung. Ein bereits bekannter Host
+wird nicht automatisch ersetzt. Dies ersetzt keine Windows-Anmeldung; die
+Übertragung des öffentlichen Benutzerschlüssels bleibt ein ausdrücklicher Schritt.
+
+Codex und Claude Code müssen unter deinem Windows-Konto installiert und
+angemeldet sein. Die vorhandene Windows-Integration erhält Prozesse mit psmux.
+Eine tatsächlich verfügbare offizielle native Antigravity-CLI ist nicht
+nachgewiesen; die entsprechende Kachel ist kein Nachweis der Anbieterunterstützung.
+
+## WLAN und Bluetooth
+
+Im WLAN-Tab sucht **WLANs suchen** über NetworkManager nach verfügbaren Netzen.
+Wähle das Netz, trage bei Bedarf das Kennwort ein und verbinde dich.
+Bestehende Profile werden wiederverwendet. Neue Profile werden deinem
+Linux-Konto zugeordnet. Unternehmensnetze benötigen ein vorhandenes geeignetes
+NetworkManager-Profil. Unter **Verstecktes WLAN verbinden** die verfügbaren Adapter
+anzeigen, den Adapter wählen und die exakte SSID sowie WPA2 Personal, WPA3 Personal
+oder ein offenes Netz angeben. Passende vorhandene Profile werden verwendet; bei
+mehreren passenden Profilen verlangt Rampi zuerst eine Bereinigung.
+
+Im Bluetooth-Tab wählst du Adapter und Gerät, startest die Suche und koppelst.
+Die Suche wird beim Verlassen der Seite freigegeben. Ein Codevergleich verlangt
+eine bewusste Bestätigung. PIN und Passkey werden verdeckt eingegeben und nach
+Bestätigung oder Abbruch geleert. Vertrauen und entfernte Kopplungen wirken
+geräteweit; beachte die Bestätigungsseite. Bei einem Dienstneustart verwirft Rampi
+alte Kopplungsanfragen samt Eingaben und meldet seinen Agenten erneut an.
+
+Die bisherigen Rust-Prüfungen verwenden isolierte D-Bus-Testdienste. Sie belegen
+Bedienabläufe und Schnittstellen, keine tatsächliche Funkkopplung.
+
+## VPN
+
+WireGuard-Profile werden über die vorhandene libnm-Bibliothek importiert und
+von NetworkManager gespeichert. Die Seite zeigt ausschließlich persönliche,
+eindeutig deinem Konto zugeordnete Profile. Importierte Profile verbinden sich
+nicht automatisch. Wähle das Profil und verbinde beziehungsweise trenne es.
+Die ursprüngliche Konfigurationsdatei bleibt erhalten.
+
+Tailscale zeigt den Status der vorhandenen offiziellen CLI an. Ein fehlender
+Dienst, eine notwendige Anmeldung oder ein unvollständiger Status gilt nicht als
+Verbindung. Status, Verbinden und Trennen verwenden vorhandene Tailscale-Funktionen;
+die vollständig grafische Kontoanmeldung und ein tatsächlicher Tailscale-Tunnel
+sind noch nicht abgenommen.
+
+## Kanban, Browser und Remote Desktop
+
+Unter **Kanban & Browser** hinterlegst du eine persönliche Kanban-JSON-Datei,
+optional Spalten in Reihenfolge und eine HTTPS-Startseite. Das Kanban-Modul ist
+schreibgeschützt. Suche sowie Projekt-, Prioritäts- und Statusfilter lassen sich
+kombinieren. **Aufgaben neu laden** liest Änderungen aus der Quelle. Bei einem
+Quellfehler bleiben bereits geladene Karten erhalten. Cloud-Adapter und deren
+Cache sind im Rust-Port noch nicht vollständig verfügbar.
+
+Der Browser verwendet WebKitGTK mit persönlichem Profil. Er unterstützt
+Adresszeile, zurück, vorwärts und neu laden. Unterstützte Webseitenabfragen
+erscheinen als Rampi-Seite. HTTPS-Zertifikatsfehler werden abgewiesen. Navigationen verwenden HTTPS.
+**Downloads** öffnet die integrierte Liste. Prüfe den vollständigen Zielpfad und
+wähle **Download speichern** oder **Download abbrechen**. Vorhandene Dateien werden
+nicht überschrieben und Dateien nicht automatisch geöffnet. Ohne Zielentscheidung
+wird nach einer Minute abgebrochen; nach Abschluss lässt sich die Liste leeren.
+Weitere moderne Webseiten und Geräteberechtigungen bleiben zu prüfen.
+
+Remote Desktop startet den vorhandenen nativen Wayland-FreeRDP-Client; Streaming
+verwendet Moonlight mit Sunshine auf Windows. Diese grafischen Programme sind
+noch eigene Wayland-Oberflächen. Die gewünschte vollständige Integration aller
+Remote-Ansichten in eine einzige Rampi-Seite bleibt offen.
+
+## Diagnose und persönliche Daten
+
+**Diagnose** prüft lokal das Linux-Konto, Hostprofile, verfügbare Programme und
+die Erreichbarkeit der Systemdienste. Sie verändert keine Netzwerkeinstellungen
+und prüft keine Windows-Anmeldung oder Anbieterzugänge.
+
+Persönliche Einstellungen liegen unter `~/.config/rampi/settings.json`, mit
+privatem Verzeichnis und Dateirechten. Der Browser verwendet ein separates
+persönliches Profil. Kennwörter gehören nicht in Hostprofile oder Kanban-Dateien.
+Installer und Versionswechsel übernehmen keine fremden Benutzerprofile.
+
+Installation und Wiederherstellung: [NATIVE-OPERATIONS.de.md](NATIVE-OPERATIONS.de.md).

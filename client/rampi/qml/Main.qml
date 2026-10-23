@@ -18,6 +18,12 @@ ApplicationWindow {
   palette.button: "#253a4a"
   palette.buttonText: "#edf3fa"
   palette.highlight: "#087cf5"
+  property var navigationStack: []
+  property string lastMessage: ""
+  signal showMessageDetails()
+  onShowMessageDetails: notification.open()
+  property alias feedback: interactionFeedback
+  InteractionFeedback { id: interactionFeedback; objectName: "interactionFeedback" }
   property int selected: 0
   property string page: "dashboard"
   property bool keyboardMode: false
@@ -36,17 +42,22 @@ ApplicationWindow {
     if (key === "kanban" || key === "remote") page = key;
     else rampi.launch(key);
   }
-  Shortcut { sequence: "Ctrl+Alt+Home"; onActivated: { window.page = "dashboard"; window.raise(); window.requestActivate(); } }
-  Shortcut { sequence: "Escape"; onActivated: { if (notification.visible) notification.close(); else if (cardDetails.visible) cardDetails.close(); else if (settings.visible) settings.close(); else if (setupWizard.visible) setupWizard.close(); else window.page = "dashboard"; } }
+  Shortcut { sequence: "Ctrl+Alt+Home"; onActivated: { while (window.navigationStack.length) window.navigationStack[window.navigationStack.length - 1].reject(); window.page = "dashboard"; window.raise(); window.requestActivate(); } }
+  Shortcut {
+    sequence: "Escape"
+    enabled: window.navigationStack.length === 0
+    onActivated: window.page = "dashboard"
+  }
   Shortcut { sequence: "Ctrl+,"; onActivated: settings.open() }
   Shortcut { sequence: "F11"; onActivated: window.visibility = window.visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen }
   Component.onCompleted: if (!rampi.configuration.setup_complete && showSetup) setupWizard.open()
+  BluetoothPairingDialog { id: bluetoothPairing }
 
   Item {
     id: stage
+    enabled: window.navigationStack.length === 0
     width: 1600; height: 900
     scale: Math.min(window.width / width, window.height / height)
-    anchors.centerIn: parent
 
     RowLayout {
       x: 26; y: 18; width: 1548; height: 100
@@ -62,13 +73,13 @@ ApplicationWindow {
       Item { Layout.fillWidth: true }
       Repeater {
         model: [{label: "Netzwerk", key: "network", icon: "wifi"}, {label: "Bluetooth", key: "bluetooth", icon: "bluetooth"}, {label: "VPN", key: "vpn", icon: "shield-check"}]
-        Row {
-          spacing: 10
-          Image { source: "../icons/" + modelData.icon + ".svg"; width: 32; height: 32; sourceSize: Qt.size(32, 32) }
-          Column {
-            Text { text: modelData.label; color: "#f4f6fa"; font.pixelSize: 13; font.bold: true }
-            Text { text: rampi.status[modelData.key]; width: 130; elide: Text.ElideRight; color: ["Verbunden", "Running", "Bereit"].indexOf(rampi.status[modelData.key]) >= 0 ? "#19d6b2" : "#92a7ba"; font.pixelSize: 11 }
-          }
+        RampiButton {
+          objectName: "dashboard-" + modelData.key
+          text: modelData.label + "\n" + rampi.status[modelData.key]
+          icon.source: "../icons/" + modelData.icon + ".svg"
+          icon.color: "#19d6b2"
+          Accessible.name: modelData.label + " einstellen"
+          onClicked: settings.showPage(modelData.key === "network" ? 2 : modelData.key === "bluetooth" ? 3 : 4)
         }
       }
       Column {
@@ -94,6 +105,7 @@ ApplicationWindow {
           title: modelData.title; subtitle: modelData.subtitle
           caption: modelData.caption; symbol: modelData.symbol
           iconFile: ["columns-3", "terminal", "asterisk", "sparkles", "monitor", "globe"][index]
+          startupDelay: index * 35
           accent: modelData.accent; darkInk: modelData.dark
           selected: window.selected === index
           reducedMotion: rampi.configuration.reduce_motion
@@ -198,8 +210,6 @@ ApplicationWindow {
                         Text { text: modelData.title; width: parent.width - 20; elide: Text.ElideRight; color: "#101923"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
                       }
                       onClicked: { window.selectedCard = modelData; cardDetails.open(); }
-                      ToolTip.visible: hovered || activeFocus
-                      ToolTip.text: modelData.description || modelData.title
                     }
                   }
                 }
@@ -261,40 +271,27 @@ ApplicationWindow {
         anchors.fill: parent; anchors.margins: 16; spacing: 28
         RampiButton { text: "Einstellungen"; icon.source: "../icons/settings.svg"; icon.color: "#edf3fa"; font.pixelSize: 18; onClicked: settings.open() }
         Rectangle { width: 1; height: 38; color: "#4a5e70" }
-        Repeater {
-          model: [{label: "WLAN", value: rampi.status.network}, {label: "Bluetooth", value: rampi.status.bluetooth}, {label: "VPN", value: rampi.status.vpn}]
-          Column {
-            Text { text: modelData.label; color: "#f2f5fa"; font.pixelSize: 13 }
-            Text { text: modelData.value; color: modelData.value === "Verbunden" || modelData.value === "Running" || modelData.value === "Bereit" ? "#1edbb5" : "#8fa2b5"; font.pixelSize: 12; width: 130; elide: Text.ElideRight }
-          }
-        }
         RampiButton { text: "Konsole"; icon.source: "../icons/terminal.svg"; icon.color: "#edf3fa"; onClicked: rampi.launch("console") }
         Item { Layout.fillWidth: true }
-        Text { text: "Rampi " + rampi.version + "\nKleine Hardware. Große Möglichkeiten."; color: "#8fa2b5"; font.pixelSize: 12; lineHeight: 1.5 }
+        Text { text: window.lastMessage || "Rampi " + rampi.version + "\nKleine Hardware. Große Möglichkeiten."; textFormat: Text.PlainText; maximumLineCount: 2; elide: Text.ElideRight; Layout.maximumWidth: 480; wrapMode: Text.WordWrap; color: "#8fa2b5"; font.pixelSize: 12; lineHeight: 1.5 }
+        RampiButton { visible: window.lastMessage !== ""; text: "Details"; onClicked: notification.open() }
         RampiButton { visible: window.page !== "dashboard"; text: "← Dashboard"; onClicked: window.page = "dashboard" }
       }
     }
-    MouseArea {
-      anchors.fill: parent
-      acceptedButtons: Qt.NoButton
-      hoverEnabled: true
+    HoverHandler {
       cursorShape: window.keyboardMode ? Qt.BlankCursor : Qt.ArrowCursor
-      onPositionChanged: window.keyboardMode = false
+      onPointChanged: window.keyboardMode = false
     }
   }
-  SettingsDialog { id: settings; objectName: "settingsDialog"; anchors.centerIn: parent; width: Math.min(window.width - 50, 1000); height: Math.min(window.height - 50, 780) }
+  SettingsDialog { id: settings; objectName: "settingsDialog" }
   SetupWizard {
     id: setupWizard
-    anchors.centerIn: parent
-    width: Math.min(window.width - 50, 900); height: Math.min(window.height - 50, 650)
     onSettingsRequested: function(page) { settings.showPage(page); }
   }
-  Dialog {
+  FullPage {
     id: cardDetails
-    anchors.centerIn: parent
-    width: Math.min(window.width - 60, 850); height: Math.min(window.height - 60, 600)
     title: window.selectedCard.title || "Aufgabe"
-    modal: true; standardButtons: Dialog.Close
+    standardButtons: Dialog.Close
     ScrollView {
       anchors.fill: parent
       TextArea {
@@ -304,11 +301,9 @@ ApplicationWindow {
       }
     }
   }
-  Dialog {
-    id: notification
-    anchors.centerIn: parent
-    width: Math.min(window.width - 60, 800); height: Math.min(window.height - 60, 480)
-    modal: true; title: "Rampi"; standardButtons: Dialog.Ok
+  FullPage {
+    id: notification; objectName: "notificationDialog"
+    title: "Rampi"; standardButtons: Dialog.Ok
     property string detail: ""
     ScrollView {
       anchors.fill: parent
@@ -317,6 +312,6 @@ ApplicationWindow {
   }
   Connections {
     target: rampi
-    function onMessage(text) { notification.detail = text; notification.open(); }
+    function onMessage(text) { notification.detail = text; window.lastMessage = text; }
   }
 }

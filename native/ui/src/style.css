@@ -1,0 +1,25 @@
+window { background: #080f16; color: #edf3fa; font-family: "DejaVu Sans", sans-serif; font-size: 15px; }
+button { background: #203746; color: #edf3fa; border: none; border-radius: 10px; padding: 12px 18px; box-shadow: none; outline: none; transition: background 120ms ease-out; }
+button:hover, button:focus { background: #32556d; }
+button:active { background: #3c647c; }
+button:disabled { opacity: .5; }
+button.tile { background: transparent; padding: 0; border: none; outline: none; box-shadow: none; }
+.tile-title { font-size: 23px; font-weight: 700; }
+.light-ink { color: white; }
+.dark-ink { color: #101820; }
+.brand { font-size: 58px; font-weight: 800; letter-spacing: -2px; }
+.clock { font-size: 25px; font-weight: 700; }
+.heading { font-size: 24px; font-weight: 700; }
+.preview-title { font-weight: 700; }
+.panel { background: #101e28; border-radius: 18px; padding: 22px; }
+.status { color: #9eb6c8; font-size: 13px; }
+entry, passwordentry { background: #152532; color: #edf3fa; padding: 12px; border-radius: 10px; }
+list, row { background: #101e28; color: #edf3fa; }
+list row:selected { background: #12538a; }
+.board-lane { border-radius: 12px; padding: 12px; }
+.lane-0 { background: #20313e; }
+.lane-1 { background: #103b65; }
+.lane-2 { background: #444222; }
+.lane-3 { background: #153c34; }
+.lane-title { font-size: 12px; font-weight: 700; }
+.board-card { background: #d1dce5; color: #101923; border-radius: 8px; padding: 10px; font-size: 12px; }

@@ -16,3 +16,4 @@ design/references/*.png
 *.key
 *.pem
 .env
+/target/

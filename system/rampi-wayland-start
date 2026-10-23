@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
+systemctl --user import-environment WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP DBUS_SESSION_BUS_ADDRESS GDK_BACKEND GSK_RENDERER SDL_VIDEODRIVER
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP GDK_BACKEND GSK_RENDERER SDL_VIDEODRIVER
+if [ -n "${LABWC_PID:-}" ]; then
+    systemctl --user import-environment LABWC_PID
+    dbus-update-activation-environment --systemd LABWC_PID
+else
+    # A reused foreign Wayland session must not inherit an earlier labwc PID.
+    systemctl --user unset-environment LABWC_PID
+fi
+gnome-keyring-daemon --start --components=secrets >/dev/null
+trap 'systemctl --user stop rampi.service' EXIT HUP INT TERM
+systemctl --user start --wait rampi.service

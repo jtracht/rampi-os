@@ -56,8 +56,8 @@ with tempfile.TemporaryDirectory(prefix="rampi-vpn-ui-") as directory:
     window.requestActivate()
     dialog = window.findChild(QObject, "settingsDialog")
     QMetaObject.invokeMethod(dialog, "open")
-    wait_until(lambda: dialog.property("opened"))
-    window.findChild(QObject, "settingsTabs").setProperty("currentIndex", 2)
+    wait_until(lambda: dialog.property("visible"))
+    window.findChild(QObject, "settingsTabs").setProperty("currentIndex", 4)
     wait_until(lambda: bool(backend.vpnProfiles["profiles"]))
     assert len(backend.vpnProfiles["profiles"]) == 1  # noqa: S101
     assert not backend.vpnProfiles["profiles"][0]["active"]  # noqa: S101

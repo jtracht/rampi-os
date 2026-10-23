@@ -23,7 +23,7 @@ package-dir = {"" = "client"}
 where = ["client"]
 
 [tool.setuptools.package-data]
-rampi = ["qml/*.qml", "branding/*.png", "icons/*.svg", "icons/LICENSE", "icons/README.md"]
+rampi = ["qml/*.qml", "branding/*.png", "icons/*.svg", "icons/LICENSE", "icons/README.md", "sounds/*.wav", "sounds/README.md"]
 
 [tool.ruff]
 line-length = 100

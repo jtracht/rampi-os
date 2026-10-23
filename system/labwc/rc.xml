@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <core><gap>0</gap><decoration>client</decoration></core>
+  <keyboard>
+    <keybind key="C-A-Home"><action name="Execute" command="/usr/local/bin/rampi"/></keybind>
+  </keyboard>
+</labwc_config>

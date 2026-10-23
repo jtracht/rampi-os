@@ -1,15 +1,17 @@
 #!/bin/sh
 set -eu
-# LightDM owns Xorg, VT and PAM. Never start a second display server.
-systemctl --user import-environment DISPLAY XAUTHORITY XDG_SESSION_TYPE
-dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_SESSION_TYPE
-gnome-keyring-daemon --start --components=secrets >/dev/null
-openbox --config-file /etc/xdg/rampi/openbox.xml &
-wm_pid=$!
-lxpolkit &
-agent_pid=$!
-unclutter --hide-on-touch --timeout 2 &
-cursor_pid=$!
-trap 'systemctl --user stop rampi.service; kill "$wm_pid" "$agent_pid" "$cursor_pid" 2>/dev/null || true' EXIT HUP INT TERM
-systemctl --user start rampi.service
-wait "$wm_pid"
+export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=Rampi
+export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
+unset DISPLAY XAUTHORITY
+if [ -n "${WAYLAND_DISPLAY:-}" ]; then exec /usr/local/bin/rampi-wayland-start; fi
+umask 077
+session_config="${XDG_CONFIG_HOME:-$HOME/.config}/rampi/labwc"
+mkdir -p "$session_config"
+if [ -L "$session_config" ] || [ ! -O "$session_config" ]; then
+    echo 'Unsicherer persönlicher Sitzungsordner.' >&2; exit 1
+fi
+chmod 700 "$session_config"
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    exec dbus-run-session -- labwc -C "$session_config" -c /etc/xdg/rampi/labwc/rc.xml -S /usr/local/bin/rampi-wayland-start
+fi
+exec labwc -C "$session_config" -c /etc/xdg/rampi/labwc/rc.xml -S /usr/local/bin/rampi-wayland-start

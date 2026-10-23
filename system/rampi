@@ -1,4 +1,7 @@
 #!/bin/sh
 set -eu
-export PYTHONPATH="/opt/rampi/current${PYTHONPATH:+:$PYTHONPATH}"
-exec /usr/bin/python3 -m rampi.app "$@"
+# Resolve once so binary and design assets come from the same selected version.
+release="$(readlink -f /opt/rampi/current)"
+case "$release" in /opt/rampi/*) ;; *) echo 'Ungültige Installation.' >&2; exit 1 ;; esac
+export RAMPI_ASSETS="$release/assets"
+exec "$release/rampi-native" "$@"

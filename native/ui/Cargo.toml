@@ -1,0 +1,26 @@
+[package]
+name = "rampi-ui"
+default-run = "rampi-native"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "rampi-native"
+path = "src/main.rs"
+
+[[bin]]
+name = "rampi-network-acceptance"
+path = "src/bin/network-acceptance.rs"
+
+[dependencies]
+rampi-core = { path = "../core" }
+anyhow.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk.workspace = true
+vte = { package = "vte4", version = "0.10", features = ["v0_76"] }
+webkit6 = "0.6.1"
+tempfile = "3"

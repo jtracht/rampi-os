@@ -1,0 +1,1 @@
+Original Rampi interface sounds: short damped sine transients, mastered at low level, 48 kHz mono PCM. Apache-2.0; no third-party samples. Native playback uses libcanberra through a small Rust binding. Hover/focus events are throttled; sounds can be disabled in personal settings. The historical QML prototype uses Qt SoundEffect.

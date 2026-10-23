@@ -27,7 +27,17 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
       - name: Build using pinned official pi-gen
-        run: bash image/build.sh
+        run: |
+          set -euo pipefail
+          docker build -t rampi-rust-dev -f tests/rust/Dockerfile .
+          docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev bash -ec 'cargo fmt --all --check; cargo test --locked -p rampi-core; cargo clippy --locked --workspace --all-targets -j 1 -- -D warnings; cargo build --locked --release --workspace -j 1; python3 scripts/collect-rust-licenses.py /build/rust-licenses'
+          mkdir -p artifacts/native
+          container=$(docker create -v rampi-rust-build:/build:ro rampi-rust-dev true)
+          docker cp "$container:/build/target/release/rampi-native" artifacts/native/rampi-native
+          docker cp "$container:/build/rust-licenses" artifacts/native/rust-licenses
+          docker rm "$container"
+          chmod 755 artifacts/native/rampi-native
+          RAMPI_NATIVE_BINARY="$PWD/artifacts/native/rampi-native" RAMPI_RUST_LICENSE_DIR="$PWD/artifacts/native/rust-licenses" bash image/build.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: image
@@ -54,10 +64,14 @@ jobs:
         env:
           IMAGE_PRODUCER_RUN: ${{ inputs.image_run_id || github.run_id }}
           VALIDATOR_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-arm dosfstools e2fsprogs device-tree-compiler file
           echo "Image producer run: $IMAGE_PRODUCER_RUN; validator revision: $VALIDATOR_SHA"
+          [[ "$IMAGE_PRODUCER_RUN" =~ ^[0-9]+$ ]]
+          export IMAGE_PRODUCER_SHA
+          IMAGE_PRODUCER_SHA=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$IMAGE_PRODUCER_RUN" --jq .head_sha)
           bash image/test-image.sh artifacts/image/*.img.xz artifacts/image
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
@@ -67,6 +81,7 @@ jobs:
             artifacts/image/*.log
             artifacts/image/qemu-environment.txt
             artifacts/image/partitions.json
+            artifacts/image/native-image-provenance.txt
             artifacts/image/package-manifest.tsv
             artifacts/image/dependency-licenses.tar.xz
           if-no-files-found: ignore

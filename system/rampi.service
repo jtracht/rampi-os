@@ -10,5 +10,6 @@ RestartSec=3
 # Remain an ordinary user; trusted system tools may request explicit polkit/PAM authorization.
 # NoNewPrivileges would prevent the user's console and pkexec from authenticating normally.
 UMask=0077
-Environment=QT_QUICK_CONTROLS_STYLE=Basic
-Environment=QT_QPA_PLATFORM=xcb
+Environment=GDK_BACKEND=wayland
+Environment=GSK_RENDERER=cairo
+Environment=SDL_VIDEODRIVER=wayland

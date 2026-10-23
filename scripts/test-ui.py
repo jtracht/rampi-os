@@ -55,7 +55,7 @@ engine.load(
     QUrl.fromLocalFile(str(Path(__file__).resolve().parents[1] / "client/rampi/qml/Main.qml"))
 )
 if not engine.rootObjects():
-    raise SystemExit("QML failed to load")
+    raise SystemExit("QML failed to load: " + "\n".join(warnings))
 window = engine.rootObjects()[0]
 window.requestActivate()
 loop = QEventLoop()
@@ -170,7 +170,7 @@ QMetaObject.invokeMethod(dialog, "open")
 app.processEvents()
 if item("hostAddress").property("text") != "windows.test":
     raise SystemExit("The real QML host editor did not restore its profile")
-item("settingsTabs").setProperty("currentIndex", 3)
+item("settingsTabs").setProperty("currentIndex", 5)
 item("boardColumns").setProperty("text", "Review\nOffen")
 QMetaObject.invokeMethod(item("saveGeneral"), "clicked")
 app.processEvents()
@@ -179,7 +179,7 @@ if Settings.load().board_columns != ["Review", "Offen"]:
 if backend.board["columns"][0]["name"] != "Review":
     raise SystemExit("The real board did not apply the configured column order")
 QMetaObject.invokeMethod(dialog, "open")
-item("settingsTabs").setProperty("currentIndex", 4)
+item("settingsTabs").setProperty("currentIndex", 6)
 app.processEvents()
 QTest.qWait(100)
 output = Path(os.environ.get("RAMPI_TEST_ARTIFACTS", personal_files.name)) / "session-settings.png"
