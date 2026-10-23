@@ -16,6 +16,7 @@ COPY client client
 COPY scripts scripts
 COPY tests tests
 COPY system system
+COPY installer installer
 COPY pyproject.toml .
 RUN useradd --create-home --uid 1000 rampi
 USER rampi

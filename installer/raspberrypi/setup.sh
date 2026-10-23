@@ -14,6 +14,7 @@ fi
 packages=(libgtk-4-1 libvte-2.91-gtk4-0 libwebkitgtk-6.0-4 libgtk-4-media-gstreamer librsvg2-common
     gstreamer1.0-plugins-good gstreamer1.0-pulseaudio libcanberra0 libcanberra-pulse labwc greetd wlgreet dbus-user-session
     network-manager libnm0 bluez wireguard-tools openssh-client libgstreamer-plugins-base1.0-0 libssl3t64
+    libusbredirparser1t64 libusb-1.0-0
     wlr-randr libsecret-tools gnome-keyring libpam-gnome-keyring curl
     plymouth plymouth-themes fonts-dejavu-core accountsservice whois binutils)
 if ! dpkg-query -W -f='${Status}' pulseaudio 2>/dev/null | grep -q '^install ok installed$'; then
@@ -108,9 +109,13 @@ if [[ "$new_login" == 1 ]]; then
     install -d -m 755 /etc/greetd /etc/xdg/rampi/greeter
     install -m 644 "$source_root/system/greetd.toml" /etc/greetd/config.toml
     sha256sum /etc/greetd/config.toml | cut -d ' ' -f 1 > /opt/rampi/managed-greetd.sha256
-    install -m 644 "$source_root/system/labwc/rc.xml" /etc/xdg/rampi/greeter/rc.xml
+    install -m 644 "$source_root/system/labwc/greeter.xml" /etc/xdg/rampi/greeter/rc.xml
     systemctl enable greetd
     systemctl set-default graphical.target
+else
+    # shellcheck disable=SC1091
+    source "$source_root/installer/raspberrypi/greeter-profile.sh"
+    rampi_migrate_greeter_profile "$source_root" /etc/greetd/config.toml /opt/rampi/managed-greetd.sha256 /etc/xdg/rampi/greeter/rc.xml
 fi
 if [[ "$mode" == --image ]]; then
     systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true

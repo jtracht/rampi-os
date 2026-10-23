@@ -1,0 +1,121 @@
+"""Release evidence must reject resumed VMs, wrong identities and stale binaries."""
+
+import importlib.util
+import json
+import struct
+from pathlib import Path
+
+import pytest
+
+SPEC = importlib.util.spec_from_file_location(
+    "login_evidence", Path(__file__).resolve().parents[1] / "scripts/check-login-evidence.py"
+)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+DIGEST = "a" * 64
+
+
+@pytest.fixture
+def evidence(tmp_path):
+    environment = {
+        "architecture": "arm64",
+        "memory_mib": 1024,
+        "cpus": 4,
+        "physical_devices": False,
+        "prepared_development_cache": False,
+        "resumed_development_guest": False,
+        "graphical_login": True,
+        "native_binary_sha256": DIGEST,
+    }
+    (tmp_path / "environment.json").write_text(json.dumps(environment))
+    (tmp_path / "serial.log").write_text(
+        "\n".join(
+            [
+                "RAMPI_GRAPHICAL_LOGIN_NO_UNAUTH_UI_OK",
+                "RAMPI_GRAPHICAL_LOGIN_REJECT_OK",
+                "RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK",
+                "RAMPI_GRAPHICAL_LOGIN_OK",
+                "RAMPI_GUEST_EXIT=0",
+            ]
+        )
+    )
+    capture = tmp_path / "captures"
+    capture.mkdir()
+    proof = [
+        {
+            "uid": uid,
+            "session_uid": uid,
+            "config_uid": uid,
+            "config_mode": "0o700",
+            "native_process": True,
+            "binary_sha256": DIGEST,
+        }
+        for uid in [1001, 1002]
+    ]
+    (capture / "login-proof.json").write_text(json.dumps(proof))
+    header = b"\x89PNG\r\n\x1a\n" + b"\0" * 8 + struct.pack(">II", 1280, 720)
+    for name in ["greeter", "rampi-login", "rampi-other"]:
+        (capture / (name + ".png")).write_bytes(header)
+    return tmp_path
+
+
+def test_fresh_two_account_evidence(evidence):
+    assert MODULE.check(evidence, DIGEST)["architecture"] == "arm64"
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("prepared_development_cache", True),
+        ("resumed_development_guest", True),
+        ("physical_devices", True),
+        ("graphical_login", False),
+        ("memory_mib", 2048),
+    ],
+)
+def test_reject_wrong_test_scope(evidence, key, value):
+    path = evidence / "environment.json"
+    data = json.loads(path.read_text())
+    data[key] = value
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError):
+        MODULE.check(evidence)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("session_uid", 0),
+        ("config_uid", 0),
+        ("config_mode", "0o755"),
+        ("binary_sha256", "b" * 64),
+        ("native_process", False),
+        ("uid", 1001),
+    ],
+)
+def test_reject_insecure_or_stale_session(evidence, key, value):
+    path = evidence / "captures/login-proof.json"
+    data = json.loads(path.read_text())
+    data[1][key] = value
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError):
+        MODULE.check(evidence)
+
+
+def test_reject_missing_pam_rejection(evidence):
+    path = evidence / "serial.log"
+    path.write_text(path.read_text().replace("RAMPI_GRAPHICAL_LOGIN_REJECT_OK", ""))
+    with pytest.raises(ValueError):
+        MODULE.check(evidence)
+
+
+def test_reject_later_guest_failure(evidence):
+    path = evidence / "serial.log"
+    path.write_text(path.read_text() + "\nRAMPI_GUEST_EXIT=1")
+    with pytest.raises(ValueError):
+        MODULE.check(evidence)
+
+
+def test_reject_binary_not_from_producer(evidence):
+    with pytest.raises(ValueError):
+        MODULE.check(evidence, "b" * 64)

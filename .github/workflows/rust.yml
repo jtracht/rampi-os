@@ -69,7 +69,7 @@ jobs:
           docker run --rm --network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined --security-opt systempaths=unconfined --user 1000:1000 --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v "$PWD/artifacts/rust:/artifacts" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 -e RAMPI_TEST_ARTIFACTS=/artifacts rampi-rust-dev dbus-run-session -- bash tests/rust/run-wayland.sh 2>&1 | tee artifacts/rust/wayland.log
       - name: Rust Wayland installer and session syntax
         run: |
-          docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/setup.sh system/rampi system/rampi-session system/rampi-wayland-start system/rampi-health tests/rust/run-wayland.sh
+          docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/setup.sh installer/raspberrypi/greeter-profile.sh system/rampi system/rampi-session system/rampi-wayland-start system/rampi-health tests/rust/run-wayland.sh
       - name: Embedded Rust RDP with real TLS server, input and reconnect
         run: |
           set -euo pipefail
@@ -127,6 +127,22 @@ jobs:
           set -euo pipefail
           docker build -f tests/virtual/Dockerfile -t rampi-virtual-tools .
           docker run --rm --memory=3g --memory-swap=3g --cpus=4 -v "$PWD:/app" -v rampi-rust-build:/build:ro rampi-virtual-tools python3 scripts/test-virtual-linux.py --native-binary /build/target/debug/rampi-network-acceptance --timeout 1500
+      - name: Graphical greetd and PAM with two native user sessions in fresh QEMU
+        run: |
+          set -euo pipefail
+          docker build -f tests/virtual/Dockerfile -t rampi-virtual-tools .
+          docker run --rm --memory=3g --memory-swap=3g --cpus=4 -v "$PWD:/app" -v rampi-rust-build:/build:ro rampi-virtual-tools python3 scripts/test-virtual-linux.py --native-session-binary /build/target/debug/rampi-native --timeout 1800
+          expected=$(docker run --rm -v rampi-rust-build:/build:ro rampi-rust-dev sha256sum /build/target/debug/rampi-native | cut -d ' ' -f 1)
+          python3 scripts/check-login-evidence.py artifacts/virtual-login --expected-binary "$expected"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: graphical-login-${{ matrix.arch }}
+          path: |
+            artifacts/virtual-login/serial.log
+            artifacts/virtual-login/environment.json
+            artifacts/virtual-login/captures/
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always() && matrix.arch == 'amd64'
         with:
