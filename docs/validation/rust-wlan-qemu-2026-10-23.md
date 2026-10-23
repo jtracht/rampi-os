@@ -50,3 +50,11 @@ Umgebungsdaten entstehen unter `artifacts/virtual-linux/`. Das Gastbudget ist
 1 GiB; das größere Docker-Budget umfasst zusätzlich QEMU und die Werkzeuge.
 WPA3, Enterprise-WLAN, physische Funkqualität und die ARM64-Gastwiederholung
 sind hier nicht nachgewiesen. Hardwaretests bleiben auf Nutzerwunsch ausgeschlossen.
+
+## Frischer CI-Gast bestätigt
+
+Die [abschließende native CI](https://github.com/jtracht/rampi-os/actions/runs/39943739204)
+bestätigt denselben Rust-WLAN-Adapter zusätzlich ohne vorbereiteten OS-Cache.
+Die Umgebungsdatei weist `prepared_development_cache=false` aus; sämtliche
+nativen WLAN- und Vergleichsmarker sowie `RAMPI_GUEST_EXIT=0` sind vorhanden.
+Die vollständige CI ist einschließlich ARM64-Installer und nativen Paketen grün.

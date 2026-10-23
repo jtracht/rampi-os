@@ -1,14 +1,14 @@
 # Entwicklungsfortschritt
 
-Aktuelle Erweiterung: [Kanban mit Gitea und geführter Einrichtung](KANBAN-NATIVE.de.md).
-Die [70-Prozent-Basis](validation/rust-native-70-2026-10-23.md) ist zusätzlich auf beiden Architekturen belegt.
-Neue Cloud-Verträge, TLS, Schlüsselbund, Cache und GTK sind lokal in Docker geprüft; die neue CI folgt.
+Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 75 %**.
+[75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
+Das aktuelle Nutzerziel von mindestens 75 % ist erreicht; das frühere Ziel von
+85 % ist ersetzt. Dies ist ein Entwicklungsmeilenstein, kein vollständig
+fertiges Produkt und noch kein neuer regulärer nativer Release.
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 71 %**.
-Rust-Umstellung: **ca. 68 %** (separate Portierungsschätzung).
-Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
-Das aktuelle Nutzerziel ist mindestens 75 %; das frühere 85-Prozent-Ziel ist ersetzt. Der Architekturwechsel erfordert neue
-Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
+Die bisherige [70-Prozent-Basis](validation/rust-native-70-2026-10-23.md) wird
+um je einen belegten Punkt bei Kanban, WLAN, Setup, VPN und manuellen Updates
+ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernommen.
 
 | Bereich | Rust-Stand / 5 |
 |---|---:|
@@ -29,10 +29,10 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Design und Branding | 4 |
 | GitHub und CI/CD | 4 |
 | Systemimage | 3 |
-| Manuelle Updates | 4 |
+| Manuelle Updates | 5 |
 | Dokumentation | 4 |
 | Performance | 3 |
-| **Summe** | **74 / 100** |
+| **Summe** | **75 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
