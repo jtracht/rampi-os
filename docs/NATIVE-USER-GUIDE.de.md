@@ -212,6 +212,14 @@ bleibt offen.
 
 ## Diagnose und persönliche Daten
 
+Im Browser fokussiert **Strg+L** die Adressleiste, **F5** lädt die Seite neu.
+**Vollbild · F11** oder **F11** blenden die Browserleiste aus; **Escape** bringt
+sie zurück. Auch das Vollbild einer Webseite bleibt im vorhandenen Rampi-Fenster.
+Beim Verlassen bleibt die Rampi-Sitzung selbst im Vollbild.
+Cookies mit Ablaufdatum, lokale Seitendaten und IndexedDB-Daten bleiben nach
+einem Neustart im persönlichen Browserprofil erhalten. Ein anderes Linux-Konto
+erhält ein eigenes, leeres Profil und kann die privaten Profildateien nicht lesen.
+
 **Diagnose** prüft lokal das Linux-Konto, Hostprofile, verfügbare Programme und
 die Erreichbarkeit der Systemdienste. Sie verändert keine Netzwerkeinstellungen
 und prüft keine Windows-Anmeldung oder Anbieterzugänge.

@@ -13,6 +13,8 @@ mod board_view;
 #[cfg(target_os = "linux")]
 mod browser_checks;
 #[cfg(target_os = "linux")]
+mod browser_modern_checks;
+#[cfg(target_os = "linux")]
 mod browser_prompts;
 #[cfg(target_os = "linux")]
 mod bus;

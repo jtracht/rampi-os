@@ -35,9 +35,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Disposition", 'attachment; filename="../fixture.bin"')
+        elif self.path == "/modern":
+            body = Path(__file__).with_name("browser-modern.html").read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
         elif self.path == "/uploads":
             body = (
-                b'<!doctype html><title>Rampi upload fixture</title>'
+                b"<!doctype html><title>Rampi upload fixture</title>"
                 b'<input id="single" type="file" accept="text/plain">'
                 b'<input id="multiple" type="file" multiple>'
             )
@@ -126,6 +130,12 @@ with tempfile.TemporaryDirectory(prefix="rampi-browser-") as directory:
     server.socket = context.wrap_socket(server.socket, server_side=True)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
+        # Normal systemd Linux creates this root-owned shared socket directory.
+        # The disposable Docker image has no tmpfiles service.
+        x11_directory = Path("/tmp/.X11-unix")  # noqa: S108 - standard OS socket directory
+        x11_directory.mkdir(mode=0o1777, exist_ok=True)
+        x11_directory.chmod(0o1777)
+        os.chown(x11_directory, 0, 0)
         prefix = (
             Path("tests/rust/run-wayland.sh")
             .read_text()
@@ -134,17 +144,45 @@ with tempfile.TemporaryDirectory(prefix="rampi-browser-") as directory:
         script = root / "session.sh"
         script.write_text(
             prefix + "timeout 60 /build/target/debug/rampi-native --browser-https-check\n"
+            "timeout 25 /build/target/debug/rampi-native --browser-profile-check\n"
+            'printf "RAMPI_BROWSER_PROFILE_DIR=%s\\n" "$XDG_CONFIG_HOME/rampi/browser-native"\n'
         )
         result = subprocess.run(
             ["runuser", "-u", "rampi", "--", "dbus-run-session", "--", "bash", str(script)],
             capture_output=True,
             text=True,
-            timeout=70,
+            timeout=95,
         )
         if result.returncode or "Gtk-CRITICAL" in result.stderr:
             raise RuntimeError(result.stdout + result.stderr)
         assert "RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK" in result.stdout
         assert "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK" in result.stdout
+        assert "RAMPI_RUST_BROWSER_MODERN_INPUT_FULLSCREEN_OK" in result.stdout
+        assert "RAMPI_RUST_BROWSER_PROFILE_RESTART_OK" in result.stdout
+        profile = next(
+            line.split("=", 1)[1]
+            for line in result.stdout.splitlines()
+            if line.startswith("RAMPI_BROWSER_PROFILE_DIR=")
+        )
+        run("useradd", "--create-home", "browser-other")
+        forbidden = subprocess.run(
+            ["runuser", "-u", "browser-other", "--", "cat", profile + "/cookies.sqlite"],
+            capture_output=True,
+        )
+        if forbidden.returncode == 0:
+            raise RuntimeError("Other Linux account could read the browser cookie profile")
+        script.write_text(
+            prefix + "timeout 25 /build/target/debug/rampi-native --browser-profile-empty-check\n"
+        )
+        other = subprocess.run(
+            ["runuser", "-u", "browser-other", "--", "dbus-run-session", "--", "bash", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=35,
+        )
+        if other.returncode or "RAMPI_RUST_BROWSER_OTHER_ACCOUNT_EMPTY_OK" not in other.stdout:
+            raise RuntimeError(other.stdout + other.stderr)
+        print(other.stdout.strip())
         print(result.stdout.strip())
     finally:
         server.shutdown()

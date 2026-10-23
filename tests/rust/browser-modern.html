@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<title>Rampi modern loading</title>
+<style>
+body { margin: 20px; background: #09131d; color: #fff; font: 20px sans-serif; }
+main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+button { width: 240px; height: 80px; background: rgb(40, 100, 190); color: white; border: 0; }
+button:hover { background: rgb(20, 160, 80); }
+canvas { background: white; }
+</style>
+<main><section><button id="save">Profil prüfen und speichern</button>
+<button id="full" onclick="document.documentElement.requestFullscreen()">Webseite im Vollbild</button>
+<p>Canvas · WebAssembly · Web Crypto · IndexedDB · CSS Grid</p></section>
+<canvas id="canvas" width="100" height="100"></canvas></main>
+<script>
+window.clicks = 0;
+window.keyboardSeen = false;
+window.addEventListener('keydown', event => { if (event.key === 'g' && event.isTrusted) window.keyboardSeen = true; });
+window.dbReady = new Promise((resolve, reject) => {
+  const request = indexedDB.open('rampi-modern', 1);
+  request.onupgradeneeded = () => request.result.createObjectStore('values');
+  request.onerror = () => reject(request.error);
+  request.onsuccess = () => resolve(request.result);
+});
+window.profileRead = window.dbReady.then(db => new Promise((resolve, reject) => {
+  const request = db.transaction('values').objectStore('values').get('proof');
+  request.onsuccess = () => { window.indexedProof = request.result || null; resolve(); };
+  request.onerror = () => reject(request.error);
+}));
+document.getElementById('save').onclick = async event => {
+  if (!event.isTrusted) throw new Error('Synthetic mouse event');
+  window.clicks++;
+  localStorage.setItem('rampi-proof', 'personal-profile');
+  document.cookie = 'rampi-proof=personal-profile; Max-Age=3600; Secure; SameSite=Strict; Path=/';
+  const db = await window.dbReady;
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction('values', 'readwrite');
+    transaction.objectStore('values').put('personal-profile', 'proof');
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  window.modernSaved = true;
+};
+(async () => {
+  const wasm = await WebAssembly.instantiate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,127,3,2,1,0,7,10,1,6,97,110,115,119,101,114,0,0,10,6,1,4,0,65,42,11]));
+  const canvas = document.getElementById('canvas').getContext('2d');
+  canvas.fillStyle = '#ff0000'; canvas.fillRect(0, 0, 100, 100);
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('Rampi'));
+  await window.profileRead;
+  window.modernReady = isSecureContext && wasm.instance.exports.answer() === 42 &&
+    canvas.getImageData(0, 0, 1, 1).data[0] === 255 && digest.byteLength === 32 &&
+    getComputedStyle(document.querySelector('main')).display === 'grid';
+  document.title = window.modernReady ? 'Rampi modern ready' : 'Rampi modern failed';
+})();
+</script>
+</html>

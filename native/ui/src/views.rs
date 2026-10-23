@@ -794,6 +794,7 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
     }
     let page = column();
     let bar = row();
+    bar.set_widget_name("browser-toolbar");
     let back = button("←", f);
     let forward = button("→", f);
     let reload = button("↻", f);
@@ -801,6 +802,10 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
         .text(&conf.borrow().browser_url)
         .hexpand(true)
         .build();
+    address.set_widget_name("browser-address");
+    back.set_tooltip_text(Some("Zurück"));
+    forward.set_tooltip_text(Some("Vorwärts"));
+    reload.set_tooltip_text(Some("Neu laden · F5"));
     bar.append(&back);
     bar.append(&forward);
     bar.append(&reload);
@@ -825,6 +830,14 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
     let session =
         webkit6::NetworkSession::new(directory.to_str(), directory.join("cache").to_str());
     session.set_tls_errors_policy(webkit6::TLSErrorsPolicy::Fail);
+    let Some(cookies) = session.cookie_manager() else {
+        status.set_text("Das persönliche Browserprofil konnte nicht geöffnet werden.");
+        return;
+    };
+    cookies.set_persistent_storage(
+        &directory.join("cookies.sqlite").to_string_lossy(),
+        webkit6::CookiePersistentStorage::Sqlite,
+    );
     crate::downloads::install(&session, stack, f);
     let web = webkit6::WebView::builder()
         .network_session(&session)
@@ -833,6 +846,74 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
         .build();
     crate::browser_prompts::install(&web, stack, status, f);
     web.set_widget_name("browser-webview");
+    let fullscreen = button("Vollbild · F11", f);
+    let (chrome, message) = (bar.clone(), status.clone());
+    fullscreen.connect_clicked(move |_| {
+        chrome.set_visible(false);
+        message.set_visible(false);
+    });
+    bar.append(&fullscreen);
+    let (chrome, message) = (bar.clone(), status.clone());
+    web.connect_enter_fullscreen(move |_| {
+        chrome.set_visible(false);
+        message.set_visible(false);
+        true // Rampi's existing top-level window is already fullscreen.
+    });
+    let (chrome, message) = (bar.clone(), status.clone());
+    web.connect_leave_fullscreen(move |_| {
+        chrome.set_visible(true);
+        message.set_visible(true);
+        true // Keep the Rampi session itself fullscreen.
+    });
+    let keys = gtk::EventControllerKey::new();
+    keys.set_propagation_phase(gtk::PropagationPhase::Capture);
+    let (chrome, message, location, content) =
+        (bar.clone(), status.clone(), address.clone(), web.clone());
+    keys.connect_key_pressed(move |_, key, _, modifiers| {
+        use gtk::{gdk, glib::Propagation};
+        if key == gdk::Key::F11 {
+            let show = !chrome.is_visible();
+            chrome.set_visible(show);
+            message.set_visible(show);
+            if !show {
+                content.grab_focus();
+            }
+            return Propagation::Stop;
+        }
+        if key == gdk::Key::Escape && !chrome.is_visible() {
+            chrome.set_visible(true);
+            message.set_visible(true);
+            let web = content.clone();
+            glib::MainContext::default().spawn_local(async move {
+                let _ = web
+                    .evaluate_javascript_future(
+                        "if (document.fullscreenElement) document.exitFullscreen(); null",
+                        None,
+                        None,
+                    )
+                    .await;
+            });
+            return Propagation::Stop;
+        }
+        if key == gdk::Key::F5 {
+            content.reload();
+            return Propagation::Stop;
+        }
+        if key == gdk::Key::l && modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+            chrome.set_visible(true);
+            message.set_visible(true);
+            location.grab_focus();
+            location.select_region(0, -1);
+            return Propagation::Stop;
+        }
+        Propagation::Proceed
+    });
+    page.add_controller(keys);
+    let (chrome, message) = (bar.clone(), status.clone());
+    page.connect_unmap(move |_| {
+        chrome.set_visible(true);
+        message.set_visible(true);
+    });
     let downloads = button("Downloads", f);
     let s = stack.clone();
     downloads.connect_clicked(move |_| s.set_visible_child_name("browser-downloads"));
