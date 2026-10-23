@@ -69,7 +69,10 @@ set -uo pipefail
 mkdir -p /opt/rampi-captures
 python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image > /opt/rampi-captures/guest.log 2>&1
 result=$?
-if ! sha256sum --check --status /opt/rampi-source/installed-files.sha256; then result=1; fi
+if sha256sum --check --status /opt/rampi-source/installed-files.sha256; then
+    echo RAMPI_INSTALLED_FILES_UNCHANGED_OK
+else result=1
+fi
 cat /opt/rampi-captures/guest.log
 printf 'RAMPI_GUEST_EXIT=%s\n' "$result" | tee /opt/rampi-captures/result.txt
 sync
@@ -127,6 +130,6 @@ data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=Fals
 (directory / "environment.json").write_text(json.dumps(data, indent=2) + "\n")
 PY
 [[ "$qemu_result" == 0 ]]
-python3 "$source_root/scripts/check-login-evidence.py" "$output" --expected-binary "$binary_sha"
+python3 "$source_root/scripts/check-image-login-evidence.py" "$output" --expected-source "$revision" --expected-image-sha256 "$expected"
 printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 echo 'RAMPI_INSTALLED_IMAGE_GRAPHICAL_OK: original image unchanged; actual installed GUI, PAM and two accounts tested in disposable QEMU copy.'

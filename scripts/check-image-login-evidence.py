@@ -1,0 +1,49 @@
+"""Require actual installed-image graphical login with unchanged program files."""
+
+import argparse
+import json
+import re
+import runpy
+from pathlib import Path
+
+
+def check_metadata(environment, expected_source=None, expected_image=None):
+    if environment.get("installed_pi_image") is not True or environment.get("machine") != "raspi3b":
+        raise ValueError("Not an installed Pi image boot")
+    if type(environment.get("qemu_exit_code")) is not int or environment["qemu_exit_code"] != 0:
+        raise ValueError("Image guest did not power off successfully")
+    for key, length, expected in [
+        ("image_source_revision", 40, expected_source),
+        ("original_compressed_image_sha256", 64, expected_image),
+    ]:
+        value = environment.get(key, "")
+        if (
+            not re.fullmatch(r"[a-f0-9]{" + str(length) + r"}", value)
+            or expected
+            and expected != value
+        ):
+            raise ValueError("Image provenance mismatch: " + key)
+    if environment.get("architecture") != "arm64":
+        raise ValueError("Pi image must contain ARM64 userspace")
+
+
+def check(directory, expected_source=None, expected_image=None):
+    environment = json.loads((directory / "environment.json").read_text(encoding="utf-8"))
+    check_metadata(environment, expected_source, expected_image)
+    runpy.run_path(str(Path(__file__).with_name("check-login-evidence.py")))["check"](
+        directory, environment["native_binary_sha256"]
+    )
+    log = (directory / "serial.log").read_text(encoding="utf-8", errors="replace")
+    if "RAMPI_INSTALLED_FILES_UNCHANGED_OK" not in log:
+        raise ValueError("Installed workstation file preservation was not verified")
+    return environment
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("directory", type=Path)
+    parser.add_argument("--expected-source")
+    parser.add_argument("--expected-image-sha256")
+    options = parser.parse_args()
+    check(options.directory, options.expected_source, options.expected_image_sha256)
+    print("PASS: installed Pi image GUI, PAM, private profiles and unchanged workstation files.")
