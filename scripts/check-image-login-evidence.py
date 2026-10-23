@@ -10,8 +10,12 @@ from pathlib import Path
 def check_metadata(environment, expected_source=None, expected_image=None):
     if environment.get("installed_pi_image") is not True or environment.get("machine") != "raspi3b":
         raise ValueError("Not an installed Pi image boot")
-    if type(environment.get("qemu_exit_code")) is not int or environment["qemu_exit_code"] != 0:
-        raise ValueError("Image guest did not power off successfully")
+    if (
+        type(environment.get("guest_exit_code")) is not int
+        or environment["guest_exit_code"] != 0
+        or environment.get("stopped_after_synced_guest_result") is not True
+    ):
+        raise ValueError("Image guest did not finish and sync its results successfully")
     for key, length, expected in [
         ("image_source_revision", 40, expected_source),
         ("original_compressed_image_sha256", 64, expected_image),

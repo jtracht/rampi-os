@@ -16,7 +16,8 @@ def metadata():
     return dict(
         installed_pi_image=True,
         machine="raspi3b",
-        qemu_exit_code=0,
+        guest_exit_code=0,
+        stopped_after_synced_guest_result=True,
         architecture="arm64",
         image_source_revision="a" * 40,
         original_compressed_image_sha256="b" * 64,
@@ -32,7 +33,8 @@ def test_valid_source_bound_image():
     [
         ("installed_pi_image", False),
         ("machine", "virt"),
-        ("qemu_exit_code", 124),
+        ("guest_exit_code", 1),
+        ("stopped_after_synced_guest_result", False),
         ("architecture", "amd64"),
         ("image_source_revision", "wrong"),
         ("original_compressed_image_sha256", "stale"),

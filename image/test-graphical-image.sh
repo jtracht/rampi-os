@@ -84,8 +84,9 @@ if sha256sum --check --status /opt/rampi-source/installed-files.sha256; then
 else result=1
 fi
 cat /opt/rampi-captures/guest.log
-printf 'RAMPI_GUEST_EXIT=%s\n' "$result" | tee /opt/rampi-captures/result.txt
+printf 'RAMPI_GUEST_EXIT=%s\n' "$result" > /opt/rampi-captures/result.txt
 sync
+cat /opt/rampi-captures/result.txt
 systemctl poweroff
 SH
 sudo chmod 755 "$work/root/usr/local/bin/rampi-image-login-test"
@@ -114,7 +115,19 @@ timeout 1800 qemu-system-aarch64 -M raspi3b -m 1G -smp 4 -nographic -monitor non
     -device usb-kbd -device usb-tablet \
     -drive "file=$work/disk.img,format=raw,if=sd" \
     -append 'root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait console=ttyAMA1,115200 plymouth.enable=0 systemd.unit=multi-user.target systemd.wants=rampi-image-login-test.service rampi.image_acceptance=1' \
-    > "$output/serial.log" 2>&1
+    > "$output/serial.log" 2>&1 &
+qemu_pid=$!
+guest_result=''
+for ((attempt=0; attempt<900; attempt++)); do
+    guest_result="$(sed -n 's/.*RAMPI_GUEST_EXIT=\([0-9][0-9]*\).*/\1/p' "$output/serial.log" | tail -1)"
+    if [[ -n "$guest_result" ]] || ! kill -0 "$qemu_pid" 2>/dev/null; then break; fi
+    sleep 2
+done
+# The temporary DTB disables the emulated PM/watchdog peripheral. Do not depend
+# on a physical poweroff operation: all guest writes were synced before its
+# explicit result marker, so stop the emulator only after that result arrives.
+if kill -0 "$qemu_pid" 2>/dev/null; then kill "$qemu_pid"; fi
+wait "$qemu_pid"
 qemu_result=$?
 set -e
 loop="$(sudo losetup --read-only --partscan --find --show "$work/disk.img")"
@@ -125,7 +138,7 @@ sudo chown -R "$(id -u):$(id -g)" "$output/captures"
 sudo umount "$work/root"
 sudo losetup -d "$loop"
 loop=''
-python3 - "$output" "$binary_sha" "$revision" "$expected" "$qemu_result" <<'PY'
+python3 - "$output" "$binary_sha" "$revision" "$expected" "$qemu_result" "$guest_result" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -134,12 +147,14 @@ data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=Fals
             prepared_development_cache=False, resumed_development_guest=False,
             graphical_login=True, installed_pi_image=True, machine="raspi3b",
             native_binary_sha256=sys.argv[2], image_source_revision=sys.argv[3],
-            original_compressed_image_sha256=sys.argv[4], qemu_exit_code=int(sys.argv[5]),
+            original_compressed_image_sha256=sys.argv[4], qemu_observed_exit_code=int(sys.argv[5]),
+            guest_exit_code=int(sys.argv[6]) if sys.argv[6] else None,
+            stopped_after_synced_guest_result=bool(sys.argv[6]),
             temporary_dtb_watchdog_disabled=True,
             test_support_packages=["wtype", "grim", "wlrctl", "python3-pil"])
 (directory / "environment.json").write_text(json.dumps(data, indent=2) + "\n")
 PY
-[[ "$qemu_result" == 0 ]]
+[[ "$guest_result" == 0 ]]
 python3 "$source_root/scripts/check-image-login-evidence.py" "$output" --expected-source "$revision" --expected-image-sha256 "$expected"
 printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 echo 'RAMPI_INSTALLED_IMAGE_GRAPHICAL_OK: original image unchanged; actual installed GUI, PAM and two accounts tested in disposable QEMU copy.'
