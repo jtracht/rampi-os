@@ -50,6 +50,9 @@ def acceptance(options):
         tempfile.TemporaryDirectory(prefix="rampi-native-captures-", dir=output) as captured,
     ):
         source = Path(temporary)
+        # The ordinary container user must traverse this source-only snapshot
+        # even when the host developer uses a different UID.
+        source.chmod(0o755)
         captures = Path(captured)
         if (
             source.resolve().parent != Path(tempfile.gettempdir()).resolve()
