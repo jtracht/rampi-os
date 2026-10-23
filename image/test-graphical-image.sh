@@ -53,7 +53,17 @@ printf '#!/bin/sh\nexit 101\n' | sudo tee "$work/root/usr/sbin/policy-rc.d" > /d
 sudo chmod 755 "$work/root/usr/sbin/policy-rc.d"
 sudo rm -f "$work/root/etc/resolv.conf"
 sudo cp -L /etc/resolv.conf "$work/root/etc/resolv.conf"
+sudo chroot "$work/root" dpkg-query -W | tee "$work/packages-before.tsv" > /dev/null
 sudo chroot "$work/root" /bin/sh -ec 'apt-get update -qq; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends wtype grim wlrctl python3-pil; apt-get clean' 2>&1 | tee "$output/test-support-install.log"
+sudo chroot "$work/root" dpkg-query -W | tee "$work/packages-after.tsv" > /dev/null
+python3 - "$work/packages-before.tsv" "$work/packages-after.tsv" <<'PY'
+import sys
+from pathlib import Path
+before, after = [dict(line.split("\t", 1) for line in Path(name).read_text().splitlines())
+                 for name in sys.argv[1:]]
+if any(after.get(name) != version for name, version in before.items()):
+    raise SystemExit("Test support must not upgrade or replace installed image packages")
+PY
 sudo umount "$work/root/proc" "$work/root/dev"
 sudo install -d -m 755 "$work/root/opt/rampi-source/scripts/virtual" "$work/root/opt/rampi-captures"
 sudo install -m 644 "$source_root/scripts/virtual/test-login-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
