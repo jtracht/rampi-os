@@ -10,7 +10,7 @@ fn persist(conf: &Shared, candidate: rampi_core::config::Settings) -> anyhow::Re
     Ok(())
 }
 
-pub fn build(conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
     page.append(&label("Windows 11 Pro · persönliche Hostprofile"));
     let profiles = gtk::ListBox::new();
@@ -118,6 +118,7 @@ pub fn build(conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
         yes.set_visible(false);
         no.set_visible(false);
     });
+    let identity_field = fields[4].clone();
     let (c, e, stat, r, p) = (
         conf.clone(),
         editing.clone(),
@@ -229,5 +230,12 @@ pub fn build(conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
         no.set_visible(false);
         status_result(&stat, result);
     });
+    page.append(&crate::ssh_view::build(
+        stack,
+        conf,
+        status,
+        &identity_field,
+        f,
+    ));
     page
 }

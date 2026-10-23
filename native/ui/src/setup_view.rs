@@ -7,12 +7,12 @@ use std::{cell::Cell, rc::Rc};
 const STEPS: [(&str, &str, &str); 15] = [
     (
         "Sprache und Tastatur",
-        "Die Oberfläche ist derzeit deutsch. Die Tastaturbelegung übernimmt die Wayland-Sitzung vom System; eine grafische Änderung ist noch nicht verfügbar.",
+        "Die Oberfläche ist derzeit deutsch. Unter System die persönliche Tastaturbelegung auswählen, anwenden und direkt im Testfeld prüfen.",
         "system",
     ),
     (
         "Bildschirm",
-        "Rampi verwendet die erkannte HDMI-Auflösung. Die grafische Monitorverwaltung ist noch nicht portiert. Unter System lassen sich Bewegung und Klänge anpassen.",
+        "Unter System die vom Bildschirm angebotene Auflösung auswählen. Jede Änderung muss innerhalb von 15 Sekunden bestätigt werden, sonst wird sie zurückgesetzt. Änderungen gelten bis zur Abmeldung.",
         "system",
     ),
     (
@@ -42,7 +42,7 @@ const STEPS: [(&str, &str, &str); 15] = [
     ),
     (
         "SSH-Schlüssel",
-        "Den Pfad eines vorhandenen persönlichen SSH-Schlüssels im Hostprofil hinterlegen. Schlüsselbereitstellung und geprüfter Hostschlüsselimport sind noch nicht grafisch verfügbar.",
+        "Einen persönlichen Schlüssel mit OpenSSH innerhalb von Rampi erstellen oder einen bestehenden Schlüssel verwenden. Den Hostfingerabdruck unabhängig am Windows-Host prüfen und erst danach in Rampi übernehmen. Ausschließlich den öffentlichen Schlüssel zum Windows-Konto übertragen.",
         "host",
     ),
     (

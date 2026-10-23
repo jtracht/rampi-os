@@ -87,7 +87,7 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
     });
 }
 
-fn find_button(widget: &gtk::Widget, title: &str) -> Option<gtk::Button> {
+pub(crate) fn find_button(widget: &gtk::Widget, title: &str) -> Option<gtk::Button> {
     if let Ok(button) = widget.clone().downcast::<gtk::Button>()
         && button.label().as_deref() == Some(title)
     {
@@ -229,7 +229,7 @@ pub fn board(app: &gtk::Application, stack: &gtk::Stack, conf: &crate::widgets::
     });
 }
 
-fn named(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
+pub(crate) fn named(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
     if root.widget_name() == name {
         return Some(root.clone());
     }
@@ -241,6 +241,363 @@ fn named(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
         child = widget.next_sibling();
     }
     None
+}
+
+pub fn ssh_setup(
+    app: &gtk::Application,
+    stack: &gtk::Stack,
+    tabs: &gtk::Stack,
+    conf: &crate::widgets::Shared,
+) {
+    assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
+    let (app, stack, tabs, conf) = (app.clone(), stack.clone(), tabs.clone(), conf.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let result: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            let expected = std::env::var("RAMPI_TEST_SSH_FINGERPRINT")?;
+            conf.borrow_mut().hosts = vec![rampi_core::config::Host {
+                address: "127.0.0.1".into(),
+                username: "rampi".into(),
+                port: 22222,
+                ..Default::default()
+            }];
+            conf.borrow_mut().active_host = 0;
+            let file = crate::ssh_setup::directory()?.join("known_hosts");
+            ensure!(!file.exists(), "SSH test requires a fresh personal home");
+            let unrelated = format!(
+                "other.example {}",
+                std::env::var("RAMPI_TEST_SSH_PUBLIC_KEY")?
+            );
+            std::fs::write(&file, &unrelated)?;
+            let host = tabs.child_by_name("host").context("Host editor missing")?;
+            tabs.set_visible_child_name("host");
+            stack.set_visible_child_name("settings");
+            let generate = find_button(&host, "Persönlichen SSH-Schlüssel erstellen")
+                .context("No key generation")?;
+            generate.emit_clicked();
+            let term = stack
+                .visible_child()
+                .context("No keygen terminal")?
+                .downcast::<vte::Terminal>()
+                .map_err(|_| anyhow::anyhow!("Keygen not embedded"))?;
+            let terminal_key = stack.visible_child_name().unwrap();
+            for _ in 0..300 {
+                if term
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase"))
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                term.text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase")),
+                "Official keygen did not ask for a passphrase"
+            );
+            stack.set_visible_child_name("settings");
+            generate.emit_clicked();
+            ensure!(
+                stack.visible_child_name().as_ref() == Some(&terminal_key),
+                "Concurrent keygen created another process"
+            );
+            let passphrase = glib::uuid_string_random().to_string();
+            term.feed_child(format!("{passphrase}\n").as_bytes());
+            for _ in 0..300 {
+                if term
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter same passphrase again"))
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            term.feed_child(format!("{passphrase}\n").as_bytes());
+            let key = crate::ssh_setup::key_path()?;
+            for _ in 0..300 {
+                if key.with_extension("pub").exists() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                key.is_file() && key.with_extension("pub").is_file(),
+                "Keygen did not create a real keypair"
+            );
+            ensure!(
+                !term
+                    .text_format(vte::Format::Text)
+                    .unwrap_or_default()
+                    .contains(&passphrase),
+                "Keygen echoed its passphrase"
+            );
+            ensure!(
+                crate::ssh_setup::generate_arguments().is_err(),
+                "Existing private key could be overwritten"
+            );
+            let (empty_passphrase_works, _) = crate::process::output(
+                "ssh-keygen",
+                &[
+                    "-y".into(),
+                    "-P".into(),
+                    "".into(),
+                    "-f".into(),
+                    key.as_os_str().into(),
+                ],
+                5,
+                16384,
+            )
+            .await?;
+            ensure!(
+                !empty_passphrase_works,
+                "Generated private key is not passphrase protected"
+            );
+            stack.set_visible_child_name("settings");
+            find_button(&host, "Rampi-Schlüssel in Formular übernehmen")
+                .unwrap()
+                .emit_clicked();
+            ensure!(
+                named(&host, "host-identity")
+                    .unwrap()
+                    .downcast::<gtk::Entry>()
+                    .unwrap()
+                    .text()
+                    == key.to_string_lossy().as_ref()
+            );
+            let scan = find_button(&host, "Hostschlüssel des aktiven Profils prüfen")
+                .context("No trust action")?;
+            scan.emit_clicked();
+            for _ in 0..1000 {
+                if stack.visible_child_name().as_deref() == Some("ssh-trust") {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                stack.visible_child_name().as_deref() == Some("ssh-trust"),
+                "No actual SSH host-key page"
+            );
+            let page = stack.child_by_name("ssh-trust").unwrap();
+            let observed = named(&page, "ssh-fingerprint")
+                .unwrap()
+                .downcast::<gtk::Label>()
+                .unwrap();
+            ensure!(
+                observed.text() == expected,
+                "Fingerprint differs from the real server key"
+            );
+            let input = named(&page, "ssh-expected")
+                .unwrap()
+                .downcast::<gtk::Entry>()
+                .unwrap();
+            let accept = find_button(&page, "Geprüften Hostschlüssel übernehmen").unwrap();
+            input.set_text("SHA256:wrong");
+            accept.emit_clicked();
+            glib::timeout_future(std::time::Duration::from_millis(100)).await;
+            ensure!(
+                std::fs::read_to_string(&file)? == unrelated,
+                "Wrong fingerprint changed known hosts"
+            );
+            input.set_text(&expected);
+            accept.emit_clicked();
+            for _ in 0..200 {
+                if stack.visible_child_name().as_deref() == Some("settings") {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                stack.visible_child_name().as_deref() == Some("settings") && file.is_file(),
+                "Verified key not saved"
+            );
+            let saved = std::fs::read(&file)?;
+            ensure!(
+                saved.starts_with(unrelated.as_bytes()),
+                "Existing entries were lost"
+            );
+            let selected_host = conf.borrow().host()?.clone();
+            let second = crate::ssh_setup::scan(selected_host).await;
+            ensure!(
+                second.is_err() && std::fs::read(&file)? == saved,
+                "Known key was replaced"
+            );
+            use std::os::unix::fs::PermissionsExt;
+            ensure!(std::fs::metadata(&file)?.permissions().mode() & 0o777 == 0o600);
+            let (found, _) = crate::process::output(
+                "ssh-keygen",
+                &[
+                    "-F".into(),
+                    "[127.0.0.1]:22222".into(),
+                    "-f".into(),
+                    file.as_os_str().into(),
+                ],
+                5,
+                65536,
+            )
+            .await?;
+            ensure!(
+                found,
+                "Official OpenSSH does not recognize the imported host"
+            );
+            ensure!(app.windows().len() == 1);
+            println!("RAMPI_RUST_SSH_TRUST_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(e) = result {
+            eprintln!("SSH setup check failed: {e:#}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
+
+pub fn dashboard(
+    app: &gtk::Application,
+    stack: &gtk::Stack,
+    tabs: &gtk::Stack,
+    conf: &crate::widgets::Shared,
+) {
+    assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
+    let (app, stack, tabs, conf) = (app.clone(), stack.clone(), tabs.clone(), conf.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let result: anyhow::Result<()> = async {
+            use anyhow::{Context, ensure};
+            use glib::variant::ToVariant;
+            let root = stack.child_by_name("dashboard").context("No dashboard")?;
+            conf.borrow_mut().hosts = vec![rampi_core::config::Host {
+                name: "Dashboard host".into(),
+                address: "127.0.0.1".into(),
+                port: 22223,
+                username: "rampi".into(),
+                ..Default::default()
+            }];
+            conf.borrow_mut().active_host = 0;
+            stack.set_visible_child_name("settings");
+            glib::timeout_future(std::time::Duration::from_millis(150)).await;
+            stack.set_visible_child_name("dashboard");
+            fn all_text(root: &gtk::Widget) -> String {
+                let mut value = root
+                    .clone()
+                    .downcast::<gtk::Label>()
+                    .map(|l| l.text().to_string())
+                    .unwrap_or_default();
+                let mut child = root.first_child();
+                while let Some(w) = child {
+                    value.push_str(&all_text(&w));
+                    child = w.next_sibling();
+                }
+                value
+            }
+            let preview = named(&root, "dashboard-preview-0")
+                .unwrap()
+                .downcast::<gtk::Label>()
+                .unwrap();
+            for _ in 0..1500 {
+                if all_text(&root).contains("WLAN · verbunden")
+                    && preview.text().contains("SSH-Port erreichbar")
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                all_text(&root).contains("WLAN · verbunden"),
+                "Dashboard invented or missed WLAN state"
+            );
+            ensure!(
+                all_text(&root).contains("Bluetooth · 1 verbunden"),
+                "Dashboard missed connected device"
+            );
+            ensure!(
+                preview.text().contains("SSH-Port erreichbar")
+                    && preview.text().contains("Anmeldung ungeprüft"),
+                "TCP reachability was confused with login"
+            );
+            ensure!(
+                named(&root, "dashboard-clock")
+                    .unwrap()
+                    .downcast::<gtk::Label>()
+                    .unwrap()
+                    .text()
+                    .contains(':')
+            );
+            for (id, target) in [
+                ("dashboard-wifi", "wifi"),
+                ("dashboard-bluetooth", "bluetooth"),
+                ("dashboard-vpn", "vpn"),
+            ] {
+                named(&root, id)
+                    .unwrap()
+                    .downcast::<gtk::Button>()
+                    .unwrap()
+                    .emit_clicked();
+                ensure!(
+                    stack.visible_child_name().as_deref() == Some("settings")
+                        && tabs.visible_child_name().as_deref() == Some(target)
+                );
+                stack.set_visible_child_name("dashboard");
+            }
+            let bus = crate::bus::system().await?;
+            let props = std::collections::HashMap::from([
+                ("WirelessEnabled", false.to_variant()),
+                (
+                    "ActiveConnections",
+                    Vec::<glib::variant::ObjectPath>::new().to_variant(),
+                ),
+            ]);
+            crate::bus::call(
+                &bus,
+                crate::bus::NM,
+                crate::bus::ROOT,
+                "org.freedesktop.DBus.Mock",
+                "UpdateProperties",
+                Some(&(crate::bus::NM, props).to_variant()),
+            )
+            .await?;
+            let props = std::collections::HashMap::from([("Connected", false.to_variant())]);
+            crate::bus::call(
+                &bus,
+                "org.bluez",
+                "/org/bluez/hci0/dev_02_00_00_00_00_01",
+                "org.freedesktop.DBus.Mock",
+                "UpdateProperties",
+                Some(&("org.bluez.Device1", props).to_variant()),
+            )
+            .await?;
+            conf.borrow_mut().hosts[0].name = "Changed offline host".into();
+            conf.borrow_mut().hosts[0].port = 22224;
+            stack.set_visible_child_name("settings");
+            glib::timeout_future(std::time::Duration::from_millis(150)).await;
+            stack.set_visible_child_name("dashboard");
+            for _ in 0..1500 {
+                if all_text(&root).contains("WLAN · aus")
+                    && preview.text().contains("nicht erreichbar")
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                all_text(&root).contains("WLAN · aus")
+                    && !all_text(&root).contains("Bluetooth · 1 verbunden")
+            );
+            ensure!(
+                preview.text().contains("Changed offline host")
+                    && preview.text().contains("nicht erreichbar"),
+                "Stale host preview after profile change"
+            );
+            ensure!(app.windows().len() == 1);
+            println!("RAMPI_RUST_DASHBOARD_STATUS_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(e) = result {
+            eprintln!("Dashboard check failed: {e:#}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
 }
 
 pub fn pairing(app: &gtk::Application, stack: &gtk::Stack) {

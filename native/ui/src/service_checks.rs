@@ -155,6 +155,37 @@ pub fn run() -> Result<()> {
         bus::wifi_radio(false).await?;
         ensure!(!bus::wifi_scan(false).await?.0, "Radio did not switch off");
         bus::wifi_radio(true).await?;
+        let devices = bus::wifi_devices().await?;
+        ensure!(devices.len() == 1, "Managed adapter missing");
+        let device = &devices[0].0;
+        ensure!(
+            bus::wifi_hidden(device, "", "sae", String::new())
+                .await
+                .is_err()
+        );
+        ensure!(
+            bus::wifi_hidden(device, &"x".repeat(33), "sae", String::new())
+                .await
+                .is_err()
+        );
+        ensure!(
+            bus::wifi_hidden("/missing", "Rust\\Lab:Private", "sae", String::new())
+                .await
+                .is_err()
+        );
+        ensure!(
+            bus::wifi_hidden(device, "Rust\\Lab:Private", "enterprise", String::new())
+                .await
+                .is_err()
+        );
+        bus::wifi_hidden(
+            device,
+            "Rust\\Lab:Private",
+            "sae",
+            std::fs::read_to_string(&keyfile)?,
+        )
+        .await?;
+        bus::wifi_hidden(device, "Rust\\Lab:Private", "sae", String::new()).await?;
         println!("RAMPI_RUST_NM_CONTRACT_OK");
         Ok(())
     })

@@ -20,3 +20,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends wireguard-tools
     && rm -rf /var/lib/apt/lists/*
 COPY tests/rust/install-test-tailscale.py /tmp/install-test-tailscale.py
 RUN python3 /tmp/install-test-tailscale.py && install -d -o rampi -g rampi -m 700 /run/tailscale
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-client openssh-server \
+    && install -d -m 755 /run/sshd && rm -rf /var/lib/apt/lists/*

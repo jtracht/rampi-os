@@ -108,6 +108,12 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     bluetooth.set_widget_name("dashboard-bluetooth");
     header.append(&wifi);
     header.append(&bluetooth);
+    let vpn = button("VPN · ungeprüft", &feedback);
+    vpn.set_widget_name("dashboard-vpn");
+    header.append(&vpn);
+    let clock = label("");
+    clock.set_widget_name("dashboard-clock");
+    header.append(&clock);
     dashboard.append(&header);
     let modules = [
         (
@@ -191,6 +197,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     assistant_previews.set_row_homogeneous(true);
     assistant_previews.set_column_spacing(14);
     assistant_previews.set_row_spacing(14);
+    let mut live_previews = vec![];
     for (i, title) in [
         "ChatGPT / Codex",
         "Claude / Claude Code",
@@ -224,6 +231,8 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         detail.set_max_width_chars(25);
         detail.set_lines(2);
         detail.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        detail.set_widget_name(&format!("dashboard-preview-{i}"));
+        live_previews.push(detail.clone());
         panel.append(&detail);
         assistant_previews.attach(&panel, (i % 2) as i32, (i / 2) as i32, 1, 1);
     }
@@ -242,6 +251,15 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     version.set_xalign(1.0);
     footer.append(&version);
     dashboard.append(&footer);
+    crate::dashboard_status::install(
+        &dashboard,
+        &settings,
+        &wifi,
+        &bluetooth,
+        &vpn,
+        &clock,
+        &live_previews,
+    );
     stack.add_named(&dashboard, Some("dashboard"));
     let (s, stat) = (stack.clone(), status.clone());
     console
@@ -268,6 +286,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     for (b, page) in [
         (&wifi, "wifi"),
         (&bluetooth, "bluetooth"),
+        (&vpn, "vpn"),
         (&open_settings, "host"),
     ] {
         let (s, t) = (stack.clone(), tabs.clone());
@@ -362,8 +381,17 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--pairing-ui-check") {
         crate::checks::pairing(app, &stack);
     }
+    if std::env::args().any(|a| a == "--dashboard-check") {
+        crate::checks::dashboard(app, &stack, &tabs, &settings);
+    }
+    if std::env::args().any(|a| a == "--ssh-setup-check") {
+        crate::checks::ssh_setup(app, &stack, &tabs, &settings);
+    }
     if std::env::args().any(|a| a == "--setup-ui-check") {
         crate::checks::setup(app, &stack, &tabs, &settings);
+    }
+    if std::env::args().any(|a| a == "--system-ui-check") {
+        crate::system_checks::run(app, &stack, &tabs, &status, &feedback);
     }
     if std::env::args().any(|a| a == "--keyboard-test") {
         crate::checks::keyboard(app, &stack);

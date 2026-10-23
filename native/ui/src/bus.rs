@@ -238,6 +238,111 @@ pub async fn wifi_disconnect(row: &Wifi) -> Result<()> {
     Ok(())
 }
 pub async fn wifi_connect(row: Wifi, password: String) -> Result<()> {
+    wifi_connect_inner(row, password, false).await
+}
+pub async fn wifi_devices() -> Result<Vec<(String, String)>> {
+    let bus = system().await?;
+    let devices: Vec<ObjectPath> = call(&bus, NM, ROOT, NM, "GetDevices", None)
+        .await?
+        .child_value(0)
+        .get()
+        .context("Keine Geräteantwort")?;
+    let mut result = vec![];
+    for device in devices.into_iter().take(64) {
+        let props = properties(&bus, NM, &device, &format!("{NM}.Device")).await?;
+        if number(&props, "DeviceType") == 2 && flag(&props, "Managed") {
+            result.push((device.to_string(), text(&props, "Interface")));
+        }
+    }
+    Ok(result)
+}
+pub async fn wifi_hidden(device: &str, ssid: &str, mode: &str, password: String) -> Result<()> {
+    anyhow::ensure!(
+        !ssid.is_empty() && ssid.len() <= 32,
+        "SSID muss 1 bis 32 UTF-8-Bytes lang sein"
+    );
+    anyhow::ensure!(
+        ["open", "wpa-psk", "sae"].contains(&mode),
+        "Unbekannte WLAN-Sicherheit"
+    );
+    let devices = wifi_devices().await?;
+    anyhow::ensure!(
+        devices.iter().any(|(p, _)| p == device),
+        "WLAN-Adapter nicht verfügbar"
+    );
+    let bus = system().await?;
+    let paths: Vec<ObjectPath> = call(
+        &bus,
+        NM,
+        &format!("{ROOT}/Settings"),
+        &format!("{NM}.Settings"),
+        "ListConnections",
+        None,
+    )
+    .await?
+    .child_value(0)
+    .get()
+    .context("Profilliste fehlt")?;
+    anyhow::ensure!(paths.len() <= 4096, "Zu viele Netzwerkprofile");
+    let mut saved = vec![];
+    for path in paths {
+        if let Ok(reply) = call(
+            &bus,
+            NM,
+            &path,
+            &format!("{NM}.Settings.Connection"),
+            "GetSettings",
+            None,
+        )
+        .await
+            && let Some(settings) = reply.child_value(0).get::<Settings>()
+            && let Some(wifi) = settings.get("802-11-wireless")
+            && wifi.get("ssid").and_then(|v| v.get::<Vec<u8>>()).as_deref() == Some(ssid.as_bytes())
+        {
+            let connection = settings.get("connection");
+            let permissions = connection
+                .and_then(|v| v.get("permissions"))
+                .and_then(|v| v.get::<Vec<String>>())
+                .unwrap_or_default();
+            let own = format!("user:{}:", glib::user_name().to_string_lossy());
+            let interface = connection
+                .map(|v| text(v, "interface-name"))
+                .unwrap_or_default();
+            let security = settings
+                .get("802-11-wireless-security")
+                .map(|v| text(v, "key-mgmt"))
+                .unwrap_or_else(|| "open".into());
+            if (permissions.is_empty() || permissions.contains(&own))
+                && security == mode
+                && (interface.is_empty()
+                    || devices
+                        .iter()
+                        .any(|(p, name)| p == device && name == &interface))
+            {
+                saved.push(path.to_string());
+            }
+        }
+    }
+    anyhow::ensure!(
+        saved.len() <= 1,
+        "Mehrere passende Profile vorhanden. Das gewünschte vorhandene Profil zuerst bereinigen."
+    );
+    wifi_connect_inner(
+        Wifi {
+            ssid: ssid.as_bytes().to_vec(),
+            device: device.into(),
+            ap: "/".into(),
+            label: ssid.into(),
+            mode: mode.into(),
+            profile: saved.into_iter().next().unwrap_or_default(),
+            active: false,
+        },
+        password,
+        true,
+    )
+    .await
+}
+async fn wifi_connect_inner(row: Wifi, password: String, hidden: bool) -> Result<()> {
     if !row.supported() {
         bail!("Dieses Unternehmensnetz benötigt ein vorhandenes NetworkManager-Profil");
     }
@@ -281,6 +386,7 @@ pub async fn wifi_connect(row: Wifi, password: String) -> Result<()> {
             HashMap::from([
                 ("ssid".into(), row.ssid.to_variant()),
                 ("mode".into(), "infrastructure".to_variant()),
+                ("hidden".into(), hidden.to_variant()),
             ]),
         );
         settings.insert(

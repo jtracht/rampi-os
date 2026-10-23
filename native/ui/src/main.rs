@@ -9,6 +9,8 @@ mod bus;
 #[cfg(target_os = "linux")]
 mod checks;
 #[cfg(target_os = "linux")]
+mod dashboard_status;
+#[cfg(target_os = "linux")]
 mod host_view;
 #[cfg(target_os = "linux")]
 mod linux;
@@ -17,9 +19,19 @@ mod pairing;
 #[cfg(target_os = "linux")]
 mod performance;
 #[cfg(target_os = "linux")]
+mod process;
+#[cfg(target_os = "linux")]
 mod service_checks;
 #[cfg(target_os = "linux")]
 mod setup_view;
+#[cfg(target_os = "linux")]
+mod ssh_setup;
+#[cfg(target_os = "linux")]
+mod ssh_view;
+#[cfg(target_os = "linux")]
+mod system_checks;
+#[cfg(target_os = "linux")]
+mod system_settings;
 #[cfg(target_os = "linux")]
 mod tailscale;
 #[cfg(target_os = "linux")]
@@ -28,6 +40,8 @@ mod views;
 mod vpn_view;
 #[cfg(target_os = "linux")]
 mod widgets;
+#[cfg(target_os = "linux")]
+mod wifi_hidden;
 #[cfg(target_os = "linux")]
 mod wireguard;
 

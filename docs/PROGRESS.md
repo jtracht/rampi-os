@@ -1,18 +1,18 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 60 %**.
-Rust-Umstellung: **ca. 58 %** (separate Portierungsschätzung).
+Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 64 %**.
+Rust-Umstellung: **ca. 62 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.
 Das Ziel von mindestens 85 % bleibt offen. Der Architekturwechsel erfordert neue
 Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nicht.
 
 | Bereich | Rust-Stand / 5 |
 |---|---:|
-| Grafische Sitzung und Dashboard | 3 |
+| Grafische Sitzung und Dashboard | 4 |
 | Tastatur und Maus | 3 |
-| Setup-Assistent | 2 |
+| Setup-Assistent | 3 |
 | Linux-Konten und Login | 2 |
-| WLAN | 2 |
+| WLAN | 3 |
 | Bluetooth | 3 |
 | VPN | 3 |
 | Windows-Host und Persistenz | 4 |
@@ -21,14 +21,39 @@ Implementierungen und Nachweise; frühere QML-/X11-Prüfungen zählen dafür nic
 | Kanban | 3 |
 | Browser | 3 |
 | Installer und Reparatur | 4 |
-| Sicherheit und Isolation | 3 |
+| Sicherheit und Isolation | 4 |
 | Design und Branding | 3 |
 | GitHub und CI/CD | 4 |
 | Systemimage | 3 |
 | Manuelle Updates | 4 |
 | Dokumentation | 3 |
 | Performance | 3 |
-| **Summe** | **60 / 100** |
+| **Summe** | **64 / 100** |
+
+Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
+Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
+Die GTK-Abnahme prüft Live-Änderungen und die direkten Wege zu den Einstellungen.
+
+WLAN erreicht drei Punkte: Neben sichtbaren Netzen sind versteckte SSIDs mit
+Adapterauswahl und WPA2/WPA3 beziehungsweise offenem Netz integriert. Passende
+Profile werden wiederverwendet; Mehrdeutigkeit und ungültige Eingaben werden
+abgewiesen. Die Rust-/GIO-Abnahme prüft die tatsächlichen D-Bus-Aufrufe einschließlich
+privater Profilrechte, nicht den Funkverkehr.
+
+Der Assistent erreicht drei Punkte durch integrierte SSH-Einrichtung und persönliche
+Tastatur-/Bildschirmeinstellungen. Tastaturänderungen erhalten andere Einstellungen
+und verwenden labwc; angebotene Bildschirmmodi verwenden wlr-randr, einschließlich
+15-Sekunden-Bestätigung und Rücksetzung. Die tatsächliche Headless-Wayland-Abnahme
+prüft diese Abläufe mit dem angebotenen Modus, keine HDMI- oder physische XKB-Eingabe.
+Sprachwechsel und weitere Einrichtungsschritte bleiben offen.
+
+Sicherheit und Isolation erreichen vier Punkte durch die eigene SSH-Einrichtung
+mit tatsächlichem OpenSSH: passphrasegeschützte Schlüsselerstellung im eingebetteten
+Terminal, Wiederaufnahme derselben Erstellung statt paralleler Prozesse und
+Hostschlüsselimport nur nach Abgleich eines unabhängig erhaltenen Fingerabdrucks.
+Falsche Fingerabdrücke, vorhandene Schlüssel und bestehende Hosteinträge sind
+geschützt. Ein tatsächlicher isolierter OpenSSH-Server sowie GTK-/VTE-Abläufe
+prüfen diesen Ablauf; die vollständige lokale Abnahme bleibt erfolgreich.
 
 Systemimage erreicht drei Punkte: Ein tatsächliches flashbares Trixie-/ARM64-Image
 mit vorgebautem Rust-Programm, Wayland-Sitzung, Paketmanifest und ursprünglichen
@@ -73,7 +98,7 @@ fortgesetzt werden und nutzt die vorhandenen Einstellungsseiten. Die tatsächlic
 GTK-Abnahme prüft Navigation, Speichern, Überspringen, Abschluss, lokale Diagnose
 und mehrere Hostprofile einschließlich Aktivierung, ungültiger Eingaben und
 bestätigtem Entfernen. Nicht portierte Einrichtungsschritte sind ausdrücklich
-gekennzeichnet; der Assistent erreicht deshalb erst zwei von fünf Punkten.
+gekennzeichnet; der Assistent erreicht deshalb drei von fünf Punkten.
 
 VPN erhält einen zusätzlichen Punkt für die eigene Rust-WireGuard-Seite mit
 persönlicher Profilauswahl, Status, Import, Verbinden und Trennen. Die tatsächliche

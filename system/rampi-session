@@ -4,7 +4,14 @@ export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=Rampi
 export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
 unset DISPLAY XAUTHORITY
 if [ -n "${WAYLAND_DISPLAY:-}" ]; then exec /usr/local/bin/rampi-wayland-start; fi
-if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
-    exec dbus-run-session -- labwc -C /etc/xdg/rampi/labwc -S /usr/local/bin/rampi-wayland-start
+umask 077
+session_config="${XDG_CONFIG_HOME:-$HOME/.config}/rampi/labwc"
+mkdir -p "$session_config"
+if [ -L "$session_config" ] || [ ! -O "$session_config" ]; then
+    echo 'Unsicherer persönlicher Sitzungsordner.' >&2; exit 1
 fi
-exec labwc -C /etc/xdg/rampi/labwc -S /usr/local/bin/rampi-wayland-start
+chmod 700 "$session_config"
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    exec dbus-run-session -- labwc -C "$session_config" -c /etc/xdg/rampi/labwc/rc.xml -S /usr/local/bin/rampi-wayland-start
+fi
+exec labwc -C "$session_config" -c /etc/xdg/rampi/labwc/rc.xml -S /usr/local/bin/rampi-wayland-start

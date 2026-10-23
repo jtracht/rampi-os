@@ -11,8 +11,10 @@ export GDK_BACKEND=wayland GSK_RENDERER=cairo RAMPI_ASSETS=/src/client/rampi
 export WAYLAND_DISPLAY=wayland-0 GTK_A11Y=none
 mkdir "$test_home/compositor"
 cp /src/system/labwc/rc.xml "$test_home/compositor/rc.xml"
-labwc -C "$test_home/compositor" > "$test_home/compositor.log" 2>&1 &
+mkdir -p "$XDG_CONFIG_HOME/rampi/labwc"
+labwc -C "$XDG_CONFIG_HOME/rampi/labwc" -c "$test_home/compositor/rc.xml" > "$test_home/compositor.log" 2>&1 &
 compositor_pid=$!
+export LABWC_PID="$compositor_pid"
 trap 'kill "$compositor_pid" 2>/dev/null || true' EXIT
 for _ in $(seq 1 100); do
     [[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] && break
@@ -37,7 +39,10 @@ wtype -s 150 -k Right -s 100 -k Left -s 100 -k Return
 sleep 1.2
 wtype -s 150 -k Escape
 wait "$keyboard_pid"
+python3 tests/rust/test-dashboard.py
+python3 tests/rust/test-ssh-setup.py
 timeout 20 /build/target/debug/rampi-native --setup-ui-check
+timeout 40 /build/target/debug/rampi-native --system-ui-check
 /build/target/debug/rampi-native --embedded-test
 python3 tests/rust/test-bluetooth.py --ui
 python3 tests/rust/test-pairing.py

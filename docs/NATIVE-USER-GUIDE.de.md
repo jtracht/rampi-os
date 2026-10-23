@@ -19,8 +19,7 @@ möglich und bestätigt deinen Durchlauf; Verbindungen werden dadurch nicht als
 erfolgreich geprüft markiert.
 
 Die 15 Stationen zeigen auch fehlende Funktionen ausdrücklich an. Insbesondere
-Sprache/Tastaturlayout, Monitor- und Kontenverwaltung sowie grafische
-SSH-Schlüsselbereitstellung sind noch nicht fertig portiert.
+Sprachwechsel und Kontenverwaltung sind noch nicht vollständig portiert.
 
 ## Dashboard und Navigation
 
@@ -39,6 +38,14 @@ Unter **System** kannst du Bewegung reduzieren und Klickklänge abschalten.
 Speichere die persönlichen Einstellungen mit der entsprechenden Schaltfläche.
 Die Klangwiedergabe verwendet den vorhandenen Pulse-kompatiblen Audiodienst.
 
+Im selben Tab eine persönliche Tastaturbelegung wählen und anwenden. Andere
+persönliche Compositor-Einstellungen bleiben erhalten. Das Eingabefeld dient zum
+sofortigen Prüfen; bei einer fremden Sitzung gilt die Datei gegebenenfalls erst
+nach der nächsten Rampi-Anmeldung. Die Oberfläche bleibt derzeit deutsch.
+**Bildschirme und Auflösungen anzeigen** zeigt die vom laufenden Wayland-System
+angebotenen Modi. Eine Änderung muss innerhalb von 15 Sekunden bestätigt werden;
+sonst erfolgt die Rücksetzung. Die Auflösung gilt bis zur Abmeldung.
+
 ## Persönliche Windows-Hosts
 
 Unter **Host & SSH** kannst du mehrere Profile anlegen. Wähle einen vorhandenen
@@ -56,8 +63,22 @@ Windows benötigt die bestehende Integration aus
 [INSTALL-WINDOWS11.md](INSTALL-WINDOWS11.md). OpenSSH muss deinen persönlichen
 Schlüssel akzeptieren. Der verifizierte Windows-Hostschlüssel muss bereits in
 deiner persönlichen OpenSSH-Konfiguration bekannt sein. Rampi akzeptiert unbekannte
-Hostschlüssel nicht automatisch. Die Bereitstellung dieser Schlüssel ist noch
-kein vollständiger grafischer Ablauf.
+Hostschlüssel nicht automatisch.
+
+Unterhalb der Hostprofile kannst du einen persönlichen Rampi-Schlüssel mit
+OpenSSH erstellen. Die Passphrase wird im eingebetteten Terminal eingegeben.
+Über **Schlüsselerstellung fortsetzen** kehrst du zum selben Prozess zurück;
+vorhandene Schlüssel werden nicht überschrieben. **Rampi-Schlüssel in Formular
+übernehmen** trägt den Pfad ein; anschließend das Hostprofil speichern.
+**Öffentlichen Rampi-Schlüssel anzeigen** zeigt nur die öffentliche Datei zur
+Übertragung in das persönliche Windows-Konto.
+
+**Hostschlüssel des aktiven Profils prüfen** liest den Ed25519-Schlüssel mit
+OpenSSH. Vergleiche den SHA256-Fingerabdruck direkt am Windows-Host oder über
+einen anderen vertrauenswürdigen Kanal und gib diesen unabhängig geprüften
+Wert ein. Rampi speichert nur bei Übereinstimmung. Ein bereits bekannter Host
+wird nicht automatisch ersetzt. Dies ersetzt keine Windows-Anmeldung; die
+Übertragung des öffentlichen Benutzerschlüssels bleibt ein ausdrücklicher Schritt.
 
 Codex und Claude Code müssen unter deinem Windows-Konto installiert und
 angemeldet sein. Die vorhandene Windows-Integration erhält Prozesse mit psmux.
@@ -70,7 +91,10 @@ Im WLAN-Tab sucht **WLANs suchen** über NetworkManager nach verfügbaren Netzen
 Wähle das Netz, trage bei Bedarf das Kennwort ein und verbinde dich.
 Bestehende Profile werden wiederverwendet. Neue Profile werden deinem
 Linux-Konto zugeordnet. Unternehmensnetze benötigen ein vorhandenes geeignetes
-NetworkManager-Profil. Erweiterte WLAN-Einrichtung ist noch offen.
+NetworkManager-Profil. Unter **Verstecktes WLAN verbinden** die verfügbaren Adapter
+anzeigen, den Adapter wählen und die exakte SSID sowie WPA2 Personal, WPA3 Personal
+oder ein offenes Netz angeben. Passende vorhandene Profile werden verwendet; bei
+mehreren passenden Profilen verlangt Rampi zuerst eine Bereinigung.
 
 Im Bluetooth-Tab wählst du Adapter und Gerät, startest die Suche und koppelst.
 Die Suche wird beim Verlassen der Seite freigegeben. Ein Codevergleich verlangt

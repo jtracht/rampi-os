@@ -47,7 +47,9 @@ try:
         "AddAndActivateConnection2",
         "a{sa{sv}}ooa{sv}",
         "ooa{sv}",
-        "pair = self.add_and_activate_connection(self, args[0], args[1], args[2]); "
+        "ap = args[2] if str(args[2]) != '/' else objects[args[1]].access_points[0]; "
+        "pair = self.add_and_activate_connection(self, args[0], args[1], ap); "
+        "objects[pair[0]].settings = args[0]; "
         + f"objects[args[1]].Set('{NM}.Device.Wireless', 'ActiveAccessPoint', args[2]); "
         + "ret = (pair[0], pair[1], {})",
     )
@@ -72,13 +74,20 @@ try:
         if result.returncode:
             raise RuntimeError(result.stdout + result.stderr)
         calls = controls.GetMethodCalls("AddAndActivateConnection2")
-        assert len(calls) == 1, "Rust created duplicate WLAN profiles"
+        assert len(calls) == 2, "Rust created duplicate WLAN profiles"
         profile = calls[0][1][0]
         assert list(profile["connection"]["permissions"]) == [
             f"user:{pwd.getpwuid(os.getuid()).pw_name}:"
         ]
         assert profile["802-11-wireless-security"]["psk"] == secret
-        assert len(controls.GetMethodCalls("ActivateConnection")) == 1
+        assert len(controls.GetMethodCalls("ActivateConnection")) == 2
+        hidden = calls[1][1]
+        assert str(hidden[2]) == "/"
+        assert hidden[0]["802-11-wireless"]["hidden"]
+        assert hidden[0]["802-11-wireless-security"]["key-mgmt"] == "sae"
+        assert list(hidden[0]["connection"]["permissions"]) == [
+            f"user:{pwd.getpwuid(os.getuid()).pw_name}:"
+        ]
         assert secret not in result.stdout + result.stderr
         assert not any(
             secret.encode() in p.read_bytes()

@@ -48,7 +48,7 @@ pub fn settings(
     page.append(&switcher);
     page.append(&tabs);
     tabs.add_titled(
-        &scroll(&crate::host_view::build(conf, status, f)),
+        &scroll(&crate::host_view::build(stack, conf, status, f)),
         Some("host"),
         "Host & SSH",
     );
@@ -75,7 +75,8 @@ pub fn settings(
         )
     });
     system.append(&save);
-    tabs.add_titled(&system, Some("system"), "System");
+    crate::system_settings::append(&system, stack, status, f);
+    tabs.add_titled(&scroll(&system), Some("system"), "System");
     tabs.add_titled(&scroll(&wifi(status, f)), Some("wifi"), "WLAN");
     tabs.add_titled(
         &scroll(&bluetooth(stack, status, f)),
@@ -159,6 +160,7 @@ fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
     buttons.append(&disconnect);
     page.append(&buttons);
     page.append(&label("Suche, Auswahl und Kennworteingabe bleiben auf dieser Seite. Neue Profile gehören ausschließlich deinem Linux-Konto. Unternehmensnetze benötigen ein vorhandenes NetworkManager-Profil."));
+    crate::wifi_hidden::append(&page, status, f);
     let (l, n, r, st, stat) = (
         list.clone(),
         networks.clone(),
