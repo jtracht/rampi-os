@@ -1,5 +1,8 @@
 # Native Softwareabnahme: Einrichtung, Kopplung, Belastung und Installer
 
+Neuere [Abnahme mit 20 Pflichtstufen](rust-native-70-2026-10-23.md).
+Dieser Bericht dokumentiert die frühere Baseline.
+
 Geprüfter Programm-/Installer-Quellstand:
 `ec7a88e65ab4aa9721fd3c68f3d29143f054e172`.
 

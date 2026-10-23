@@ -1,5 +1,7 @@
 # Entwicklungsfortschritt
 
+Aktuelle [70-Prozent-Abnahme mit beiden Architekturen](validation/rust-native-70-2026-10-23.md).
+
 Aktueller Gesamtstand unter der neuen Rust-/Wayland-Vorgabe: **ca. 70 %**.
 Rust-Umstellung: **ca. 68 %** (separate Portierungsschätzung).
 Der zuvor belegte Python-/QML-Stand lag bei ca. 75 %; Baseline v0.3.0: ca. 69 %.

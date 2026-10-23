@@ -1,5 +1,7 @@
 # Testnachweise und Abnahme
 
+Aktuelle [70-Prozent-Abnahme mit beiden Architekturen](validation/rust-native-70-2026-10-23.md).
+
 Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Verbindlicher
 Ersatzumfang: [VALIDATION-SCOPE.md](VALIDATION-SCOPE.md).
 
