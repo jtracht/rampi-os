@@ -167,6 +167,7 @@ def main():
             "libssl3t64",
             "libusbredirparser1t64",
             "libusb-1.0-0",
+            "python3-pil",
             "libgtk-4-media-gstreamer",
             "librsvg2-common",
             "gnome-keyring",

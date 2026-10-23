@@ -1,6 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 76 %**.
+Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 77 %**.
+[77-Prozent-Erweiterung durch den nativen Browser](validation/browser-modern-profile-2026-10-23.md).
 [76-Prozent-Erweiterung durch integriertes RDP](validation/embedded-rdp-2026-10-23.md).
 [75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
 Das zuletzt erreichte Zwischenziel von mindestens 75 % ist belegt. Der erneut
@@ -25,7 +26,7 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Anbieter-CLIs | 3 |
 | Remote Desktop und Streaming | 3 |
 | Kanban | 4 |
-| Browser | 4 |
+| Browser | 5 |
 | Installer und Reparatur | 4 |
 | Sicherheit und Isolation | 4 |
 | Design und Branding | 4 |
@@ -34,11 +35,16 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Manuelle Updates | 5 |
 | Dokumentation | 4 |
 | Performance | 3 |
-| **Summe** | **76 / 100** |
+| **Summe** | **77 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
 Die GTK-Abnahme prüft Live-Änderungen und die direkten Wege zu den Einstellungen.
+
+Browser erreicht fünf Punkte durch integrierte Navigation, echte HTTPS-/JavaScript-,
+Tastatur-, Maus-, Vollbild- und Download-/Upload-Abnahmen sowie persistente,
+getrennte Profile. Native CI und heruntergeladene Nachweise sind auf AMD64 und
+ARM64 geprüft. Das belegt die vereinbarte Softwarefunktion, keine Pi-GPU-Leistung.
 
 Remote Desktop erreicht drei Punkte durch die integrierte RDW-/IronRDP-Fläche,
 unabhängige Zertifikatsprüfung vor der Anmeldung, echte Desktop-Frames und

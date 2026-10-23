@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import pwd
+import runpy
 import secrets
 import shutil
 import subprocess
@@ -201,9 +202,27 @@ def main():
             ),
             "actual native application process",
         )
-        time.sleep(4)
+        wait(
+            lambda user=user: (
+                b"org.rampi.Workstation"
+                in as_user(user, "wlrctl", "toplevel", "list", check=False).stdout
+            ),
+            "mapped native application surface",
+        )
         screenshot = f"/home/{user}/.rampi-login.png"
-        as_user(user, "grim", screenshot)
+        visible_capture = runpy.run_path(str(SOURCE / "scripts/check-login-evidence.py"))[
+            "visible_capture"
+        ]
+
+        def painted(user=user, screenshot=screenshot, visible_capture=visible_capture):
+            as_user(user, "grim", screenshot)
+            try:
+                visible_capture(Path(screenshot))
+                return True
+            except ValueError:
+                return False
+
+        wait(painted, "actual visible native application frame")
         shutil.copyfile(screenshot, CAPTURES / f"{user}.png")
         (CAPTURES / f"{user}.png").chmod(0o644)
         personal = Path("/home") / user / ".config/rampi"

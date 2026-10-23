@@ -2,10 +2,10 @@
 
 import importlib.util
 import json
-import struct
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 SPEC = importlib.util.spec_from_file_location(
     "login_evidence", Path(__file__).resolve().parents[1] / "scripts/check-login-evidence.py"
@@ -53,10 +53,18 @@ def evidence(tmp_path):
         for uid in [1001, 1002]
     ]
     (capture / "login-proof.json").write_text(json.dumps(proof))
-    header = b"\x89PNG\r\n\x1a\n" + b"\0" * 8 + struct.pack(">II", 1280, 720)
     for name in ["greeter", "rampi-login", "rampi-other"]:
-        (capture / (name + ".png")).write_bytes(header)
+        Image.new("RGB", (1280, 720), (80, 100, 120)).save(capture / (name + ".png"))
     return tmp_path
+
+
+def test_reject_black_compositor_with_only_cursor(evidence):
+    picture = evidence / "captures/rampi-login.png"
+    image = Image.new("RGB", (1280, 720))
+    image.paste((255, 255, 255), (90, 90, 100, 100))
+    image.save(picture)
+    with pytest.raises(ValueError, match="not been painted"):
+        MODULE.check(evidence)
 
 
 def test_fresh_two_account_evidence(evidence):

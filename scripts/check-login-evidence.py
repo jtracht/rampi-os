@@ -3,8 +3,23 @@
 import argparse
 import json
 import re
-import struct
 from pathlib import Path
+
+from PIL import Image
+
+
+def visible_capture(picture: Path):
+    with Image.open(picture) as image:
+        image.load()
+        if image.format != "PNG" or image.size != (1280, 720):
+            raise ValueError("Invalid graphical capture: " + str(picture))
+        # A cursor on an otherwise black compositor must never pass as the UI.
+        raw = image.convert("RGB").tobytes()
+        bright = sum(
+            max(r, g, b) > 48 for r, g, b in zip(raw[::3], raw[1::3], raw[2::3], strict=True)
+        )
+        if bright < 2000:
+            raise ValueError("Application surface has not been painted: " + str(picture))
 
 
 def check(directory: Path, expected_binary: str | None = None):
@@ -53,13 +68,7 @@ def check(directory: Path, expected_binary: str | None = None):
             raise ValueError("Guest executed a different native binary")
     for name in ["greeter", "rampi-login", "rampi-other"]:
         picture = directory / "captures" / (name + ".png")
-        header = picture.read_bytes()[:24]
-        if (
-            len(header) != 24
-            or header[:8] != b"\x89PNG\r\n\x1a\n"
-            or struct.unpack(">II", header[16:24]) != (1280, 720)
-        ):
-            raise ValueError("Missing graphical capture: " + name)
+        visible_capture(picture)
     return environment
 
 
