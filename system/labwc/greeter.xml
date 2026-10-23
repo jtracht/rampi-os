@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <core><gap>0</gap><decoration>client</decoration></core>
+  <!-- The greeter must never launch an unauthenticated Rampi workstation. -->
+  <keyboard>
+    <keybind key="C-A-Home"><action name="None"/></keybind>
+  </keyboard>
+</labwc_config>

@@ -108,9 +108,13 @@ if [[ "$new_login" == 1 ]]; then
     install -d -m 755 /etc/greetd /etc/xdg/rampi/greeter
     install -m 644 "$source_root/system/greetd.toml" /etc/greetd/config.toml
     sha256sum /etc/greetd/config.toml | cut -d ' ' -f 1 > /opt/rampi/managed-greetd.sha256
-    install -m 644 "$source_root/system/labwc/rc.xml" /etc/xdg/rampi/greeter/rc.xml
+    install -m 644 "$source_root/system/labwc/greeter.xml" /etc/xdg/rampi/greeter/rc.xml
     systemctl enable greetd
     systemctl set-default graphical.target
+else
+    # shellcheck disable=SC1091
+    source "$source_root/installer/raspberrypi/greeter-profile.sh"
+    rampi_migrate_greeter_profile "$source_root" /etc/greetd/config.toml /opt/rampi/managed-greetd.sha256 /etc/xdg/rampi/greeter/rc.xml
 fi
 if [[ "$mode" == --image ]]; then
     systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
