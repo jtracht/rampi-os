@@ -25,7 +25,7 @@ jobs:
           - runner: ubuntu-24.04-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: docker build -t rampi-rust-dev -f tests/rust/Dockerfile .
@@ -70,6 +70,11 @@ jobs:
       - name: Rust Wayland installer and session syntax
         run: |
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/setup.sh system/rampi system/rampi-session system/rampi-wayland-start system/rampi-health tests/rust/run-wayland.sh
+      - name: Embedded Rust RDP with real TLS server, input and reconnect
+        run: |
+          set -euo pipefail
+          docker build --build-arg BASE_IMAGE=rampi-rust-dev -f tests/remote/Dockerfile -t rampi-rdp-fixture .
+          python3 tests/rust/test-rdp.py --image rampi-rust-dev --artifacts artifacts/rust 2>&1 | tee artifacts/rust/rdp-acceptance.log
       - name: Actual HTTPS native bootstrap and archive/provenance rejection
         run: |
           set -euo pipefail

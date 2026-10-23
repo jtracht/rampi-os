@@ -761,17 +761,10 @@ pub fn remote(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedba
     });
     page.append(&back);
     page.append(&label("Deine Windows-Workstation\nRDP meldet dich mit deinem Windows-Konto an. Sunshine teilt die aktive Windows-Konsole."));
-    let b = button("RDP · nativer Wayland-Client", f);
-    let (host_settings, s, stat) = (conf.clone(), stack.clone(), status.clone());
+    let b = button("RDP · integrierter Windows-Desktop", f);
+    let (host_settings, s, feedback) = (conf.clone(), stack.clone(), f.clone());
     b.connect_clicked(move |_| {
-        let result = host_settings
-            .borrow()
-            .host()
-            .and_then(rampi_core::launch::rdp);
-        match result {
-            Ok(args) => terminal(&s, "rdp", args, &stat),
-            Err(e) => stat.set_text(&e.to_string()),
-        }
+        crate::rdp_view::open(&s, &host_settings, &feedback);
     });
     page.append(&b);
     for (title, pair) in [

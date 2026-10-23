@@ -1,0 +1,3 @@
+repository = "zkcrypto/ff"
+revision = "8417973539baabf561975144e0a68d166d0f9a95" # pragma: allowlist secret - public upstream commit
+files = ["LICENSE-APACHE", "LICENSE-MIT"]

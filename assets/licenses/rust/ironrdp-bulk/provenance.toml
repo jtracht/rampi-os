@@ -1,0 +1,3 @@
+repository = "Devolutions/IronRDP"
+revision = "e3dc0e70d04253d0f881e051c653fb8cb6403281" # pragma: allowlist secret - public upstream commit
+files = ["LICENSE-APACHE", "LICENSE-MIT"]

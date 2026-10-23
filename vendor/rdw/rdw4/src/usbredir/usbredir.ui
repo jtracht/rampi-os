@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="RdwUsbRedir" parent="GtkWidget">
+    <property name="layout-manager">
+      <object class="GtkBoxLayout">
+        <property name="orientation">vertical</property>
+      </object>
+    </property>
+    <child>
+      <object class="GtkBox" id="infobar">
+        <child>
+          <object class="GtkRevealer" id="infobar_revealer">
+            <child>
+              <object class="GtkBox">
+                <child>
+                  <object class="GtkLabel" id="error_label">
+                    <property name="label" translatable="yes">Info</property>
+                    <property name="hexpand">true</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="infobar_close">
+                    <property name="icon-name">window-close-symbolic</property>
+                    <style>
+                      <class name="close"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <style>
+          <!-- FIXME: style is broken -->
+          <class name="infobar"/>
+          <class name="warning"/>
+        </style>
+      </object>
+    </child>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="margin-start">60</property>
+        <property name="margin-end">60</property>
+        <property name="margin-top">30</property>
+        <property name="margin-bottom">30</property>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label" translatable="yes">Devices</property>
+                <property name="xalign">0</property>
+                <property name="margin-bottom">10</property>
+                <style>
+                  <class name="title-2"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="free_label">
+                <property name="label">(x free channels)</property>
+                <property name="xalign">0</property>
+                <property name="margin-bottom">10</property>
+                <property name="hexpand">1</property>
+                <property name="halign">end</property>
+                <property name="visible">0</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkFrame">
+            <child>
+              <object class="GtkListBox" id="listbox">
+                <property name="selection-mode">none</property>
+                <property name="show-separators">1</property>
+                <style>
+                  <class name="rich-list"/>
+                </style>
+                <!-- list box row children -->
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

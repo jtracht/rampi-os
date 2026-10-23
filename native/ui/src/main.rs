@@ -39,6 +39,10 @@ mod performance;
 #[cfg(target_os = "linux")]
 mod process;
 #[cfg(target_os = "linux")]
+mod rdp_checks;
+#[cfg(target_os = "linux")]
+mod rdp_view;
+#[cfg(target_os = "linux")]
 mod secret_service;
 #[cfg(target_os = "linux")]
 mod service_checks;

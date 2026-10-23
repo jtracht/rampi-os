@@ -334,9 +334,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
             w.set_cursor_from_name(Some("none"));
         }
         let page = s.visible_child_name();
-        let owns_escape = page
-            .as_deref()
-            .is_some_and(|name| name.starts_with("terminal-") || name == "browser");
+        let owns_escape = page.as_deref().is_some_and(|name| {
+            name.starts_with("terminal-") || name == "browser" || name == "rdp-session"
+        });
         if ((key == gdk::Key::Escape && !owns_escape)
             || (key == gdk::Key::Home
                 && mods.contains(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::ALT_MASK)))
@@ -412,6 +412,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     }
     if std::env::args().any(|a| a == "--browser-https-check") {
         crate::browser_checks::run(app, &stack, &settings, &status, &feedback);
+    }
+    if std::env::args().any(|a| a == "--rdp-ui-check") {
+        crate::rdp_checks::run(app, &stack, &settings, &feedback);
     }
     if std::env::args().any(|a| a == "--keyboard-test") {
         crate::checks::keyboard(app, &stack);

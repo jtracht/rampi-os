@@ -1,0 +1,7 @@
+[workspace]
+members = ["rdw4", "rdw4-rdp", "keycodemap"]
+exclude = ["cbindgen"]
+resolver = "2"
+[workspace.dependencies]
+cargo_metadata = "0.23"
+gtk = { package = "gtk4", version = "0.11" }
