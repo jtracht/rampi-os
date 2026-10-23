@@ -83,17 +83,41 @@ pub fn run(
             find_button(&dashboard, "⚙  Einstellungen").unwrap().grab_focus();
             tool("wtype", &["-k", "Return"]).await?; delay(200).await;
             ensure!(stack.visible_child_name().as_deref() == Some("settings"));
+            ensure!(tabs.visible_child_name().as_deref() == Some("categories"), "Settings must open the category overview");
+            let category = named(&settings, "settings-category-host").context("Missing category menu")?;
+            category.grab_focus();
+            tool("wtype", &["-k", "Up"]).await?;
+            let system_category = named(&settings, "settings-category-system").unwrap();
+            ensure!(gtk::prelude::RootExt::focus(&window).is_some_and(|focus| focus == system_category || focus.is_ancestor(&system_category)), "Up must wrap to the last category");
+            tool("wtype", &["-k", "Down"]).await?;
+            delay(180).await;
+            capture("settings-categories").await?;
+            tool("wtype", &["-k", "Return"]).await?; delay(150).await;
+            ensure!(tabs.visible_child_name().as_deref() == Some("host"));
             let host = tabs.child_by_name("host").unwrap();
             let name = named(&host, "host-name").unwrap(); name.grab_focus();
             tool("wtype", &["-M","ctrl","-k","a","-m","ctrl","Keyboard profile","-k","Tab","localhost","-k","Tab","alice","-k","Tab","-M","ctrl","-k","a","-m","ctrl","2222","-k","Tab","-k","Tab","C:\\Work","-k","Tab","-M","ctrl","-k","a","-m","ctrl","1280x720","-k","Tab","-k","Tab","-k","Return"]).await?;
             delay(150).await;
             ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.name == "Keyboard profile" && conf.borrow().host()?.port == 2222, "Actual Tab/typing/Enter did not save host");
-            for (index, tab) in [(1,"system"),(2,"wifi"),(3,"bluetooth"),(4,"vpn"),(5,"board"),(0,"host")] {
-                named(&settings, &format!("settings-tab-{index}")).context("No keyboard tab")?.grab_focus();
+            for category in ["host", "wifi", "bluetooth", "vpn", "board", "system"] {
+                tool("wtype", &["-k", "Escape"]).await?; delay(160).await;
+                ensure!(stack.visible_child_name().as_deref() == Some("settings") && tabs.visible_child_name().as_deref() == Some("categories"), "Back must return to the category overview");
+                if category == "host" {
+                    named(&settings, "settings-category-host").unwrap().grab_focus();
+                } else {
+                    tool("wtype", &["-k", "Down"]).await?;
+                }
+                // Back restores the last category's focus; Down selects the next row.
+                let selected = gtk::prelude::RootExt::focus(&window).context("No category focus")?;
+                let expected = named(&settings, &format!("settings-category-{category}")).unwrap();
+                ensure!(selected == expected || selected.is_ancestor(&expected), "Arrow navigation did not select {category}");
                 tool("wtype", &["-k", "Return"]).await?; delay(100).await;
-                ensure!(tabs.visible_child_name().as_deref() == Some(tab), "Keyboard did not switch {tab}");
+                ensure!(tabs.visible_child_name().as_deref() == Some(category), "Keyboard did not open {category}");
             }
+            tabs.set_visible_child_name("host"); delay(170).await;
             capture("settings-host").await?;
+            tool("wtype", &["-k", "Escape"]).await?; delay(150).await;
+            ensure!(tabs.visible_child_name().as_deref() == Some("categories"));
             tool("wtype", &["-k", "Escape"]).await?; delay(150).await;
             ensure!(stack.visible_child_name().as_deref() == Some("dashboard"));
             let status = gtk::Label::new(None);

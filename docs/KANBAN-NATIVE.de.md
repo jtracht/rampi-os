@@ -81,6 +81,6 @@ Offizielle Schnittstellen:
 ![Geführte Gitea-Einrichtung](screenshots/gitea-guided-settings.png)
 
 Aufnahme der Rust-Anwendung unter Wayland, 1280×720, mit einer Beispielquelle.
-Der aktive Tab ist hervorgehoben. Das Formular lässt sich weiter nach unten
+Kanban hat eine eigene Einstellungsseite mit Rückweg zur Einrichtung. Das Formular lässt sich weiter nach unten
 scrollen. Die isolierte Aufnahme enthält keine persönlichen Zugänge und keine
 verbundenen Systemdienste.

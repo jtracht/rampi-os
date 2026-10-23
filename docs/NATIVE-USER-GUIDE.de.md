@@ -32,9 +32,21 @@ Terminal-PTY weitergegeben. Im Terminal und Browser bleibt Escape für deren eig
 Bedienung verfügbar; verwende dort Strg+Alt+Pos1 für das Dashboard.
 
 WLAN und Bluetooth erscheinen jeweils einmal oben im Dashboard. Ein Klick führt
-zum zugehörigen Tab. Suche, Kennworteingabe, Kopplung und Bestätigungen bleiben
+zur zugehörigen Einstellungsseite. Suche, Kennworteingabe, Kopplung und Bestätigungen bleiben
 innerhalb desselben Rampi-Fensters. Bei Tastaturbedienung verschwindet der
 Mauszeiger; Mausbewegung zeigt ihn wieder.
+
+**Einstellungen** öffnet eine vertikale Kategorieübersicht im Stil eines
+Konsolenmenüs. Pfeil hoch/runter wählt eine Kategorie, Enter öffnet ihre eigene
+Seite. Es gibt keine Einstellungs-Tabs. **← Einstellungen** oder Escape führt
+zur Übersicht zurück und merkt sich die zuletzt gewählte Kategorie; ein weiteres
+Escape öffnet das Dashboard. Während der Ersteinrichtung führt Zurück direkt
+zum aktuellen Einrichtungsschritt. Alle Bereiche bleiben im selben Fenster.
+
+![Kategorieübersicht der nativen Rust-Anwendung](screenshots/settings-categories.png)
+
+Tatsächliche Wayland-Aufnahme aus der isolierten Softwareprüfung. Die dort
+fehlenden Bluetooth-Dienste betreffen nur diese Aufnahmeumgebung.
 
 Unter **System** kannst du Bewegung reduzieren und Klickklänge abschalten.
 Speichere die persönlichen Einstellungen mit der entsprechenden Schaltfläche.
@@ -44,7 +56,7 @@ Terminal nach altem und neuem Kennwort. Rampi speichert diese Eingaben nicht.
 Verbindungen werden geschlossen; persistente Windows-Prozesse laufen weiter.
 Die Klangwiedergabe verwendet den vorhandenen Pulse-kompatiblen Audiodienst.
 
-Im selben Tab eine persönliche Tastaturbelegung wählen und anwenden. Andere
+Auf derselben Systemseite eine persönliche Tastaturbelegung wählen und anwenden. Andere
 persönliche Compositor-Einstellungen bleiben erhalten. Das Eingabefeld dient zum
 sofortigen Prüfen; bei einer fremden Sitzung gilt die Datei gegebenenfalls erst
 nach der nächsten Rampi-Anmeldung. Die Oberfläche bleibt derzeit deutsch.
@@ -93,7 +105,7 @@ nachgewiesen; die entsprechende Kachel ist kein Nachweis der Anbieterunterstütz
 
 ## WLAN und Bluetooth
 
-Im WLAN-Tab sucht **WLANs suchen** über NetworkManager nach verfügbaren Netzen.
+Auf der WLAN-Seite sucht **WLANs suchen** über NetworkManager nach verfügbaren Netzen.
 Wähle das Netz, trage bei Bedarf das Kennwort ein und verbinde dich.
 Bestehende Profile werden wiederverwendet. Neue Profile werden deinem
 Linux-Konto zugeordnet. Unternehmensnetze benötigen ein vorhandenes geeignetes
@@ -102,7 +114,7 @@ anzeigen, den Adapter wählen und die exakte SSID sowie WPA2 Personal, WPA3 Pers
 oder ein offenes Netz angeben. Passende vorhandene Profile werden verwendet; bei
 mehreren passenden Profilen verlangt Rampi zuerst eine Bereinigung.
 
-Im Bluetooth-Tab wählst du Adapter und Gerät, startest die Suche und koppelst.
+Auf der Bluetooth-Seite wählst du Adapter und Gerät, startest die Suche und koppelst.
 Die Suche wird beim Verlassen der Seite freigegeben. Ein Codevergleich verlangt
 eine bewusste Bestätigung. PIN und Passkey werden verdeckt eingegeben und nach
 Bestätigung oder Abbruch geleert. Vertrauen und entfernte Kopplungen wirken

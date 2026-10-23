@@ -104,7 +104,7 @@ WebKit-Downloads mit Zielentscheidung, Überschreibschutz und Abbruch. Weitere
 moderne Webseiten und Berechtigungsabläufe bleiben zu prüfen.
 
 Tastatur und Design erreichen je vier Punkte: Tatsächliche Wayland-Eingaben
-prüfen Hostformular, Tab-Reihenfolge, alle Einstellungs-Tabs, Cursorwechsel und
+prüfen Hostformular, Tab-Reihenfolge, alle Einstellungsbereiche, Cursorwechsel und
 Escape im VTE. Das Compositor-Kürzel kehrt zum Dashboard zurück, ohne den Tastendruck
 in die PTY weiterzuleiten. Echte Compositor-PNGs belegen unterschiedliche Bewegung
 aller vier Kanten bei Start, Hover und Fokus; reduzierte Bewegung bleibt still.
