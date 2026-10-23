@@ -4,6 +4,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 output = Path(sys.argv[1])
@@ -53,6 +54,19 @@ for package in metadata["packages"]:
         if upstream_revision not in reviewed_revisions:
             raise SystemExit("Review upstream license at changed revision: " + package["name"])
         texts.add(Path(__file__).resolve().parents[1] / "assets/licenses/rust/webkit6-rs-LICENSE")
+    if not texts:
+        aliases = {"gl_generator": "gl"}
+        reviewed = (
+            Path(__file__).resolve().parents[1]
+            / "assets/licenses/rust"
+            / aliases.get(package["name"], package["name"])
+        )
+        provenance = reviewed / "provenance.toml"
+        if provenance.is_file():
+            source = tomllib.loads(provenance.read_text(encoding="utf-8"))
+            if upstream_revision != source["revision"]:
+                raise SystemExit("Review changed upstream license: " + package["name"])
+            texts.update(reviewed / filename for filename in source["files"])
     if not texts:
         missing.append(f"{package['name']} {package['version']}")
         continue

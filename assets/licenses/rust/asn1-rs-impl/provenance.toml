@@ -1,0 +1,3 @@
+repository = "rusticata/asn1-rs"
+revision = "a20e5f7319c896737ad0f2557037817b91ad854f" # pragma: allowlist secret - public upstream commit
+files = ["LICENSE-APACHE", "LICENSE-MIT"]

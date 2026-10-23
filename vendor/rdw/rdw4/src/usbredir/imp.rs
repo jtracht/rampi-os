@@ -1,0 +1,332 @@
+use super::*;
+use futures_channel::mpsc::{self, Receiver, Sender};
+use futures_util::StreamExt;
+use glib::{clone, subclass::Signal, ParamSpec};
+use gtk::CompositeTemplate;
+use rusb::UsbContext;
+use std::{
+    cell::{Cell, RefCell},
+    sync::OnceLock,
+    thread,
+};
+use usbredirhost::rusb;
+
+#[derive(Debug)]
+enum RdwUsbEvent<T: UsbContext> {
+    DeviceArrived(rusb::Device<T>),
+    DeviceLeft(rusb::Device<T>),
+}
+
+#[derive(Debug)]
+struct RdwUsbHandler<T: UsbContext> {
+    pub tx: Sender<RdwUsbEvent<T>>,
+}
+
+impl<T: UsbContext> rusb::Hotplug<T> for RdwUsbHandler<T> {
+    fn device_arrived(&mut self, device: rusb::Device<T>) {
+        let _ = self.tx.try_send(RdwUsbEvent::DeviceArrived(device));
+    }
+
+    fn device_left(&mut self, device: rusb::Device<T>) {
+        let _ = self.tx.try_send(RdwUsbEvent::DeviceLeft(device));
+    }
+}
+
+#[derive(Debug)]
+struct RdwUsbContext {
+    #[allow(unused)]
+    pub ctxt: rusb::Context,
+    #[allow(unused)]
+    pub reg: rusb::Registration<rusb::Context>,
+}
+
+impl RdwUsbContext {
+    fn new() -> Option<(Self, Receiver<RdwUsbEvent<rusb::Context>>)> {
+        let ctxt = match rusb::Context::new() {
+            Ok(ctxt) => ctxt,
+            Err(e) => {
+                log::warn!("Failed to create USB context: {e}");
+                return None;
+            }
+        };
+
+        let (tx, rx) = mpsc::channel(1);
+        let reg = match rusb::HotplugBuilder::new()
+            .enumerate(true)
+            .register(&ctxt, Box::new(RdwUsbHandler { tx }))
+        {
+            Ok(reg) => reg,
+            Err(e) => {
+                log::warn!("Failed to register USB callback: {e}");
+                return None;
+            }
+        };
+
+        let ctx = ctxt.clone();
+        thread::spawn(move || loop {
+            // note: there is a busy loop with libusb <= 1.0.24!..
+            if let Err(e) = ctx.handle_events(None) {
+                log::warn!("USB context failed to loop: {e}");
+                break;
+            }
+        });
+        Some((Self { ctxt, reg }, rx))
+    }
+}
+
+#[repr(C)]
+pub struct RdwUsbRedirClass {
+    pub parent_class: gtk::ffi::GtkWidgetClass,
+}
+
+unsafe impl ClassStruct for RdwUsbRedirClass {
+    type Type = UsbRedir;
+}
+
+#[repr(C)]
+pub struct RdwUsbRedir {
+    parent: gtk::ffi::GtkWidget,
+}
+
+impl std::fmt::Debug for RdwUsbRedir {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("RdwUsbRedir")
+            .field("parent", &self.parent)
+            .finish()
+    }
+}
+
+unsafe impl InstanceStruct for RdwUsbRedir {
+    type Type = UsbRedir;
+}
+
+#[derive(Debug, glib::Properties, CompositeTemplate)]
+#[template(file = "usbredir.ui")]
+#[properties(wrapper_type = super::UsbRedir)]
+pub struct UsbRedir {
+    #[template_child]
+    pub listbox: TemplateChild<gtk::ListBox>,
+
+    #[template_child]
+    pub infobar_revealer: TemplateChild<gtk::Revealer>,
+
+    #[template_child]
+    pub infobar_close: TemplateChild<gtk::Button>,
+
+    #[template_child]
+    pub error_label: TemplateChild<gtk::Label>,
+
+    #[template_child]
+    pub free_label: TemplateChild<gtk::Label>,
+
+    pub model: gio::ListStore,
+
+    ctxt: RefCell<Option<RdwUsbContext>>,
+    #[property(get, set = Self::set_free_channels, nick = "Free channels", blurb = "Number of free channels", minimum = -1, default = -1)]
+    free_channels: Cell<i32>,
+}
+
+impl Default for UsbRedir {
+    fn default() -> Self {
+        Self {
+            model: gio::ListStore::new::<device::Device>(),
+            listbox: TemplateChild::default(),
+            infobar_revealer: TemplateChild::default(),
+            infobar_close: TemplateChild::default(),
+            error_label: TemplateChild::default(),
+            free_label: TemplateChild::default(),
+            ctxt: RefCell::default(),
+            free_channels: Cell::default(),
+        }
+    }
+}
+
+#[glib::object_subclass]
+impl ObjectSubclass for UsbRedir {
+    const NAME: &'static str = "RdwUsbRedir";
+    type Type = super::UsbRedir;
+    type ParentType = gtk::Widget;
+    type Class = RdwUsbRedirClass;
+    type Instance = RdwUsbRedir;
+
+    fn class_init(klass: &mut Self::Class) {
+        klass.bind_template();
+    }
+
+    fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
+        obj.init_template();
+    }
+}
+
+impl ObjectImpl for UsbRedir {
+    fn properties() -> &'static [ParamSpec] {
+        Self::derived_properties()
+    }
+
+    fn property(&self, id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        self.derived_property(id, pspec)
+    }
+
+    fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
+        self.derived_set_property(id, value, pspec)
+    }
+
+    fn signals() -> &'static [Signal] {
+        static SIGNALS: OnceLock<Vec<Signal>> = OnceLock::new();
+        SIGNALS
+            .get_or_init(|| {
+                vec![
+                    Signal::builder("device-state-set")
+                        .param_types([device::Device::static_type(), bool::static_type()])
+                        .build(),
+                    Signal::builder("show-error")
+                        .param_types([String::static_type()])
+                        // TODO: <glib::signal::Inhibit>::static_type().into(),
+                        .return_type_from(bool::static_type())
+                        .class_handler(|args| {
+                            let inst = args[0].get::<super::UsbRedir>().unwrap();
+                            let imp = inst.imp();
+                            let msg: String = args[1].get().unwrap();
+                            imp.error_label.set_label(&msg);
+                            imp.infobar_revealer.set_reveal_child(true);
+                            Some(true.to_value())
+                        })
+                        // XXX: I don't remember what this was for
+                        // .accumulator(|_hint, ret, value| {
+                        //     let handled: bool = value.get().unwrap_or_default();
+                        //     *ret = value.clone();
+                        //     !handled
+                        // })
+                        .build(),
+                ]
+            })
+            .as_ref()
+    }
+
+    fn dispose(&self) {
+        while let Some(child) = self.obj().first_child() {
+            child.unparent();
+        }
+    }
+}
+
+impl WidgetImpl for UsbRedir {
+    fn realize(&self) {
+        self.parent_realize();
+
+        if let Some((ctxt, mut rx)) = RdwUsbContext::new() {
+            let c = glib::MainContext::default();
+            c.spawn_local(clone!(
+                #[weak(rename_to = this)]
+                self,
+                async move {
+                    loop {
+                        match rx.next().await {
+                            Some(RdwUsbEvent::DeviceArrived(d)) => this.add_device(d),
+                            Some(RdwUsbEvent::DeviceLeft(d)) => this.remove_device(d),
+                            None => break,
+                        }
+                    }
+                }
+            ));
+            self.ctxt.replace(Some(ctxt));
+        }
+
+        self.listbox.connect_row_activated(clone!(
+            #[weak(rename_to = _this)]
+            self,
+            move |_, row| {
+                let row: row::Row = row.first_child().unwrap().downcast().unwrap();
+                row.switch().activate();
+            }
+        ));
+
+        self.listbox.bind_model(
+            Some(&self.model),
+            clone!(
+                #[weak(rename_to = _this)]
+                self,
+                #[upgrade_or_panic]
+                move |item| {
+                    let row = row::Row::new(item.downcast_ref().unwrap());
+                    row.upcast()
+                }
+            ),
+        );
+
+        self.infobar_close.connect_clicked(clone!(
+            #[weak(rename_to = this)]
+            self,
+            move |_| {
+                this.infobar_revealer.set_reveal_child(false);
+            }
+        ));
+    }
+}
+
+impl UsbRedir {
+    fn set_free_channels(&self, n: i32) {
+        self.free_channels.set(n);
+        self.free_label.set_label(&format!("({n} free channels)"));
+        self.free_label.set_visible(n >= 0);
+    }
+
+    pub fn find_item<F: Fn(&Device) -> bool>(&self, test: F) -> Option<u32> {
+        let mut pos = 0;
+        loop {
+            if let Some(item) = self.model.item(pos) {
+                let item: Device = item.downcast().unwrap();
+                if test(&item) {
+                    break Some(pos);
+                }
+            } else {
+                break None;
+            }
+            pos += 1;
+        }
+    }
+
+    fn add_device(&self, d: rusb::Device<rusb::Context>) {
+        match is_hub(&d) {
+            Ok(true) => return,
+            Err(e) => {
+                log::warn!("Failed to get device details: {e}");
+                return;
+            }
+            _ => (),
+        }
+        if self.find_item(|item| item.is_device(&d)).is_some() {
+            return;
+        }
+
+        let item = Device::new();
+        item.connect_state_set(clone!(
+            #[weak(rename_to = this)]
+            self,
+            move |device, state| {
+                this.obj()
+                    .emit_by_name::<()>("device-state-set", &[device, &state]);
+            }
+        ));
+        item.set_device(d);
+        self.model.append(&item);
+    }
+
+    fn remove_device(&self, d: rusb::Device<rusb::Context>) {
+        if let Some(pos) = self.find_item(|item| item.is_device(&d)) {
+            self.model.remove(pos);
+        }
+    }
+}
+
+fn is_hub(d: &rusb::Device<rusb::Context>) -> rusb::Result<bool> {
+    let desc = d.device_descriptor()?;
+    if desc.class_code() == rusb::constants::LIBUSB_CLASS_HUB {
+        return Ok(true);
+    }
+    match d.address() {
+        0xff => Ok(true),        // root hub (HCD)
+        n if n <= 1 => Ok(true), // root hub or bad address
+        _ => Ok(false),
+    }
+}

@@ -3,8 +3,8 @@
 Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 75 %**.
 [75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
 Das zuletzt erreichte Zwischenziel von mindestens 75 % ist belegt. Der erneut
-aktive Auftrag verlangt mindestens 85 % und einen CI-/QEMU-geprüften nativen
-Release. Beides ist noch offen. Dies ist ein Entwicklungsmeilenstein, kein vollständig
+aktive Auftrag verlangt mindestens 80 %. Dieses Ziel und ein CI-/QEMU-geprüfter nativer
+Release sind noch offen. Dies ist ein Entwicklungsmeilenstein, kein vollständig
 fertiges Produkt und noch kein neuer regulärer nativer Release.
 
 Die bisherige [70-Prozent-Basis](validation/rust-native-70-2026-10-23.md) wird

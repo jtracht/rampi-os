@@ -142,7 +142,38 @@ def acceptance(options):
             )
             (output / "build.log").write_text(result.stdout + result.stderr, encoding="utf-8")
             require(result)
+            require(
+                run(
+                    [
+                        "docker",
+                        "build",
+                        "--build-arg",
+                        "BASE_IMAGE=" + options.image,
+                        "-f",
+                        str(source / "tests/remote/Dockerfile"),
+                        "-t",
+                        "rampi-native-rdp-fixture",
+                        str(source),
+                    ],
+                    timeout=600,
+                )
+            )
             stages = [
+                (
+                    "rdp-acceptance.log",
+                    [
+                        sys.executable,
+                        str(source / "tests/rust/test-rdp.py"),
+                        "--image",
+                        options.image,
+                        "--server-image",
+                        "rampi-native-rdp-fixture",
+                        "--build-volume",
+                        volume,
+                        "--artifacts",
+                        str(captures),
+                    ],
+                ),
                 (
                     "bootstrap-tls.log",
                     base

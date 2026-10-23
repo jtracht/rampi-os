@@ -1,0 +1,100 @@
+[package]
+license-file = "../LICENSE"
+name = "rdw4"
+version = "0.1.0"
+authors = ["Marc-André Lureau <marcandre.lureau@redhat.com>"]
+edition = "2021"
+
+[features]
+default = ["wayland", "x11"]
+bindings = []
+wayland = ["dep:wayland-protocols", "dep:gdk-wl", "dep:glib-unix"]
+x11 = ["dep:gdk-x11", "dep:x11"]
+capi = ["env_logger"]
+
+[build-dependencies]
+cargo_metadata.workspace = true
+cbindgen = { path = "../cbindgen", features = ["gobject"] }
+system-deps = "9.0"
+
+[package.metadata.system-deps]
+rdw4 = { version = "0.1", feature = "bindings" }
+
+[dependencies]
+log = "0.4"
+derivative = "2.2.0"
+libc = "0.2.186"
+libloading = "0.9"
+khronos-egl = { version = "6.0", features = ["dynamic"] }
+gl = "0.14.0"
+usbredirhost = "0.4"
+futures-channel = "0.3"
+futures-util = "0.3"
+epoxy = "0.1"
+keycodemap = { package = "rdw-keycodemap", path = "../keycodemap", version = "0.1" }
+env_logger = { version = "0.11", default-features = false, optional = true }
+glib-unix = { version = "0.22", optional = true }
+wayland-protocols = { version = "0.32", features = [
+    "unstable",
+    "client",
+], optional = true }
+x11 = { version = "2.21", optional = true }
+
+[dependencies.gtk]
+workspace = true
+features = ["unsafe-assume-initialized", "v4_16"]
+
+[dependencies.gst]
+package = "gstreamer"
+version = "0.25"
+
+[dependencies.gst-app]
+package = "gstreamer-app"
+version = "0.25"
+
+[dependencies.gst-audio]
+package = "gstreamer-audio"
+version = "0.25"
+
+[target.'cfg(unix)'.dependencies]
+
+[dependencies.gdk-wl]
+package = "gdk4-wayland"
+features = ["v4_4", "egl", "wayland_crate"]
+optional = true
+version = "0.11"
+
+[dependencies.gdk-x11]
+package = "gdk4-x11"
+features = ["v4_4", "egl"]
+optional = true
+version = "0.11"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = [
+    "Win32_Devices_HumanInterfaceDevice",
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Graphics_Dxgi",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_UI_Input",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Direct3D11",
+] }
+
+[target.'cfg(windows)'.dependencies.gdk-win32]
+package = "gdk4-win32"
+features = ["v4_4", "win32", "egl"]
+version = "0.11"
+
+[package.metadata.capi.header]
+name = "rdw"
+subdirectory = "rdw4"
+generation = false
+
+[package.metadata.capi.pkg_config]
+filename = "rdw4"
+requires = "gtk4"

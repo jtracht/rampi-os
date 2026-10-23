@@ -17,7 +17,7 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Antigravity | Kachel und Diagnose fehlender Unterstützung | Verfügbare offizielle native CLI ist nicht nachgewiesen |
 | Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
-| RDP/Streaming | Aufruf vorhandener Wayland-Clients und Windows-Integration | Eine integrierte Fläche, Windows-NLA, Streaming-Eingabe und Pi-Decoderpfad |
+| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung in Docker; Moonlight-Aufruf | Windows-NLA, zusätzliche Maus-/Clipboard-Abnahme, integriertes Streaming und Pi-Decoderpfad |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
 | Image/Release | Gebauter nativer Kandidat, Lizenzen/Provenienz und QEMU-Boot | Grafischer Login und reguläre native Release-Funktionsgleichheit |
 

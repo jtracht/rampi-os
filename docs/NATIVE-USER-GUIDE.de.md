@@ -176,10 +176,39 @@ verwerfen die ausstehende Anfrage. Ohne ausdrückliche Bestätigung bekommt die
 Webseite keine neue Datei. Höchstens 128 lesbare lokale Dateien werden gemeinsam
 übernommen; Ordner und Spezialdateien werden abgewiesen.
 
-Remote Desktop startet den vorhandenen nativen Wayland-FreeRDP-Client; Streaming
-verwendet Moonlight mit Sunshine auf Windows. Diese grafischen Programme sind
-noch eigene Wayland-Oberflächen. Die gewünschte vollständige Integration aller
-Remote-Ansichten in eine einzige Rampi-Seite bleibt offen.
+**Remote Desktop → RDP** öffnet die integrierte Windows-Desktop-Seite. Host und
+Windows-Konto stammen aus dem aktiven persönlichen Profil. Gib den RDP-Port,
+den unabhängig auf Windows geprüften SHA-256-Zertifikatfingerabdruck und dein
+Windows-Kennwort ein. Der Fingerabdruck muss 64 Hex-Zeichen enthalten; Doppelpunkte
+und Leerzeichen sind erlaubt. Das Kennwort wird nach dem Start aus dem Eingabefeld
+entfernt und weder gespeichert noch als Prozessargument übergeben.
+
+Der Fingerabdruck bezieht sich auf das tatsächliche RDP-Serverzertifikat,
+**nicht auf den SSH-Hostschlüssel**. Auf Windows kann eine administrative
+PowerShell den aktiven Zertifikatsbezug und dessen SHA-256 anzeigen:
+
+```powershell
+$rdp = Get-CimInstance -Namespace root/cimv2/TerminalServices -ClassName Win32_TSGeneralSetting -Filter "TerminalName='RDP-tcp'"
+$certificate = Get-ChildItem 'Cert:\LocalMachine\Remote Desktop', 'Cert:\LocalMachine\My' |
+    Where-Object Thumbprint -eq $rdp.SSLCertificateSHA1Hash | Select-Object -First 1
+if (-not $certificate) { throw 'Aktives RDP-Zertifikat nicht gefunden.' }
+$sha256 = [Security.Cryptography.SHA256]::Create()
+try { ([BitConverter]::ToString($sha256.ComputeHash($certificate.RawData))).Replace('-', '').ToLowerInvariant() }
+finally { $sha256.Dispose() }
+```
+
+Vergleiche diesen Wert über einen bereits vertrauenswürdigen Weg. Eine Abweichung
+verhindert die Anmeldung; der angezeigte neue Wert wird nicht automatisch akzeptiert.
+**← Dashboard** oder **Strg+Alt+Pos1** wechseln zurück und erhalten die Verbindung.
+**Verbindung trennen** trennt RDP, ohne Windows abzumelden. Nach einem Netzabbruch
+wird die Anmeldung wieder angeboten. Escape bleibt innerhalb der Desktopfläche
+für den entfernten Rechner verfügbar. RDW stellt Maus, Tastatur und Zwischenablage
+bereit. Die Auflösung bleibt beim Verbinden fest; die Fläche wird lokal skaliert.
+
+Die Softwareabnahme verwendet einen echten XRDP-Testserver. Eine native Windows-
+11-Pro-/NLA-Abnahme ist noch offen. Streaming verwendet weiterhin Moonlight mit
+Sunshine und eine eigene Wayland-Oberfläche; die eingebettete Streaming-Fläche
+bleibt offen.
 
 ## Diagnose und persönliche Daten
 

@@ -1,0 +1,3 @@
+repository = "Devolutions/sspi-rs"
+revision = "fb5ce085e48c337b03968349f5e2e85c83959754" # pragma: allowlist secret - public upstream commit
+files = ["LICENSE-APACHE", "LICENSE-MIT"]

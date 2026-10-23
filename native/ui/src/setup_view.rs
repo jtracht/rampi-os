@@ -215,7 +215,7 @@ pub fn diagnostics(stack: &gtk::Stack, conf: &Shared, f: &Feedback) -> gtk::Box 
         let (b, output, c) = (button.clone(), result.clone(), c.clone());
         glib::MainContext::default().spawn_local(async move {
             let mut lines = vec![format!("Rampi {} · Rust / Wayland", env!("CARGO_PKG_VERSION")), format!("Linux-Konto: {}", glib::user_name().to_string_lossy()), format!("Hostprofile: {} · aktiv: {}", c.borrow().hosts.len(), c.borrow().hosts.get(c.borrow().active_host).map(|h| h.name.as_str()).unwrap_or("keines"))];
-            for command in ["ssh", "ssh-keygen", "wlfreerdp3", "moonlight", "tailscale", "labwc"] {
+            for command in ["ssh", "ssh-keygen", "moonlight", "tailscale", "labwc"] {
                 lines.push(format!("{command}: {}", if glib::find_program_in_path(command).is_some() { "vorhanden (Funktion nicht geprüft)" } else { "nicht gefunden" }));
             }
             match crate::bus::system().await {

@@ -7,6 +7,15 @@ import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+rdp_log = (directory / "rdp-acceptance.log").read_text(encoding="utf-8")
+for marker in [
+    "RAMPI_RUST_RDP_BAD_CERTIFICATE_OK",
+    "RAMPI_RUST_RDP_EMBEDDED_RECONNECT_OK",
+    "RAMPI_RUST_RDP_SERVER_FAILURE_OK",
+    "RAMPI_RUST_RDP_SERVER_RECEIPTS_OK",
+]:
+    if marker not in rdp_log:
+        raise SystemExit("Missing actual embedded RDP acceptance: " + marker)
 log = (directory / "wayland.log").read_text(encoding="utf-8")
 markers = [
     "RAMPI_RUST_FIRST_RUN_KEYBOARD_OK",
@@ -82,9 +91,7 @@ if (
     or "RAMPI_RUST_ACCOUNT_PAGE_OK" not in account_log
 ):
     raise SystemExit("Actual native account page and PAM check did not pass")
-browser_log = (directory / "browser-https.log").read_text(
-    encoding="utf-8"
-)
+browser_log = (directory / "browser-https.log").read_text(encoding="utf-8")
 for required in ["RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK", "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK"]:
     if required not in browser_log:
         raise SystemExit("Actual browser acceptance missing: " + required)

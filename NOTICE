@@ -9,3 +9,9 @@ This independent project is not an official Raspberry Pi product.
 
 Lucide icons: Copyright (c) 2026 Lucide Icons and Contributors.
 ISC and applicable Feather MIT notices: client/rampi/icons/LICENSE.
+
+RDW GTK remote desktop widget by Marc-André Lureau and contributors: MIT.
+Pinned source, original licenses and local changes: vendor/rdw/README.rampi.md.
+RDW's cbindgen build dependency: MPL-2.0, corresponding source included.
+Generated key maps: BSD-3-Clause option, vendor/rdw/keycodemap/LICENSE.BSD.
+IronRDP and other Rust dependency notices are included with native packages.
