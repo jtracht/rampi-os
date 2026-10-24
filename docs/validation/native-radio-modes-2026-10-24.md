@@ -60,4 +60,13 @@ Produktinstallation noch Kernel-Bootdateien werden dadurch verändert; alle
 Bluetooth-Laufzeitprüfungen bleiben verpflichtend. Ein fehlendes passendes
 Quell-/Headerpaket oder ein Ladefehler lässt die Abnahme fehlschlagen.
 
+Der anschließende ARM64-Lauf bestätigt den erfolgreichen Aufbau und das Laden
+dieses Treibers. Das tatsächliche ARM64-ELF benötigt außerdem `libgtk-4.so.1`;
+der Gast installiert dafür jetzt das vorhandene Debian-Laufzeitpaket. Der
+Prüfprozess verwendet weiterhin keinen Display-Server. Ein separater sporadischer
+Login-Prüffehler entstand beim Lesen der noch leeren UID-Nachweisdatei zwischen
+Dateierstellung und `id`-Ausgabe. Die Testhülle veröffentlicht den vollständig
+geschriebenen Wert jetzt durch Umbenennen. Die tatsächliche UID muss weiterhin
+exakt mit dem authentifizierten Linux-Konto übereinstimmen.
+
 Der Gesamtstand bleibt bis zum Abschluss dieser Prüfungen unverändert.

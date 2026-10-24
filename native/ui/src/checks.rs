@@ -479,6 +479,52 @@ pub fn ssh_setup(
                 "ssh-add echoed its passphrase"
             );
             println!("RAMPI_RUST_SSH_AGENT_UNLOCK_OK");
+            for _ in 0..100 {
+                if find_button(&host, "Aktiven SSH-Schlüssel entsperren").is_some() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            let pages = stack.pages().n_items();
+            stack.set_visible_child_name("settings");
+            find_button(&host, "Aktiven SSH-Schlüssel entsperren")
+                .context("Unlock did not finish")?
+                .emit_clicked();
+            let retry = stack
+                .visible_child()
+                .context("No retry terminal")?
+                .downcast::<vte::Terminal>()
+                .map_err(|_| anyhow::anyhow!("Retry not embedded"))?;
+            ensure!(
+                retry != unlock && stack.pages().n_items() == pages + 1,
+                "Completed unlock terminals accumulated"
+            );
+            for _ in 0..300 {
+                if retry
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase"))
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                retry
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase")),
+                "Retry did not run ssh-add"
+            );
+            retry.feed_child(format!("{passphrase}\n").as_bytes());
+            for _ in 0..100 {
+                if find_button(&host, "Aktiven SSH-Schlüssel entsperren").is_some() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                stack.pages().n_items() == pages,
+                "Finished SSH prompt remained in the stack"
+            );
             stack.set_visible_child_name("settings");
             scan.emit_clicked();
             for _ in 0..1000 {
