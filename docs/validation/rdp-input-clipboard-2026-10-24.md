@@ -45,11 +45,33 @@ Messdaten und tatsächlichen Serverquittungen. `check-rdp-input-evidence.py` pr�
 sie erneut nach dem Download. Sechzehn synthetische Prüfer-Tests prüfen nur die
 Zurückweisung unvollständiger Nachweise; sie ersetzen keine Laufzeitabnahme.
 
-Die lokale Abnahme mit 1 GiB/vier CPUs, Clippy und Ruff besteht. Vor Zusammenführung
-bleibt die vollständige native CI auf AMD64 und ARM64 erforderlich. Das ist
-keine Windows-NLA- oder Windows-11-Pro-Abnahme; ein entsprechender Testhost ist
+Die lokale Abnahme mit 1 GiB/vier CPUs, Clippy und Ruff besteht. Die vollständige
+native CI ist inzwischen auf AMD64 und ARM64 akzeptiert. Das ist keine
+Windows-NLA- oder Windows-11-Pro-Abnahme; ein entsprechender Testhost ist
 nicht vorhanden. Eingebettetes Streaming und weitere Remote-Abnahmen bleiben
 offen. Der Gesamtstand wird dadurch noch nicht erhöht.
+
+## Zusammenführung und unabhängige Artefaktprüfung
+
+Die [native CI 40116926807](https://github.com/jtracht/rampi-os/actions/runs/40116926807)
+und [allgemeine CI 40116926756](https://github.com/jtracht/rampi-os/actions/runs/40116926756)
+sind vollständig erfolgreich. Beide heruntergeladenen Laufzeitnachweise bestehen
+erneut den eingefrorenen unabhängigen Prüfer einschließlich der tatsächlichen
+Maus-, Scroll- und Unicode-Serverquittungen. Beide frischen grafischen Anmeldungen
+und Funkläufe sowie alle sieben Paketprüfsummen bestehen ebenfalls; ARM64 mit
+Installer. Der erste CI-Lauf bestand bereits die Eingabeabläufe, scheiterte aber
+anschließend an den Leserechten des erzeugten `rdp-input.json`. Der Testcontainer
+veröffentlicht jetzt ausschließlich seine nicht geheimen Nachweisdateien lesbar
+für den aufrufenden Prüfer. Der abschließende Lauf bestätigt diesen Weg.
+
+* PR-Quellstand: `e34e5b11f94d1dbada3ef0f30c8dcb386af08ec0`.
+* Gebauter kombinierter Stand: `41a22465bb1e1f2563a5d1e1b1e7fec12a53526c`.
+* [PR #39](https://github.com/jtracht/rampi-os/pull/39), zusammengeführt als
+  `6083a7a6ea5720a8b0528a87b59b65946f129759`.
+* Identischer getesteter und zusammengeführter Tree:
+  `73c93772ba2a15c9cd300bf300be46974aa8bc11`.
+* ARM64-Paketprogramm, zusätzlich gegen beide echten grafischen Login-Sitzungen
+  geprüft: `57494c7411c6cd9c77f0cf0edf469a90e23c5f06dfa5bf03107ce788b87fe3bd`.
 
 Grundlagen: [RDW-Quellzuordnung und lokale Anpassungen](../../vendor/rdw/README.rampi.md),
 [Tk-Bindings und horizontales Scrollen](https://web.tcl.tk/man/tcl9.1/TkCmd/bind.html),

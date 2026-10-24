@@ -15,6 +15,7 @@ CHECK = runpy.run_path(str(Path(__file__).parents[1] / "scripts/check-gitea-evid
 def evidence(tmp_path):
     report = {
         "image": "docker.gitea.com/gitea:28.2.0@sha256:"
+        # pragma: allowlist nextline secret - public official Gitea image SHA256
         "30777c91280d973fa02be48b1ade735bd6859e8f6f7af3b4444d519437852504",
         "version": "gitea version 28.2.0 fixture",
         "private_network": True,

@@ -59,7 +59,11 @@ AMD64 und ARM64 mit dem tatsächlichen greetd-/PAM-Ablauf, falschem Kennwort,
 zwei normalen Linux-Identitäten, privaten Konfigurationen und Rückkehr zur
 Anmeldung. Sichtbare native Frames werden geprüft; schwarze Compositor-Bilder
 werden abgewiesen. Die grafische Anmeldung im tatsächlichen Pi-Image ist zusätzlich geprüft;
-Login-Branding, weitere Kontooberflächen und die reguläre Release-Freigabe bleiben offen.
+Die eigenen Kontooberflächen, das Original-Login-Branding und persönliche
+OpenSSH-Agenten sind inzwischen auf beiden Architekturen abgenommen und
+zusammengeführt. Ein durchgängiger Nachweis der automatischen PAM-Entsperrung
+des persönlichen Schlüsselbunds sowie die reguläre Release-Freigabe bleiben offen;
+der Bereich bleibt deshalb bei vier Punkten.
 
 Browser erreicht fünf Punkte durch integrierte Navigation, echte HTTPS-/JavaScript-,
 Tastatur-, Maus-, Vollbild- und Download-/Upload-Abnahmen sowie persistente,
@@ -70,8 +74,11 @@ Remote Desktop erreicht drei Punkte durch die integrierte RDW-/IronRDP-Fläche,
 unabhängige Zertifikatsprüfung vor der Anmeldung, echte Desktop-Frames und
 serverseitig bestätigte Tastatureingaben. Dashboard-Wechsel, Wiederverbindung und
 erzwungener Serverabbruch sind auf AMD64 und ARM64 geprüft. Die heruntergeladenen
-Nachweise und das ARM64-Paket sind unabhängig erneut geprüft. Windows-NLA,
-zusätzliche Maus-/Clipboard-Abnahmen und eingebettetes Streaming bleiben offen.
+Nachweise und das ARM64-Paket sind unabhängig erneut geprüft. Zusätzliche
+skalierte Maus-, Zwei-Achsen-Scroll- und Unicode-Zwischenablage-Abnahmen mit
+tatsächlichen Serverquittungen bestehen inzwischen ebenfalls auf beiden
+Architekturen und sind zusammengeführt. Windows-NLA und eingebettetes Streaming
+bleiben offen; der Bereich bleibt bei drei Punkten.
 
 WLAN erreicht fünf Punkte: Die eigene integrierte Einstellungsseite, Suche,
 Adapterauswahl, sichtbare/versteckte SSIDs und sichere Kennworteingabe verwenden
