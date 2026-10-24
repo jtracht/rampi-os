@@ -155,6 +155,10 @@ def main():
         ],
         "power_state": {"mode": "poweroff", "delay": "now", "timeout": 30},
     }
+    if options.native_binary:
+        # The production GIO adapter imports the existing GTK crate. ARM64's
+        # linked ELF retains GTK as a dependency even without a display server.
+        config["packages"].append("libgtk-4-1")
     if options.native_session_binary:
         config["packages"] += [
             "greetd",

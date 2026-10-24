@@ -127,7 +127,8 @@ def configure_test_session():
     wrapper = Path("/usr/local/bin/rampi-login-test-session")
     wrapper.write_text(
         "#!/bin/sh\nset -eu\numask 077\n"
-        'id -u > "$HOME/.rampi-login-uid"\n'
+        'id -u > "$HOME/.rampi-login-uid.tmp"\n'
+        'mv "$HOME/.rampi-login-uid.tmp" "$HOME/.rampi-login-uid"\n'
         f"export WLR_BACKENDS={backends} WLR_RENDERER=pixman "
         "WLR_HEADLESS_OUTPUTS=1 LIBSEAT_BACKEND=logind\n"
         "exec /usr/local/bin/rampi-session\n"
@@ -245,8 +246,11 @@ def main():
         proof = Path("/home", user, ".rampi-login-uid")
         wait(proof.is_file, "authenticated session UID")
         uid = pwd.getpwnam(user).pw_uid
-        if proof.read_text().strip() != str(uid):
-            raise RuntimeError("Incorrect authenticated session identity")
+        observed_uid = proof.read_text().strip()
+        if observed_uid != str(uid):
+            raise RuntimeError(
+                f"Incorrect authenticated session identity: expected {uid}, got {observed_uid!r}"
+            )
         wait(
             lambda user=user: (
                 as_user(
