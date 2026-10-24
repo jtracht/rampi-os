@@ -9,9 +9,9 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Sitzung/Dashboard | Rust/GTK/labwc, sechs Module, Live-Status, Offline-Bedienung | Gesamtabnahme aller externen Module |
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
 | Einrichtung | Fortsetzbare 15 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
-| Linux-Konto | Grafischer greetd-/PAM-Login, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd mit privaten Home-Rechten | Abschließende native CI der erweiterten Kontoeinrichtung; Login-Branding |
+| Linux-Konto | Grafischer greetd-/PAM-Login, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd mit privaten Home-Rechten, auf AMD64/ARM64 abgenommen | Neue Login-Gestaltung und persönliche SSH-Agenten: lokale grafische Abnahme besteht, kombinierte CI noch offen |
 | WLAN | Sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private neue Profile | Unternehmensnetze benötigen vorhandenes NM-Profil; WPA2/DHCP und Kontentrennung in QEMU belegt; WPA3-/ARM64-Funkabnahme offen |
-| Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart | Zusätzliche virtuelle Controller-Abnahme; physischer Funk ist ausgeschlossen |
+| Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart; zusätzliche Mehradapter- und virtuelle Bond-Prüfung implementiert | Kombinierte virtuelle Controller-Abnahme auf beiden Architekturen; physischer Funk ist ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
 | Windows/KI | Persönliche Hosts, OpenSSH-Schlüssel/Trust, bestehender nativer psmux-/ConPTY-Adapter | Zusammenhängende Windows-11-Pro-Abnahme mit neuer Oberfläche und Anbieteranmeldungen |
 | Antigravity | Offizielle Windows-CLI `agy`, eigene Einrichtungs-/Sitzungsseite und Installationsprüfung | Persönliche Installation, Anmeldung und tatsächliche Anbieteranfrage |
@@ -30,6 +30,12 @@ Benutzeranmeldung oder Anbieter-CLI. Der Laptop muss eingeschaltet sein.
 **SSH lehnt den Host ab:** Den Ed25519-Fingerprint unabhängig auf Windows anzeigen
 und vergleichen. Einen geänderten bestehenden Hosteintrag nicht blind löschen;
 zuerst die Identität klären. Private Schlüssel gehören nicht in Fehlerberichte.
+
+**Nichtinteraktive Hostprüfung kann den privaten Schlüssel nicht verwenden:**
+Das gespeicherte aktive Hostprofil prüfen und unter **Host & SSH** den
+**Aktiven SSH-Schlüssel entsperren**. Die Eingabe erfolgt im eingebetteten
+OpenSSH-Terminal. Der Agent muss in derselben Linux-Anmeldung erreichbar sein.
+Die erweiterte Sitzung wird erst nach der vollständigen CI freigegeben.
 
 **Vorhandener WLAN-Zugang scheitert:** Das tatsächlich verwendete NM-Profil prüfen.
 Eine neue Kennworteingabe ersetzt dessen gespeichertes Geheimnis nicht automatisch.
