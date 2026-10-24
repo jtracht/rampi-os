@@ -64,8 +64,11 @@ Der anschließende ARM64-Lauf bestätigt den erfolgreichen Aufbau und das Laden
 dieses Treibers. Das tatsächliche ARM64-ELF benötigt außerdem `libgtk-4.so.1`;
 der Gast installiert dafür jetzt das vorhandene Debian-Laufzeitpaket. Der
 Prüfprozess verwendet weiterhin keinen Display-Server. Ein separater sporadischer
-Login-Prüffehler entstand beim Lesen der noch leeren UID-Nachweisdatei zwischen
-Dateierstellung und `id`-Ausgabe. Die Testhülle veröffentlicht den vollständig
+Login-Prüffehler zeigte eine abweichende UID-Nachweisdatei. Die bisherige
+Testhülle konnte eine noch leere Datei zwischen Erstellung und `id`-Ausgabe
+lesen. Diese erkannte Rennbedingung ist durch atomare Veröffentlichung behoben;
+bei erneuter Abweichung enthält die Diagnose den tatsächlichen und erwarteten
+Wert. Die Testhülle veröffentlicht den vollständig
 geschriebenen Wert jetzt durch Umbenennen. Die tatsächliche UID muss weiterhin
 exakt mit dem authentifizierten Linux-Konto übereinstimmen.
 
