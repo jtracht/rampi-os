@@ -138,8 +138,7 @@ jobs:
           docker run --rm --memory=3g --memory-swap=3g --cpus=4 -v "$PWD:/app" -v rampi-rust-build:/build:ro rampi-virtual-tools python3 scripts/test-virtual-linux.py --native-binary /build/target/debug/rampi-network-acceptance --timeout 1500
           expected=$(docker run --rm -v rampi-rust-build:/build:ro rampi-rust-dev sha256sum /build/target/debug/rampi-network-acceptance | cut -d ' ' -f 1)
           docker run --rm -v "$PWD:/app" rampi-virtual-tools python3 scripts/check-radio-evidence.py artifacts/virtual-linux --expected-binary "$expected"
-          docker run --rm -v "$PWD:/src" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev python3 scripts/collect-rust-licenses.py /src/artifacts/virtual-linux/licenses
-          cp LICENSE NOTICE artifacts/virtual-linux/
+          docker run --rm -v "$PWD:/src" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev sh -c 'python3 scripts/collect-rust-licenses.py /src/artifacts/virtual-linux/licenses && cp LICENSE NOTICE artifacts/virtual-linux/'
       - name: Graphical greetd and PAM with two native user sessions in fresh QEMU
         run: |
           set -euo pipefail
