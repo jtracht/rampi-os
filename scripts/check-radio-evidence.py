@@ -46,6 +46,8 @@ def check_metadata(data, expected_binary=None):
             raise ValueError("Radio test must use a fresh isolated guest: " + key)
     if data.get("memory_mib") != 1024 or data.get("cpus") != 4:
         raise ValueError("Radio test guest budget differs")
+    if data.get("tcg_thread") != ("multi" if arch == "arm64" else "single"):
+        raise ValueError("Radio test emulator execution mode differs")
     if expected_binary is not None and data.get("native_binary_sha256") != expected_binary:
         raise ValueError("Radio test executable differs from the actual build")
 

@@ -21,6 +21,7 @@ def evidence(tmp_path):
         "architecture": "arm64",
         "memory_mib": 1024,
         "cpus": 4,
+        "tcg_thread": "multi",
         "physical_devices": False,
         "prepared_development_cache": False,
         "resumed_development_guest": False,
@@ -87,6 +88,7 @@ def test_fresh_two_account_evidence(evidence):
         ("physical_devices", True),
         ("graphical_login", False),
         ("memory_mib", 2048),
+        ("tcg_thread", "single"),
     ],
 )
 def test_reject_wrong_test_scope(evidence, key, value):
