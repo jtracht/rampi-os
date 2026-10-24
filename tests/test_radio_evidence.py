@@ -30,6 +30,7 @@ def evidence(tmp_path):
         graphical_login=False,
         memory_mib=1024,
         cpus=4,
+        tcg_thread="single",
         native_binary_sha256=hashlib.sha256(raw).hexdigest(),
     )
     (tmp_path / "environment.json").write_text(json.dumps(data))
@@ -57,6 +58,7 @@ def test_accept_complete_fresh_bound_results(tmp_path):
         ("graphical_login", True),
         ("memory_mib", 2048),
         ("cpus", 8),
+        ("tcg_thread", "multi"),
     ],
 )
 def test_reject_different_or_reused_environment(tmp_path, key, value):
