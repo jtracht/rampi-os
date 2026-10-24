@@ -39,7 +39,6 @@ mod imp {
             rdp_key_event, rdp_motion, rdp_mouse_press, rdp_mouse_release, rdp_run, rdp_scroll,
             RdpInputEvent, RdpOutputEvent,
         },
-        util::utf16_from_utf8,
     };
 
     use super::*;
@@ -85,6 +84,7 @@ mod imp {
     #[properties(wrapper_type = super::Display)]
     pub struct Display {
         cb_watch_id: RefCell<Option<SignalHandlerId>>,
+        remote_clipboard_provider: glib::WeakRef<rdw::ContentProvider>,
         last_mouse: Cell<(f64, f64)>,
         keymap: Cell<Option<&'static [u16]>>,
         rdp_thread: RefCell<Option<JoinHandle<()>>>,
@@ -103,6 +103,7 @@ mod imp {
         fn default() -> Self {
             Self {
                 cb_watch_id: RefCell::new(None),
+                remote_clipboard_provider: Default::default(),
                 last_mouse: Cell::new((0.0, 0.0)),
                 keymap: Default::default(),
                 connected: Default::default(),
@@ -435,12 +436,19 @@ mod imp {
 
         fn clipboard_send_initiate_copy(&self, request: bool) {
             let cb = gdk::prelude::DisplayExt::clipboard(&self.obj().display());
-            if cb.is_local() && !request {
-                trace!("not sending clipboard copy, since it's local");
+            // GTK calls every provider owned by this process "local", including
+            // ordinary entry/browser copies. Suppress only our own remote
+            // provider to avoid an echo; other application copies must travel.
+            let from_remote = self
+                .remote_clipboard_provider
+                .upgrade()
+                .is_some_and(|provider| cb.content().as_ref() == Some(provider.upcast_ref()));
+            if from_remote && !request {
+                trace!("not echoing the remote clipboard provider");
                 return;
             }
 
-            let formats = if cb.is_local() {
+            let formats = if from_remote {
                 Vec::new()
             } else {
                 rdp_clipboard_formats(cb.formats())
@@ -517,6 +525,7 @@ mod imp {
                             }
                         ),
                     );
+                    self.remote_clipboard_provider.set(Some(&provider));
                     let res = clipboard.set_content(Some(&provider));
                     trace!(?res);
                 }
@@ -544,19 +553,19 @@ mod imp {
                                     if res.is_ok() {
                                         let bytes = out.steal_as_bytes();
                                         if format_id == ClipboardFormatId::CF_UNICODETEXT {
-                                            data = utf16_from_utf8(bytes.as_ref()).ok();
+                                            data = std::str::from_utf8(bytes.as_ref())
+                                                .ok()
+                                                .map(OwnedFormatDataResponse::new_unicode_string);
                                         } else {
-                                            data = Some(bytes.to_vec());
+                                            data = Some(OwnedFormatDataResponse::new_data(
+                                                bytes.to_vec(),
+                                            ));
                                         }
                                     }
                                 }
                             }
 
-                            let resp = if let Some(data) = data {
-                                OwnedFormatDataResponse::new_data(data)
-                            } else {
-                                OwnedFormatDataResponse::new_error()
-                            };
+                            let resp = data.unwrap_or_else(OwnedFormatDataResponse::new_error);
                             this.send_event(RdpInputEvent::Clipboard(
                                 ClipboardMessage::SendFormatData(resp),
                             ));

@@ -33,6 +33,88 @@ async fn until(mut predicate: impl FnMut() -> bool) -> anyhow::Result<()> {
     }
     anyhow::bail!("RDP condition timed out")
 }
+async fn mouse_clipboard(
+    app: &gtk::Application,
+    display: &rdw_rdp::Display,
+    probe: &str,
+) -> anyhow::Result<()> {
+    let scrolls = std::rc::Rc::new(std::cell::RefCell::new(Vec::<(f64, f64)>::new()));
+    let events = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::BOTH_AXES);
+    events.set_propagation_phase(gtk::PropagationPhase::Capture);
+    let observed = scrolls.clone();
+    events.connect_scroll(move |_, dx, dy| {
+        observed.borrow_mut().push((dx, dy));
+        glib::Propagation::Proceed
+    });
+    display.add_controller(events);
+    let window = app.active_window().context("No actual Rampi window")?;
+    let bounds = display
+        .compute_bounds(&window)
+        .context("RDP surface not allocated")?;
+    let (x, y) = (
+        bounds.x() + bounds.width() * 0.5,
+        bounds.y() + bounds.height() * 0.5,
+    );
+    for args in [
+        vec![
+            "pointer".into(),
+            "move".into(),
+            "-10000".into(),
+            "-10000".into(),
+        ],
+        vec![
+            "pointer".into(),
+            "move".into(),
+            x.to_string().into(),
+            y.to_string().into(),
+        ],
+        vec!["pointer".into(), "click".into(), "left".into()],
+        vec!["pointer".into(), "move".into(), "30".into(), "20".into()],
+        vec!["pointer".into(), "click".into(), "middle".into()],
+        vec!["pointer".into(), "click".into(), "right".into()],
+        vec!["pointer".into(), "scroll".into(), "15".into(), "0".into()],
+        vec!["pointer".into(), "scroll".into(), "-15".into(), "0".into()],
+        vec!["pointer".into(), "scroll".into(), "0".into(), "15".into()],
+        vec!["pointer".into(), "scroll".into(), "0".into(), "-15".into()],
+    ] {
+        ensure!(
+            crate::process::output("wlrctl", &args, 5, 32768).await?.0,
+            "Actual Wayland pointer injection failed"
+        );
+        glib::timeout_future(std::time::Duration::from_millis(100)).await;
+    }
+    let clipboard = gtk::gdk::prelude::DisplayExt::clipboard(&display.display());
+    for round in 0..2 {
+        clipboard.set_text(&format!(
+            "rampi-local-{probe}-{round}-Grüße 🥧\nsecond line"
+        ));
+        let expected = format!("rampi-remote-{probe}-{round}-Grüße 🥧\nsecond line");
+        glib::future_with_timeout(std::time::Duration::from_secs(20), async {
+            loop {
+                if let Ok(Some(text)) = clipboard.read_text_future().await
+                    && text.replace("\r\n", "\n") == expected
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(100)).await;
+            }
+        })
+        .await
+        .context("Actual XRDP Unicode clipboard roundtrip failed")?;
+    }
+    clipboard.set_text("");
+    let (width, height) = display
+        .display_size()
+        .context("No remote desktop dimensions")?;
+    let scale = (bounds.width() as f64 / width as f64).min(bounds.height() as f64 / height as f64);
+    let report = serde_json::json!({"schema": 1, "probe": probe, "remote_size": [width, height], "scale": scale, "local_delta": [30, 20], "clipboard_roundtrips": 2, "gtk_scroll_deltas": *scrolls.borrow()});
+    std::fs::write(
+        std::path::Path::new(&std::env::var("RAMPI_TEST_ARTIFACTS")?).join("rdp-input.json"),
+        serde_json::to_vec_pretty(&report)?,
+    )?;
+    println!("RAMPI_RUST_RDP_MOUSE_CLIPBOARD_OK");
+    Ok(())
+}
 pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedback: &Feedback) {
     assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
     let (app, stack, settings, feedback) = (
@@ -129,6 +211,14 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedba
                 display.grab_focus();
                 type_remote(&format!("rampirdp{attempt}")).await?;
                 glib::timeout_future(std::time::Duration::from_millis(800)).await;
+                if attempt == 0 && !std::env::args().any(|a| a == "--mixed-soak-check") {
+                    mouse_clipboard(
+                        &app,
+                        &display,
+                        fixture["probe"].as_str().context("No RDP probe nonce")?,
+                    )
+                    .await?;
+                }
                 if attempt == 0 {
                     if let Ok(directory) = std::env::var("RAMPI_TEST_ARTIFACTS") {
                         let (ok, _) = crate::process::output(
@@ -166,6 +256,11 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedba
                     );
                     crate::rdp_view::open(&stack, &settings, &feedback);
                     until(|| page.is_mapped()).await?;
+                    if !std::env::args().any(|a| a == "--mixed-soak-check") {
+                        display.grab_focus();
+                        type_remote("rampiafterhome").await?;
+                        glib::timeout_future(std::time::Duration::from_millis(800)).await;
+                    }
                 }
                 if attempt == 0 {
                     stop.emit_clicked();
