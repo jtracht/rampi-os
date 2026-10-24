@@ -16,7 +16,7 @@ packages=(libgtk-4-1 libvte-2.91-gtk4-0 libwebkitgtk-6.0-4 libgtk-4-media-gstrea
     network-manager libnm0 bluez wireguard-tools openssh-client libgstreamer-plugins-base1.0-0 libssl3t64
     libusbredirparser1t64 libusb-1.0-0
     wlr-randr libsecret-tools gnome-keyring libpam-gnome-keyring curl
-    plymouth plymouth-themes fonts-dejavu-core accountsservice whois binutils)
+    plymouth plymouth-themes fonts-dejavu-core accountsservice whois binutils sudo passwd)
 if ! dpkg-query -W -f='${Status}' pulseaudio 2>/dev/null | grep -q '^install ok installed$'; then
     packages+=(pipewire-audio)
 fi

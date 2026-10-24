@@ -1,4 +1,5 @@
 //! Platform-independent Rampi state, configuration and safe command construction.
+pub mod accounts;
 pub mod board;
 pub mod config;
 #[cfg(test)]

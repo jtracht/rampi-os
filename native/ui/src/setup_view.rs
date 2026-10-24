@@ -27,7 +27,7 @@ const STEPS: [(&str, &str, &str); 15] = [
     ),
     (
         "Linux-Konto",
-        "Dein vorhandenes Linux-Konto und die PAM-Anmeldung bestimmen deine Rechte. Unter System kannst du dein Kennwort im eingebetteten Systemterminal ändern und dich abmelden. Die Verwaltung weiterer Konten ist noch nicht portiert.",
+        "Dein Linux-Konto und PAM bestimmen deine Rechte. Unter System kannst du dein Kennwort ändern und dich abmelden. Mit vorhandenen sudo-Rechten weitere Konten anlegen und deren Kennwort im eingebetteten Systemterminal setzen; neue Konten erhalten keine Administratorrechte.",
         "system",
     ),
     (
