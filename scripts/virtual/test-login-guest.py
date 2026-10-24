@@ -100,9 +100,24 @@ def keyring_lookup(user, attribute):
     )
 
 
+def native_keyring(user, mode, attribute, secret):
+    request = {"mode": mode, "profile": "pam-acceptance-" + attribute, "token": secret}
+    result = as_user(
+        user,
+        "/usr/local/bin/rampi",
+        "--pam-keyring-check",
+        data=json.dumps(request).encode(),
+    )
+    if b"RAMPI_NATIVE_PAM_KEYRING_OK" not in result.stdout:
+        raise RuntimeError("Native Secret Service acceptance result missing")
+
+
 def keyring_store(user, attribute, secret):
     # Exercise the real Secret Service. Never feed a keyring password or invoke
     # its unlock method: only the preceding greetd/PAM login may unlock it.
+    # The production adapter must work before libsecret can create or select a
+    # collection on its behalf. This prevents a generic CLI masking a Rampi bug.
+    native_keyring(user, "store", attribute, secret)
     as_user(
         user,
         "timeout",
@@ -447,6 +462,7 @@ def main():
     recovered = keyring_lookup(first, keyring_attribute)
     if recovered.returncode or recovered.stdout.rstrip(b"\n") != keyring_values[first].encode():
         raise RuntimeError("PAM relogin did not unlock the persisted personal keyring")
+    native_keyring(first, "check", keyring_attribute, keyring_values[first])
     as_user(first, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
     greeter_ready()
     print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK", flush=True)

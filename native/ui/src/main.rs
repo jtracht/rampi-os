@@ -49,6 +49,8 @@ mod pairing;
 #[cfg(target_os = "linux")]
 mod pairing_checks;
 #[cfg(target_os = "linux")]
+mod pam_keyring_checks;
+#[cfg(target_os = "linux")]
 mod performance;
 #[cfg(target_os = "linux")]
 mod process;
@@ -86,6 +88,14 @@ mod wifi_hidden;
 mod wireguard;
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--pam-keyring-check") {
+        if let Err(error) = pam_keyring_checks::run() {
+            eprintln!("Native PAM keyring acceptance failed: {error:#}");
+            std::process::exit(1);
+        }
+        return;
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--login-background") {
         std::process::exit(i32::from(login_branding::run()));
