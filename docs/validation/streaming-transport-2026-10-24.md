@@ -39,6 +39,10 @@ Server-Pin empfängt die Anfrage und liefert die erwarteten Bytes. Ein fremder
 Pin beendet den Ablauf, bevor der fremde Server eine Anwendungsanfrage erhält.
 Fehlende Identität, verbotener Klartext-Endpunkt, HTTP-Weiterleitung und eine
 zu große Antwort werden abgewiesen. Clippy mit Warnungen als Fehler besteht.
+Auch Formatprüfung, Clippy für die gesamte Workspace und deren Rust-Tests
+bestehen zusammen. Der vorhandene Lizenzsammler findet die ursprünglichen Texte
+für alle 438 aufgelösten Cargo-Abhängigkeiten. Das ersetzt nicht die spätere
+Release-Prüfung einschließlich vollständiger GPL-Quellbeigaben.
 
 Diese Tests sind keine Sunshine-, Video-, Audio-, Eingabe- oder GTK-Abnahme.
 Decoderanbindung, private dauerhafte Identitäten, gekoppelte Sitzungssteuerung,
