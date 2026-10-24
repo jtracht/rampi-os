@@ -28,6 +28,10 @@ def check(directory: Path, expected_binary: str | None = None):
         raise ValueError("Unsupported login test architecture")
     if environment.get("memory_mib") != 1024 or environment.get("cpus") != 4:
         raise ValueError("Unexpected virtual resource budget")
+    if environment.get("tcg_thread") != (
+        "multi" if environment["architecture"] == "arm64" else "single"
+    ):
+        raise ValueError("Unexpected virtual emulator execution mode")
     for key, expected in [
         ("physical_devices", False),
         ("prepared_development_cache", False),

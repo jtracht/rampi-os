@@ -72,4 +72,13 @@ Wert. Die Testhülle veröffentlicht den vollständig
 geschriebenen Wert jetzt durch Umbenennen. Die tatsächliche UID muss weiterhin
 exakt mit dem authentifizierten Linux-Konto übereinstimmen.
 
-Der Gesamtstand bleibt bis zum Abschluss dieser Prüfungen unverändert.
+## Frische kombinierte CI akzeptiert
+
+Die [native CI 40110643882](https://github.com/jtracht/rampi-os/actions/runs/40110643882)
+und [allgemeine CI 40110643836](https://github.com/jtracht/rampi-os/actions/runs/40110643836)
+sind auf beiden Architekturen erfolgreich. Die heruntergeladenen Laufzeit-,
+Funk- und Anmeldenachweise sowie alle sieben Paketprüfsummen bestehen nochmals
+unabhängig die eingefrorenen Prüfer. Der getestete Tree ist unverändert nach
+main zusammengeführt; Quellstände und Programmhash stehen im
+[81-Prozent-Nachweis](rust-native-81-2026-10-24.md). WLAN erhält damit seinen
+fünften Punkt, die übrigen Bereichswerte bleiben unverändert.
