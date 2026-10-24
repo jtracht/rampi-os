@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"](
+    directory / "gitea-live"
+)
 rdp_input = runpy.run_path(str(Path(__file__).with_name("check-rdp-input-evidence.py")))["check"](
     directory
 )
