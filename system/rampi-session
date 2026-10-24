@@ -3,6 +3,17 @@ set -eu
 export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=Rampi
 export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
 unset DISPLAY XAUTHORITY
+# Reuse a reachable personal OpenSSH agent, including an empty one. Otherwise
+# let OpenSSH own its lifetime around this graphical session.
+agent_status=2
+if [ -n "${SSH_AUTH_SOCK:-}" ]; then
+    /usr/bin/timeout 3 /usr/bin/ssh-add -l >/dev/null 2>&1 && agent_status=0 || agent_status=$?
+fi
+if [ "$agent_status" -gt 1 ] && [ "${RAMPI_AGENT_ATTEMPTED:-}" != 1 ] && [ -x /usr/bin/ssh-agent ]; then
+    export RAMPI_AGENT_ATTEMPTED=1
+    unset SSH_AUTH_SOCK SSH_AGENT_PID
+    exec /usr/bin/ssh-agent -- /usr/local/bin/rampi-session
+fi
 if [ -n "${WAYLAND_DISPLAY:-}" ]; then exec /usr/local/bin/rampi-wayland-start; fi
 umask 077
 session_config="${XDG_CONFIG_HOME:-$HOME/.config}/rampi/labwc"

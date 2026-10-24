@@ -34,6 +34,7 @@ def evidence(tmp_path):
                 "RAMPI_GRAPHICAL_LOGIN_NO_UNAUTH_UI_OK",
                 "RAMPI_GRAPHICAL_LOGIN_REJECT_OK",
                 "RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK",
+                "RAMPI_GRAPHICAL_LOGIN_SSH_AGENT_OK",
                 "RAMPI_GRAPHICAL_LOGIN_OK",
                 "RAMPI_GUEST_EXIT=0",
             ]
@@ -46,6 +47,7 @@ def evidence(tmp_path):
             "uid": uid,
             "session_uid": uid,
             "config_uid": uid,
+            "ssh_agent_private": True,
             "config_mode": "0o700",
             "native_process": True,
             "binary_sha256": DIGEST,
@@ -98,6 +100,7 @@ def test_reject_wrong_test_scope(evidence, key, value):
         ("config_mode", "0o755"),
         ("binary_sha256", "b" * 64),
         ("native_process", False),
+        ("ssh_agent_private", False),
         ("uid", 1001),
     ],
 )
