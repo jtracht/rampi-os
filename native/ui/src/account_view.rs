@@ -10,7 +10,11 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
         "Linux-Konto: {} · UID {uid}",
         gtk::glib::user_name().to_string_lossy()
     )));
-    page.append(&label("Linux-PAM und dein Systemkonto verwalten Anmeldung und Kennwort. Rampi speichert keine Linux-Kennwörter. Andere Konten werden hier nicht verändert."));
+    page.append(&label("Linux-PAM und dein Systemkonto verwalten Anmeldung und Kennwort. Rampi speichert keine Linux-Kennwörter. Weitere Konten benötigen vorhandene Administratorrechte."));
+    let create = button("Weiteres Linux-Konto einrichten", f);
+    let (route, feedback) = (stack.clone(), f.clone());
+    create.connect_clicked(move |_| crate::account_create::open(&route, &feedback));
+    page.append(&create);
     let password = button("Eigenes Linux-Kennwort ändern", f);
     let (s, stat) = (stack.clone(), status.clone());
     password.connect_clicked(move |_| {

@@ -100,7 +100,7 @@ jobs:
       - name: Actual unprivileged passwd, PAM and account isolation
         run: |
           set -euo pipefail
-          docker run --rm --network none --memory=1g --memory-swap=1g -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-accounts.py 2>&1 | tee artifacts/rust/account-pam.log
+          docker run --rm --network none --memory=1g --memory-swap=1g -v "$PWD:/src:ro" -v "$PWD/artifacts/rust:/artifacts" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 -e RAMPI_TEST_ARTIFACTS=/artifacts rampi-rust-dev python3 tests/rust/test-accounts.py 2>&1 | tee artifacts/rust/account-pam.log
       - name: Actual trusted HTTPS and integrated WebKit downloads
         run: |
           set -euo pipefail

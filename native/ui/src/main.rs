@@ -1,6 +1,8 @@
 #[cfg(target_os = "linux")]
 mod account_checks;
 #[cfg(target_os = "linux")]
+mod account_create;
+#[cfg(target_os = "linux")]
 mod account_view;
 #[cfg(target_os = "linux")]
 mod ai_checks;

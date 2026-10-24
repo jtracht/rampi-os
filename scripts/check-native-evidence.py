@@ -94,6 +94,8 @@ account_log = (directory / "account-pam.log").read_text(encoding="utf-8")
 if (
     "RAMPI_RUST_ACCOUNT_PAM_OK" not in account_log
     or "RAMPI_RUST_ACCOUNT_PAGE_OK" not in account_log
+    or "RAMPI_RUST_ACCOUNT_CREATE_DENIED_OK" not in account_log
+    or "RAMPI_RUST_ACCOUNT_CREATE_ALLOWED_OK" not in account_log
 ):
     raise SystemExit("Actual native account page and PAM check did not pass")
 browser_log = (directory / "browser-https.log").read_text(encoding="utf-8")

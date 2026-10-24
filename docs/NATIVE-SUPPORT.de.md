@@ -9,7 +9,7 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Sitzung/Dashboard | Rust/GTK/labwc, sechs Module, Live-Status, Offline-Bedienung | Gesamtabnahme aller externen Module |
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
 | Einrichtung | Fortsetzbare 15 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
-| Linux-Konto | PAM/passwd, eigenes Kennwort, bestätigte Abmeldung | Weitere Konten und grafischer Greeter-Durchlauf |
+| Linux-Konto | Grafischer greetd-/PAM-Login, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd mit privaten Home-Rechten | Abschließende native CI der erweiterten Kontoeinrichtung; Login-Branding |
 | WLAN | Sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private neue Profile | Unternehmensnetze benötigen vorhandenes NM-Profil; WPA2/DHCP und Kontentrennung in QEMU belegt; WPA3-/ARM64-Funkabnahme offen |
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart | Zusätzliche virtuelle Controller-Abnahme; physischer Funk ist ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |

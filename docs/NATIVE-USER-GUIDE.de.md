@@ -52,6 +52,24 @@ Unter **System** kannst du Bewegung reduzieren und Klickklänge abschalten.
 Speichere die persönlichen Einstellungen mit der entsprechenden Schaltfläche.
 Unter **Eigenes Linux-Kennwort ändern** fragt das offizielle passwd im eingebetteten
 Terminal nach altem und neuem Kennwort. Rampi speichert diese Eingaben nicht.
+**Weiteres Linux-Konto einrichten** führt durch Anlegen, Kennwort und erneute
+Anmeldung. Gib einen neuen Namen ein und bestätige. Das vorhandene `sudo`
+entscheidet anhand deiner bisherigen Rechte und fragt gegebenenfalls im
+eingebetteten Terminal nach deinem Administratorkennwort. Rampi verändert keine
+sudo-Regeln. Ohne diese Rechte scheitert die Aktion sichtbar.
+
+`useradd` legt ein gewöhnliches Konto mit privatem Home-Verzeichnis an. Es erhält
+keine Administratorrechte und zunächst kein nutzbares Kennwort. Erst nach Prüfung
+von Systemidentität, Home-Besitz und Modus 0700 wird **Kennwort für das neue Konto
+setzen** verfügbar. Das offizielle `passwd` fragt zweimal nach dem neuen Kennwort.
+Vor dem Setzen werden Identität und Home-Rechte erneut geprüft. Vorhandene Konten,
+fremde oder verlinkte Home-Verzeichnisse werden nicht übernommen oder umgeschrieben.
+Bei einem teilweisen Systemfehler muss ein Administrator das gesperrte Konto über
+die Systemkonsole prüfen. Es erfolgt keine automatische Löschung oder Rechteänderung.
+Nach Erfolg kannst du weitere Konten vorbereiten oder dich regulär abmelden und
+mit dem neuen Konto anmelden. Das Terminal bleibt mit seinem Ergebnis sichtbar;
+ein Modulwechsel startet keinen zweiten Vorgang.
+
 **Von Rampi abmelden** öffnet eine Bestätigungsseite. Lokale Anwendungen und
 Verbindungen werden geschlossen; persistente Windows-Prozesse laufen weiter.
 Die Klangwiedergabe verwendet den vorhandenen Pulse-kompatiblen Audiodienst.

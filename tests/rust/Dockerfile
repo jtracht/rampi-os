@@ -25,5 +25,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssh-client 
 RUN apt-get update && apt-get install -y --no-install-recommends git curl gnome-keyring libsecret-tools python3-graphql-core \
     && rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgstreamer-plugins-base1.0-dev libusbredirhost-dev libusbredirparser-dev libusb-1.0-0-dev libssl-dev \
+    libgstreamer-plugins-base1.0-dev libusbredirhost-dev libusbredirparser-dev libusb-1.0-0-dev libssl-dev sudo \
     && rm -rf /var/lib/apt/lists/*

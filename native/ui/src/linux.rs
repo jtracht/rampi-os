@@ -403,6 +403,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--account-ui-check") {
         crate::account_checks::run(app, &stack, &tabs);
     }
+    if std::env::args().any(|a| a == "--account-create-ui-check") {
+        crate::account_checks::creation(app, &stack, &tabs);
+    }
     if std::env::args().any(|a| a == "--browser-https-check") {
         crate::browser_checks::run(app, &stack, &settings, &status, &feedback);
     }

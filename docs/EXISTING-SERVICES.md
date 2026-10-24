@@ -1,5 +1,33 @@
 # Wiederverwendungsanalyse und Bestandsaufnahme
 
+Die ursprüngliche Basismatrix unten dokumentiert den historischen Python-/QML-
+Stand. Für die aktuelle Rust-/GTK-/Wayland-Laufzeit gelten
+[Rust-Migration](RUST-MIGRATION.md) und [Architektur](ARCHITECTURE.md).
+
+## Native Einrichtung zusätzlicher Konten
+
+Die neue Rust-Seite verwendet ausschließlich die Trixie-Systemwerkzeuge
+`/usr/bin/sudo`, `/usr/sbin/useradd`, `/usr/bin/passwd` und `/usr/bin/getent`.
+Die Paketdatenbank erkennt vorhandene Pakete; der Installer ergänzt nur fehlendes
+sudo/passwd. Vorhandene sudoers-, PAM- und Kontokonfigurationen bleiben erhalten.
+getent prüft die tatsächliche NSS-Identität asynchron; useradd und passwd laufen
+im bereits integrierten VTE. sudo/PAM bestimmen die erforderlichen Rechte und
+fragen dort nach dem Administratorkennwort. Die Anwendung bleibt unprivilegiert.
+
+AccountsService ist bereits für Systemintegration vorgesehen, kann jedoch bei
+interaktiver Autorisierung einen zusätzlichen Polkit-Authentifizierungsagenten
+benötigen. Der vorhandene sudo-Terminalablauf erfüllt die Rampi-Vorgabe eines
+integrierten Fensters ohne einen eigenen Authentifizierungsagenten oder Root-Dienst.
+Die Eigenentwicklung beschränkt sich auf Namenvalidierung, Argumente,
+Bestätigungsseite, Zustandsanzeige und Prüfung der privaten Home-Rechte.
+Es gibt keine Kontendatenbank oder automatische Rechtefreigabe durch Rampi.
+
+Unterstützt wird die bereits vereinbarte Trixie-Laufzeit mit den dort gelieferten
+Werkzeugen; konkrete Paketversionen werden in CI beziehungsweise Image-Manifest
+erfasst. [Tatsächliche Kontoabnahme](validation/account-creation-2026-10-24.md).
+
+## Ursprüngliche Bestandsaufnahme und Prototypmatrix
+
 Entwicklungsrechner: Windows 11 Pro, Build 26300, x64; Git 2.55.0, Python 3.12.10,
 Node 24.16.0, GitHub CLI mit Konto `jtracht`, Docker Engine 29.8.2 vorhanden.
 OpenSSH-Server vorhanden, zum Prüfzeitpunkt gestoppt. TermService lief.
