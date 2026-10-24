@@ -115,7 +115,7 @@ power=1
 while ((power < size)); do power=$((power * 2)); done
 truncate -s "$power" "$work/disk.img"
 set +e
-timeout 1800 qemu-system-aarch64 -M raspi3b -m 1G -smp 4 -nographic -monitor none -nic none \
+timeout 1800 qemu-system-aarch64 -M raspi3b -accel tcg,thread=multi -m 1G -smp 4 -nographic -monitor none -nic none \
     -no-reboot -kernel "$work/kernel8.img" -dtb "$work/pi3.dtb" "${initrd[@]}" \
     -device usb-kbd -device usb-tablet \
     -drive "file=$work/disk.img,format=raw,if=sd" \
@@ -156,6 +156,7 @@ import sys
 from pathlib import Path
 directory = Path(sys.argv[1])
 data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=False,
+            tcg_thread="multi",
             prepared_development_cache=False, resumed_development_guest=False,
             graphical_login=True, installed_pi_image=True, machine="raspi3b",
             native_binary_sha256=sys.argv[2], image_source_revision=sys.argv[3],
