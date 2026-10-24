@@ -234,12 +234,12 @@ def client():
         path.unlink(missing_ok=True)
         captured = Path(os.environ["RAMPI_TEST_ARTIFACTS"])
         (captured / "rdp-disconnect-ready").unlink(missing_ok=True)
-        screenshot = captured / "rust-rdp.png"
-        if screenshot.is_file():
-            screenshot.chmod(0o644)
-        screenshot = captured / "mixed-remote.png"
-        if screenshot.is_file():
-            screenshot.chmod(0o644)
+        # GTK runs as the disposable user with umask 077. Publish only these
+        # generated, non-secret test outputs for the host checker/uploader.
+        for filename in ("rust-rdp.png", "mixed-remote.png", "rdp-input.json"):
+            output = captured / filename
+            if output.is_file():
+                output.chmod(0o644)
 
 
 def orchestrate(args):
