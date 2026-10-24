@@ -30,6 +30,11 @@ def main():
     parser.add_argument("--timeout", type=int, default=1800)
     parser.add_argument("--probe", action="store_true")
     parser.add_argument(
+        "--architecture",
+        choices=["amd64", "arm64"],
+        help="Guest architecture; QEMU uses software emulation on either host",
+    )
+    parser.add_argument(
         "--native-binary", type=Path, help="Built Rust NetworkManager acceptance executable"
     )
     parser.add_argument(
@@ -55,9 +60,10 @@ def main():
         raise SystemExit("Graphical login is a separate full acceptance run")
     if options.prepare_cache and not options.probe:
         raise SystemExit("Only an OS probe, without test users or credentials, may become a cache")
-    arch = {"x86_64": "amd64", "aarch64": "arm64"}.get(platform.machine())
-    if not arch:
+    host_arch = {"x86_64": "amd64", "aarch64": "arm64"}.get(platform.machine())
+    if not host_arch:
         raise SystemExit("Run on Linux amd64 or arm64 with QEMU and cloud-image-utils installed")
+    arch = options.architecture or host_arch
     root = Path(__file__).resolve().parents[1]
     cache = root / ".tools/virtual-cloud"
     output = root / (
@@ -238,6 +244,7 @@ def main():
         json.dumps(
             {
                 "architecture": arch,
+                "host_architecture": host_arch,
                 "image_version": VERSION,
                 "image_sha512": digest,
                 "memory_mib": 1024,
