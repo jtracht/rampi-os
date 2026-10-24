@@ -418,6 +418,114 @@ pub fn ssh_setup(
             );
             let scan = find_button(&host, "Hostschlüssel des aktiven Profils prüfen")
                 .context("No trust action")?;
+            conf.borrow_mut().hosts[0].identity = key.to_string_lossy().into_owned();
+            find_button(&host, "Aktiven SSH-Schlüssel entsperren")
+                .context("No SSH unlock action")?
+                .emit_clicked();
+            let unlock = stack
+                .visible_child()
+                .context("No unlock terminal")?
+                .downcast::<vte::Terminal>()
+                .map_err(|_| anyhow::anyhow!("SSH unlock not embedded"))?;
+            for _ in 0..300 {
+                if unlock
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase"))
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                unlock
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase")),
+                "ssh-add did not request its passphrase inside Rampi"
+            );
+            let unlock_page = stack.visible_child_name().unwrap();
+            stack.set_visible_child_name("settings");
+            find_button(&host, "SSH-Entsperren fortsetzen")
+                .context("No unlock resume")?
+                .emit_clicked();
+            ensure!(
+                stack.visible_child_name().as_ref() == Some(&unlock_page),
+                "Duplicate SSH unlock process"
+            );
+            unlock.feed_child(format!("{passphrase}\n").as_bytes());
+            let public = std::fs::read_to_string(key.with_extension("pub"))?;
+            let mut accepted = false;
+            for _ in 0..100 {
+                let (ok, keys) =
+                    crate::process::output("/usr/bin/ssh-add", &["-L".into()], 3, 16384).await?;
+                if ok
+                    && String::from_utf8_lossy(&keys)
+                        .lines()
+                        .any(|line| line == public.trim())
+                {
+                    accepted = true;
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                accepted,
+                "Actual OpenSSH agent did not receive the generated key"
+            );
+            ensure!(
+                !unlock
+                    .text_format(vte::Format::Text)
+                    .unwrap_or_default()
+                    .contains(&passphrase),
+                "ssh-add echoed its passphrase"
+            );
+            println!("RAMPI_RUST_SSH_AGENT_UNLOCK_OK");
+            for _ in 0..100 {
+                if find_button(&host, "Aktiven SSH-Schlüssel entsperren").is_some() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            let pages = stack.pages().n_items();
+            stack.set_visible_child_name("settings");
+            find_button(&host, "Aktiven SSH-Schlüssel entsperren")
+                .context("Unlock did not finish")?
+                .emit_clicked();
+            let retry = stack
+                .visible_child()
+                .context("No retry terminal")?
+                .downcast::<vte::Terminal>()
+                .map_err(|_| anyhow::anyhow!("Retry not embedded"))?;
+            ensure!(
+                retry != unlock && stack.pages().n_items() == pages + 1,
+                "Completed unlock terminals accumulated"
+            );
+            for _ in 0..300 {
+                if retry
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase"))
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(10)).await;
+            }
+            ensure!(
+                retry
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|s| s.contains("Enter passphrase")),
+                "Retry did not run ssh-add"
+            );
+            retry.feed_child(format!("{passphrase}\n").as_bytes());
+            for _ in 0..100 {
+                if find_button(&host, "Aktiven SSH-Schlüssel entsperren").is_some() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                stack.pages().n_items() == pages,
+                "Finished SSH prompt remained in the stack"
+            );
+            stack.set_visible_child_name("settings");
             scan.emit_clicked();
             for _ in 0..1000 {
                 if stack.visible_child_name().as_deref() == Some("ssh-trust") {

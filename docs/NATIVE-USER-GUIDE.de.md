@@ -106,6 +106,14 @@ OpenSSH erstellen. Die Passphrase wird im eingebetteten Terminal eingegeben.
 Über **Schlüsselerstellung fortsetzen** kehrst du zum selben Prozess zurück;
 vorhandene Schlüssel werden nicht überschrieben. **Rampi-Schlüssel in Formular
 übernehmen** trägt den Pfad ein; anschließend das Hostprofil speichern.
+Danach **Aktiven SSH-Schlüssel entsperren** wählen. OpenSSH fragt die Passphrase
+im eingebetteten Terminal ab. **SSH-Entsperren fortsetzen** kehrt zum laufenden
+Vorgang zurück. Nach Erfolg können auch die nichtinteraktiven Hostprüfungen den
+Schlüssel verwenden. Die Sitzung verwendet einen erreichbaren persönlichen
+OpenSSH-Agent weiter oder startet genau einen Agenten für diese Anmeldung.
+Beim Abmelden endet ein von Rampi gestarteter Agent; ein zuvor vorhandener
+Agent bleibt bestehen. Die Schlüsseldatei und ihre Passphrase werden dabei
+nicht verändert. Nach einer neuen Anmeldung gegebenenfalls erneut entsperren.
 **Öffentlichen Rampi-Schlüssel anzeigen** zeigt nur die öffentliche Datei zur
 Übertragung in das persönliche Windows-Konto.
 

@@ -44,6 +44,7 @@ def check(directory: Path, expected_binary: str | None = None):
         "RAMPI_GRAPHICAL_LOGIN_NO_UNAUTH_UI_OK",
         "RAMPI_GRAPHICAL_LOGIN_REJECT_OK",
         "RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK",
+        "RAMPI_GRAPHICAL_LOGIN_SSH_AGENT_OK",
         "RAMPI_GRAPHICAL_LOGIN_OK",
     ]:
         if marker not in log:
@@ -66,6 +67,8 @@ def check(directory: Path, expected_binary: str | None = None):
             raise ValueError("Native session or private configuration missing")
         if account.get("binary_sha256") != digest:
             raise ValueError("Guest executed a different native binary")
+        if account.get("ssh_agent_private") is not True:
+            raise ValueError("Personal SSH agent acceptance missing")
     for name in ["greeter", "rampi-login", "rampi-other"]:
         picture = directory / "captures" / (name + ".png")
         visible_capture(picture)

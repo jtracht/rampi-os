@@ -16,12 +16,42 @@ pub fn build(
     let adopt = button("Rampi-Schlüssel in Formular übernehmen", f);
     let public = button("Öffentlichen Rampi-Schlüssel anzeigen", f);
     let scan = button("Hostschlüssel des aktiven Profils prüfen", f);
+    let unlock = button("Aktiven SSH-Schlüssel entsperren", f);
     let output = label("");
     output.set_selectable(true);
-    for b in [&generate, &adopt, &public, &scan] {
+    for b in [&generate, &adopt, &public, &unlock, &scan] {
         page.append(b);
     }
     page.append(&output);
+    page.append(&label("Nach dem Speichern des Hostprofils den aktiven Schlüssel einmal entsperren. Die Passphrase bleibt im offiziellen OpenSSH-Terminal; der persönliche Agent hält den Schlüssel für diese Anmeldung bereit."));
+    let (s, c, stat) = (stack.clone(), conf.clone(), status.clone());
+    let unlocking = Rc::new(RefCell::new(None::<String>));
+    unlock.connect_clicked(move |button| {
+        if let Some(key) = unlocking.borrow().as_ref() {
+            s.set_visible_child_name(key);
+            return;
+        }
+        let identity = c.borrow().host().map(|h| h.identity.clone());
+        let args = identity.and_then(|identity| crate::ssh_setup::unlock_arguments(&identity));
+        match args {
+            Ok(args) => {
+                let name = format!("ssh-unlock-{}", glib::monotonic_time());
+                crate::views::terminal(&s, &name, args, &stat);
+                let key = format!("terminal-{name}");
+                if let Some(term) = s.child_by_name(&key).and_then(|w| w.downcast::<vte::Terminal>().ok()) {
+                    *unlocking.borrow_mut() = Some(key);
+                    button.set_label("SSH-Entsperren fortsetzen");
+                    let (state, button, stat) = (unlocking.clone(), button.downgrade(), stat.clone());
+                    term.connect_child_exited(move |_, code| {
+                        state.borrow_mut().take();
+                        if let Some(button) = button.upgrade() { button.set_label("Aktiven SSH-Schlüssel entsperren"); }
+                        stat.set_text(if code == 0 { "SSH-Schlüssel im persönlichen OpenSSH-Agent entsperrt." } else { "SSH-Schlüssel konnte nicht entsperrt werden. Ergebnis im Terminal prüfen." });
+                    });
+                }
+            }
+            Err(e) => stat.set_text(&e.to_string()),
+        }
+    });
     page.append(&label("Die Schlüsselerstellung läuft innerhalb von Rampi im offiziellen OpenSSH-Terminal. Wähle dort eine Passphrase. Vorhandene Schlüssel werden nicht überschrieben. Übertrage ausschließlich den öffentlichen Schlüssel in dein persönliches Windows-Konto."));
     let (s, stat) = (stack.clone(), status.clone());
     let running = Rc::new(RefCell::new(None::<String>));
