@@ -826,9 +826,9 @@ pub fn setup(
                 "vpn",
                 "host",
                 "host",
-                "host",
-                "host",
-                "host",
+                "ai-codex",
+                "ai-claude",
+                "ai-antigravity",
                 "remote",
                 "remote",
                 "board",
@@ -840,7 +840,15 @@ pub fn setup(
                     "Wizard lost the current step"
                 );
                 click(&setup, "Jetzt einrichten")?;
-                if ["remote", "diagnostics"].contains(&destination) {
+                if [
+                    "remote",
+                    "diagnostics",
+                    "ai-codex",
+                    "ai-claude",
+                    "ai-antigravity",
+                ]
+                .contains(&destination)
+                {
                     ensure!(
                         stack.visible_child_name().as_deref() == Some(destination),
                         "Wrong setup destination"

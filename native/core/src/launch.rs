@@ -65,12 +65,21 @@ pub fn ps_literal(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
 }
 pub fn ssh(host: &Host, module: &str) -> Result<Vec<OsString>> {
+    ssh_action(host, module, "Attach")
+}
+/// A fixed adapter action; never interpolate arbitrary commands from settings.
+pub fn ssh_action(host: &Host, module: &str, action: &str) -> Result<Vec<OsString>> {
     host.validate()?;
     ensure!(MODULES.contains(&module), "Unbekanntes KI-Modul");
+    ensure!(
+        ["Attach", "Check", "Status", "Stop"].contains(&action),
+        "Unbekannte Sitzungsaktion"
+    );
     let script = format!(
-        "$ErrorActionPreference='Stop'; $s=Join-Path $env:LOCALAPPDATA 'Rampi\\rampi-session.ps1'; & $s -Module {} -Project {}; exit $LASTEXITCODE",
+        "$ErrorActionPreference='Stop'; $s=Join-Path $env:LOCALAPPDATA 'Rampi\\rampi-session.ps1'; & $s -Module {} -Project {} -Action {}; exit $LASTEXITCODE",
         ps_literal(module),
-        ps_literal(&host.project)
+        ps_literal(&host.project),
+        ps_literal(action)
     );
     let encoded = STANDARD.encode(
         script
@@ -80,7 +89,7 @@ pub fn ssh(host: &Host, module: &str) -> Result<Vec<OsString>> {
     );
     let mut args: Vec<OsString> = [
         "ssh",
-        "-tt",
+        if action == "Attach" { "-tt" } else { "-T" },
         "-o",
         "StrictHostKeyChecking=yes",
         "-o",
@@ -100,6 +109,9 @@ pub fn ssh(host: &Host, module: &str) -> Result<Vec<OsString>> {
     if !host.identity.is_empty() {
         args.push("-i".into());
         args.push(expand_home(&host.identity)?.into_os_string());
+    }
+    if action != "Attach" {
+        args.extend(["-o".into(), "BatchMode=yes".into()]);
     }
     args.extend([
         OsString::from("-l"),
@@ -168,5 +180,34 @@ mod tests {
         assert_eq!(ps_literal("O'Brien"), "'O''Brien'");
         assert!(ssh(&h, "invented-cli").is_err());
         assert!(rdp(&h).unwrap().contains(&"/cert:tofu".into()));
+    }
+    #[test]
+    fn session_controls_cannot_inject_actions_or_prompt_in_background() {
+        let host = Host {
+            address: "windows.example".into(),
+            username: "alice".into(),
+            project: "C:\\Work\\O'Brien;$value".into(),
+            ..Default::default()
+        };
+        for action in ["Check", "Status", "Stop"] {
+            let args = ssh_action(&host, "antigravity", action).unwrap();
+            assert!(args.contains(&"-T".into()));
+            assert!(args.contains(&"BatchMode=yes".into()));
+            assert!(args.contains(&"StrictHostKeyChecking=yes".into()));
+            let bytes = STANDARD
+                .decode(args.last().unwrap().to_str().unwrap())
+                .unwrap();
+            let words: Vec<u16> = bytes
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|p| u16::from_le_bytes([p[0], p[1]]))
+                .collect();
+            let script = String::from_utf16(&words).unwrap();
+            assert!(script.contains(&format!("-Action '{action}'")));
+            assert!(script.contains("-Project 'C:\\Work\\O''Brien;$value'"));
+        }
+        assert!(ssh_action(&host, "codex", "Stop; whoami").is_err());
+        assert!(ssh_action(&host, "invented", "Check").is_err());
     }
 }

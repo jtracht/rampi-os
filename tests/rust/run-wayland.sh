@@ -44,6 +44,7 @@ wtype -s 150 -k Escape
 wait "$keyboard_pid"
 python3 tests/rust/test-dashboard.py
 python3 tests/rust/test-ssh-setup.py
+python3 tests/rust/test-ai-pages.py
 timeout 20 /build/target/debug/rampi-native --setup-ui-check
 timeout 40 /build/target/debug/rampi-native --system-ui-check
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then

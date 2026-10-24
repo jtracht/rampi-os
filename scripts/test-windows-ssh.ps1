@@ -15,6 +15,8 @@ $ready = $false
 $namespace = "rampi-ci-$suffix"
 $sshd = Join-Path $env:WINDIR 'System32\OpenSSH\sshd.exe'
 $createdUsers = @()
+$adapterAttempted = $false
+$adapterTransport = $null
 $ssh = (Get-Command ssh.exe -ErrorAction Stop).Source
 $keygen = (Get-Command ssh-keygen.exe -ErrorAction Stop).Source
 function Invoke-TestSsh([string]$User, [string]$Script) {
@@ -153,8 +155,83 @@ AllowUsers $($users -join ' ')
     if ($identity.Code -ne 0) { throw 'Second user SSH authentication failed; isolation test would be inconclusive.' }
     $other = Invoke-TestSsh $users[1] "& $muxLiteral -L '$namespace' has-session -t alive; exit `$LASTEXITCODE"
     if ($other.Code -eq 0) { throw 'Second Windows user could see the first user session.' }
+    # Exercise the actual Rampi launcher too. This tiny provider fixture makes no
+    # model requests; its process/working directory/environment are real Windows.
+    $adapter = Join-Path $directory 'rampi-session.ps1'
+    Copy-Item (Join-Path $PSScriptRoot '..\host\windows\rampi-session.ps1') $adapter
+    $project = Join-Path $directory "Project O'Brien"
+    New-Item -ItemType Directory -Path $project | Out-Null
+    @'
+if ($env:DISABLE_AUTOUPDATER -ne '1' -or $env:AGY_CLI_DISABLE_AUTO_UPDATE -ne 'true') { throw 'Automatic updates were not disabled in the actual provider process.' }
+Write-Output ('RAMPI_ADAPTER_PID:' + $PID)
+Write-Output 'RAMPI_ADAPTER_MANUAL_UPDATES_OK'
+Write-Output ('RAMPI_ADAPTER_PROJECT:' + (Split-Path -Leaf (Get-Location).Path))
+$counter = 0
+while ($true) { Write-Output ('RAMPI_ADAPTER_HEARTBEAT:' + $counter); $counter++; Start-Sleep -Milliseconds 300 }
+'@ | Set-Content -LiteralPath (Join-Path $directory 'codex.ps1') -Encoding utf8
+    $adapterLiteral = "'" + $adapter.Replace("'", "''") + "'"
+    $projectLiteral = "'" + $project.Replace("'", "''") + "'"
+    $pathLiteral = "'" + $directory.Replace("'", "''") + ";'"
+    $prefix = "`$env:PATH=$pathLiteral+`$env:PATH; "
+    $guard = Invoke-TestSsh $users[0] ($prefix + "& $muxLiteral has-session -t '=rampi-codex'; exit `$LASTEXITCODE")
+    if ($guard.Code -eq 0) { throw 'Unexpected preexisting default Rampi session.' }
+    $adapterAttempted = $true
+    $attach = $prefix + "& $adapterLiteral -Module codex -Project $projectLiteral; exit `$LASTEXITCODE"
+    $startInfo.ArgumentList[$startInfo.ArgumentList.Count-1] = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($attach))
+    $adapterTransport = [Diagnostics.Process]::new()
+    $adapterTransport.StartInfo = $startInfo
+    [void]$adapterTransport.Start()
+    $adapterOutput = $adapterTransport.StandardOutput.ReadToEndAsync()
+    $adapterError = $adapterTransport.StandardError.ReadToEndAsync()
+    $captureAdapter = $prefix + "& $muxLiteral capture-pane -p -t '=rampi-codex'; exit `$LASTEXITCODE"
+    $firstAdapter = $null
+    for ($attempt=0; $attempt -lt 20; $attempt++) {
+        Start-Sleep -Seconds 1
+        if ($adapterTransport.HasExited) { throw "Rampi adapter attach exited: $($adapterError.Result)" }
+        $firstAdapter = Invoke-TestSsh $users[0] $captureAdapter
+        if ($firstAdapter.Code -eq 0 -and $firstAdapter.Text -match 'RAMPI_ADAPTER_HEARTBEAT:') { break }
+    }
+    if ($firstAdapter.Code -ne 0 -or $firstAdapter.Text -notmatch 'RAMPI_ADAPTER_MANUAL_UPDATES_OK' -or
+        $firstAdapter.Text -notmatch "RAMPI_ADAPTER_PROJECT:Project O'Brien" -or
+        $firstAdapter.Text -notmatch 'RAMPI_ADAPTER_PID:(\d+)') { throw 'Actual provider process did not receive the safe project and manual-update environment.' }
+    $providerPid = $Matches[1]
+    $adapterTransport.Kill()
+    $adapterTransport.WaitForExit()
+    [void]$adapterOutput.GetAwaiter().GetResult()
+    [void]$adapterError.GetAwaiter().GetResult()
+    Start-Sleep -Seconds 2
+    $afterAdapter = Invoke-TestSsh $users[0] $captureAdapter
+    if ($afterAdapter.Code -ne 0 -or $afterAdapter.Text -eq $firstAdapter.Text -or
+        $afterAdapter.Text -notmatch "RAMPI_ADAPTER_PID:$providerPid") { throw 'Actual Rampi-launched process did not survive SSH loss.' }
+    $adapterTransport.Dispose()
+    $adapterTransport = [Diagnostics.Process]::new()
+    $adapterTransport.StartInfo = $startInfo
+    [void]$adapterTransport.Start()
+    $reattachOutput = $adapterTransport.StandardOutput.ReadToEndAsync()
+    $reattachError = $adapterTransport.StandardError.ReadToEndAsync()
+    Start-Sleep -Seconds 2
+    if ($adapterTransport.HasExited) { throw "Actual adapter reconnect failed: $($reattachError.Result)" }
+    $reattached = Invoke-TestSsh $users[0] $captureAdapter
+    if ($reattached.Code -ne 0 -or $reattached.Text -eq $afterAdapter.Text -or
+        $reattached.Text -notmatch "RAMPI_ADAPTER_PID:$providerPid") { throw 'Adapter reconnect replaced the original provider process.' }
+    $adapterTransport.Kill()
+    $adapterTransport.WaitForExit()
+    [void]$reattachOutput.GetAwaiter().GetResult()
+    [void]$reattachError.GetAwaiter().GetResult()
+    $check = Invoke-TestSsh $users[0] ($prefix + "& $adapterLiteral -Module codex -Action Check; exit `$LASTEXITCODE")
+    if ($check.Code -ne 0 -or ($check.Text | ConvertFrom-Json).running -ne $true) { throw 'Actual adapter did not report its surviving session.' }
+    $otherCheck = Invoke-TestSsh $users[1] ($prefix + "& $adapterLiteral -Module codex -Action Check; exit `$LASTEXITCODE")
+    if ($otherCheck.Code -ne 0 -or ($otherCheck.Text | ConvertFrom-Json).running -ne $false) { throw 'Rampi Check crossed Windows account boundaries.' }
+    $stopAdapter = Invoke-TestSsh $users[0] ($prefix + "& $adapterLiteral -Module codex -Action Stop; exit `$LASTEXITCODE")
+    if ($stopAdapter.Code -ne 0) { throw 'Actual adapter could not stop its session.' }
+    Write-Output 'RAMPI_WINDOWS_ACTUAL_ADAPTER_SSH_DROP_OK'
     Write-Output 'PASS: native ConPTY survived SSH reconnects and an abruptly killed PTY transport; second user denied same namespace.'
 } finally {
+    if ($null -ne $adapterTransport -and -not $adapterTransport.HasExited) { $adapterTransport.Kill(); $adapterTransport.WaitForExit() }
+    if ($adapterAttempted -and $ready) {
+        $cleanupMux = "'" + (Join-Path $directory 'psmux.exe').Replace("'", "''") + "'"
+        Invoke-TestSsh $users[0] "& $cleanupMux kill-session -t '=rampi-codex'; exit `$LASTEXITCODE" | Out-Null
+    }
     if ($createdUsers.Count -gt 0 -and $ready) {
         $mux = "'" + (Join-Path $directory 'psmux.exe').Replace("'", "''") + "'"
         Invoke-TestSsh $users[0] "& $mux -L '$namespace' kill-server; exit `$LASTEXITCODE" | Out-Null

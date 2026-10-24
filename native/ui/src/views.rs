@@ -787,6 +787,30 @@ pub fn remote(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedba
     }
     page
 }
+pub fn browser_at(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback, url: &str) {
+    if let Err(error) = config::validate_https(url) {
+        status.set_text(&error.to_string());
+        return;
+    }
+    browser(stack, conf, status, f);
+    fn navigate(widget: &gtk::Widget, url: &str) -> bool {
+        if let Some(web) = widget.downcast_ref::<webkit6::WebView>() {
+            web.load_uri(url);
+            return true;
+        }
+        let mut next = widget.first_child();
+        while let Some(child) = next {
+            if navigate(&child, url) {
+                return true;
+            }
+            next = child.next_sibling();
+        }
+        false
+    }
+    if let Some(page) = stack.child_by_name("browser") {
+        navigate(&page, url);
+    }
+}
 pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) {
     if stack.child_by_name("browser").is_some() {
         stack.set_visible_child_name("browser");
