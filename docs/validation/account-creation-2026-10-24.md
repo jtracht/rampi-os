@@ -31,5 +31,10 @@ bleibt unverändert; Kennwörter erscheinen nicht in Ausgaben oder Aufnahmen.
 
 Der frische grafische greetd-/PAM-Durchlauf mit zwei isolierten Konten ist
 zusätzlich im [80-Prozent-Nachweis](rust-native-80-2026-10-24.md) dokumentiert.
-Die erweiterte native Gesamt-CI auf AMD64 und ARM64 bleibt vor Zusammenführung
-dieser Änderung erforderlich. Der Gesamtstand bleibt bis dahin bei 80/100.
+Die erweiterte [native Gesamt-CI 40093153025](https://github.com/jtracht/rampi-os/actions/runs/40093153025)
+auf AMD64 und ARM64 und die [allgemeine CI 40093152982](https://github.com/jtracht/rampi-os/actions/runs/40093152982)
+bestehen. Beide heruntergeladenen nativen Nachweise, die frischen grafischen
+Anmeldungen und die sieben Paketprüfsummen wurden unabhängig erneut geprüft.
+[PR 34](https://github.com/jtracht/rampi-os/pull/34) ist mit dem identischen geprüften
+Git-Baum `770fb0a0dc7a2b370f959f862e6912c0087876eb` zusammengeführt.
+Der Gesamtstand bleibt bis zur gesonderten Bewertung bei 80/100.

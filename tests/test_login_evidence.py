@@ -21,6 +21,7 @@ def evidence(tmp_path):
         "architecture": "arm64",
         "memory_mib": 1024,
         "cpus": 4,
+        "tcg_thread": "multi",
         "physical_devices": False,
         "prepared_development_cache": False,
         "resumed_development_guest": False,
@@ -35,6 +36,7 @@ def evidence(tmp_path):
                 "RAMPI_GRAPHICAL_LOGIN_REJECT_OK",
                 "RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK",
                 "RAMPI_GRAPHICAL_LOGIN_SSH_AGENT_OK",
+                "RAMPI_GRAPHICAL_LOGIN_BRANDING_OK",
                 "RAMPI_GRAPHICAL_LOGIN_OK",
                 "RAMPI_GUEST_EXIT=0",
             ]
@@ -57,6 +59,11 @@ def evidence(tmp_path):
     (capture / "login-proof.json").write_text(json.dumps(proof))
     for name in ["greeter", "rampi-login", "rampi-other"]:
         Image.new("RGB", (1280, 720), (80, 100, 120)).save(capture / (name + ".png"))
+    # Synthetic checker fixture, deliberately not a runtime screenshot.
+    greeter = Image.open(capture / "greeter.png")
+    greeter.paste((200, 20, 70), (80, 80, 150, 150))
+    greeter.paste((20, 150, 60), (80, 45, 130, 65))
+    greeter.save(capture / "greeter.png")
     return tmp_path
 
 
@@ -81,6 +88,7 @@ def test_fresh_two_account_evidence(evidence):
         ("physical_devices", True),
         ("graphical_login", False),
         ("memory_mib", 2048),
+        ("tcg_thread", "single"),
     ],
 )
 def test_reject_wrong_test_scope(evidence, key, value):
@@ -130,3 +138,9 @@ def test_reject_later_guest_failure(evidence):
 def test_reject_binary_not_from_producer(evidence):
     with pytest.raises(ValueError):
         MODULE.check(evidence, "b" * 64)
+
+
+def test_reject_unbranded_login(evidence):
+    Image.new("RGB", (1280, 720), (80, 100, 120)).save(evidence / "captures/greeter.png")
+    with pytest.raises(ValueError, match="logo missing"):
+        MODULE.check(evidence)

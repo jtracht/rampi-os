@@ -25,6 +25,8 @@ test -r "$first/assets/branding/logo.png"
 test -e /usr/share/wayland-sessions/rampi.desktop
 test ! -e /usr/share/xsessions/rampi.desktop
 test -r /etc/greetd/config.toml
+test -x /usr/local/bin/rampi-greeter
+cmp /etc/xdg/rampi/greeter/wlgreet.toml "$workspace/system/wlgreet.toml"
 if find "$first" \( -perm /022 -o ! -uid 0 -o ! -gid 0 \) -print -quit | grep -q .; then exit 1; fi
 /usr/local/bin/rampi --version
 if ldd "$first/rampi-native" | grep -q 'not found'; then exit 1; fi
@@ -50,6 +52,7 @@ test "$(readlink -f /opt/rampi/current)" = "$first"
 bash "$workspace/installer/raspberrypi/uninstall.sh"
 test ! -e /usr/local/bin/rampi
 test ! -e /usr/local/bin/rampi-wayland-start
+test ! -e /usr/local/bin/rampi-greeter
 test ! -e /usr/share/wayland-sessions/rampi.desktop
 test -x "$first/rampi-native"
 test -e /etc/greetd/config.toml

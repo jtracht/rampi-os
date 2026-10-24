@@ -12,7 +12,7 @@ if [[ -f /opt/rampi/managed-greetd.sha256 && -f /etc/greetd/config.toml ]]; then
         systemctl set-default multi-user.target
     fi
 fi
-for path in /usr/local/bin/rampi /usr/local/bin/rampi-session /usr/local/bin/rampi-wayland-start /usr/local/bin/rampi-health /usr/share/wayland-sessions/rampi.desktop /etc/systemd/user/rampi.service /etc/systemd/system/rampi-health.service; do
+for path in /usr/local/bin/rampi /usr/local/bin/rampi-session /usr/local/bin/rampi-wayland-start /usr/local/bin/rampi-health /usr/local/bin/rampi-greeter /usr/share/wayland-sessions/rampi.desktop /etc/systemd/user/rampi.service /etc/systemd/system/rampi-health.service; do
     if [[ -f "$path" ]]; then rm -- "$path"; fi
 done
 echo 'Sitzung entfernt. Versionsstände in /opt/rampi, persönliche Daten und Systemdienste bleiben erhalten.'
