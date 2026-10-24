@@ -15,7 +15,7 @@ use rdw::gtk::gdk;
 use tokio::sync::{mpsc, oneshot::Sender};
 use tracing::{debug, error, trace, warn};
 
-use crate::{rdp::RdpOutputEvent, util::string_from_utf16};
+use crate::rdp::RdpOutputEvent;
 
 #[derive(Clone, Debug)]
 pub(crate) struct ClientClipboardMessageProxy {
@@ -125,7 +125,7 @@ impl CliprdrBackend for CbBackend {
         };
 
         let data = match format {
-            ClipboardFormatId::CF_UNICODETEXT => match string_from_utf16(response.data()) {
+            ClipboardFormatId::CF_UNICODETEXT => match response.to_unicode_string() {
                 Ok(res) => res.into_bytes(),
                 Err(e) => {
                     warn!("Invalid utf16 clipboard text: {e}");

@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+rdp_input = runpy.run_path(str(Path(__file__).with_name("check-rdp-input-evidence.py")))["check"](
+    directory
+)
 runpy.run_path(str(Path(__file__).with_name("check-soak-evidence.py")))["check"](
     directory / "mixed-soak"
 )
@@ -17,6 +20,8 @@ for marker in [
     "RAMPI_RUST_RDP_EMBEDDED_RECONNECT_OK",
     "RAMPI_RUST_RDP_SERVER_FAILURE_OK",
     "RAMPI_RUST_RDP_SERVER_RECEIPTS_OK",
+    "RAMPI_RUST_RDP_MOUSE_CLIPBOARD_OK",
+    "RAMPI_RUST_RDP_MOUSE_CLIPBOARD_RECEIPTS_OK",
 ]:
     if marker not in rdp_log:
         raise SystemExit("Missing actual embedded RDP acceptance: " + marker)
@@ -148,6 +153,7 @@ width, height = struct.unpack(">II", header[16:24])
 if width < 960 or height < 540:
     raise SystemExit("Actual native screenshot is smaller than the supported interface")
 proof = {
+    "rdp_input": rdp_input,
     "required_stages": markers,
     "peak_mib": round(peak / 1024**2, 1),
     "screenshot": [width, height],

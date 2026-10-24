@@ -228,8 +228,9 @@ verhindert die Anmeldung; der angezeigte neue Wert wird nicht automatisch akzept
 **← Dashboard** oder **Strg+Alt+Pos1** wechseln zurück und erhalten die Verbindung.
 **Verbindung trennen** trennt RDP, ohne Windows abzumelden. Nach einem Netzabbruch
 wird die Anmeldung wieder angeboten. Escape bleibt innerhalb der Desktopfläche
-für den entfernten Rechner verfügbar. RDW stellt Maus, Tastatur und Zwischenablage
-bereit. Die Auflösung bleibt beim Verbinden fest; die Fläche wird lokal skaliert.
+für den entfernten Rechner verfügbar. RDW stellt Maus und Tastatur bereit.
+Textkopien aus Rampi und vom Host werden über die Zwischenablage in beide
+Richtungen übertragen. Die Auflösung bleibt beim Verbinden fest; die Fläche wird lokal skaliert.
 
 Die Softwareabnahme verwendet einen echten XRDP-Testserver. Eine native Windows-
 11-Pro-/NLA-Abnahme ist noch offen. Streaming verwendet weiterhin Moonlight mit

@@ -23,6 +23,11 @@ Local changes to the pinned source:
 * Connection and authentication stages have finite timeouts.
 * TCP resolution uses a host/port tuple, including IPv6 addresses.
 * Tracing skips the connection configuration, which contains credentials.
+* Clipboard echo prevention compares the actual remote content provider instead
+  of suppressing every copy from the GTK process. Ordinary Rampi entry/browser
+  copies can therefore reach the remote session without echoing remote content.
+* Unicode clipboard encoding/decoding uses IronRDP's existing format helpers,
+  including the two-byte UTF-16 terminator, instead of a separate local codec.
 
 Rampi uses the existing GTK widget, IronRDP protocol implementation and GStreamer
 audio. The client enables Wayland, without RDW's X11 feature. No USB device or

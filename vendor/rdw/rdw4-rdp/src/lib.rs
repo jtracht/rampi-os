@@ -14,7 +14,6 @@ pub use display::*;
 mod cliprdr;
 mod rdp;
 mod snd;
-mod util;
 
 #[cfg(feature = "capi")]
 mod capi;
