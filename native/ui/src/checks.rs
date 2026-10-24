@@ -47,6 +47,26 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
             }
             // Wait for the page's automatic initial adapter discovery to finish.
             glib::timeout_future(std::time::Duration::from_millis(150)).await;
+            let picker = named(&page, "bluetooth-adapters")
+                .unwrap()
+                .downcast::<gtk::ListBox>()
+                .unwrap();
+            let device_list = named(&page, "bluetooth-devices")
+                .unwrap()
+                .downcast::<gtk::ListBox>()
+                .unwrap();
+            let shown = || {
+                device_list
+                    .row_at_index(0)
+                    .and_then(|r| r.child())
+                    .and_downcast::<gtk::Label>()
+                    .map(|l| l.text().to_string())
+                    .unwrap_or_default()
+            };
+            ensure!(
+                shown().contains("Rust test keyboard") && device_list.row_at_index(1).is_none(),
+                "Devices from another adapter appeared"
+            );
             let before = names().await?;
             search.emit_clicked();
             let mut client = None;
@@ -63,6 +83,38 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             let client = client.context("Actual Bluetooth page did not start its own discovery")?;
+            picker.select_row(picker.row_at_index(1).as_ref());
+            for _ in 0..100 {
+                if !names().await?.contains(&client) {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                !names().await?.contains(&client),
+                "Changing adapter left old discovery running"
+            );
+            ensure!(
+                shown().contains("Second adapter mouse") && device_list.row_at_index(1).is_none()
+            );
+            picker.select_row(picker.row_at_index(0).as_ref());
+            ensure!(shown().contains("Rust test keyboard"));
+            search.emit_clicked();
+            let mut client = None;
+            for _ in 0..100 {
+                let added: Vec<_> = names()
+                    .await?
+                    .into_iter()
+                    .filter(|n| !before.contains(n))
+                    .collect();
+                if search.is_sensitive() && added.len() == 1 {
+                    client = Some(added[0].clone());
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            let client = client.context("Discovery did not resume on the selected adapter")?;
+            println!("RAMPI_RUST_BLUEZ_ADAPTER_SWITCH_OK");
             tabs.set_visible_child_name("wifi");
             for _ in 0..100 {
                 if !names().await?.contains(&client) {
