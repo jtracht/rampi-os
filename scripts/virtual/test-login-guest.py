@@ -112,11 +112,34 @@ def native_keyring(user, mode, attribute, secret):
         raise RuntimeError("Native Secret Service acceptance result missing")
 
 
+def keyring_state(user):
+    # Collection identity/lock state is diagnostic metadata, never a secret.
+    for alias in ["default", "login"]:
+        result = as_user(
+            user,
+            "gdbus",
+            "call",
+            "--session",
+            "--dest",
+            "org.freedesktop.secrets",
+            "--object-path",
+            "/org/freedesktop/secrets",
+            "--method",
+            "org.freedesktop.Secret.Service.ReadAlias",
+            alias,
+            check=False,
+        )
+        print(
+            f"RAMPI_PAM_KEYRING_ALIAS {user} {alias}: {result.stdout.decode().strip()}", flush=True
+        )
+
+
 def keyring_store(user, attribute, secret):
     # Exercise the real Secret Service. Never feed a keyring password or invoke
     # its unlock method: only the preceding greetd/PAM login may unlock it.
     # The production adapter must work before libsecret can create or select a
     # collection on its behalf. This prevents a generic CLI masking a Rampi bug.
+    keyring_state(user)
     native_keyring(user, "store", attribute, secret)
     as_user(
         user,
