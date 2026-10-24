@@ -10,11 +10,13 @@ import runpy
 import secrets
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 SOURCE = Path("/opt/rampi-source")
 CAPTURES = Path("/opt/rampi-captures")
+DISPLAYS: dict[str, str] = {}
 
 
 def run(*args, data=None, check=True):
@@ -42,7 +44,7 @@ def as_user(user, *args, data=None, check=True):
         "--",
         "env",
         f"XDG_RUNTIME_DIR=/run/user/{uid}",
-        "WAYLAND_DISPLAY=wayland-0",
+        f"WAYLAND_DISPLAY={DISPLAYS.get(user, 'wayland-0')}",
         f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
         *args,
         data=data,
@@ -52,8 +54,30 @@ def as_user(user, *args, data=None, check=True):
 
 def greeter_ready():
     uid = pwd.getpwnam("_greetd").pw_uid
-    wait(lambda: Path(f"/run/user/{uid}/wayland-0").is_socket(), "greeter Wayland socket")
-    time.sleep(2)
+    runtime = Path(f"/run/user/{uid}")
+    visible_capture = runpy.run_path(str(SOURCE / "scripts/check-login-evidence.py"))[
+        "visible_capture"
+    ]
+    picture = runtime / "rampi-greeter-ready.png"
+
+    def ready():
+        # A socket pathname can predate the compositor accepting connections,
+        # and a restarted session can select a different display number.
+        sockets = [item for item in runtime.glob("wayland-*") if item.is_socket()]
+        for item in sorted(sockets, key=lambda item: item.stat().st_mtime, reverse=True):
+            DISPLAYS["_greetd"] = item.name
+            try:
+                if as_user("_greetd", "wlrctl", "toplevel", "list", check=False).returncode:
+                    continue
+                if as_user("_greetd", "grim", str(picture), check=False).returncode:
+                    continue
+                visible_capture(picture)
+                return True
+            except (ValueError, subprocess.TimeoutExpired):
+                continue
+        return False
+
+    wait(ready, "reachable compositor with a visibly painted greeter")
 
 
 def login(user, password):
@@ -94,23 +118,48 @@ def install():
         Path("/etc/xdg/rampi").chmod(0o755)
         directory.chmod(0o755)
         (directory / "rc.xml").chmod(0o644)
+    configure_test_session()
+
+
+def configure_test_session():
+    image_test = "--installed-image" in sys.argv
+    backends = "headless" if image_test else "headless,libinput"
     wrapper = Path("/usr/local/bin/rampi-login-test-session")
     wrapper.write_text(
         "#!/bin/sh\nset -eu\numask 077\n"
         'id -u > "$HOME/.rampi-login-uid"\n'
-        "export WLR_BACKENDS=headless,libinput WLR_RENDERER=pixman "
+        f"export WLR_BACKENDS={backends} WLR_RENDERER=pixman "
         "WLR_HEADLESS_OUTPUTS=1 LIBSEAT_BACKEND=logind\n"
         "exec /usr/local/bin/rampi-session\n"
     )
     wrapper.chmod(0o755)
-    production = (SOURCE / "system/greetd.toml").read_text()
+    production = (
+        Path("/etc/greetd/config.toml") if image_test else SOURCE / "system/greetd.toml"
+    ).read_text()
     production = production.replace("/usr/local/bin/rampi-session", str(wrapper))
+    if image_test:
+        # Represent both designated input devices through existing Wayland
+        # tools. wlgreet 0.5 requests wl_pointer even during keyboard-only input;
+        # wlroots 0.20 rejects that unless a pointer capability has existed.
+        helper = Path("/usr/local/bin/rampi-image-test-greeter")
+        helper.write_text(
+            "#!/bin/sh\nwtype -s 1500000 &\nkeyboard=$!\n"
+            "trap 'kill \"$keyboard\" 2>/dev/null || true' EXIT\n"
+            'sleep 1\nwlrctl pointer move 0 0\n/usr/sbin/wlgreet "$@"\n'
+        )
+        helper.chmod(0o755)
+        production = production.replace("/usr/sbin/wlgreet", str(helper))
     production = production.replace(
         'command = "',
-        'command = "env WLR_BACKENDS=headless,libinput WLR_RENDERER=pixman '
+        f'command = "env WLR_BACKENDS={backends} WLR_RENDERER=pixman '
         "WLR_HEADLESS_OUTPUTS=1 LIBSEAT_BACKEND=logind ",
         1,
     )
+    if "--greeter-diagnostic" in sys.argv:
+        production = production.replace(
+            "env WLR_BACKENDS=", "env WAYLAND_DEBUG=server WLR_BACKENDS="
+        )
+        production = production.replace("/usr/bin/labwc ", "/usr/bin/labwc -d ")
     uid = pwd.getpwnam("_greetd").pw_uid
     production = production.replace("'\"", f"' >> /run/user/{uid}/rampi-greeter.log 2>&1\"")
     Path("/etc/greetd/config.toml").write_text(production)
@@ -119,15 +168,27 @@ def install():
 
 
 def main():
+    image_test = (
+        "--installed-image" in sys.argv
+        and Path("/etc/rampi-image-acceptance-vm").is_file()
+        and "rampi.image_acceptance=1" in Path("/proc/cmdline").read_text()
+    )
     if (
         not Path("/etc/rampi-acceptance-vm").is_file()
-        or run("systemd-detect-virt", "--vm", "--quiet", check=False).returncode
+        or not image_test
+        and run("systemd-detect-virt", "--vm", "--quiet", check=False).returncode
     ):
         raise SystemExit("Only inside the designated isolated QEMU guest")
     os.umask(0o077)
     if shutil.which("wlrctl") is None:
         run("apt-get", "install", "-y", "--no-install-recommends", "wlrctl")
-    install()
+    if image_test:
+        # The image's actual installed program, assets, launchers and greeter
+        # profile stay in place. Only fixture accounts and headless test input
+        # are added to a disposable disk copy by the external validator.
+        configure_test_session()
+    else:
+        install()
     users = ["rampi-login", "rampi-other"]
     passwords = {}
     for user in users:
@@ -140,6 +201,11 @@ def main():
         run("chpasswd", data=f"{user}:{passwords[user]}\n".encode())
     run("systemctl", "restart", "greetd")
     greeter_ready()
+    if "--greeter-diagnostic" in sys.argv:
+        # No password or username input in protocol diagnostics. This mode is
+        # intentionally insufficient for the normal acceptance checker.
+        time.sleep(15)
+        raise RuntimeError("Diagnostic-only greeter run; no authentication attempted")
     as_user("_greetd", "wtype", "-M", "ctrl", "-M", "alt", "-k", "Home", "-m", "alt", "-m", "ctrl")
     time.sleep(1)
     if (
@@ -271,6 +337,9 @@ if __name__ == "__main__":
         log = Path(f"/run/user/{uid}/rampi-greeter.log")
         if log.is_file():
             print(log.read_text(errors="replace")[-6000:], flush=True)
+            if "--greeter-diagnostic" in sys.argv:
+                shutil.copyfile(log, CAPTURES / "greeter-diagnostic.log")
+                (CAPTURES / "greeter-diagnostic.log").chmod(0o644)
         diagnostic = run("journalctl", "-b", "-u", "greetd", "--no-pager", "-n", "30", check=False)
         print(diagnostic.stdout.decode(errors="replace"), flush=True)
         diagnostic = run(
