@@ -9,7 +9,7 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Sitzung/Dashboard | Rust/GTK/labwc, sechs Module, Live-Status, Offline-Bedienung | Gesamtabnahme aller externen Module |
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
 | Einrichtung | Fortsetzbare 15 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
-| Linux-Konto | Grafischer greetd-/PAM-Login, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd und persönliche SSH-Agenten mit privaten Rechten auf AMD64/ARM64 abgenommen | Neue Login-Gestaltung: lokale grafische Abnahme besteht, kombinierte CI noch offen |
+| Linux-Konto | Grafischer greetd-/PAM-Login mit Original-Branding, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd und private SSH-Agenten auf AMD64/ARM64 abgenommen | Durchgängige PAM-/Schlüsselbund-Entsperrung und reguläre Release-Abnahme |
 | WLAN | Eigene integrierte Seite; sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private Profile; WPA2, sichtbares/verstecktes WPA3, DHCP und Kontentrennung in frischen AMD64-/ARM64-QEMU-Gästen abgenommen | Unternehmensnetze benötigen vorhandenes NM-Profil; physische Funkqualität ausgeschlossen |
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart; Mehradapteroberfläche und tatsächliche virtuelle BlueZ-Bindungen auf AMD64/ARM64 abgenommen | Durchgängige HID-/Remote-Eingabeabnahmen; physischer Funk ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
@@ -17,7 +17,7 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Antigravity | Offizielle Windows-CLI `agy`, eigene Einrichtungs-/Sitzungsseite und Installationsprüfung | Persönliche Installation, Anmeldung und tatsächliche Anbieteranfrage |
 | Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
-| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, zwei Scrollachsen und Unicode-Zwischenablage lokal mit tatsächlichen Serverquittungen geprüft; Moonlight-Aufruf | Kombinierte AMD64-/ARM64-CI der Eingabe-Erweiterung, Windows-NLA, integriertes Streaming und Pi-Decoderpfad |
+| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; Moonlight-Aufruf | Windows-NLA, integriertes Streaming und Pi-Decoderpfad |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
 | Image/Release | Gebauter nativer Kandidat, Lizenzen/Provenienz, QEMU-Boot und grafische PAM-Anmeldung mit zwei Konten | Reguläre native Release-Funktionsgleichheit |
 
