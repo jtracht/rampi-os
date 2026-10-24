@@ -30,6 +30,11 @@ def main():
     parser.add_argument("--timeout", type=int, default=1800)
     parser.add_argument("--probe", action="store_true")
     parser.add_argument(
+        "--architecture",
+        choices=["amd64", "arm64"],
+        help="Guest architecture; QEMU uses software emulation on either host",
+    )
+    parser.add_argument(
         "--native-binary", type=Path, help="Built Rust NetworkManager acceptance executable"
     )
     parser.add_argument(
@@ -55,9 +60,10 @@ def main():
         raise SystemExit("Graphical login is a separate full acceptance run")
     if options.prepare_cache and not options.probe:
         raise SystemExit("Only an OS probe, without test users or credentials, may become a cache")
-    arch = {"x86_64": "amd64", "aarch64": "arm64"}.get(platform.machine())
-    if not arch:
+    host_arch = {"x86_64": "amd64", "aarch64": "arm64"}.get(platform.machine())
+    if not host_arch:
         raise SystemExit("Run on Linux amd64 or arm64 with QEMU and cloud-image-utils installed")
+    arch = options.architecture or host_arch
     root = Path(__file__).resolve().parents[1]
     cache = root / ".tools/virtual-cloud"
     output = root / (
@@ -238,6 +244,7 @@ def main():
         json.dumps(
             {
                 "architecture": arch,
+                "host_architecture": host_arch,
                 "image_version": VERSION,
                 "image_sha512": digest,
                 "memory_mib": 1024,
@@ -281,7 +288,17 @@ def main():
     if options.native_session_binary:
         marker = "RAMPI_GRAPHICAL_LOGIN_OK"
     if options.native_binary and not all(
-        m in text for m in ["RAMPI_RUST_WIFI_LIVE_OK", "RAMPI_RUST_WIFI_OTHER_USER_OK"]
+        m in text
+        for m in [
+            "RAMPI_RUST_WIFI_LIVE_OK",
+            "RAMPI_RUST_WIFI_OTHER_USER_OK",
+            "RAMPI_RUST_BLUEZ_VHCI_PAIR_TRUST_OK",
+            "RAMPI_BLUEZ_VHCI_BOTH_BONDS_OK",
+            "RAMPI_RUST_BLUEZ_VHCI_REMOVE_POWER_OK",
+            "RAMPI_RUST_WIFI_WPA3_SAE_OK",
+            "RAMPI_RUST_WIFI_HIDDEN_SAE_OK",
+            "RAMPI_WPA3_VISIBLE_HIDDEN_MODES_OK",
+        ]
     ):
         raise SystemExit("Native virtual WLAN evidence missing; inspect serial.log")
     if marker not in text or "RAMPI_GUEST_EXIT=0" not in text:

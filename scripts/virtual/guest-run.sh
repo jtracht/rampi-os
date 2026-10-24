@@ -5,7 +5,11 @@ if [[ ! -f /etc/rampi-acceptance-vm ]] || ! systemd-detect-virt --vm --quiet; th
 fi
 echo RAMPI_VIRTUAL_KERNEL="$(uname -r)"
 modprobe mac80211_hwsim radios=2
-modprobe hci_vhci
+if modinfo hci_vhci >/dev/null 2>&1; then
+    modprobe hci_vhci
+else
+    bash /opt/rampi-source/scripts/virtual/ensure-vhci.sh
+fi
 modprobe uinput
 btvirt -l2 >/tmp/rampi-btvirt.log 2>&1 &
 bt_pid=$!
@@ -64,7 +68,11 @@ trap 'kill "$bt_pid" "$dns_pid" 2>/dev/null || true' EXIT
 if [[ -f /opt/rampi-source/rampi-network-acceptance ]]; then
     runuser -u rampi -- /opt/rampi-source/rampi-network-acceptance
     runuser -u rampi-other -- /opt/rampi-source/rampi-network-acceptance --other
+    python3 /opt/rampi-source/scripts/virtual/test-bluetooth-live.py
 fi
 runuser -u rampi -- env PYTHONPATH=/opt/rampi-source/client \
     python3 /opt/rampi-source/scripts/virtual/test-wifi-live.py
+if [[ -f /opt/rampi-source/rampi-network-acceptance ]]; then
+    python3 /opt/rampi-source/scripts/virtual/test-wifi-modes.py
+fi
 echo RAMPI_VIRTUAL_ACCEPTANCE_OK

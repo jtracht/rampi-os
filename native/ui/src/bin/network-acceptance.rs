@@ -1,5 +1,33 @@
 //! QEMU-only acceptance using the exact production NetworkManager adapter.
 #[cfg(target_os = "linux")]
+#[path = "../bluetooth_live.rs"]
+mod bluetooth_live;
+
+#[cfg(target_os = "linux")]
+fn ssid() -> &'static str {
+    if std::env::args().any(|a| a == "--hidden-sae") {
+        "RampiVirtualHidden"
+    } else if std::env::args().any(|a| a == "--sae") {
+        "RampiVirtualSae"
+    } else {
+        "RampiVirtualPrivate"
+    }
+}
+
+#[cfg(target_os = "linux")]
+async fn connect(password: String) -> anyhow::Result<()> {
+    if std::env::args().any(|a| a == "--hidden-sae") {
+        let (device, _) = bus::wifi_devices()
+            .await?
+            .into_iter()
+            .find(|(_, name)| name == "wlan0")
+            .ok_or_else(|| anyhow::anyhow!("Virtual station missing"))?;
+        bus::wifi_hidden(&device, ssid(), "sae", password).await
+    } else {
+        bus::wifi_connect(network().await?, password).await
+    }
+}
+#[cfg(target_os = "linux")]
 #[allow(dead_code)]
 #[path = "../bus.rs"]
 mod bus;
@@ -13,7 +41,7 @@ async fn network() -> anyhow::Result<bus::Wifi> {
         {
             rows = scanned;
         }
-        if let Some(row) = rows.into_iter().find(|r| r.ssid == b"RampiVirtualPrivate") {
+        if let Some(row) = rows.into_iter().find(|r| r.ssid == ssid().as_bytes()) {
             return Ok(row);
         }
         gtk::glib::timeout_future_seconds(1).await;
@@ -56,7 +84,7 @@ async fn forget() -> anyhow::Result<()> {
             .and_then(|v| v.get("ssid"))
             .and_then(|v| v.get::<Vec<u8>>())
             .as_deref()
-            == Some(b"RampiVirtualPrivate")
+            == Some(ssid().as_bytes())
             && settings
                 .get("connection")
                 .and_then(|v| v.get("permissions"))
@@ -91,6 +119,9 @@ fn run() -> anyhow::Result<()> {
         "Designated unprivileged QEMU guest required"
     );
     glib::MainContext::default().block_on(async {
+        if std::env::args().any(|a| a == "--bluetooth" || a == "--bluetooth-cleanup") {
+            return bluetooth_live::run(std::env::args().any(|a| a == "--bluetooth-cleanup")).await;
+        }
         if std::env::args().any(|a| a == "--other") {
             ensure!(
                 network().await?.profile.is_empty(),
@@ -105,13 +136,42 @@ fn run() -> anyhow::Result<()> {
         );
         let secret = std::fs::read_to_string("/run/rampi-acceptance-user/wifi-key")?;
         forget().await?;
-        bus::wifi_connect(network().await?, secret.trim().into()).await?;
+        connect(secret.trim().into()).await?;
         let row = network().await?;
         ensure!(
             row.active && !row.profile.is_empty(),
-            "WPA2 did not activate a saved personal profile"
+            "WLAN did not activate a saved personal profile"
         );
         let conn = bus::system().await?;
+        if ssid() != "RampiVirtualPrivate" {
+            ensure!(row.mode == "sae", "WPA3 test fell back to WPA2");
+            let reply = bus::call(
+                &conn,
+                bus::NM,
+                &row.profile,
+                &format!("{}.Settings.Connection", bus::NM),
+                "GetSettings",
+                None,
+            )
+            .await?;
+            let settings: bus::Settings = reply
+                .child_value(0)
+                .get()
+                .ok_or_else(|| anyhow::anyhow!("Missing actual WLAN settings"))?;
+            ensure!(
+                settings
+                    .get("802-11-wireless-security")
+                    .is_some_and(|v| bus::text(v, "key-mgmt") == "sae")
+            );
+            if ssid() == "RampiVirtualHidden" {
+                ensure!(
+                    settings
+                        .get("802-11-wireless")
+                        .is_some_and(|v| bus::flag(v, "hidden")),
+                    "Hidden SSID was saved as a broadcast network"
+                );
+            }
+        }
         let device =
             bus::properties(&conn, bus::NM, &row.device, &format!("{}.Device", bus::NM)).await?;
         let ip = bus::text(&device, "Ip4Config");
@@ -139,22 +199,25 @@ fn run() -> anyhow::Result<()> {
         glib::timeout_future_seconds(1).await;
         forget().await?;
         ensure!(
-            bus::wifi_connect(network().await?, format!("{}wrong", secret.trim()))
-                .await
-                .is_err(),
-            "WPA2 accepted a wrong credential"
+            connect(format!("{}wrong", secret.trim())).await.is_err(),
+            "WLAN accepted a wrong credential"
         );
         ensure!(
             !network().await?.active,
             "Wrong credential left WLAN connected"
         );
         forget().await?;
-        bus::wifi_connect(network().await?, secret.trim().into()).await?;
+        connect(secret.trim().into()).await?;
         ensure!(
             network().await?.active,
             "Reconnect failed after wrong credential"
         );
         println!("RAMPI_RUST_WIFI_LIVE_OK");
+        match ssid() {
+            "RampiVirtualSae" => println!("RAMPI_RUST_WIFI_WPA3_SAE_OK"),
+            "RampiVirtualHidden" => println!("RAMPI_RUST_WIFI_HIDDEN_SAE_OK"),
+            _ => {}
+        }
         Ok(())
     })
 }

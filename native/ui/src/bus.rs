@@ -26,7 +26,9 @@ pub async fn call(
         method,
         parameters,
         None,
-        gio::DBusCallFlags::ALLOW_INTERACTIVE_AUTHORIZATION,
+        // Authorization must use existing policy without launching another
+        // application's Polkit dialog. BlueZ's own Agent1 UI remains separate.
+        gio::DBusCallFlags::NONE,
         if method == "Pair" { 90_000 } else { 15_000 },
     )
     .await
