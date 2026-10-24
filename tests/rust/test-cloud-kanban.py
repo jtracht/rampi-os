@@ -17,7 +17,7 @@ if os.environ.get("RAMPI_TEST_CONTAINER") != "1" or not Path("/.dockerenv").exis
     raise SystemExit("Disposable container required")
 
 
-def user_stage(secret_file):
+def user_stage(secret_file, live_gitea=False):
     assert os.geteuid() == 1000
     credentials = json.loads(Path(secret_file).read_text())
     with tempfile.TemporaryDirectory(prefix="rampi-cloud-personal-") as temporary:
@@ -110,16 +110,15 @@ def user_stage(secret_file):
                 .split("bash tests/rust/test-first-run.sh")[0]
             )
             script = home / "ui.sh"
-            script.write_text(
-                prefix + "timeout 45 /build/target/debug/rampi-native --kanban-cloud-ui-check\n"
-            )
-            for command in [
-                ["bash", str(script)],
-                ["/build/target/debug/rampi-native", "--kanban-cloud-check"],
-            ]:
+            mode = "--gitea-live-ui-check" if live_gitea else "--kanban-cloud-ui-check"
+            script.write_text(prefix + f"timeout 90 /build/target/debug/rampi-native {mode}\n")
+            commands = [["bash", str(script)]]
+            if not live_gitea:
+                commands.append(["/build/target/debug/rampi-native", "--kanban-cloud-check"])
+            for command in commands:
                 result = subprocess.run(command, capture_output=True, text=True, timeout=120)
-                for kind in ["github", "trello", "jira", "asana", "notion", "gitea"]:
-                    assert credentials[kind]["token"] not in result.stdout + result.stderr
+                for credential in credentials.values():
+                    assert credential["token"] not in result.stdout + result.stderr
                 if result.returncode:
                     raise RuntimeError(result.stdout + result.stderr)
                 print(result.stdout.strip())
@@ -127,15 +126,15 @@ def user_stage(secret_file):
             assert keyrings, "Real encrypted keyring file missing"
             for path in keyrings:
                 assert path.stat().st_mode & 0o077 == 0
-                for kind in ["github", "trello", "jira", "asana", "notion", "gitea"]:
-                    assert credentials[kind]["token"].encode() not in path.read_bytes()
+                for credential in credentials.values():
+                    assert credential["token"].encode() not in path.read_bytes()
         finally:
             daemon.terminate()
             daemon.wait(timeout=10)
 
 
-if len(sys.argv) > 1 and sys.argv[1] == "--user":
-    user_stage(sys.argv[2])
+if len(sys.argv) > 1 and sys.argv[1] in ("--user", "--gitea-live-user"):
+    user_stage(sys.argv[2], live_gitea=sys.argv[1] == "--gitea-live-user")
     raise SystemExit(0)
 
 if os.geteuid() != 0:

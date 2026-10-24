@@ -93,6 +93,13 @@ jobs:
         run: |
           set -euo pipefail
           docker run --rm --network none --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev python3 tests/rust/test-cloud-kanban.py 2>&1 | tee artifacts/rust/cloud-kanban.log
+      - name: Actual pinned Gitea HTTPS, read-only GTK board and offline cache
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/rust/gitea-live
+          chmod 777 artifacts/rust/gitea-live
+          python3 tests/rust/test-gitea-live.py --image rampi-rust-dev --artifacts artifacts/rust/gitea-live
+          python3 scripts/check-gitea-evidence.py artifacts/rust/gitea-live
       - name: Rust GIO network contract on an isolated system bus (no radio)
         run: |
           set -euo pipefail

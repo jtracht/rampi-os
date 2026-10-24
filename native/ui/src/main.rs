@@ -31,6 +31,8 @@ mod dashboard_status;
 #[cfg(target_os = "linux")]
 mod downloads;
 #[cfg(target_os = "linux")]
+mod gitea_live_checks;
+#[cfg(target_os = "linux")]
 mod host_view;
 #[cfg(target_os = "linux")]
 mod interaction_checks;

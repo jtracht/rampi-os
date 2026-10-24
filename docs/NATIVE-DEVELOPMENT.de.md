@@ -49,6 +49,7 @@ Die GitHub-Matrix verwendet dafür einen nativen ARM64-Runner.
 | `wayland.log` | GTK-Seiten, Assistent, SSH, VTE, WebKit, Klickton und 600 Seitenwechsel | Pixman/Cairo statt Pi-GPU |
 | `interaction-*.png`, `visual-acceptance.json` | Reale Wayland-Eingabe, vier Kanten bei Start/Hover/Fokus, reduzierte Bewegung, 1280×720 und 1600×900 | Keine physischen Eingabegeräte oder HDMI-Messung |
 | `cloud-kanban.log` | Tatsächliches GTK, curl/TLS und verschlüsselter Schlüsselbund, sechs Anbieter-Verträge, Offline-/Quellen-/Token-Trennung | Keine persönlichen Cloudkonten |
+| `gitea-live/` | Offizieller isolierter Gitea-Server über HTTPS; echte GTK-/Schlüsselbund-Seite, Lesezugang, Paginierung, serverseitige Änderung und Abschaltung | Repository-Projekte in Gitea 28.2.0; lokale Abnahme, kombinierte CI zunächst offen |
 | `bootstrap-tls.log` | Reales curl/HTTPS, Quellen-/Binary-Abgleich, manipulierte Archive, Prüfsummen und Pfadschutz | Installer-Stub; echte ARM64-Lifecycle-Abnahme separat |
 | `network-contract.log` | Rust/GIO, versteckte SSIDs, ACL, Profilwiederverwendung | Private NM-Fixture, kein Funk/DHCP |
 | `bluetooth-contract.log` und Agent-Marker | Suche, PIN/Passkey, eingegebene Stellen, fremder Absender, Cancel/Release, echter Fixture-Prozesswechsel | Private BlueZ-Fixture, keine Funkkopplung |

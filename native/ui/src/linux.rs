@@ -437,6 +437,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--board-ui-check") {
         crate::checks::board(app, &stack, &settings);
     }
+    if std::env::args().any(|a| a == "--gitea-live-ui-check") {
+        crate::gitea_live_checks::ui(app, &stack, &tabs, &settings);
+    }
     if std::env::args().any(|a| a == "--kanban-cloud-ui-check") {
         crate::kanban_checks::ui(app, &stack, &tabs, &settings);
     }

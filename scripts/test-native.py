@@ -280,6 +280,21 @@ def acceptance(options):
                         if item.is_file():
                             shutil.copy2(item, output / item.name)
                 require(result)
+            print("Running actual private Gitea HTTPS/GTK acceptance …", flush=True)
+            require(
+                run(
+                    [
+                        sys.executable,
+                        str(source / "tests/rust/test-gitea-live.py"),
+                        "--image",
+                        options.image,
+                        "--build-volume",
+                        volume,
+                        "--artifacts",
+                        str(output / "gitea-live"),
+                    ]
+                )
+            )
             soak = output / "mixed-soak"
             soak.mkdir()
             # Runtime UID 1000 writes only nonsecret test captures here; the
