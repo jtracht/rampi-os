@@ -205,12 +205,16 @@ def main():
         run("qemu-img", "create", "-f", "qcow2", "-F", "qcow2", "-b", str(backing), str(overlay))
         run("qemu-img", "resize", str(overlay), "10G")
     qemu = "qemu-system-aarch64" if arch == "arm64" else "qemu-system-x86_64"
+    # QEMU 10.0.13 repeatedly asserts in iotlb_to_section during q35 PCI
+    # enumeration with MTTCG, before the guest reaches any acceptance stage.
+    # Serialize only x86 host translation; retain all four guest CPUs and tests.
+    tcg_thread = "multi" if arch == "arm64" else "single"
     args = [
         qemu,
         "-machine",
         "virt" if arch == "arm64" else "q35",
         "-accel",
-        "tcg,thread=multi",
+        f"tcg,thread={tcg_thread}",
         "-cpu",
         "cortex-a72" if arch == "arm64" else "max",
         "-m",
@@ -253,6 +257,7 @@ def main():
                 "image_sha512": digest,
                 "memory_mib": 1024,
                 "cpus": 4,
+                "tcg_thread": tcg_thread,
                 "physical_devices": False,
                 "native_binary_sha256": native_digest,
                 "prepared_development_cache": options.prepared,

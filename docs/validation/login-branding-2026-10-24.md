@@ -26,3 +26,22 @@ Falsches PAM-Kennwort, zwei normale Linux-Konten, echte sichtbare Arbeitsfläche
 private SSH-Agenten und Rückkehr zur Anmeldung bleiben Pflicht. Diese erweiterten
 Nachweise auf AMD64 und ARM64 sind bis zum erfolgreichen CI-Lauf offen. Die
 physische Hardwareabnahme bleibt wie vereinbart ausgeschlossen.
+
+## Fehler der AMD64-Emulation
+
+Der erste AMD64-CI-Lauf und die einmalige Wiederholung brechen jeweils beim
+frühen PCI-Boot mit derselben QEMU-10.0.13-Assertion in `iotlb_to_section` ab.
+Zu diesem Zeitpunkt ist keine Rampi-/Netzwerkprüfung gestartet. Beide seriellen
+Fehlerprotokolle sind erhalten. Ein weiterer unveränderter Wiederholungsversuch
+ist deshalb keine Fehlerbehebung.
+
+Der Runner verwendet für AMD64/q35 jetzt QEMUs vorhandenen Modus
+`tcg,thread=single`. Das serialisiert die Übersetzung auf dem Host; der Gast
+besitzt weiterhin vier CPUs und 1 GiB. ARM64 behält `thread=multi`. Der tatsächliche
+Modus wird in `environment.json` aufgezeichnet und von den unabhängigen Funk-
+und Login-Prüfern verlangt. Alle bisherigen Funktionsprüfungen bleiben Pflicht;
+es gibt keinen automatischen Wiederholungs- oder Überspringpfad. Dies ist ein
+anhand der beiden Emulatorabbrüche gewählter Workaround, keine Behauptung einer
+allgemein nachgewiesenen Ursache im Produkt. Seine vollständige frische Abnahme
+ist bis zum erfolgreichen Lauf offen. Die separaten Container-Lastprüfungen
+und die produktive Sitzung werden dadurch nicht verändert.

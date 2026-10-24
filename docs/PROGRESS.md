@@ -1,6 +1,7 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 80 %**.
+Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 81 %**.
+[81-Prozent-Erweiterung durch vollständige virtuelle WLAN-Modusabnahme](validation/rust-native-81-2026-10-24.md).
 [80-Prozent-Gesamtnachweis einschließlich grafischer Image-Abnahme](validation/rust-native-80-2026-10-24.md).
 [79-Prozent-Erweiterung durch zehnminütigen Mischbetrieb](validation/mixed-soak-2026-10-24.md).
 [78-Prozent-Erweiterung durch grafische PAM-Anmeldung](validation/graphical-login-2026-10-23.md).
@@ -24,7 +25,7 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Tastatur und Maus | 4 |
 | Setup-Assistent | 4 |
 | Linux-Konten und Login | 4 |
-| WLAN | 4 |
+| WLAN | 5 |
 | Bluetooth | 4 |
 | VPN | 4 |
 | Windows-Host und Persistenz | 4 |
@@ -40,7 +41,7 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Manuelle Updates | 5 |
 | Dokumentation | 4 |
 | Performance | 4 |
-| **Summe** | **80 / 100** |
+| **Summe** | **81 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
@@ -72,11 +73,17 @@ erzwungener Serverabbruch sind auf AMD64 und ARM64 geprüft. Die heruntergeladen
 Nachweise und das ARM64-Paket sind unabhängig erneut geprüft. Windows-NLA,
 zusätzliche Maus-/Clipboard-Abnahmen und eingebettetes Streaming bleiben offen.
 
-WLAN erreicht vier Punkte durch die zusätzliche [native QEMU-Abnahme](validation/rust-wlan-qemu-2026-10-23.md). Die bisherige Grundlage: Neben sichtbaren Netzen sind versteckte SSIDs mit
-Adapterauswahl und WPA2/WPA3 beziehungsweise offenem Netz integriert. Passende
-Profile werden wiederverwendet; Mehrdeutigkeit und ungültige Eingaben werden
-abgewiesen. Die Rust-/GIO-Abnahme prüft die tatsächlichen D-Bus-Aufrufe einschließlich
-privater Profilrechte, nicht den Funkverkehr.
+WLAN erreicht fünf Punkte: Die eigene integrierte Einstellungsseite, Suche,
+Adapterauswahl, sichtbare/versteckte SSIDs und sichere Kennworteingabe verwenden
+NetworkManager. Vorhandene passende Profile werden wiederverwendet; Mehrdeutigkeit
+und ungültige Eingaben werden abgewiesen. Zusätzlich zur tatsächlichen GTK-/D-Bus-
+Abnahme bestehen auf AMD64 und ARM64 frische QEMU-Gäste mit virtuellen Funkgeräten:
+WPA2, reines WPA3/SAE und verstecktes WPA3, DHCP und tatsächlicher IP-Rundlauf,
+falsches Kennwort, Trennen, Wiederverbindung und je Modus abgewiesener Fremdzugriff.
+Die gesamte CI und heruntergeladenen Nachweise sind unabhängig geprüft und
+zusammengeführt. Unternehmensnetze verwenden vorhandene NM-Profile; physische
+Funkqualität bleibt wie vereinbart ausgeschlossen.
+Nachweis: [native Funkabnahme](validation/native-radio-modes-2026-10-24.md).
 
 Die frühere Drei-Punkte-Basis des Assistenten umfasst integrierte SSH-Einrichtung und persönliche
 Tastatur-/Bildschirmeinstellungen. Tastaturänderungen erhalten andere Einstellungen
