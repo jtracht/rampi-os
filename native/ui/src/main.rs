@@ -39,6 +39,8 @@ mod kanban_checks;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
+mod login_branding;
+#[cfg(target_os = "linux")]
 mod mixed_soak;
 #[cfg(target_os = "linux")]
 mod pairing;
@@ -82,6 +84,10 @@ mod wifi_hidden;
 mod wireguard;
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--login-background") {
+        std::process::exit(i32::from(login_branding::run()));
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--kanban-cloud-check") {
         if let Err(error) = kanban_checks::run() {

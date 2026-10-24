@@ -45,6 +45,7 @@ def check(directory: Path, expected_binary: str | None = None):
         "RAMPI_GRAPHICAL_LOGIN_REJECT_OK",
         "RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK",
         "RAMPI_GRAPHICAL_LOGIN_SSH_AGENT_OK",
+        "RAMPI_GRAPHICAL_LOGIN_BRANDING_OK",
         "RAMPI_GRAPHICAL_LOGIN_OK",
     ]:
         if marker not in log:
@@ -72,7 +73,19 @@ def check(directory: Path, expected_binary: str | None = None):
     for name in ["greeter", "rampi-login", "rampi-other"]:
         picture = directory / "captures" / (name + ".png")
         visible_capture(picture)
+    visible_branding(directory / "captures/greeter.png")
     return environment
+
+
+def visible_branding(picture: Path):
+    visible_capture(picture)
+    with Image.open(picture) as image:
+        raw = image.convert("RGB").crop((36, 36, 244, 244)).tobytes()
+        colors = list(zip(raw[::3], raw[1::3], raw[2::3], strict=True))
+    red = sum(r > 120 and r > 1.5 * g and r > b for r, g, b in colors)
+    green = sum(g > 60 and g > 1.3 * r and g > b for r, g, b in colors)
+    if red < 1500 or green < 300:
+        raise ValueError("Visible Rampi greeter logo missing")
 
 
 if __name__ == "__main__":

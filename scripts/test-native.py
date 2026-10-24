@@ -315,6 +315,8 @@ def acceptance(options):
                         "system/rampi-session",
                         "system/rampi-wayland-start",
                         "system/rampi-health",
+                        "system/rampi-greeter",
+                        "installer/raspberrypi/greeter-profile.sh",
                         "tests/rust/run-wayland.sh",
                     ]
                 )

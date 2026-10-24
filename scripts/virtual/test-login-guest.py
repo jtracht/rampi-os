@@ -104,7 +104,7 @@ def install():
     target.chmod(0o755)
     for item in target.rglob("*"):
         item.chmod(0o755 if item.is_dir() or item.name == "rampi-native" else 0o644)
-    for name in ["rampi", "rampi-session", "rampi-wayland-start"]:
+    for name in ["rampi", "rampi-session", "rampi-wayland-start", "rampi-greeter"]:
         shutil.copy2(SOURCE / "system" / name, Path("/usr/local/bin") / name)
         Path("/usr/local/bin", name).chmod(0o755)
     Path("/etc/systemd/user").mkdir(exist_ok=True)
@@ -118,6 +118,8 @@ def install():
         Path("/etc/xdg/rampi").chmod(0o755)
         directory.chmod(0o755)
         (directory / "rc.xml").chmod(0o644)
+    shutil.copy2(SOURCE / "system/wlgreet.toml", "/etc/xdg/rampi/greeter/wlgreet.toml")
+    Path("/etc/xdg/rampi/greeter/wlgreet.toml").chmod(0o644)
     configure_test_session()
 
 
@@ -142,13 +144,15 @@ def configure_test_session():
         # tools. wlgreet 0.5 requests wl_pointer even during keyboard-only input;
         # wlroots 0.20 rejects that unless a pointer capability has existed.
         helper = Path("/usr/local/bin/rampi-image-test-greeter")
+        branded = "/usr/local/bin/rampi-greeter" in production
+        greeter_program = "/usr/local/bin/rampi-greeter" if branded else "/usr/sbin/wlgreet"
         helper.write_text(
             "#!/bin/sh\nwtype -s 1500000 &\nkeyboard=$!\n"
             "trap 'kill \"$keyboard\" 2>/dev/null || true' EXIT\n"
-            'sleep 1\nwlrctl pointer move 0 0\n/usr/sbin/wlgreet "$@"\n'
+            f'sleep 1\nwlrctl pointer move 0 0\n{greeter_program} "$@"\n'
         )
         helper.chmod(0o755)
-        production = production.replace("/usr/sbin/wlgreet", str(helper))
+        production = production.replace(greeter_program, str(helper))
     production = production.replace(
         'command = "',
         f'command = "env WLR_BACKENDS={backends} WLR_RENDERER=pixman '
@@ -208,18 +212,27 @@ def main():
         raise RuntimeError("Diagnostic-only greeter run; no authentication attempted")
     as_user("_greetd", "wtype", "-M", "ctrl", "-M", "alt", "-k", "Home", "-m", "alt", "-m", "ctrl")
     time.sleep(1)
-    if (
-        run(
-            "pgrep", "-u", str(pwd.getpwnam("_greetd").pw_uid), "-x", "rampi-native", check=False
-        ).returncode
-        == 0
-    ):
-        raise RuntimeError("Greeter launched an unauthenticated workstation")
+    processes = run(
+        "pgrep", "-u", str(pwd.getpwnam("_greetd").pw_uid), "-x", "rampi-native", check=False
+    ).stdout.split()
+    if len(processes) != 1:
+        raise RuntimeError("Greeter requires exactly one branding-only process")
+    for pid in processes:
+        arguments = Path(f"/proc/{int(pid)}/cmdline").read_bytes().rstrip(b"\0").split(b"\0")
+        if arguments[1:] != [b"--login-background"]:
+            raise RuntimeError("Greeter launched an unauthenticated workstation")
+    surfaces = as_user("_greetd", "wlrctl", "toplevel", "list").stdout
+    if b"org.rampi.LoginBranding" not in surfaces or b"org.rampi.Workstation" in surfaces:
+        raise RuntimeError("Greeter branding surface missing or workstation exposed")
     print("RAMPI_GRAPHICAL_LOGIN_NO_UNAUTH_UI_OK", flush=True)
     greeter_png = f"/run/user/{pwd.getpwnam('_greetd').pw_uid}/rampi-greeter.png"
     as_user("_greetd", "grim", greeter_png)
     shutil.copyfile(greeter_png, CAPTURES / "greeter.png")
     (CAPTURES / "greeter.png").chmod(0o644)
+    runpy.run_path(str(SOURCE / "scripts/check-login-evidence.py"))["visible_branding"](
+        CAPTURES / "greeter.png"
+    )
+    print("RAMPI_GRAPHICAL_LOGIN_BRANDING_OK", flush=True)
     failures = run("journalctl", "-b", "-u", "greetd", "--no-pager").stdout.count(
         b"authentication failure"
     )

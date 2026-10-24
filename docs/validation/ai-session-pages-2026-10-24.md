@@ -28,7 +28,17 @@ Während der Einrichtung führt Zurück zum aktuellen Schritt.
   Windows- oder Anbieter-Ersatznachweis.
 * Windows-CI erweitert den bisherigen echten psmux-Test um die neue Check-Aktion
   vor und nach dem Stoppen einer wirklichen Sitzung; die benachbarte Sitzung
-  muss erhalten bleiben. Dessen Ergebnis ist erst nach erfolgreicher CI akzeptiert.
+  muss erhalten bleiben. Die tatsächliche Windows-SSH-Prüfung beendet außerdem
+  den Transport des offiziellen Rampi-Adapters abrupt und verbindet dieselbe
+  native Sitzung mit unveränderter Prozessidentität erneut. Der Providerprozess
+  ist ausdrücklich ein Heartbeat-Testprogramm, keine Modellanfrage.
+
+Akzeptiert: [native CI 40092593930](https://github.com/jtracht/rampi-os/actions/runs/40092593930)
+auf AMD64 und ARM64 sowie [allgemeine CI 40092593918](https://github.com/jtracht/rampi-os/actions/runs/40092593918)
+einschließlich Windows. Heruntergeladene native Nachweise, beide frischen grafischen
+Anmeldungen und sieben Paketprüfsummen wurden unabhängig erneut geprüft.
+[PR 33](https://github.com/jtracht/rampi-os/pull/33) wurde mit identischem geprüften
+Git-Baum `295d0392c778ea6ed6cb3b20e1c893cbbace894f` zusammengeführt.
 
 Persönliche Anbieteranmeldungen, tatsächliche Modellantworten und die
 zusammenhängende Windows-11-Pro-Abnahme bleiben separat offen. Der Gesamtstand

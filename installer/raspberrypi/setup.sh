@@ -91,7 +91,7 @@ else
     staging="$(mktemp -d /opt/rampi/.stage.XXXXXX)"
 fi
 install -d -m 755 /usr/local/bin /usr/share/wayland-sessions /etc/xdg/rampi/labwc /etc/systemd/user
-for name in rampi rampi-session rampi-wayland-start rampi-health; do install -m 755 "$source_root/system/$name" "/usr/local/bin/$name"; done
+for name in rampi rampi-session rampi-wayland-start rampi-health rampi-greeter; do install -m 755 "$source_root/system/$name" "/usr/local/bin/$name"; done
 install -m 644 "$source_root/system/rampi.desktop" /usr/share/wayland-sessions/rampi.desktop
 install -m 644 "$source_root/system/rampi.service" /etc/systemd/user/rampi.service
 install -m 644 "$source_root/system/labwc/rc.xml" /etc/xdg/rampi/labwc/rc.xml
@@ -110,12 +110,14 @@ if [[ "$new_login" == 1 ]]; then
     install -m 644 "$source_root/system/greetd.toml" /etc/greetd/config.toml
     sha256sum /etc/greetd/config.toml | cut -d ' ' -f 1 > /opt/rampi/managed-greetd.sha256
     install -m 644 "$source_root/system/labwc/greeter.xml" /etc/xdg/rampi/greeter/rc.xml
+    install -m 644 "$source_root/system/wlgreet.toml" /etc/xdg/rampi/greeter/wlgreet.toml
     systemctl enable greetd
     systemctl set-default graphical.target
 else
     # shellcheck disable=SC1091
     source "$source_root/installer/raspberrypi/greeter-profile.sh"
     rampi_migrate_greeter_profile "$source_root" /etc/greetd/config.toml /opt/rampi/managed-greetd.sha256 /etc/xdg/rampi/greeter/rc.xml
+    rampi_migrate_greeter_branding "$source_root" /etc/greetd/config.toml /opt/rampi/managed-greetd.sha256 /etc/xdg/rampi/greeter/rc.xml /etc/xdg/rampi/greeter/wlgreet.toml
 fi
 if [[ "$mode" == --image ]]; then
     systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true

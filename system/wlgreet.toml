@@ -1,0 +1,12 @@
+# Existing wlgreet overlay above the Rampi branding surface; no custom auth code.
+[background]
+red = 0.0
+green = 0.0
+blue = 0.0
+opacity = 0.0
+
+[border]
+red = 0.15
+green = 0.85
+blue = 0.55
+opacity = 1.0

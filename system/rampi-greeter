@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+export GDK_BACKEND=wayland GSK_RENDERER=cairo
+# The ordinary background surface has no authentication, input fields, actions
+# or workstation routes. Existing wlgreet stays above it with exclusive input.
+/usr/local/bin/rampi --login-background &
+branding=$!
+cleanup() { kill "$branding" 2>/dev/null || true; wait "$branding" 2>/dev/null || true; }
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+/usr/sbin/wlgreet --config /etc/xdg/rampi/greeter/wlgreet.toml "$@"
