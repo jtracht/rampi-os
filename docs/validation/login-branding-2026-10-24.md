@@ -24,8 +24,8 @@ exakt einen Hintergrundprozess mit ausschließlich diesem Startargument und
 keine Arbeitsoberfläche vor der Anmeldung, auch nach der globalen Tastenkombination.
 Falsches PAM-Kennwort, zwei normale Linux-Konten, echte sichtbare Arbeitsflächen,
 private SSH-Agenten und Rückkehr zur Anmeldung bleiben Pflicht. Diese erweiterten
-Nachweise auf AMD64 und ARM64 sind bis zum erfolgreichen CI-Lauf offen. Die
-physische Hardwareabnahme bleibt wie vereinbart ausgeschlossen.
+Nachweise sind inzwischen auf AMD64 und ARM64 akzeptiert. Die physische
+Hardwareabnahme bleibt wie vereinbart ausgeschlossen.
 
 ## Fehler der AMD64-Emulation
 
@@ -42,6 +42,28 @@ Modus wird in `environment.json` aufgezeichnet und von den unabhängigen Funk-
 und Login-Prüfern verlangt. Alle bisherigen Funktionsprüfungen bleiben Pflicht;
 es gibt keinen automatischen Wiederholungs- oder Überspringpfad. Dies ist ein
 anhand der beiden Emulatorabbrüche gewählter Workaround, keine Behauptung einer
-allgemein nachgewiesenen Ursache im Produkt. Seine vollständige frische Abnahme
-ist bis zum erfolgreichen Lauf offen. Die separaten Container-Lastprüfungen
-und die produktive Sitzung werden dadurch nicht verändert.
+allgemein nachgewiesenen Ursache im Produkt. Der anschließende frische lokale
+AMD64-Funklauf und die kombinierte CI bestehen vollständig. Die separaten
+Container-Lastprüfungen und die produktive Sitzung werden dadurch nicht verändert.
+
+## Zusammenführung und Quellbindung
+
+Die [native CI 40116886390](https://github.com/jtracht/rampi-os/actions/runs/40116886390)
+und [allgemeine CI 40116886379](https://github.com/jtracht/rampi-os/actions/runs/40116886379)
+sind vollständig erfolgreich. Heruntergeladene Laufzeit-, Funk- und grafische
+Login-Nachweise bestehen zusätzlich die eingefrorenen unabhängigen Prüfer;
+ARM64 einschließlich Installer. Die sieben Paketprüfsummen bestehen ebenfalls.
+
+* PR-Quellstand: `e4b0855915eb9dc75e216df2ce63127d8299a0cb`.
+* Tatsächlich gebauter kombinierter Stand: `3a4afdf71eaaa74c0793b61980c9eba6033eaa32`.
+* [PR #37](https://github.com/jtracht/rampi-os/pull/37), zusammengeführt als
+  `593f38c74088083fa3fc92af64b9e4aa86f5bc48`.
+* Identischer getesteter und zusammengeführter Tree:
+  `8c5dd0ae92fcf0e4e51c8df3adc58231cd38127d`.
+* ARM64-Paketprogramm:
+  `9429dd4bd4d75df7cd918bbac05eb393e2b3a08325a545d029e2c603726b8ce0`.
+  Derselbe SHA256-Wert ist für beide grafischen ARM64-Benutzersitzungen geprüft.
+
+Dies bestätigt Login-Gestaltung, Anmeldung und Kontentrennung. Das automatische
+Entsperren des persönlichen Schlüsselbunds über PAM benötigt noch eine eigene
+durchgängige Prüfung. Die vollständige native Release-Freigabe bleibt offen.
