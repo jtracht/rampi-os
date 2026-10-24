@@ -75,6 +75,15 @@ def orchestrate(args):
     root = Path(__file__).resolve().parents[2]
     artifacts = Path(args.artifacts).resolve()
     artifacts.mkdir(parents=True, exist_ok=True)
+    artifacts.chmod(0o777)
+    for name in (
+        "gitea-live.log",
+        "gitea-live.png",
+        "gitea-environment.json",
+        "gitea-program-sha256.txt",
+        "gitea-server.log",
+    ):
+        (artifacts / name).unlink(missing_ok=True)
     for name in ("refresh", "offline"):
         for suffix in ("ready", "continue"):
             (artifacts / f"gitea-{name}-{suffix}").unlink(missing_ok=True)
@@ -372,7 +381,7 @@ DEFAULT_PAGING_NUM = 1
                 "--mount",
                 f"type=bind,source={artifacts.as_posix()},target=/artifacts",
                 "--mount",
-                "type=volume,source=rampi-rust-build,target=/build,readonly",
+                f"type=volume,source={args.build_volume},target=/build,readonly",
                 "-e",
                 "RAMPI_TEST_CONTAINER=1",
                 "-e",
@@ -431,6 +440,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--client", action="store_true")
     parser.add_argument("--image", default="rampi-rust-dev")
+    parser.add_argument("--build-volume", default="rampi-rust-build")
     parser.add_argument("--artifacts", default="artifacts/gitea-live")
     options = parser.parse_args()
     if options.client:
