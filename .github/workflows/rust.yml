@@ -25,7 +25,7 @@ jobs:
           - runner: ubuntu-24.04-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: docker build -t rampi-rust-dev -f tests/rust/Dockerfile .
@@ -131,12 +131,15 @@ jobs:
           set -euo pipefail
           docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 rampi-rust-dev bash tests/rust/test-installer.sh 2>&1 | tee artifacts/rust/installer-lifecycle.log
           grep -q RAMPI_RUST_INSTALLER_LIFECYCLE_OK artifacts/rust/installer-lifecycle.log
-      - name: Actual Rust WLAN on virtual radios with WPA2 and DHCP
-        if: matrix.arch == 'amd64'
+      - name: Actual Rust WPA2, visible/hidden WPA3 and BlueZ pairing on virtual radios
         run: |
           set -euo pipefail
           docker build -f tests/virtual/Dockerfile -t rampi-virtual-tools .
           docker run --rm --memory=3g --memory-swap=3g --cpus=4 -v "$PWD:/app" -v rampi-rust-build:/build:ro rampi-virtual-tools python3 scripts/test-virtual-linux.py --native-binary /build/target/debug/rampi-network-acceptance --timeout 1500
+          expected=$(docker run --rm -v rampi-rust-build:/build:ro rampi-rust-dev sha256sum /build/target/debug/rampi-network-acceptance | cut -d ' ' -f 1)
+          docker run --rm -v "$PWD:/app" rampi-virtual-tools python3 scripts/check-radio-evidence.py artifacts/virtual-linux --expected-binary "$expected"
+          docker run --rm -v "$PWD:/src" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev python3 scripts/collect-rust-licenses.py /src/artifacts/virtual-linux/licenses
+          cp LICENSE NOTICE artifacts/virtual-linux/
       - name: Graphical greetd and PAM with two native user sessions in fresh QEMU
         run: |
           set -euo pipefail
@@ -154,12 +157,16 @@ jobs:
             artifacts/virtual-login/captures/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: always() && matrix.arch == 'amd64'
+        if: always()
         with:
-          name: rust-virtual-radio-amd64
+          name: rust-virtual-radio-${{ matrix.arch }}
           path: |
             artifacts/virtual-linux/serial.log
             artifacts/virtual-linux/environment.json
+            artifacts/virtual-linux/source/rampi-network-acceptance
+            artifacts/virtual-linux/licenses/
+            artifacts/virtual-linux/LICENSE
+            artifacts/virtual-linux/NOTICE
           if-no-files-found: ignore
       - name: Require complete runtime, tunnel, performance and installer evidence
         env:

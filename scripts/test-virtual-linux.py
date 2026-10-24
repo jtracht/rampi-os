@@ -281,7 +281,17 @@ def main():
     if options.native_session_binary:
         marker = "RAMPI_GRAPHICAL_LOGIN_OK"
     if options.native_binary and not all(
-        m in text for m in ["RAMPI_RUST_WIFI_LIVE_OK", "RAMPI_RUST_WIFI_OTHER_USER_OK"]
+        m in text
+        for m in [
+            "RAMPI_RUST_WIFI_LIVE_OK",
+            "RAMPI_RUST_WIFI_OTHER_USER_OK",
+            "RAMPI_RUST_BLUEZ_VHCI_PAIR_TRUST_OK",
+            "RAMPI_BLUEZ_VHCI_BOTH_BONDS_OK",
+            "RAMPI_RUST_BLUEZ_VHCI_REMOVE_POWER_OK",
+            "RAMPI_RUST_WIFI_WPA3_SAE_OK",
+            "RAMPI_RUST_WIFI_HIDDEN_SAE_OK",
+            "RAMPI_WPA3_VISIBLE_HIDDEN_MODES_OK",
+        ]
     ):
         raise SystemExit("Native virtual WLAN evidence missing; inspect serial.log")
     if marker not in text or "RAMPI_GUEST_EXIT=0" not in text:

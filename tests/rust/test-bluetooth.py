@@ -27,6 +27,13 @@ try:
         dbus.Dictionary({}, signature="sv")
     )
     device = control.AddDevice("hci0", "02:00:00:00:00:01", "Rust test keyboard")
+    ui = "--ui" in sys.argv
+    if ui:
+        control.AddAdapter("hci1", "Second test adapter")
+        control.AddDevice("hci1", "02:00:00:00:00:02", "Second adapter mouse")
+        dbus.Interface(
+            bus.get_object("org.bluez", "/org/bluez/hci1"), "org.bluez.Adapter1"
+        ).SetDiscoveryFilter(dbus.Dictionary({}, signature="sv"))
     # The distro template emits Connected but omits the corresponding stored
     # property update. Keep ObjectManager/GetAll consistent with that signal.
     device_mock = dbus.Interface(bus.get_object("org.bluez", device), dbusmock.MOCK_IFACE)
@@ -39,7 +46,6 @@ try:
             f"self.connected = {connected}; "
             f"self.Set('org.bluez.Device1', 'Connected', dbus.Boolean({connected}))",
         )
-    ui = "--ui" in sys.argv
     result = subprocess.run(
         ["/build/target/debug/rampi-native", "--bluetooth-ui-check" if ui else "--bluetooth-check"],
         capture_output=True,
@@ -50,7 +56,7 @@ try:
     if result.returncode:
         raise RuntimeError(result.stdout + result.stderr)
     methods = dbus.Interface(bus.get_object("org.bluez", adapter), dbusmock.MOCK_IFACE)
-    assert len(methods.GetMethodCalls("StartDiscovery")) == (1 if ui else 2)
+    assert len(methods.GetMethodCalls("StartDiscovery")) == 2
     assert len(methods.GetMethodCalls("StopDiscovery")) == (0 if ui else 1)
     assert len(methods.GetMethodCalls("RemoveDevice")) == (0 if ui else 1)
     print(result.stdout.strip())

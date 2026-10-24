@@ -362,33 +362,103 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     page.append(&refresh);
     page.append(&label("Adapter"));
     let picker = gtk::ListBox::new();
+    picker.set_widget_name("bluetooth-adapters");
     picker.set_selection_mode(gtk::SelectionMode::Single);
     let adapters: Rc<RefCell<Vec<bus::BluetoothAdapter>>> = Rc::new(RefCell::new(vec![]));
     page.append(&picker);
     let list = gtk::ListBox::new();
+    list.set_widget_name("bluetooth-devices");
     page.append(&list);
     let devices: Rc<RefCell<Vec<bus::BluetoothDevice>>> = Rc::new(RefCell::new(vec![]));
-    let (a, d, p, l, stat) = (
+    let all_devices: Rc<RefCell<Vec<bus::BluetoothDevice>>> = Rc::new(RefCell::new(vec![]));
+    let rebuilding = Rc::new(Cell::new(false));
+    let select: Rc<dyn Fn()> = {
+        let (p, l, a, all, visible, owned, epoch) = (
+            picker.downgrade(),
+            list.downgrade(),
+            adapters.clone(),
+            all_devices.clone(),
+            devices.clone(),
+            discovery.clone(),
+            generation.clone(),
+        );
+        let previous: RefCell<Option<String>> = RefCell::new(None);
+        Rc::new(move || {
+            let (Some(p), Some(l)) = (p.upgrade(), l.upgrade()) else {
+                return;
+            };
+            let selected_adapter = p
+                .selected_row()
+                .and_then(|r| a.borrow().get(r.index() as usize).map(|a| a.path.clone()));
+            if *previous.borrow() != selected_adapter {
+                epoch.set(epoch.get().wrapping_add(1));
+                owned.borrow_mut().take();
+                *previous.borrow_mut() = selected_adapter.clone();
+            }
+            let rows: Vec<_> = all
+                .borrow()
+                .iter()
+                .filter(|d| {
+                    d.path
+                        .rsplit_once('/')
+                        .is_some_and(|(parent, _)| Some(parent) == selected_adapter.as_deref())
+                })
+                .cloned()
+                .collect();
+            if *visible.borrow() == rows {
+                return;
+            }
+            let selected_device = l.selected_row().and_then(|r| {
+                visible
+                    .borrow()
+                    .get(r.index() as usize)
+                    .map(|d| d.path.clone())
+            });
+            while let Some(child) = l.first_child() {
+                l.remove(&child);
+            }
+            for device in &rows {
+                l.append(&label(&device.label));
+            }
+            if let Some(index) = rows
+                .iter()
+                .position(|d| Some(&d.path) == selected_device.as_ref())
+            {
+                l.select_row(l.row_at_index(index as i32).as_ref());
+            }
+            *visible.borrow_mut() = rows;
+        })
+    };
+    let (update, suppressed) = (select.clone(), rebuilding.clone());
+    picker.connect_row_selected(move |_, _| {
+        if !suppressed.get() {
+            update();
+        }
+    });
+    let (a, all, p, stat, update, suppressed) = (
         adapters.clone(),
-        devices.clone(),
+        all_devices,
         picker.clone(),
-        list.clone(),
         status.clone(),
+        select,
+        rebuilding,
     );
     refresh.connect_clicked(move |b| {
         b.set_sensitive(false);
-        let (a, d, p, l, stat, b) = (
+        let (a, all, p, stat, b, update, suppressed) = (
             a.clone(),
-            d.clone(),
+            all.clone(),
             p.clone(),
-            l.clone(),
             stat.clone(),
             b.clone(),
+            update.clone(),
+            suppressed.clone(),
         );
         glib::MainContext::default().spawn_local(async move {
             match bus::bluetooth_snapshot().await {
                 Ok((aa, dd)) => {
                     if *a.borrow() != aa {
+                        suppressed.set(true);
                         let selected = p.selected_row().and_then(|r| {
                             a.borrow().get(r.index() as usize).map(|a| a.path.clone())
                         });
@@ -406,26 +476,12 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
                             .iter()
                             .position(|a| Some(&a.path) == selected.as_ref())
                             .unwrap_or(0);
-                        p.select_row(p.row_at_index(index as i32).as_ref());
                         *a.borrow_mut() = aa;
+                        p.select_row(p.row_at_index(index as i32).as_ref());
+                        suppressed.set(false);
                     }
-                    if *d.borrow() != dd {
-                        let selected = l.selected_row().and_then(|r| {
-                            d.borrow().get(r.index() as usize).map(|d| d.path.clone())
-                        });
-                        while let Some(child) = l.first_child() {
-                            l.remove(&child);
-                        }
-                        for device in &dd {
-                            l.append(&label(&device.label));
-                        }
-                        if let Some(index) =
-                            dd.iter().position(|d| Some(&d.path) == selected.as_ref())
-                        {
-                            l.select_row(l.row_at_index(index as i32).as_ref());
-                        }
-                        *d.borrow_mut() = dd;
-                    }
+                    *all.borrow_mut() = dd;
+                    update();
                 }
                 Err(e) => stat.set_text(&e.to_string()),
             }
@@ -513,9 +569,9 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         page.downgrade(),
     );
     search.connect_clicked(move |b| {
-        if owned.borrow().is_some() {
-            return;
-        }
+        // Explicit search also renews a session lost when BlueZ/controller
+        // restarted. Closing the previous client releases its old discovery.
+        owned.borrow_mut().take();
         let Some(adapter) = a
             .borrow()
             .get(p.selected_row().map_or(usize::MAX, |r| r.index() as usize))
