@@ -48,4 +48,16 @@ Prüfprogramm mit ELF-Architektur und SHA256 sowie die zugesagten 1 GiB/vier CPU
 Vorbereitete oder fortgesetzte Gäste und fehlende Ergebnisse werden abgewiesen.
 Der herunterladbare Prüfcode erhält die ursprünglichen Rust-Lizenzen.
 
+Der erste vollständige CI-Lauf zeigte zwei Fehler der Testumgebung:
+Auf AMD64 bestanden sämtliche Funkprüfungen, danach fehlten dem Runner die
+Schreibrechte für die Lizenzkopien im vom Container angelegten Verzeichnis.
+Die Dateien werden jetzt im selben Container kopiert. Der offizielle ARM64-
+Generic-Kernel enthält kein VHCI-Modul. Nur der bezeichnete Wegwerf-Gast baut
+deshalb den unveränderten vorhandenen Linux-Treiber `hci_vhci.c` aus dem
+versionsgleichen offiziellen Debian-Kernelquellpaket gegen die Header des
+laufenden Kernels. Quellversion, Kernel und SHA256 werden protokolliert. Weder
+Produktinstallation noch Kernel-Bootdateien werden dadurch verändert; alle
+Bluetooth-Laufzeitprüfungen bleiben verpflichtend. Ein fehlendes passendes
+Quell-/Headerpaket oder ein Ladefehler lässt die Abnahme fehlschlagen.
+
 Der Gesamtstand bleibt bis zum Abschluss dieser Prüfungen unverändert.
