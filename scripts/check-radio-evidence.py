@@ -1,12 +1,20 @@
 """Require fresh source-bound WPA2/WPA3/hidden WLAN and actual VHCI bond evidence."""
 
 import argparse
+import ast
 import hashlib
 import json
-import runpy
 from pathlib import Path
 
-PINS = runpy.run_path(str(Path(__file__).with_name("test-virtual-linux.py")))
+# Read the runner's literal pins without importing its QEMU/YAML dependencies.
+PINS = {
+    node.targets[0].id: ast.literal_eval(node.value)
+    for node in ast.parse(Path(__file__).with_name("test-virtual-linux.py").read_text()).body
+    if isinstance(node, ast.Assign)
+    and len(node.targets) == 1
+    and isinstance(node.targets[0], ast.Name)
+    and node.targets[0].id in {"VERSION", "DIGESTS"}
+}
 MARKERS = [
     "RAMPI_RUST_WIFI_WPA3_SAE_OK",
     "RAMPI_RUST_WIFI_HIDDEN_SAE_OK",
