@@ -1,14 +1,14 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 79 %**.
+Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 80 %**.
+[80-Prozent-Gesamtnachweis einschließlich grafischer Image-Abnahme](validation/rust-native-80-2026-10-24.md).
 [79-Prozent-Erweiterung durch zehnminütigen Mischbetrieb](validation/mixed-soak-2026-10-24.md).
 [78-Prozent-Erweiterung durch grafische PAM-Anmeldung](validation/graphical-login-2026-10-23.md).
 [77-Prozent-Erweiterung durch den nativen Browser](validation/browser-modern-profile-2026-10-23.md).
 [76-Prozent-Erweiterung durch integriertes RDP](validation/embedded-rdp-2026-10-23.md).
 [75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
-Das zuletzt erreichte Zwischenziel von mindestens 75 % ist belegt. Der erneut
-aktive Auftrag verlangt mindestens 80 %. Dieses Ziel und ein CI-/QEMU-geprüfter nativer
-Release sind noch offen. Dies ist ein Entwicklungsmeilenstein, kein vollständig
+Das beauftragte Zwischenziel von mindestens 80 % ist softwareseitig belegt.
+Die Freigabe eines regulären nativen Releases bleibt offen. Dies ist ein Entwicklungsmeilenstein, kein vollständig
 fertiges Produkt und noch kein neuer regulärer nativer Release.
 
 Die bisherige [70-Prozent-Basis](validation/rust-native-70-2026-10-23.md) wird
@@ -33,11 +33,11 @@ ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernomm
 | Sicherheit und Isolation | 4 |
 | Design und Branding | 4 |
 | GitHub und CI/CD | 4 |
-| Systemimage | 3 |
+| Systemimage | 4 |
 | Manuelle Updates | 5 |
 | Dokumentation | 4 |
 | Performance | 4 |
-| **Summe** | **79 / 100** |
+| **Summe** | **80 / 100** |
 
 Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
 Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
@@ -54,7 +54,8 @@ Linux-Konten und Login erreichen vier Punkte durch frische QEMU-Anmeldungen auf
 AMD64 und ARM64 mit dem tatsächlichen greetd-/PAM-Ablauf, falschem Kennwort,
 zwei normalen Linux-Identitäten, privaten Konfigurationen und Rückkehr zur
 Anmeldung. Sichtbare native Frames werden geprüft; schwarze Compositor-Bilder
-werden abgewiesen. Image-Boot, Login-Branding und weitere Kontooberflächen bleiben offen.
+werden abgewiesen. Die grafische Anmeldung im tatsächlichen Pi-Image ist zusätzlich geprüft;
+Login-Branding, weitere Kontooberflächen und die reguläre Release-Freigabe bleiben offen.
 
 Browser erreicht fünf Punkte durch integrierte Navigation, echte HTTPS-/JavaScript-,
 Tastatur-, Maus-, Vollbild- und Download-/Upload-Abnahmen sowie persistente,
@@ -74,7 +75,7 @@ Profile werden wiederverwendet; Mehrdeutigkeit und ungültige Eingaben werden
 abgewiesen. Die Rust-/GIO-Abnahme prüft die tatsächlichen D-Bus-Aufrufe einschließlich
 privater Profilrechte, nicht den Funkverkehr.
 
-Der Assistent erreicht drei Punkte durch integrierte SSH-Einrichtung und persönliche
+Die frühere Drei-Punkte-Basis des Assistenten umfasst integrierte SSH-Einrichtung und persönliche
 Tastatur-/Bildschirmeinstellungen. Tastaturänderungen erhalten andere Einstellungen
 und verwenden labwc; angebotene Bildschirmmodi verwenden wlr-randr, einschließlich
 15-Sekunden-Bestätigung und Rücksetzung. Die tatsächliche Headless-Wayland-Abnahme
@@ -89,31 +90,26 @@ Falsche Fingerabdrücke, vorhandene Schlüssel und bestehende Hosteinträge sind
 geschützt. Ein tatsächlicher isolierter OpenSSH-Server sowie GTK-/VTE-Abläufe
 prüfen diesen Ablauf; die vollständige lokale Abnahme bleibt erfolgreich.
 
-Systemimage erreicht drei Punkte: Ein tatsächliches flashbares Trixie-/ARM64-Image
-mit vorgebautem Rust-Programm, Wayland-Sitzung, Paketmanifest und ursprünglichen
-Rust-/Distributionslizenzen ist gebaut. Partitionen und Dateisysteme sind geprüft;
-QEMU startet den Pi-Kernel mit 1 GiB bis zur Diagnose des nativen Programms.
-Das heruntergeladene Image stimmt mit seiner SHA256-Prüfsumme überein.
-Die grafische Anmeldung und vollständige native Release-Funktionsgleichheit
-bleiben offen; es handelt sich um einen Entwicklungskandidaten, kein reguläres Release.
-Nachweis: [Image, Prüfsummen und QEMU-Abnahmen](validation/rust-image-2026-10-23.md).
+Systemimage erreicht vier Punkte: Ein tatsächliches flashbares Trixie-/ARM64-Image
+mit Rust-Programm, Wayland-Sitzung, Paketmanifest und Lizenzen ist gebaut.
+Partitionen, Prüfsummen und Quellzuordnung sind geprüft. QEMU startet den
+ursprünglichen Pi-Kernel mit 1 GiB; die tatsächliche grafische PAM-Anmeldung
+weist ein falsches Kennwort ab, startet zwei getrennte Linux-Benutzersitzungen
+mit sichtbarer nativer Oberfläche und kehrt zur Anmeldung zurück. Installierte
+Programmdateien bleiben unverändert; Testwerkzeuge liegen nur in der Wegwerfkopie.
+Der bekannte Bedarf des Greeters an einer vorhandenen Maus-Schnittstelle bleibt
+dokumentiert. Vollständige native Release-Funktionsgleichheit bleibt offen;
+dies ist ein Entwicklungskandidat, kein reguläres Release.
+Nachweis: [grafische Image-Abnahme](validation/image-graphical-2026-10-24.md).
 
 Installer und Reparatur erreichen vier Punkte: Der tatsächliche ARM64-Installer
 ist mit echten Trixie-Paketen, gewöhnlichem Quellbesitz, rootgeschützten
 Programmdateien, wiederholter Installation ohne Überschreiben laufender Dateien,
 atomarem Versionswechsel, Rückwechsel, abgewiesenen ungültigen/veränderten
 Programmen und Deinstallation geprüft. Persönliche Daten bleiben unverändert;
-ein fremder Login-Dienst bleibt erhalten. Die vollständige grafische PAM-Anmeldung
+ein fremder Login-Dienst bleibt erhalten. Weitere Anmelde-/Reparaturfälle
 und der allgemeine native Release-Bootstrap bleiben offen.
 Nachweis: [native CI-Abnahme](validation/rust-native-2026-10-23.md).
-
-Performance erreicht drei Punkte durch einen tatsächlichen Wayland-Lauf mit
-600 überprüften Seitenwechseln über mehr als drei Minuten, drei VTE-Terminals,
-lokalem WebKit-Inhalt, gezeichneten Frames, Start-/Wechsellatenz, Prozess-CPU,
-Speicherverlauf nach der Aufwärmphase und einer Phase mit reduzierter Bewegung.
-Die vollständige lokale Abnahme bleibt unter dem Containerlimit von 1 GiB.
-Das ist eine Software-Baseline mit labwc/Pixman und Cairo, keine Messung auf
-einem physischen Raspberry Pi und keine längere Arbeitslast mit echten KI-/Remote-Sitzungen.
 
 Dokumentation erreicht vier Punkte: Bedienung, Betrieb, native Architektur mit
 Vertrauensgrenzen, aktuelles Konfigurationsschema, Funktionsmatrix, Fehlerhilfe
@@ -122,25 +118,13 @@ Historische Prototypangaben sind getrennt; jede Nachweisart nennt ihre Grenze.
 [Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb](NATIVE-OPERATIONS.de.md),
 [Entwicklung](NATIVE-DEVELOPMENT.de.md), [Umfang und Hilfe](NATIVE-SUPPORT.de.md).
 
-Linux-Konten erreichen drei Punkte durch persönliche Kontoanzeige, tatsächliches
-passwd im VTE und bestätigte Abmeldung. Ein unprivilegierter Containerbenutzer
-ändert sein Kennwort; PAM weist danach altes und falsches Kennwort ab und akzeptiert
-das neue. Ein zweites Linux-Konto kann private Daten nicht lesen. Der vollständige
-grafische greetd-Login und die Verwaltung weiterer Konten bleiben offen.
-
-Browser erreicht vier Punkte durch tatsächliches vertrauenswürdiges HTTPS,
-Zertifikatsfehler-Abweisung, Navigation, JavaScript-Abfragen als Seiten und
-WebKit-Downloads mit Zielentscheidung, Überschreibschutz und Abbruch. Weitere
-moderne Webseiten und Berechtigungsabläufe bleiben zu prüfen.
-
 Tastatur und Design erreichen je vier Punkte: Tatsächliche Wayland-Eingaben
 prüfen Hostformular, Tab-Reihenfolge, alle Einstellungsbereiche, Cursorwechsel und
 Escape im VTE. Das Compositor-Kürzel kehrt zum Dashboard zurück, ohne den Tastendruck
 in die PTY weiterzuleiten. Echte Compositor-PNGs belegen unterschiedliche Bewegung
 aller vier Kanten bei Start, Hover und Fokus; reduzierte Bewegung bleibt still.
 1280×720 und 1600×900 werden geprüft. Der Startimpuls beginnt erst beim Sichtbarwerden;
-Fokusverlust und reduzierte Bewegung zeichnen die Fläche korrekt neu. Die vollständige
-Windows-Remote-Eingabe und deren integrierte Ansichten bleiben offen.
+Fokusverlust und reduzierte Bewegung zeichnen die Fläche korrekt neu. Weitere Windows-Remote-Eingabeprüfungen und eingebettetes Streaming bleiben offen.
 
 Bluetooth erreicht vier Punkte: Zusätzlich zu Vergleich, PIN/Passkey, Abbruch
 und fremden Absendern werden angezeigte Codes, eingegebene Stellen, Cancel/Release
