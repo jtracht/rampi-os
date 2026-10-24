@@ -8,6 +8,9 @@ Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 80 %**.
 [76-Prozent-Erweiterung durch integriertes RDP](validation/embedded-rdp-2026-10-23.md).
 [75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
 Das beauftragte Zwischenziel von mindestens 80 % ist softwareseitig belegt.
+Der fortgesetzte Auftrag verlangt nun 100 % nach derselben Skala. Die noch
+fehlenden Funktionen und echten Anbieter-/Windows-Abnahmen bleiben Bestandteil
+dieses Ziels; sie werden nicht durch zusätzliche Test-Fixtures ersetzt.
 Die Freigabe eines regulären nativen Releases bleibt offen. Dies ist ein Entwicklungsmeilenstein, kein vollständig
 fertiges Produkt und noch kein neuer regulärer nativer Release.
 

@@ -179,14 +179,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
             if name == "browser" {
                 views::browser(&s, &conf, &stat, &f);
             } else if ["codex", "claude", "antigravity"].contains(&name) {
-                let args = conf
-                    .borrow()
-                    .host()
-                    .and_then(|h| rampi_core::launch::ssh(h, name));
-                match args {
-                    Ok(args) => views::terminal(&s, name, args, &stat),
-                    Err(e) => stat.set_text(&e.to_string()),
-                }
+                crate::ai_view::open(&s, &conf, name, &stat, &f);
             } else {
                 s.set_visible_child_name(name);
             }
@@ -428,6 +421,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     }
     if std::env::args().any(|a| a == "--keyboard-test") {
         crate::checks::keyboard(app, &stack);
+    }
+    if std::env::args().any(|a| a == "--ai-ui-check") {
+        crate::ai_checks::run(app, &stack, &settings, &feedback);
     }
     if std::env::args().any(|a| a == "--interaction-check") {
         crate::interaction_checks::run(app, &window, &stack, &tabs, &settings, &feedback);

@@ -4,6 +4,31 @@ Rampi überträgt ein interaktives OpenSSH-Terminal; VTE rendert die Anzeige.
 Der Host startet `codex`, `claude` beziehungsweise `agy` in psmux 3.4.0.
 WSL wird nicht benötigt. Anbieteranmeldung, Projektsicherheit und
 Berechtigungsdialoge bleiben unverändert in den offiziellen CLIs.
+Der gestartete Prozess erhält die offiziellen Abschalter
+`DISABLE_AUTOUPDATER=1` (Claude) und `AGY_CLI_DISABLE_AUTO_UPDATE=true`
+(Antigravity). So aktualisieren diese Sitzungen sich nicht im Hintergrund.
+Die übrige Windows-Umgebung und vorhandene Benutzerprofile werden nicht verändert;
+Updates bleiben bewusste manuelle Aktionen. Bereits laufende Sitzungen müssen
+bewusst beendet und neu gestartet werden, um die geänderte Startumgebung zu übernehmen.
+Quellen: [Claude](https://code.claude.com/docs/en/env-vars),
+[Antigravity](https://antigravity.google/docs/cli/troubleshooting/).
+
+Die Kachel öffnet eine eigene Modulseite: **Host und Sitzung prüfen** fragt über
+OpenSSH den persönlichen Windows-Adapter ab. Sie unterscheidet vorhandenes
+CLI-Programm, psmux und eine tatsächlich laufende benannte Sitzung. Eine vorhandene
+Installation bestätigt keine Anbieteranmeldung; Rampi liest keine Authentifizierungsdateien.
+Die Hintergrundprüfung kann weder Kennwort- noch Hostschlüssel-Prompts öffnen.
+Fehlerhafte Antworten und SSH-Fehler bleiben Fehler, kein positiver Verbindungsstatus.
+
+**Offizielle Einrichtung anzeigen** öffnet die Anbieter-Dokumentation im
+eingebetteten Browser. **Sitzung öffnen / wiederverbinden** verwendet VTE und den
+vorhandenen ConPTY-Server. **Windows-Sitzung beenden …** verlangt eine eigene
+Bestätigungsseite und beendet ausschließlich die exakte Sitzung des angezeigten
+Windows-Kontos. Terminals werden zusätzlich nach Host und Konto getrennt, damit
+ein Profilwechsel nicht versehentlich das Terminal eines anderen Hosts zeigt.
+Die drei Anbieterstationen des Assistenten führen direkt zu diesen Modulseiten;
+Zurück führt zum aktuellen Einrichtungsschritt. Bestehende Hostinstallationen
+benötigen den aktualisierten persönlichen Adapter für die neue `Check`-Aktion.
 
 Feste Windows-Sitzungen heißen rampi-codex, rampi-claude und rampi-antigravity.
 `new-session -A` verbindet erneut mit einer bestehenden Sitzung. Ein SSH-Ausfall

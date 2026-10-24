@@ -14,12 +14,12 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart | Zusätzliche virtuelle Controller-Abnahme; physischer Funk ist ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
 | Windows/KI | Persönliche Hosts, OpenSSH-Schlüssel/Trust, bestehender nativer psmux-/ConPTY-Adapter | Zusammenhängende Windows-11-Pro-Abnahme mit neuer Oberfläche und Anbieteranmeldungen |
-| Antigravity | Kachel und Diagnose fehlender Unterstützung | Verfügbare offizielle native CLI ist nicht nachgewiesen |
+| Antigravity | Offizielle Windows-CLI `agy`, eigene Einrichtungs-/Sitzungsseite und Installationsprüfung | Persönliche Installation, Anmeldung und tatsächliche Anbieteranfrage |
 | Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
 | RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung in Docker; Moonlight-Aufruf | Windows-NLA, zusätzliche Maus-/Clipboard-Abnahme, integriertes Streaming und Pi-Decoderpfad |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
-| Image/Release | Gebauter nativer Kandidat, Lizenzen/Provenienz und QEMU-Boot | Grafischer Login und reguläre native Release-Funktionsgleichheit |
+| Image/Release | Gebauter nativer Kandidat, Lizenzen/Provenienz, QEMU-Boot und grafische PAM-Anmeldung mit zwei Konten | Reguläre native Release-Funktionsgleichheit |
 
 ## Fehler eingrenzen
 

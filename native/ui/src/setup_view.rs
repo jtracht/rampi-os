@@ -47,18 +47,18 @@ const STEPS: [(&str, &str, &str); 15] = [
     ),
     (
         "Codex",
-        "Die offizielle Windows-CLI muss unter deinem Windows-Konto installiert und angemeldet sein. Nach der Einrichtung öffnest du das Codex-Modul; eine automatische Anbieterprüfung fehlt noch.",
-        "host",
+        "Host und Sitzung prüfen, die offizielle Einrichtung anzeigen und die Windows-CLI öffnen. Die Anbieteranmeldung erfolgt im offiziellen Programm und wird durch eine Installationsprüfung nicht bestätigt.",
+        "codex",
     ),
     (
         "Claude Code",
         "Die offizielle Windows-CLI muss unter deinem Windows-Konto installiert und angemeldet sein. Das Modul verwendet die bestehende persistente Hostintegration.",
-        "host",
+        "claude",
     ),
     (
         "Antigravity",
-        "Nur eine tatsächlich unterstützte offizielle CLI verwenden. Eine verfügbare native Antigravity-CLI und deren Anmeldung sind hier nicht nachgewiesen.",
-        "host",
+        "Die offizielle native Windows-CLI heißt agy. Auf der Modulseite Installation und Sitzung prüfen; die Einrichtung beim Anbieter und die Anmeldung im offiziellen Programm abschließen.",
+        "antigravity",
     ),
     (
         "Desktop-Streaming",
@@ -151,10 +151,21 @@ pub fn build(
             status_result(&stat, result);
         });
     }
-    let (s, t, p, i) = (stack.clone(), tabs.clone(), page.clone(), current);
+    let (s, t, p, i, c, stat, feedback) = (
+        stack.clone(),
+        tabs.clone(),
+        page.clone(),
+        current,
+        conf.clone(),
+        status.clone(),
+        f.clone(),
+    );
     open.connect_clicked(move |_| {
         p.set_widget_name("setup-return");
         match STEPS[i.get()].2 {
+            module @ ("codex" | "claude" | "antigravity") => {
+                crate::ai_view::open(&s, &c, module, &stat, &feedback)
+            }
             "remote" => s.set_visible_child_name("remote"),
             "diagnostics" => s.set_visible_child_name("diagnostics"),
             tab => {

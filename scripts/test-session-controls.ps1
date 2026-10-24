@@ -21,13 +21,24 @@ try {
     if ($status.schema -ne 1 -or $status.module -ne 'codex' -or $status.running -ne $true) {
         throw 'Status did not identify the actual native session.'
     }
+    $check = (& powershell.exe -NoLogo -NoProfile -File $adapter -Module codex -Action Check) | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0 -or $check.schema -ne 1 -or $check.module -ne 'codex' -or
+        $check.program -ne 'codex' -or $check.multiplexer -ne $true -or $check.running -ne $true -or
+        $check.installed -isnot [bool]) { throw 'Check did not identify the actual live session.' }
     & powershell.exe -NoLogo -NoProfile -File $adapter -Module codex -Action Stop
     if ($LASTEXITCODE -ne 0) { throw 'Stop action failed.' }
     $status = (& powershell.exe -NoLogo -NoProfile -File $adapter -Module codex -Action Status) | ConvertFrom-Json
     if ($status.running -ne $false) { throw 'Stopped session still reported as running.' }
+    foreach ($module in @('codex','claude','antigravity')) {
+        $check = (& powershell.exe -NoLogo -NoProfile -File $adapter -Module $module -Action Check) | ConvertFrom-Json
+        if ($LASTEXITCODE -ne 0 -or $check.schema -ne 1 -or $check.module -ne $module -or
+            $check.multiplexer -ne $true -or $check.running -ne $false -or
+            $check.installed -isnot [bool]) { throw 'Check misreported missing session or provider.' }
+    }
     & $mux has-session -t '=rampi-codex-neighbor'
     if ($LASTEXITCODE -ne 0) { throw 'Stop affected a different session with the same prefix.' }
     Write-Output 'PASS: real Windows adapter reports and stops its exact session; neighboring session survives.'
+    Write-Output 'RAMPI_WINDOWS_PROVIDER_CHECK_OK'
 } finally {
     foreach ($name in $created) { & $mux kill-session -t "=$name" 2>$null | Out-Null }
 }

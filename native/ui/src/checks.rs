@@ -826,9 +826,9 @@ pub fn setup(
                 "vpn",
                 "host",
                 "host",
-                "host",
-                "host",
-                "host",
+                "ai-codex",
+                "ai-claude",
+                "ai-antigravity",
                 "remote",
                 "remote",
                 "board",
@@ -840,7 +840,15 @@ pub fn setup(
                     "Wizard lost the current step"
                 );
                 click(&setup, "Jetzt einrichten")?;
-                if ["remote", "diagnostics"].contains(&destination) {
+                if [
+                    "remote",
+                    "diagnostics",
+                    "ai-codex",
+                    "ai-claude",
+                    "ai-antigravity",
+                ]
+                .contains(&destination)
+                {
                     ensure!(
                         stack.visible_child_name().as_deref() == Some(destination),
                         "Wrong setup destination"
@@ -1218,53 +1226,68 @@ pub fn embedded(app: &gtk::Application, stack: &gtk::Stack) {
     );
     let (a, s) = (app.clone(), stack.clone());
     term.connect_child_exited(move |term, code| {
-        let screen = term.text_format(vte::Format::Text).unwrap_or_default();
-        if code != 0 || !screen.contains("PTY:rust-input") {
-            eprintln!("Actual VTE PTY roundtrip failed");
-            std::process::exit(1);
-        }
-        d.set(true);
-        println!("RAMPI_RUST_VTE_PTY_OK");
-        let web = webkit6::WebView::builder()
-            .network_session(&webkit6::NetworkSession::new_ephemeral())
-            .hexpand(true)
-            .vexpand(true)
-            .build();
-        let a = a.clone();
-        web.connect_load_changed(move |web, event| {
-            if event == webkit6::LoadEvent::Finished {
-                let (a, w) = (a.clone(), web.clone());
-                glib::MainContext::default().spawn_local(async move {
-                    match w
-                        .evaluate_javascript_future(
-                            "document.getElementById('rampi').textContent + ':' + (21*2)",
-                            None,
-                            None,
-                        )
-                        .await
-                    {
-                        Ok(value) if value.to_str() == "RustBrowserOK:42" => {
-                            if a.windows().len() != 1 {
-                                eprintln!("Browser created a second window");
+        let (term, a, s, d) = (term.clone(), a.clone(), s.clone(), d.clone());
+        glib::MainContext::default().spawn_local(async move {
+            // Child exit can precede VTE parsing the final PTY bytes. Require the
+            // actual output, with a bounded wait, rather than sampling that race.
+            let mut screen = String::new();
+            for _ in 0..250 {
+                screen = term
+                    .text_format(vte::Format::Text)
+                    .unwrap_or_default()
+                    .to_string();
+                if screen.contains("PTY:rust-input") {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            if code != 0 || !screen.contains("PTY:rust-input") {
+                eprintln!("Actual VTE PTY roundtrip failed: code={code}, screen={screen:?}");
+                std::process::exit(1);
+            }
+            d.set(true);
+            println!("RAMPI_RUST_VTE_PTY_OK");
+            let web = webkit6::WebView::builder()
+                .network_session(&webkit6::NetworkSession::new_ephemeral())
+                .hexpand(true)
+                .vexpand(true)
+                .build();
+            let a = a.clone();
+            web.connect_load_changed(move |web, event| {
+                if event == webkit6::LoadEvent::Finished {
+                    let (a, w) = (a.clone(), web.clone());
+                    glib::MainContext::default().spawn_local(async move {
+                        match w
+                            .evaluate_javascript_future(
+                                "document.getElementById('rampi').textContent + ':' + (21*2)",
+                                None,
+                                None,
+                            )
+                            .await
+                        {
+                            Ok(value) if value.to_str() == "RustBrowserOK:42" => {
+                                if a.windows().len() != 1 {
+                                    eprintln!("Browser created a second window");
+                                    std::process::exit(1);
+                                }
+                                println!("RAMPI_RUST_WEBKIT_DOM_JS_OK");
+                                a.quit();
+                            }
+                            _ => {
+                                eprintln!("Actual WebKit DOM/JavaScript roundtrip failed");
                                 std::process::exit(1);
                             }
-                            println!("RAMPI_RUST_WEBKIT_DOM_JS_OK");
-                            a.quit();
                         }
-                        _ => {
-                            eprintln!("Actual WebKit DOM/JavaScript roundtrip failed");
-                            std::process::exit(1);
-                        }
-                    }
-                });
-            }
+                    });
+                }
+            });
+            s.add_named(&web, Some("test-browser"));
+            s.set_visible_child_name("test-browser");
+            web.load_html(
+                "<!doctype html><html><body><h1 id='rampi'>RustBrowserOK</h1></body></html>",
+                Some("https://rampi.test/"),
+            );
         });
-        s.add_named(&web, Some("test-browser"));
-        s.set_visible_child_name("test-browser");
-        web.load_html(
-            "<!doctype html><html><body><h1 id='rampi'>RustBrowserOK</h1></body></html>",
-            Some("https://rampi.test/"),
-        );
     });
     let timeout_app = app.downgrade();
     glib::timeout_add_local_once(std::time::Duration::from_secs(25), move || {
