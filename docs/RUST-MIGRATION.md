@@ -54,13 +54,13 @@ NetworkManager-Fixture; tatsächliche Klick-Audioausgabe über libcanberra/Pulse
 Bluetooth verwendet eine Adapterliste direkt in der Seite, ohne Ausklappfenster.
 Gefundene Geräte werden während der sichtbaren Seite automatisch aktualisiert;
 unveränderte Listen werden nicht neu aufgebaut. Eine eigene D-Bus-Verbindung
-besitzt die Suchsitzung und wird beim Tab-/Seitenwechsel geschlossen. Auch eine
+besitzt die Suchsitzung und wird beim Seitenwechsel geschlossen. Auch eine
 verspätete Antwort kann dadurch keine Suche im Hintergrund zurücklassen.
 `tests/rust/test-bluetooth.py` prüft die echten Rust-/GIO-Aufrufe gegen die
 isolierte BlueZ-Fixture: Adapterprüfung, Suche, Lebensdauer der Verbindung,
 Koppeln, Verbinden, Trennen, explizites Vertrauen und Entfernen. Mit `--ui`
 betätigt der Test die tatsächliche GTK-Suchschaltfläche und prüft die Freigabe
-beim Wechsel zum WLAN-Tab sowie genau ein App-Fenster. Dies belegt weder
+beim Wechsel zur WLAN-Seite sowie genau ein App-Fenster. Dies belegt weder
 Funkkopplung noch die Agent1-PIN-/Passkey-Seiten. Diese werden separat durch
 `tests/rust/test-pairing.py` auf demselben privaten Testdienst geprüft: bewusster
 Codevergleich, tatsächliche PIN-/Passkey-Antworten, Abbruch mit gelöschter Eingabe
@@ -105,20 +105,26 @@ echte CLI-/Dienstprüfungen von gezielten Ausgabe-/Timeout-Fixtures.
 
 Das ist keine vollständige Funktionsabnahme. Die bisherigen Python-/QML-,
 Windows-, Netzwerk- und Image-Nachweise gelten nicht automatisch für den Port.
-Noch offen sind insbesondere zusätzliche Pairing-Fälle und Dienstneustarts,
-WLAN-Sonderfälle, Setup-/Konten-/Tailscale-Funktionsgleichheit, alle Kanban-Anbieter,
-Streaming, integrierte Remote-Desktop-Darstellung, grafische PAM-Anmeldung,
+Noch offen sind insbesondere weitere Pairing-/WLAN-Sonderfälle,
+Setup-/Konten-/Tailscale-Funktionsgleichheit, persönliche Anbieteranmeldungen,
+eingebettetes Streaming, Windows-NLA sowie weitere RDP-Maus-/Clipboard-Abnahmen,
 weitere Installer-/Loginfälle und die vollständige Freigabe eines nativen Releases.
+Die [integrierte RDP-Fläche](validation/embedded-rdp-2026-10-23.md) und die
+[grafische PAM-Anmeldung](validation/graphical-login-2026-10-23.md) besitzen
+inzwischen eigene native Software-Nachweise.
 Die persönlichen offiziellen Anbieteranmeldungen bleiben separat zu prüfen.
 
 `packaging/readiness.json` hält reguläre Releases während der Umstellung zurück.
 Ein tatsächliches natives Entwicklungsimage ist inzwischen
 [gebaut und zweimal in QEMU geprüft](validation/rust-image-2026-10-23.md),
 einschließlich Programm-/Quellzuordnung und verifiziertem lokalem Download.
+Die zusätzliche [grafische Image-Abnahme](validation/image-graphical-2026-10-24.md)
+prüft nun auch das unverändert installierte Programm mit zwei PAM-Benutzersitzungen.
 Die [ARM64-Installer-Abnahme](validation/rust-native-2026-10-23.md) prüft reale
 Pakete, wiederholte Installation, Versionswechsel, Rückwechsel, abgewiesene
 Fehlereingaben, erhaltene persönliche Daten und einen fremden Login-Dienst.
-Dies ersetzt weder die grafische PAM-Anmeldung noch die übrige Release-Abnahme.
+Die zusätzliche grafische PAM-Anmeldung ist separat geprüft; weitere
+Release-Anforderungen bleiben offen.
 Das zuvor veröffentlichte v0.5.0 bleibt ein Python-/QML-Release.
 
 Die lokale Leistungsbaseline umfasst 600 überprüfte Seitenwechsel über mehr als
@@ -127,6 +133,13 @@ beobachtete Zeichenausgabe nach dem Start, Seitenwechsel, Prozess-CPU und
 residenter Speicher nach der Aufwärmphase. Die JSON-Messwerte und vollständigen
 Laufzeitmarker sind Pflicht für die native CI-Abnahme. Diese Pixman-/Cairo-Werte
 sind kein Nachweis für physische Pi-Geschwindigkeit, GPU oder echte Remote-Last.
+
+Zusätzlich ist der [zehnminütige Mischbetrieb](validation/mixed-soak-2026-10-24.md)
+mit aktiver TLS-RDP-Verbindung, drei PTYs und WebKit auf AMD64 und ARM64 geprüft:
+je 1.050 Seitenwechsel, 150 unterschiedliche Remote-Aufnahmen und vom Server
+bestätigte Eingaben unter 1 GiB ohne Swap. Diese gesonderte Abnahme enthält
+tatsächliche Remote-Last; sie bescheinigt weiterhin keine Pi-GPU- oder
+Windows-Streaming-Leistung.
 
 Der [native Betriebsleitfaden](NATIVE-OPERATIONS.de.md) beschreibt die vorbereiteten
 Versionsordner mit zusammengehörigen Grafiken, atomare Aktivierung, manuelle

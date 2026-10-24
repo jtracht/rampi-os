@@ -40,7 +40,7 @@ its executable digest equals the one measured in the ARM64 workload:
 | Mean container CPU, percent of one core | 32.48 % | 31.69 % |
 
 Ten periodic remote input tokens were received by the actual server on each
-architecture. Three PTY and 150 WebKit JavaScript roundtrips also passed.
+architecture. Each of the three PTYs completed 150 roundtrips; 150 WebKit JavaScript roundtrips also passed.
 The independent review included the ARM64 remote capture. The merged implementation
 matches the tested head in `native`, `installer`, `system`, `scripts`, `tests`,
 workflow and package files; only milestone documentation differs.
