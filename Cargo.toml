@@ -1,5 +1,5 @@
 [workspace]
-members = ["native/core", "native/ui"]
+members = ["native/core", "native/ui", "native/stream"]
 resolver = "2"
 exclude = ["vendor/rdw"]
 

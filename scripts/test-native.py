@@ -135,6 +135,7 @@ def acceptance(options):
                     "bash",
                     "-ec",
                     "cargo fmt --all --check; cargo test --locked -p rampi-core; "
+                    "cargo test --locked -p rampi-stream -j1; "
                     "cargo clippy --locked --workspace --all-targets -j1 -- -D warnings; "
                     "cargo build --locked --workspace -j1",
                 ],

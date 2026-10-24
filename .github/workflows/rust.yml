@@ -31,7 +31,7 @@ jobs:
       - run: docker build -t rampi-rust-dev -f tests/rust/Dockerfile .
       - name: Locked native Rust build, formatting, lint and core tests
         run: |
-          docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev bash -ec 'cargo fmt --all --check; cargo test --locked -p rampi-core; cargo clippy --locked --workspace --all-targets -j 1 -- -D warnings; cargo build --locked --workspace -j 1'
+          docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev bash -ec 'cargo fmt --all --check; cargo test --locked -p rampi-core; cargo test --locked -p rampi-stream -j1; cargo clippy --locked --workspace --all-targets -j 1 -- -D warnings; cargo build --locked --workspace -j 1'
       - name: Package the actual native ARM64 installer payload
         if: matrix.arch == 'arm64'
         run: |
