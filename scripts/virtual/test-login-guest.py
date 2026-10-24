@@ -295,6 +295,33 @@ def main():
         if personal.stat().st_mode & 0o777 != 0o700 or personal.stat().st_uid != uid:
             raise RuntimeError("Native personal configuration permissions are not private")
         other = users[1] if user == users[0] else users[0]
+        pid = int(
+            as_user(
+                user,
+                "systemctl",
+                "--user",
+                "show",
+                "rampi.service",
+                "--property=MainPID",
+                "--value",
+            ).stdout
+        )
+        process_env = dict(
+            item.split(b"=", 1)
+            for item in Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+            if b"=" in item
+        )
+        agent_socket = process_env.get(b"SSH_AUTH_SOCK", b"").decode()
+        if not agent_socket:
+            raise RuntimeError("Native systemd service did not inherit its SSH agent")
+
+        def agent_status(account=user, socket=agent_socket):
+            return as_user(
+                account, "env", f"SSH_AUTH_SOCK={socket}", "/usr/bin/ssh-add", "-l", check=False
+            ).returncode
+
+        if agent_status() != 1 or agent_status(other) != 2:
+            raise RuntimeError("Empty personal SSH agent unavailable or accessible by another user")
         if as_user(other, "cat", str(proof), check=False).returncode == 0:
             raise RuntimeError("Another account read the private login proof")
         evidence.append(
@@ -308,6 +335,7 @@ def main():
                 ).hexdigest(),
                 "config_mode": oct(personal.stat().st_mode & 0o777),
                 "config_uid": personal.stat().st_uid,
+                "ssh_agent_private": True,
             }
         )
         as_user(user, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
@@ -318,6 +346,11 @@ def main():
             "native application termination on logout",
         )
         greeter_ready()
+        wait(
+            lambda status=agent_status: status() == 2,
+            "session-owned SSH agent termination",
+            seconds=20,
+        )
     if (
         run("pgrep", "-x", "Xorg", check=False).returncode == 0
         or run("pgrep", "-x", "Xwayland", check=False).returncode == 0
@@ -326,6 +359,7 @@ def main():
     (CAPTURES / "login-proof.json").write_text(json.dumps(evidence, indent=2) + "\n")
     (CAPTURES / "login-proof.json").chmod(0o644)
     print("RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK", flush=True)
+    print("RAMPI_GRAPHICAL_LOGIN_SSH_AGENT_OK", flush=True)
     print("RAMPI_GRAPHICAL_LOGIN_OK", flush=True)
 
 

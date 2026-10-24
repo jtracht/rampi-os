@@ -178,3 +178,32 @@ pub fn generate_arguments() -> Result<Vec<OsString>> {
         "Rampi".into(),
     ])
 }
+
+pub fn unlock_arguments(identity: &str) -> Result<Vec<OsString>> {
+    ensure!(
+        !identity.is_empty(),
+        "Zuerst einen persönlichen SSH-Schlüssel im Hostprofil auswählen und speichern"
+    );
+    ensure!(
+        std::env::var_os("SSH_AUTH_SOCK").is_some(),
+        "Kein OpenSSH-Agent verfügbar. Rampi-Sitzung neu anmelden."
+    );
+    let path = config::expand_home(identity)?;
+    let metadata = fs::symlink_metadata(&path)?;
+    ensure!(
+        metadata.is_file()
+            && !metadata.file_type().is_symlink()
+            && metadata.uid() == gio::Credentials::new().unix_user()?
+            && metadata.mode() & 0o077 == 0,
+        "Der private Schlüssel muss dir gehören und darf nur für dein Konto lesbar sein"
+    );
+    // Keep the official passphrase prompt inside VTE, even if a parent desktop
+    // supplied an external askpass application.
+    Ok(vec![
+        "/usr/bin/env".into(),
+        "SSH_ASKPASS_REQUIRE=never".into(),
+        "/usr/bin/ssh-add".into(),
+        "--".into(),
+        path.into_os_string(),
+    ])
+}

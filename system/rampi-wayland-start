@@ -3,6 +3,12 @@ set -eu
 export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
 systemctl --user import-environment WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP DBUS_SESSION_BUS_ADDRESS GDK_BACKEND GSK_RENDERER SDL_VIDEODRIVER
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP GDK_BACKEND GSK_RENDERER SDL_VIDEODRIVER
+if [ -n "${SSH_AUTH_SOCK:-}" ]; then
+    systemctl --user import-environment SSH_AUTH_SOCK
+    dbus-update-activation-environment --systemd SSH_AUTH_SOCK
+else
+    systemctl --user unset-environment SSH_AUTH_SOCK
+fi
 if [ -n "${LABWC_PID:-}" ]; then
     systemctl --user import-environment LABWC_PID
     dbus-update-activation-environment --systemd LABWC_PID
