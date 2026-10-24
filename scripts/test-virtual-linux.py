@@ -181,6 +181,8 @@ def main():
             "libgtk-4-media-gstreamer",
             "librsvg2-common",
             "gnome-keyring",
+            "libpam-gnome-keyring",
+            "libsecret-tools",
             "fonts-dejavu-core",
         ]
         config["runcmd"][0][2] = (
