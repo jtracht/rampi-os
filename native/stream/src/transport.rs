@@ -9,12 +9,18 @@ use moonlight_common::{
 use openssl::x509::X509;
 use pem::Pem;
 use std::{str::FromStr, sync::Arc, time::Duration};
+use zeroize::Zeroize;
 
 #[derive(Clone)]
 struct Identity {
     key: Vec<u8>,
     certificate: Vec<u8>,
     pin: String,
+}
+impl Drop for Identity {
+    fn drop(&mut self) {
+        self.key.zeroize();
+    }
 }
 // Deliberately no Debug implementation: key material and request URLs are private.
 #[derive(Clone)]

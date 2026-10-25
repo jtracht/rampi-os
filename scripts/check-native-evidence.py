@@ -16,6 +16,9 @@ if "RAMPI_STREAM_NATIVE_C_LIFECYCLE_OK" not in (directory / "stream-media.log").
     encoding="utf-8"
 ):
     raise SystemExit("Actual official Moonlight C lifecycle acceptance missing")
+runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.py")))["check"](
+    directory / "streaming-live"
+)
 runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"](
     directory / "gitea-live"
 )

@@ -3296,9 +3296,11 @@ dependencies = [
  "moonlight-common",
  "openssl",
  "pem",
+ "serde",
  "serde_json",
  "tempfile",
  "url",
+ "uuid",
  "zeroize",
 ]
 

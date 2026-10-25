@@ -1,7 +1,10 @@
 # GStreamer-Medienadapter: Komponentenprüfung
 
 Dies ist noch keine Abnahme eines eingebetteten Streaming-Moduls. Die Verbindung
-zur GTK-Oberfläche und die erfolgreiche Sunshine-Verbindung fehlen weiterhin.
+zur GTK-Oberfläche fehlt weiterhin. Die später ergänzte tatsächliche lokale
+Sunshine-Verbindung ist separat in
+[native-sunshine-component-2026-10-25.md](native-sunshine-component-2026-10-25.md)
+beschrieben.
 Der Gesamtstand bleibt 81/100; diese Arbeit bleibt außerhalb des dev1-Images.
 
 Der Rust-Adapter verwendet vorhandene GStreamer-Elemente für H.264, Opus,

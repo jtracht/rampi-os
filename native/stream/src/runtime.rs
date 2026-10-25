@@ -12,7 +12,7 @@ use moonlight_common::stream::{
     video::{DecodeResult, VideoFormats},
 };
 use std::{
-    ffi::{CString, c_char, c_void},
+    ffi::{CStr, CString, c_char, c_void},
     mem::MaybeUninit,
     panic::{AssertUnwindSafe, catch_unwind},
     ptr, slice,
@@ -79,6 +79,13 @@ pub struct MoonlightRuntime {
 }
 
 impl MoonlightRuntime {
+    pub(crate) fn launch_query_parameters(&self) -> Result<String> {
+        // SAFETY: Upstream returns a static, NUL-terminated protocol version
+        // string. It is never freed or modified by this caller.
+        let query = unsafe { self.api.LiGetLaunchUrlQueryParameters() };
+        ensure!(!query.is_null(), "Moonlight-Protokollversion fehlt");
+        Ok(unsafe { CStr::from_ptr(query) }.to_str()?.to_owned())
+    }
     pub fn load() -> Result<Self> {
         // SAFETY: Only the exact upstream ABI/version represented by the
         // generated headers is loaded; every required symbol must resolve.
@@ -113,7 +120,44 @@ impl MoonlightRuntime {
         config: MoonlightStreamConfig,
         settings: MoonlightStreamSettings,
     ) -> Result<(RemoteControl, PendingConnection)> {
+        // Clear owned keys even if another connection already owns the lease.
         let config = PrivateConfig(config);
+        self.reserve()?.prepare(config, settings)
+    }
+
+    pub(crate) fn reserve(&self) -> Result<Reservation> {
+        ensure!(
+            ACTIVE
+                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                .is_ok(),
+            "Eine Streamingverbindung wird bereits verwendet oder beendet"
+        );
+        Ok(Reservation {
+            api: self.api.clone(),
+            lease: Lease,
+        })
+    }
+}
+
+/// Reserve the process-local C connection BEFORE authenticated launch/resume.
+/// Dropping on an HTTP failure releases it without starting a C connection.
+pub(crate) struct Reservation {
+    api: Arc<ffi::Moonlight>,
+    lease: Lease,
+}
+impl Reservation {
+    pub(crate) fn prepare_config(
+        self,
+        config: MoonlightStreamConfig,
+        settings: MoonlightStreamSettings,
+    ) -> Result<(RemoteControl, PendingConnection)> {
+        self.prepare(PrivateConfig(config), settings)
+    }
+    fn prepare(
+        self,
+        config: PrivateConfig,
+        settings: MoonlightStreamSettings,
+    ) -> Result<(RemoteControl, PendingConnection)> {
         ensure!(
             (32..=1920).contains(&settings.width)
                 && (32..=1080).contains(&settings.height)
@@ -143,13 +187,7 @@ impl MoonlightRuntime {
             !config.address.is_empty() && config.address.len() <= 253,
             "Ungültiges Streaming-Ziel"
         );
-        ensure!(
-            ACTIVE
-                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-                .is_ok(),
-            "Eine Streamingverbindung wird bereits verwendet oder beendet"
-        );
-        let lease = Lease;
+        let lease = self.lease;
         let state = Arc::new(State {
             api: self.api.clone(),
             phase: Mutex::new(Phase::Connecting { stage: 0 }),

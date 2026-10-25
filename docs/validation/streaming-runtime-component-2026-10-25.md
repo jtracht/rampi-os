@@ -1,5 +1,9 @@
 # Moonlight-Laufzeitadapter: begrenzte Komponentenabnahme
 
+Der später hinzugefügte tatsächliche Sunshine-Verbindungstest ist separat in
+[native-sunshine-component-2026-10-25.md](native-sunshine-component-2026-10-25.md)
+beschrieben. Die nachstehende frühere Laufzeitabnahme allein ersetzt ihn nicht.
+
 Diese Erweiterung bleibt außerhalb des Entwicklungsimages. Der Gesamtstand
 bleibt 81/100. Eine erfolgreiche Sunshine-Verbindung, die GTK-Anzeige und
 authentifizierte Wiederverbindung sind damit noch nicht abgenommen.

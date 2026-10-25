@@ -37,7 +37,13 @@ jobs:
           set -euo pipefail
           docker build -t rampi-stream-media-test -f tests/streaming/Dockerfile.media .
           mkdir -p artifacts/rust
-          docker run --rm --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-stream-media-test bash -ec 'cargo test --locked -p rampi-stream --test transport_tls; cargo test --locked -p rampi-stream --lib -- --ignored --nocapture --test-threads=1' 2>&1 | tee artifacts/rust/stream-media.log
+          docker run --rm --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-stream-media-test bash -ec 'cargo test --locked -p rampi-stream --test transport_tls; cargo test --locked -p rampi-stream --lib media::tests::actual_h264_and_opus_roundtrip -- --ignored --nocapture; cargo test --locked -p rampi-stream --lib runtime::tests::actual_c_start_cancel_and_reuse -- --ignored --nocapture' 2>&1 | tee artifacts/rust/stream-media.log
+      - name: Actual Sunshine pairing, pinned TLS, video reconnect and received audio
+        run: |
+          set -euo pipefail
+          docker build -t rampi-native-sunshine-test -f tests/streaming/Dockerfile.sunshine .
+          python3 scripts/test-native-streaming.py
+          python3 scripts/check-stream-evidence.py artifacts/rust/streaming-live
       - name: Package the actual native ARM64 installer payload
         if: matrix.arch == 'arm64'
         run: |
