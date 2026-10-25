@@ -1,9 +1,22 @@
 # PAM und persönlicher Schlüsselbund: Startreihenfolge
 
-Stand: Implementierung und Container-Prüfung vorhanden; frische grafische
-AMD64-/ARM64-Abnahme noch ausstehend. Der belegte Gesamtstand bleibt 81/100,
-Linux-Konten/Login bleibt bei vier Punkten. Die erfolgreiche Diagnose in einem
-wiederverwendeten Gast ist ausdrücklich kein frischer Abnahmenachweis.
+Stand 26.10.2026: Die Implementierung hat die frische grafische AMD64-/ARM64-
+Abnahme auf dem bisherigen PR-Kopf bestanden. Allgemeine CI 40177935066 und
+native CI 40177934983 sind erfolgreich; ihre heruntergeladenen Nachweise wurden
+unabhängig geprüft. Beide Konten haben mit dem tatsächlichen Rust-Adapter
+gespeichert und nach erneuter PAM-Anmeldung ihre eigenen Geheimnisse gelesen.
+Der getestete Merge-Stand war `64c926cd8926e04adffbda3a92bb175674b3761e`;
+der ARM64-Programmhash war
+`ad10f082dcfde99391da8217a91ae3a7a0fe43b6bf6a2dfd9d421586a220c3f9`.
+
+Das native Entwicklungsrelease v0.6.0-dev.1 ist inzwischen veröffentlicht und
+unabhängig geprüft. Es enthält diese Änderung noch nicht. Für die Integration
+wird PR 46 mit dessen endgültigem Hauptstand
+`cb5cebcc9fb958cca2652d799e531cb8243e0fb3` zusammengeführt und erneut geprüft.
+Die früheren Nachweise ersetzen diese Prüfung und eine neue Image-Abnahme
+nicht. Der belegte Gesamtstand bleibt 81/100, Linux-Konten/Login bei vier Punkten.
+Die erfolgreiche Diagnose in einem wiederverwendeten Gast ist ausdrücklich
+kein frischer Abnahmenachweis. Ein Windows-Testhost wird nicht verwendet.
 
 Bei GNOME Keyring 48.0-1 kann der socketaktivierte Dienst seine Secret-Service-
 Objekte bereits initialisieren, bevor PAM den ersten Login-Schlüsselbund erstellt.
