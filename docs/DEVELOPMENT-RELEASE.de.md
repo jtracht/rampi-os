@@ -24,6 +24,8 @@ Veröffentlicht werden mindestens:
 - Flashbares `.img.xz` und passendes natives ARM64-Paket.
 - Vollständiger Quellcode, `setup.sh`, `setup.ps1` und Windows-Hostpaket.
 - Prüfsummen, Paketmanifest, originale Abhängigkeitslizenzen und Quellzuordnung.
+- Exakte Distributions-Quellarchive mit signiertem Indexbezug und vollständige
+  Cargo-Abhängigkeitsquellen mit Registry-Prüfsummen und festgelegten Git-Revisionen.
 - Softwareboot- und grafische Anmeldenachweise sowie die konkrete CI-Zuordnung.
 - `development-release.json` mit Quellrevision, Version, Image- und Programmhash.
 
