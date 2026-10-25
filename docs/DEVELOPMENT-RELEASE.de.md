@@ -36,6 +36,28 @@ werden nicht ersetzt. Unterbrochene Veröffentlichungen müssen anhand derselben
 Revision und Artefakte geprüft werden; ein neuer Aufruf überschreibt sie nicht.
 Der Geräte-Installer installiert Updates weiterhin ausschließlich manuell.
 
+Der neue Imagebau übernimmt die Lite-Paketauswahl des festgelegten pi-gen und
+entfernt daraus vor der Installation ausschließlich `rpi-connect-lite`. Rampi
+benötigt dessen zusätzlichen Cloud-Fernzugriffsdienst nicht. Für Version 2.14.0
+enthält der signierte Raspberry-Pi-APT-Index das Binärpaket, aber kein zugehöriges
+Quellpaket. Der erste native Release-Lauf wurde deshalb von der vollständigen
+Quellenprüfung gestoppt. Die Prüfung bleibt für sämtliche tatsächlich
+installierten Pakete bestehen. Andere Lite-Pakete einschließlich `rpifwcrypto`
+bleiben erhalten; Letzteres hat das vorhandene Quellpaket `raspi-utils`.
+Der Installer auf bestehenden Geräten entfernt keine vorhandenen Dienste.
+
+Für die ältere Bibliotheks-ABI `libwlroots-0.18` verwendet ausschließlich das
+neu gebaute Image die weiterhin gepflegten Debian-Trixie-Pakete. Im geprüften
+Raspberry-Pi-Index blieb das Binärpaket `0.18.2-3+rpt4+b1` verfügbar, dessen
+Quellversion `0.18.2-3+rpt4` jedoch nicht; der zweite Release-Bau stoppte deshalb
+ebenfalls korrekt. Eine auf genau diesen Paketnamen beschränkte APT-Präferenz
+bevorzugt die signierten Debian-Pakete mit vollständigem Quellpaket. Die aktuelle
+Pi-Version von labwc und `libwlroots-0.20` bleibt unverändert ausgewählt. Es gibt
+keine erzwungene Herabstufung, keine feste Versionssperre und keine Ausnahme
+von der vollständigen Quellprüfung. Die Präferenz wird nicht vom Installer auf
+bestehenden Geräten eingerichtet. Ihr Verhalten folgt der vorhandenen
+[APT-Paketauswahl](https://manpages.debian.org/trixie/apt/apt_preferences.5.en.html).
+
 Die Release-Hinweise nennen die verbleibenden Funktionen und Prüfgrenzen.
 Insbesondere entstehen dadurch keine angeblich abgeschlossenen Streaming-,
 Windows-11-Pro- oder persönlichen Anbieterabnahmen. Modellanfragen bleiben

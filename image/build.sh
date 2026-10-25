@@ -19,6 +19,7 @@ if [[ -e "$work" ]]; then
 fi
 git clone --branch arm64 https://github.com/RPi-Distro/pi-gen.git "$work"
 git -C "$work" checkout --detach "$revision"
+python3 "$root/scripts/prepare-image-profile.py" "$work"
 mkdir -p "$work/stage-rampi/00-rampi/files/source"
 git -C "$root" archive HEAD | tar -x -C "$work/stage-rampi/00-rampi/files/source"
 install -D -m 755 "$binary" "$work/stage-rampi/00-rampi/files/source/native/bin/rampi-native"
