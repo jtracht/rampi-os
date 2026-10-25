@@ -169,8 +169,10 @@ def keyring_store(user, attribute, secret):
 def install():
     target = Path("/opt/rampi/login-test")
     target.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(SOURCE / "rampi-native", target / "rampi-native")
-    (target / "rampi-native").chmod(0o755)
+    next_binary = target / "rampi-native.next"
+    shutil.copy2(SOURCE / "rampi-native", next_binary)
+    next_binary.chmod(0o755)
+    next_binary.replace(target / "rampi-native")
     assets = target / "assets"
     for name in ["branding", "icons", "sounds"]:
         shutil.copytree(SOURCE / "client/rampi" / name, assets / name, dirs_exist_ok=True)
