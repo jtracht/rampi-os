@@ -357,17 +357,33 @@ def main():
         arguments = Path(f"/proc/{int(pid)}/cmdline").read_bytes().rstrip(b"\0").split(b"\0")
         if arguments[1:] != [b"--login-background"]:
             raise RuntimeError("Greeter launched an unauthenticated workstation")
-    surfaces = as_user("_greetd", "wlrctl", "toplevel", "list").stdout
-    if b"org.rampi.LoginBranding" not in surfaces or b"org.rampi.Workstation" in surfaces:
-        raise RuntimeError("Greeter branding surface missing or workstation exposed")
-    print("RAMPI_GRAPHICAL_LOGIN_NO_UNAUTH_UI_OK", flush=True)
     greeter_png = f"/run/user/{pwd.getpwnam('_greetd').pw_uid}/rampi-greeter.png"
-    as_user("_greetd", "grim", greeter_png)
-    shutil.copyfile(greeter_png, CAPTURES / "greeter.png")
-    (CAPTURES / "greeter.png").chmod(0o644)
-    runpy.run_path(str(SOURCE / "scripts/check-login-evidence.py"))["visible_branding"](
-        CAPTURES / "greeter.png"
-    )
+    visible_branding = runpy.run_path(str(SOURCE / "scripts/check-login-evidence.py"))[
+        "visible_branding"
+    ]
+
+    def branding_ready():
+        # wlgreet can paint before the independent GTK branding process maps its
+        # first frame on a cold emulated Pi. Require actual readiness, not a delay.
+        result = as_user("_greetd", "wlrctl", "toplevel", "list", check=False)
+        (CAPTURES / "branding-surfaces.txt").write_bytes(result.stdout)
+        (CAPTURES / "branding-surfaces.txt").chmod(0o644)
+        if b"org.rampi.Workstation" in result.stdout:
+            raise RuntimeError("Unauthenticated workstation exposed by greeter")
+        if result.returncode or b"org.rampi.LoginBranding" not in result.stdout:
+            return False
+        if as_user("_greetd", "grim", greeter_png, check=False).returncode:
+            return False
+        shutil.copyfile(greeter_png, CAPTURES / "greeter.png")
+        (CAPTURES / "greeter.png").chmod(0o644)
+        try:
+            visible_branding(CAPTURES / "greeter.png")
+        except ValueError:
+            return False
+        return True
+
+    wait(branding_ready, "mapped branding-only greeter with visible original logo")
+    print("RAMPI_GRAPHICAL_LOGIN_NO_UNAUTH_UI_OK", flush=True)
     print("RAMPI_GRAPHICAL_LOGIN_BRANDING_OK", flush=True)
     failures = run("journalctl", "-b", "-u", "greetd", "--no-pager").stdout.count(
         b"authentication failure"

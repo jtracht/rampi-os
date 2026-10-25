@@ -61,8 +61,10 @@ def index_files(text, package, version):
         if not any(e["name"].endswith(".dsc") for e in entries):
             raise ValueError("Source descriptor missing")
         matches.append(sorted(entries, key=lambda e: e["name"]))
-    if not matches or any(item != matches[0] for item in matches):
-        raise ValueError("Exact installed source version missing or ambiguous")
+    if not matches:
+        raise ValueError("Exact installed source version missing: " + package + "=" + version)
+    if any(item != matches[0] for item in matches):
+        raise ValueError("Exact installed source version ambiguous: " + package + "=" + version)
     return matches[0]
 
 

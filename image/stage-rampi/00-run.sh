@@ -5,6 +5,7 @@ cp -a files/source/. "$ROOTFS_DIR/opt/rampi-build/"
 # Exercise the real native installer using an ordinary-user source checkout.
 chown -hR 1000:1000 "$ROOTFS_DIR/opt/rampi-build"
 on_chroot <<'EOF'
+install -m 644 /opt/rampi-build/image/apt/rampi-wlroots-source.pref /etc/apt/preferences.d/rampi-wlroots-source.pref
 DEBIAN_FRONTEND=noninteractive bash /opt/rampi-build/setup.sh --image
 install -m 644 /opt/rampi-build/native/bin/source-revision.txt /opt/rampi/source-revision.txt
 install -m 644 /opt/rampi-build/native/bin/binary-sha256.txt /opt/rampi/binary-sha256.txt
