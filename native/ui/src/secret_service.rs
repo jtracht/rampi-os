@@ -36,7 +36,11 @@ async fn call(
         5000,
     )
     .await
-    .map_err(|_| anyhow::anyhow!("Persönlicher Schlüsselbund nicht verfügbar oder gesperrt"))
+    .map_err(|_| {
+        anyhow::anyhow!(
+            "Persönlicher Schlüsselbund nicht verfügbar oder gesperrt ({interface}.{method})"
+        )
+    })
 }
 async fn session(bus: &gio::DBusConnection) -> Result<ObjectPath> {
     call(

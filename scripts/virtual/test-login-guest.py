@@ -275,12 +275,28 @@ def main():
     else:
         install()
     users = ["rampi-login", "rampi-other"]
+    reset_keyrings = "--debug-keyring-reset" in sys.argv
+    if reset_keyrings and (
+        image_test or Path("/etc/rampi-acceptance-vm").read_text().strip() != "isolated-qemu"
+    ):
+        raise RuntimeError("Fixture keyrings may only be reset in the resumed development guest")
     passwords = {}
     for user in users:
         try:
             pwd.getpwnam(user)
         except KeyError:
             run("useradd", "--create-home", "--shell", "/bin/bash", user)
+        if reset_keyrings:
+            home = Path("/home", user)
+            keyrings = home / ".local/share/keyrings"
+            if (
+                home.is_symlink()
+                or keyrings.is_symlink()
+                or not keyrings.resolve().is_relative_to(home)
+            ):
+                raise RuntimeError("Unsafe fixture keyring path")
+            if keyrings.exists():
+                keyrings.rename(keyrings.with_name(f"keyrings-before-debug-{time.time_ns()}"))
         Path("/home", user, ".rampi-login-uid").unlink(missing_ok=True)
         passwords[user] = secrets.token_urlsafe(24)
         run("chpasswd", data=f"{user}:{passwords[user]}\n".encode())
