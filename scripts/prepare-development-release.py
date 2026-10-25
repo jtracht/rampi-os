@@ -69,11 +69,17 @@ def assemble(root, image_dir, version, revision):
     # files, the image digest and its actual source; a successful build alone fails.
     checker = runpy.run_path(str(root / "scripts/check-image-login-evidence.py"))["check"]
     proof = checker(image_dir / "graphical-login", revision, image_sha)
+    runpy.run_path(str(root / "scripts/check-source-archives.py"))["check"](
+        image_dir, revision, (root / "Cargo.lock").read_bytes()
+    )
     required = [
         image.name,
         f"rampi-linux-arm64-{version}.tar.xz",
         "package-manifest.tsv",
         "dependency-licenses.tar.xz",
+        "dependency-sources.tar.xz",
+        "debian-source-archives.json",
+        "rust-dependency-sources.tar.xz",
         "qemu-boot.log",
         "qemu-environment.txt",
         "partitions.json",

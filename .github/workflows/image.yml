@@ -35,13 +35,20 @@ jobs:
           set -euo pipefail
           docker build -t rampi-rust-dev -f tests/rust/Dockerfile .
           docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev bash -ec 'cargo fmt --all --check; cargo test --locked -p rampi-core; cargo clippy --locked --workspace --all-targets -j 1 -- -D warnings; cargo build --locked --release --workspace -j 1; python3 scripts/collect-rust-licenses.py /build/rust-licenses'
+          docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo \
+            rampi-rust-dev python3 scripts/collect-cargo-sources.py \
+            --output /build/rust-corresponding-sources --archive /build/rust-dependency-sources.tar.xz \
+            --revision "$(git rev-parse HEAD)"
           mkdir -p artifacts/native
           container=$(docker create -v rampi-rust-build:/build:ro rampi-rust-dev true)
           docker cp "$container:/build/target/release/rampi-native" artifacts/native/rampi-native
           docker cp "$container:/build/rust-licenses" artifacts/native/rust-licenses
+          docker cp "$container:/build/rust-dependency-sources.tar.xz" artifacts/native/rust-dependency-sources.tar.xz
           docker rm "$container"
           chmod 755 artifacts/native/rampi-native
-          RAMPI_NATIVE_BINARY="$PWD/artifacts/native/rampi-native" RAMPI_RUST_LICENSE_DIR="$PWD/artifacts/native/rust-licenses" bash image/build.sh
+          RAMPI_NATIVE_BINARY="$PWD/artifacts/native/rampi-native" \
+            RAMPI_RUST_LICENSE_DIR="$PWD/artifacts/native/rust-licenses" \
+            RAMPI_RUST_SOURCE_ARCHIVE="$PWD/artifacts/native/rust-dependency-sources.tar.xz" bash image/build.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: image
@@ -78,6 +85,7 @@ jobs:
           export IMAGE_PRODUCER_SHA
           IMAGE_PRODUCER_SHA=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$IMAGE_PRODUCER_RUN" --jq .head_sha)
           bash image/test-image.sh artifacts/image/*.img.xz artifacts/image
+          python3 scripts/check-source-archives.py artifacts/image --revision "$IMAGE_PRODUCER_SHA" --lockfile Cargo.lock
           bash image/test-graphical-image.sh artifacts/image/*.img.xz artifacts/image/graphical-login
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

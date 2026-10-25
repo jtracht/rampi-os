@@ -4,9 +4,24 @@ Eigenentwickelter Rampi-Code: Apache License 2.0 (`LICENSE`).
 Drittanbieter behalten ihre Bedingungen. Paketinstallation ist keine
 Umlizenzierung. Mit einem Systemimage entstehen zusätzliche
 Weitergabepflichten, insbesondere Copyright-/Lizenztexte und gegebenenfalls
-korrespondierende Quellen für GPL-Komponenten. Vor einem regulären Release
-Manifest, Debian-Copyrightdateien und Source-Angebote zum exakten Paketstand
-vollständig archivieren. Die aktuelle Dokumentprüfung ersetzt das nicht.
+korrespondierende Quellen für GPL-Komponenten. Das gilt auch für Vorabversionen.
+Der Image-Bau sammelt deshalb zusätzlich zum Paketmanifest die exakten
+Distributions-Quellarchive über APT. Dessen signierte Indexdaten, die ursprünglichen
+Quellbeschreibungen und SHA256-Werte bestimmen die erforderlichen Dateien;
+eine fehlende installierte Quellversion oder Archivdatei bricht den Build ab.
+`dependency-sources.tar.xz` und `debian-source-archives.json` werden zusammen
+mit dem Image veröffentlicht. Diese Archive werden vor Veröffentlichung erneut
+gegen die vollständige Paketliste des gebauten Images geprüft.
+
+`rust-dependency-sources.tar.xz` enthält die von Cargo vendorten Abhängigkeiten,
+die passende Cargo.lock, eine portable Cargo-Konfiguration und die Rampi-Quellrevision.
+Registry-Prüfsummen, jede Quelldatei und Git-Abhängigkeiten einschließlich ihrer
+gesperrten vollständigen Commit-IDs werden geprüft. Die lokalen gepatchten Crates
+bleiben im vollständigen Rampi-Quellarchiv. Diese Bereitstellung ergänzt die
+ursprünglichen Lizenztexte; sie ändert keine Drittanbieterlizenz.
+
+Grundlagen der Quellbereitstellung: [GNU-FAQ zur unveränderten Binärweitergabe](https://www.gnu.org/licenses/gpl-faq.en.html#UnchangedJustBinary)
+und [korrespondierende Quellen beim Download](https://www.gnu.org/licenses/gpl-faq.en.html#AnonFTPAndSendSources).
 
 | Komponente | Lizenzfamilie / Herkunft |
 |---|---|
