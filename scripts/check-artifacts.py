@@ -31,6 +31,9 @@ if args.image:
             images[0].name,
             "package-manifest.tsv",
             "dependency-licenses.tar.xz",
+            "dependency-sources.tar.xz",
+            "debian-source-archives.json",
+            "rust-dependency-sources.tar.xz",
             "qemu-boot.log",
             "qemu-environment.txt",
             "partitions.json",
@@ -99,6 +102,7 @@ if args.image or (directory / f"rampi-linux-arm64-{version}.tar.xz").is_file():
             raise SystemExit("Native bundle binary checksum mismatch")
         with tarfile.open(directory / source) as sources:
             revision = sources.extractfile("rampi-os/source-revision.txt").read().decode().strip()
+            source_lock = sources.extractfile("rampi-os/Cargo.lock").read()
         if (
             not re.fullmatch(r"[a-f0-9]{40}", revision)
             or revision != read_native("source-revision.txt").decode().strip()
@@ -107,6 +111,9 @@ if args.image or (directory / f"rampi-linux-arm64-{version}.tar.xz").is_file():
         read_native("rust-licenses/packages.json")
         read_native("rust-licenses/Rust-standard-library-COPYRIGHT.html")
 if args.image:
+    runpy.run_path(str(Path(__file__).with_name("check-source-archives.py")))["check"](
+        directory, revision, source_lock
+    )
     verifier = runpy.run_path(str(Path(__file__).with_name("check-release-ci.py")))
     try:
         verifier["validate_proof"](

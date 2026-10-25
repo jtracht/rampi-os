@@ -33,8 +33,9 @@ bleiben getrennt erhalten und bestehen nach dieser Wiederverwendung erneut.
 Es werden keine Modellanfragen ausgelöst.
 
 Lokal bestehen der reale Serverlauf, die unabhängige Artefaktprüfung und die
-synthetischen Negativtests des Prüfers. Die kombinierte AMD64-/ARM64-CI ist bis
-zu ihrem erfolgreichen Abschluss offen. Diese Abnahme belegt Repository-Projekte
+synthetischen Negativtests des Prüfers. Auch die kombinierte AMD64-/ARM64-CI
+und die unabhängige Prüfung ihrer heruntergeladenen Nachweise bestehen. Diese
+Abnahme belegt Repository-Projekte
 dieser Gitea-Version; weitere Projekttypen und persönliche Anbieterzugänge bleiben
 offen. Der Prozentstand steigt durch diese zusätzliche Prüfung allein nicht.
 
@@ -49,3 +50,23 @@ Die Ausgaben enthalten Programm-SHA256, Serverversion, Image-Digest,
 serverseitig geprüfte Aufgaben, Phasenquittungen und ein tatsächliches
 Compositor-PNG. Sie enthalten keine Tokens, privaten Schlüssel oder persönlichen
 Kontodaten. Sämtliche neu erzeugten Docker-Ressourcen werden danach entfernt.
+
+## Zusammenführung
+
+Die [native CI 40134255831](https://github.com/jtracht/rampi-os/actions/runs/40134255831)
+und [allgemeine CI 40134255825](https://github.com/jtracht/rampi-os/actions/runs/40134255825)
+sind vollständig erfolgreich. Neben den beiden echten Gitea-Läufen bestehen die
+heruntergeladenen Laufzeit-, Funk- und Login-Nachweise sowie sieben Paketprüfsummen
+erneut die eingefrorenen unabhängigen Prüfer; ARM64 einschließlich Installer.
+Der Geheimnisscan ist unverändert aktiv. Er hatte den öffentlichen Image-Digest
+als möglichen Schlüssel markiert; ausschließlich dieser konkrete öffentliche
+Wert ist jetzt präzise gekennzeichnet. Der vollständige Scan besteht ebenfalls.
+
+* Akzeptierter PR-Stand: `9d12bbd661e7822f4614f94f66b1ec128460891a`.
+* Gebauter kombinierter Stand: `64e028c0bf39db31674889660897a389a4f06bad`.
+* [PR #40](https://github.com/jtracht/rampi-os/pull/40), zusammengeführt als
+  `68ba794549fdb68459e319db9b25a3973d0023a8`.
+* Identischer getesteter und zusammengeführter Tree:
+  `cd4c577de7a34133a63094eb0b192f0fb443a374`.
+* ARM64-Paketprogramm, auch gegen beide tatsächlichen grafischen Sitzungen geprüft:
+  `2bc24aaa4d746d9d40b472ca6cd64ee090e43773cd52d46581d01925caaa2ed0`.

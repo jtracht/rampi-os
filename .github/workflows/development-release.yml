@@ -1,0 +1,86 @@
+name: Native development release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: native-development-release
+  cancel-in-progress: false
+jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.source.outputs.tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+      - id: source
+        run: |
+          python3 scripts/prepare-development-release.py --tag-only --check-remote-tag >> "$GITHUB_OUTPUT"
+      - name: Require complete general and native CI for this exact main revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: python3 scripts/check-release-ci.py --sha "$RELEASE_SHA"
+  image:
+    needs: preflight
+    uses: ./.github/workflows/image.yml
+    with:
+      ref: ${{ github.sha }}
+    permissions:
+      contents: read
+      actions: read
+  publish:
+    needs: [preflight, image]
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: image
+          path: artifacts/image
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: image-validation
+          path: artifacts/image
+      - name: Install the graphical evidence validator dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-pil
+          python3 -c 'from PIL import Image; print(Image.__version__)'
+      - name: Assemble and independently verify the complete development release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare-development-release.py --tag-only --check-remote-tag
+          python3 scripts/check-release-ci.py --sha "$RELEASE_SHA" --output artifacts/release/release-ci.json
+          python3 scripts/package.py
+          python3 scripts/prepare-development-release.py --image-dir artifacts/image
+          python3 scripts/check-artifacts.py artifacts/release --image
+      - name: Publish immutable prerelease only after fresh image acceptance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_TAG: ${{ needs.preflight.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # gh creates the tag at the verified source revision. Existing releases
+          # fail closed; neither published assets nor tags are overwritten.
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/$RELEASE_TAG" -f "sha=$RELEASE_SHA"
+          gh release create "$RELEASE_TAG" artifacts/release/* \
+            --verify-tag --prerelease --draft \
+            --title "Rampi OS $RELEASE_TAG · Rust/Wayland development release" \
+            --notes-file artifacts/development-release-notes.md
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease

@@ -17,7 +17,8 @@ fi
 printf '%s\n' \
     'Third-party packages retain their individual licenses; see copyright/.' \
     'Exact Debian/Raspberry Pi source package names and versions are recorded in packages-and-sources.tsv.' \
-    'Obtain corresponding distro sources from the configured official repositories (apt-get source NAME=VERSION).' \
+    'Exact corresponding distro source archives accompany this image release in dependency-sources.tar.xz.' \
+    'Their signed-index SHA256 metadata is recorded in debian-source-archives.json.' \
     'Original Cargo dependency license texts and Rust standard-library notices are included in rust-licenses/.' \
     > "$output/README.txt"
 tar -cJf /opt/rampi/dependency-licenses.tar.xz -C /opt/rampi dependency-licenses
