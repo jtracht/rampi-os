@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+if "RAMPI_KEYRING_PROFILE_PRESERVATION_OK" not in (directory / "keyring-profile.log").read_text():
+    raise SystemExit("Actual unprivileged keyring profile preservation did not pass")
 runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"](
     directory / "gitea-live"
 )

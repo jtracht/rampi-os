@@ -189,6 +189,7 @@ def keyring_store(user, attribute, secret):
 
 
 def install():
+    run("bash", str(SOURCE / "installer/raspberrypi/keyring-profile.sh"), "--install")
     target = Path("/opt/rampi/login-test")
     target.mkdir(parents=True, exist_ok=True)
     next_binary = target / "rampi-native.next"

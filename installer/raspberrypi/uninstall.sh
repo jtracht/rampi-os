@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 if [[ $EUID -ne 0 ]]; then echo 'Mit sudo ausführen.' >&2; exit 1; fi
+bash "$(dirname -- "${BASH_SOURCE[0]}")/keyring-profile.sh" --remove
 systemctl disable rampi-health.service 2>/dev/null || true
 if [[ -f /opt/rampi/managed-greetd.sha256 && -f /etc/greetd/config.toml ]]; then
     expected="$(cat /opt/rampi/managed-greetd.sha256)"

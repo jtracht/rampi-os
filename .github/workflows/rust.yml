@@ -69,7 +69,10 @@ jobs:
           docker run --rm --network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined --security-opt systempaths=unconfined --user 1000:1000 --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v "$PWD/artifacts/rust:/artifacts" -v rampi-rust-build:/build:ro -e RAMPI_TEST_CONTAINER=1 -e RAMPI_TEST_ARTIFACTS=/artifacts rampi-rust-dev dbus-run-session -- bash tests/rust/run-wayland.sh 2>&1 | tee artifacts/rust/wayland.log
       - name: Rust Wayland installer and session syntax
         run: |
+          set -euo pipefail
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/setup.sh installer/raspberrypi/greeter-profile.sh system/rampi system/rampi-session system/rampi-wayland-start system/rampi-health system/rampi-greeter tests/rust/run-wayland.sh
+          docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/keyring-profile.sh installer/raspberrypi/keyring-profile-user.sh
+          docker run --rm -v "$PWD:/src:ro" rampi-rust-dev python3 tests/rust/test-keyring-profile.py | tee artifacts/rust/keyring-profile.log
       - name: Embedded Rust RDP with real TLS server, input and reconnect
         run: |
           set -euo pipefail
