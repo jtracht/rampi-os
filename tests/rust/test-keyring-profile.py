@@ -110,4 +110,18 @@ with tempfile.TemporaryDirectory(prefix="rampi-private-installer-") as directory
     run("bash", str(dispatcher), "--install")
     assert not target(Path("/etc/skel")).exists()
     assert packaged_unit.read_bytes() == original_unit + b"\n# locally modified package file\n"
+    packaged_unit.write_bytes(original_unit)
+    relocated_unit = packaged_unit.with_name("fixture-original.service")
+    packaged_unit.rename(relocated_unit)
+    packaged_unit.symlink_to(relocated_unit)
+    run("bash", str(dispatcher), "--install")
+    assert not target(Path("/etc/skel")).exists()
+    packaged_unit.unlink()
+    relocated_unit.rename(packaged_unit)
+    metadata = Path(
+        run("dpkg-query", "--control-path", "gnome-keyring", "md5sums").stdout.decode().strip()
+    )
+    metadata.rename(metadata.with_name("fixture-hidden-md5sums"))
+    run("bash", str(dispatcher), "--install")
+    assert not target(Path("/etc/skel")).exists()
 print("RAMPI_KEYRING_PROFILE_PRESERVATION_OK")
