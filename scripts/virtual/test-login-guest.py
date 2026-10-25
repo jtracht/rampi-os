@@ -321,6 +321,20 @@ def main():
                 raise RuntimeError("Unsafe fixture keyring path")
             if keyrings.exists():
                 keyrings.rename(keyrings.with_name(f"keyrings-before-debug-{time.time_ns()}"))
+            # Diagnostic proposal only: let PAM create/unlock the login keyring
+            # before the session initializes Secret Service's exported objects.
+            dropin = home / ".config/systemd/user/gnome-keyring-daemon.service.d"
+            as_user(user, "mkdir", "-p", str(dropin))
+            as_user(
+                user,
+                "tee",
+                str(dropin / "50-rampi-debug-ordering.conf"),
+                data=(
+                    b"[Service]\nExecStart=\nExecStart=/usr/bin/gnome-keyring-daemon --foreground "
+                    b"--components=pkcs11 --control-directory=%t/keyring\n"
+                ),
+            )
+            as_user(user, "systemctl", "--user", "daemon-reload", check=False)
         Path("/home", user, ".rampi-login-uid").unlink(missing_ok=True)
         passwords[user] = secrets.token_urlsafe(24)
         run("chpasswd", data=f"{user}:{passwords[user]}\n".encode())
