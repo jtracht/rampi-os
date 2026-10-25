@@ -232,6 +232,7 @@ def main():
         # first frame on a cold emulated Pi. Require actual readiness, not a delay.
         result = as_user("_greetd", "wlrctl", "toplevel", "list", check=False)
         (CAPTURES / "branding-surfaces.txt").write_bytes(result.stdout)
+        (CAPTURES / "branding-surfaces.txt").chmod(0o644)
         if b"org.rampi.Workstation" in result.stdout:
             raise RuntimeError("Unauthenticated workstation exposed by greeter")
         if result.returncode or b"org.rampi.LoginBranding" not in result.stdout:

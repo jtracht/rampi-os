@@ -29,3 +29,14 @@ bleibt 81/100; der Diagnosemodus ist kein erfolgreicher Login-Nachweis.
 
 Nachweise: [ursprünglicher Lauf](https://github.com/jtracht/rampi-os/actions/runs/40203007032)
 und [reiner Diagnoselauf](https://github.com/jtracht/rampi-os/actions/runs/40208281245).
+# Lesbare öffentliche Diagnosen
+
+Der erste native PR-Prüflauf bestand die tatsächliche grafische AMD64-Anmeldung
+mit beiden Konten und endete mit Guest-Exit 0. Anschließend schlug der
+Artefakt-Upload mit `EACCES` für `captures/branding-surfaces.txt` fehl:
+Der Gast verwendet bewusst `umask 077`; diese neue Diagnose hatte im Gegensatz
+zu den bereits exportierten PNGs noch keine ausdrücklichen Leserechte.
+Nur diese vor der Eingabe von Zugangsdaten erzeugte Toplevel-Liste erhält nun
+Modus 0644. Persönliche Konfigurationen, Zugangsdaten und Programmdateien werden
+nicht verändert. Ein erfolgreicher Test mit fehlgeschlagenem Upload zählt
+weiterhin nicht als vollständige CI-Abnahme.
