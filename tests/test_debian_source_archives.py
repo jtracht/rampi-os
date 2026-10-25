@@ -50,6 +50,11 @@ def test_reject_ambiguous_source_hashes():
         MODULE.index_files(index() + "\n" + index(digest="b" * 64), "dash", "1:2.0-1")
 
 
+def test_missing_source_names_exact_package_and_version():
+    with pytest.raises(ValueError, match=r"missing: rpi-connect-lite=2\.14\.0"):
+        MODULE.index_files("", "rpi-connect-lite", "2.14.0")
+
+
 def test_disabled_and_existing_source_indexes_are_preserved():
     original = "Types: deb\nURIs: https://example.test/debian\nSigned-By: /keys/repository.gpg\n"
     assert "Types: deb-src" in MODULE.source_stanzas(original)
