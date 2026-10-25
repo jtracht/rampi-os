@@ -127,6 +127,19 @@ def assemble(root, image_dir, version, revision):
         "physical_hardware_tests": False,
     }
     (output / "development-release.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    transport = runpy.run_path(str(root / "scripts/release-assets.py"))
+    if transport["split_sources"](output):
+        shutil.copyfile(
+            root / "scripts/release-assets.py", output / "restore-dependency-sources.py"
+        )
+        (output / "DEPENDENCY-SOURCES.txt").write_text(
+            "The complete original source archive is split only for GitHub's file-size limit.\n"
+            "No source package was omitted or modified. Verify SHA256SUMS first.\n"
+            "Restore the byte-identical original using Python 3 (standard library only):\n"
+            "python3 restore-dependency-sources.py --restore . --output dependency-sources.tar.xz\n"
+            "Individual and original archive hashes are in dependency-sources.parts.json.\n"
+        )
+    transport["check_limits"](output)
     checksums = []
     for item in sorted(output.iterdir()):
         if item.name == "SHA256SUMS":
@@ -144,6 +157,11 @@ def assemble(root, image_dir, version, revision):
         "setup.sh, setup.ps1, Windows host package, checksums, licenses and QEMU evidence. "
         "Graphical image login, two Linux accounts and unchanged installed program files "
         "were checked in software. Physical hardware testing is excluded.\n\n"
+        "Includes integrated RDP (RDW/IronRDP): real TLS/RDP frames, keyboard/mouse, "
+        "clipboard, reconnect and server-abort software checks passed on AMD64 and ARM64. "
+        "RDP acceptance used a real isolated XRDP server, not a Windows testhost.\n\n"
+        "The complete dependency source archive may be supplied as checksum-verified "
+        "parts below GitHub's per-file size limit; use the included restore helper.\n\n"
         "Known gaps include fully embedded desktop streaming, language selection, "
         "end-to-end PAM/keyring acceptance and personal Windows/provider acceptance. "
         "No model requests were performed. See docs/NATIVE-SUPPORT.de.md in the source. "

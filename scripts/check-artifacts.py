@@ -31,7 +31,6 @@ if args.image:
             images[0].name,
             "package-manifest.tsv",
             "dependency-licenses.tar.xz",
-            "dependency-sources.tar.xz",
             "debian-source-archives.json",
             "rust-dependency-sources.tar.xz",
             "qemu-boot.log",
@@ -43,6 +42,11 @@ if args.image:
             f"rampi-linux-arm64-{version}.tar.xz",
         ]
     )
+    transport = runpy.run_path(str(Path(__file__).with_name("release-assets.py")))
+    required.update(transport["source_assets"](directory))
+    if (directory / transport["INDEX"]).exists():
+        required.update({"restore-dependency-sources.py", "DEPENDENCY-SOURCES.txt"})
+    transport["check_limits"](directory)
 checksums = {}
 for line in (directory / "SHA256SUMS").read_text().splitlines():
     digest, name = line.split("  ", 1)
@@ -65,6 +69,7 @@ with tarfile.open(directory / source) as archive:
         ".github/workflows/release.yml",
         ".github/workflows/rust.yml",
         "scripts/check-release-ci.py",
+        "scripts/release-assets.py",
         "LICENSE",
         "client/rampi/qml/Main.qml",
         "client/rampi/icons/LICENSE",
@@ -117,10 +122,11 @@ if args.image:
     verifier = runpy.run_path(str(Path(__file__).with_name("check-release-ci.py")))
     try:
         verifier["validate_proof"](
-            json.loads((directory / "release-ci.json").read_text(encoding="utf-8")), revision,
-            tomllib.loads((Path(__file__).resolve().parents[1] / "Cargo.toml").read_text(
-                encoding="utf-8"
-            ))["workspace"]["package"]["repository"].removeprefix("https://github.com/")
+            json.loads((directory / "release-ci.json").read_text(encoding="utf-8")),
+            revision,
+            tomllib.loads(
+                (Path(__file__).resolve().parents[1] / "Cargo.toml").read_text(encoding="utf-8")
+            )["workspace"]["package"]["repository"].removeprefix("https://github.com/"),
         )
     except (ValueError, KeyError, TypeError) as error:
         raise SystemExit(f"Release CI proof invalid: {error}") from error
