@@ -264,8 +264,9 @@ def main():
     ):
         raise SystemExit("Only inside the designated isolated QEMU guest")
     os.umask(0o077)
-    if shutil.which("wlrctl") is None:
-        run("apt-get", "install", "-y", "--no-install-recommends", "wlrctl")
+    for executable, package in [("wlrctl", "wlrctl"), ("gdbus", "libglib2.0-bin")]:
+        if shutil.which(executable) is None:
+            run("apt-get", "install", "-y", "--no-install-recommends", package)
     if image_test:
         # The image's actual installed program, assets, launchers and greeter
         # profile stay in place. Only fixture accounts and headless test input
