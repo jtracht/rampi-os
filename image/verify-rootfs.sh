@@ -19,6 +19,9 @@ if grep -qE '^pi:[^!*:]' "$root/etc/shadow"; then
 fi
 # Runtime probes must run inside the image, not resolve host libraries against a prefix.
 test "$root" = /
+if dpkg-query -W -f='${Status}' rpi-connect-lite 2>/dev/null | grep -q '^install ok installed$'; then
+    echo 'Unbenötigter zusätzlicher Cloud-Fernzugriff im Rampi-Image gefunden.' >&2; exit 1
+fi
 /usr/local/bin/rampi-health
 test -s /usr/share/doc/rampi/rust-licenses/packages.json
 test -s /usr/share/doc/rampi/rust-licenses/Rust-standard-library-COPYRIGHT.html

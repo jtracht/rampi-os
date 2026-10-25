@@ -36,6 +36,16 @@ werden nicht ersetzt. Unterbrochene Veröffentlichungen müssen anhand derselben
 Revision und Artefakte geprüft werden; ein neuer Aufruf überschreibt sie nicht.
 Der Geräte-Installer installiert Updates weiterhin ausschließlich manuell.
 
+Der neue Imagebau übernimmt die Lite-Paketauswahl des festgelegten pi-gen und
+entfernt daraus vor der Installation ausschließlich `rpi-connect-lite`. Rampi
+benötigt dessen zusätzlichen Cloud-Fernzugriffsdienst nicht. Für Version 2.14.0
+enthält der signierte Raspberry-Pi-APT-Index das Binärpaket, aber kein zugehöriges
+Quellpaket. Der erste native Release-Lauf wurde deshalb von der vollständigen
+Quellenprüfung gestoppt. Die Prüfung bleibt für sämtliche tatsächlich
+installierten Pakete bestehen. Andere Lite-Pakete einschließlich `rpifwcrypto`
+bleiben erhalten; Letzteres hat das vorhandene Quellpaket `raspi-utils`.
+Der Installer auf bestehenden Geräten entfernt keine vorhandenen Dienste.
+
 Die Release-Hinweise nennen die verbleibenden Funktionen und Prüfgrenzen.
 Insbesondere entstehen dadurch keine angeblich abgeschlossenen Streaming-,
 Windows-11-Pro- oder persönlichen Anbieterabnahmen. Modellanfragen bleiben
