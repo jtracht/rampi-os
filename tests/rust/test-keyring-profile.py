@@ -103,4 +103,11 @@ with tempfile.TemporaryDirectory(prefix="rampi-private-installer-") as directory
     run("bash", str(dispatcher), "--install")
     assert not target(Path("/etc/skel")).exists()
     assert global_custom.read_text() == "# custom global configuration\n"
+    global_custom.unlink()
+    packaged_unit = Path("/usr/lib/systemd/user/gnome-keyring-daemon.service")
+    original_unit = packaged_unit.read_bytes()
+    packaged_unit.write_bytes(original_unit + b"\n# locally modified package file\n")
+    run("bash", str(dispatcher), "--install")
+    assert not target(Path("/etc/skel")).exists()
+    assert packaged_unit.read_bytes() == original_unit + b"\n# locally modified package file\n"
 print("RAMPI_KEYRING_PROFILE_PRESERVATION_OK")

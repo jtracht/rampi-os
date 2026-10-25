@@ -8,6 +8,10 @@ root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 if [[ "$mode" == --install ]]; then
     unit=/usr/lib/systemd/user/gnome-keyring-daemon.service
     [[ -f "$unit" ]] || exit 0
+    expected="$(dpkg-query --control-show gnome-keyring md5sums | \
+        awk '$2 == "usr/lib/systemd/user/gnome-keyring-daemon.service" {print $1}')"
+    [[ "$expected" =~ ^[a-f0-9]{32}$ ]] || exit 0
+    [[ "$(md5sum "$unit" | cut -d ' ' -f 1)" == "$expected" ]] || exit 0
     grep -Eq '^ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=("pkcs11,secrets"|pkcs11,secrets) --control-directory=%t/keyring$' "$unit" || exit 0
     for directory in /etc/systemd/user /run/systemd/user /usr/local/lib/systemd/user; do
         [[ ! -e "$directory/gnome-keyring-daemon.service" && ! -L "$directory/gnome-keyring-daemon.service" ]] || exit 0
