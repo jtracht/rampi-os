@@ -130,7 +130,11 @@ def keyring_state(user):
             check=False,
         )
         print(
-            f"RAMPI_PAM_KEYRING_ALIAS {user} {alias}: {result.stdout.decode().strip()}", flush=True
+            f"RAMPI_PAM_KEYRING_ALIAS {user} {alias}: status={result.returncode} "
+            + result.stdout.decode().strip()
+            + " "
+            + result.stderr.decode().strip(),
+            flush=True,
         )
 
 
@@ -389,13 +393,6 @@ def main():
         if personal.stat().st_mode & 0o777 != 0o700 or personal.stat().st_uid != uid:
             raise RuntimeError("Native personal configuration permissions are not private")
         other = users[1] if user == users[0] else users[0]
-        absent = keyring_lookup(user, keyring_attribute)
-        if absent.returncode != 1 or absent.stdout:
-            raise RuntimeError("Another user's personal secret appeared in this session")
-        keyrings = keyring_store(user, keyring_attribute, keyring_values[user])
-        for item in keyrings.glob("*.keyring"):
-            if as_user(other, "cat", str(item), check=False).returncode == 0:
-                raise RuntimeError("Another account read an encrypted keyring file")
         pid = int(
             as_user(
                 user,
@@ -412,6 +409,18 @@ def main():
             for item in Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
             if b"=" in item
         )
+        if (
+            process_env.get(b"DBUS_SESSION_BUS_ADDRESS")
+            != f"unix:path=/run/user/{uid}/bus".encode()
+        ):
+            raise RuntimeError("Native application did not reuse the existing personal session bus")
+        absent = keyring_lookup(user, keyring_attribute)
+        if absent.returncode != 1 or absent.stdout:
+            raise RuntimeError("Another user's personal secret appeared in this session")
+        keyrings = keyring_store(user, keyring_attribute, keyring_values[user])
+        for item in keyrings.glob("*.keyring"):
+            if as_user(other, "cat", str(item), check=False).returncode == 0:
+                raise RuntimeError("Another account read an encrypted keyring file")
         agent_socket = process_env.get(b"SSH_AUTH_SOCK", b"").decode()
         if not agent_socket:
             raise RuntimeError("Native systemd service did not inherit its SSH agent")
