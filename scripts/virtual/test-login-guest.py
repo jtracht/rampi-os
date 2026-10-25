@@ -136,6 +136,28 @@ def keyring_state(user):
             + result.stderr.decode().strip(),
             flush=True,
         )
+    result = as_user(
+        user,
+        "gdbus",
+        "call",
+        "--session",
+        "--dest",
+        "org.freedesktop.secrets",
+        "--object-path",
+        "/org/freedesktop/secrets/aliases/default",
+        "--method",
+        "org.freedesktop.DBus.Properties.Get",
+        "org.freedesktop.Secret.Collection",
+        "Locked",
+        check=False,
+    )
+    print(
+        f"RAMPI_PAM_KEYRING_LOCKED {user}: status={result.returncode} "
+        + result.stdout.decode().strip()
+        + " "
+        + result.stderr.decode().strip(),
+        flush=True,
+    )
 
 
 def keyring_store(user, attribute, secret):

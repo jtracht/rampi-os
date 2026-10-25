@@ -36,9 +36,16 @@ async fn call(
         5000,
     )
     .await
-    .map_err(|_| {
+    .map_err(|error| {
+        let category = gio::DBusError::remote_error(&error)
+            .map(|name| name.to_string())
+            .unwrap_or_else(|| if error.matches(gio::IOErrorEnum::TimedOut) {
+                "Zeitlimit".into()
+            } else {
+                "Lokaler D-Bus-Fehler".into()
+            });
         anyhow::anyhow!(
-            "Persönlicher Schlüsselbund nicht verfügbar oder gesperrt ({interface}.{method})"
+            "Persönlicher Schlüsselbund nicht verfügbar oder gesperrt ({interface}.{method}: {category})"
         )
     })
 }
