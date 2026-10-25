@@ -37,6 +37,8 @@ def evidence(tmp_path):
                 "RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK",
                 "RAMPI_GRAPHICAL_LOGIN_SSH_AGENT_OK",
                 "RAMPI_GRAPHICAL_LOGIN_BRANDING_OK",
+                "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK",
+                "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK",
                 "RAMPI_GRAPHICAL_LOGIN_OK",
                 "RAMPI_GUEST_EXIT=0",
             ]
@@ -50,6 +52,9 @@ def evidence(tmp_path):
             "session_uid": uid,
             "config_uid": uid,
             "ssh_agent_private": True,
+            "personal_bus_reused": True,
+            "pam_keyring_roundtrip_private": True,
+            "pam_keyring_relogin": True,
             "config_mode": "0o700",
             "native_process": True,
             "binary_sha256": DIGEST,
@@ -109,6 +114,9 @@ def test_reject_wrong_test_scope(evidence, key, value):
         ("binary_sha256", "b" * 64),
         ("native_process", False),
         ("ssh_agent_private", False),
+        ("personal_bus_reused", False),
+        ("pam_keyring_roundtrip_private", False),
+        ("pam_keyring_relogin", False),
         ("uid", 1001),
     ],
 )
@@ -121,9 +129,17 @@ def test_reject_insecure_or_stale_session(evidence, key, value):
         MODULE.check(evidence)
 
 
-def test_reject_missing_pam_rejection(evidence):
+@pytest.mark.parametrize(
+    "marker",
+    [
+        "RAMPI_GRAPHICAL_LOGIN_REJECT_OK",
+        "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK",
+        "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK",
+    ],
+)
+def test_reject_missing_pam_rejection_or_keyring_stage(evidence, marker):
     path = evidence / "serial.log"
-    path.write_text(path.read_text().replace("RAMPI_GRAPHICAL_LOGIN_REJECT_OK", ""))
+    path.write_text(path.read_text().replace(marker, ""))
     with pytest.raises(ValueError):
         MODULE.check(evidence)
 

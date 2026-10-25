@@ -447,6 +447,7 @@ def main():
                 "config_uid": personal.stat().st_uid,
                 "ssh_agent_private": True,
                 "pam_keyring_roundtrip_private": True,
+                "personal_bus_reused": True,
             }
         )
         as_user(user, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
@@ -462,41 +463,35 @@ def main():
             "session-owned SSH agent termination",
             seconds=20,
         )
-    # A fresh daemon must recover the first account's persisted encrypted secret
-    # from its next real PAM login, without a manual unlock or supplied password.
-    first = users[0]
-    first_uid = pwd.getpwnam(first).pw_uid
-    wait(
-        lambda: (
-            run(
-                "pgrep",
-                "-u",
-                str(first_uid),
-                "-f",
-                "(^|/)gnome-keyring-daemon( |$)",
-                check=False,
-            ).returncode
-            != 0
-        ),
-        "personal keyring daemon termination after logout",
-        seconds=30,
-    )
-    login(first, passwords[first])
-    wait(
-        lambda: (
-            as_user(
-                first, "systemctl", "--user", "is-active", "--quiet", "rampi.service", check=False
-            ).returncode
-            == 0
-        ),
-        "native session after keyring relogin",
-    )
-    recovered = keyring_lookup(first, keyring_attribute)
-    if recovered.returncode or recovered.stdout.rstrip(b"\n") != keyring_values[first].encode():
-        raise RuntimeError("PAM relogin did not unlock the persisted personal keyring")
-    native_keyring(first, "check", keyring_attribute, keyring_values[first])
-    as_user(first, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
-    greeter_ready()
+    # Both accounts must recover their own persisted encrypted secret through
+    # another real PAM login and a new daemon, without a manual unlock.
+    for account in evidence:
+        user, uid = account["user"], account["uid"]
+        wait(
+            lambda uid=uid: (
+                run(
+                    "pgrep", "-u", str(uid), "-f", "(^|/)gnome-keyring-daemon( |$)", check=False
+                ).returncode
+                != 0
+            ),
+            "personal keyring daemon termination after logout",
+            seconds=30,
+        )
+        login(user, passwords[user])
+        wait(
+            lambda user=user: (
+                b"org.rampi.Workstation"
+                in as_user(user, "wlrctl", "toplevel", "list", check=False).stdout
+            ),
+            "mapped native session after keyring relogin",
+        )
+        recovered = keyring_lookup(user, keyring_attribute)
+        if recovered.returncode or recovered.stdout.rstrip(b"\n") != keyring_values[user].encode():
+            raise RuntimeError("PAM relogin did not unlock the persisted personal keyring")
+        native_keyring(user, "check", keyring_attribute, keyring_values[user])
+        as_user(user, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
+        greeter_ready()
+        account["pam_keyring_relogin"] = True
     print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK", flush=True)
     print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK", flush=True)
     if (
