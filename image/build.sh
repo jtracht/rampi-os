@@ -7,6 +7,8 @@ binary="${RAMPI_NATIVE_BINARY:?ARM64-Rust-Binary aus demselben Checkout erforder
 binary="$(realpath "$binary")"
 test -x "$binary"
 licenses="${RAMPI_RUST_LICENSE_DIR:?Originale Rust-Abhängigkeitslizenzen erforderlich}"
+sources="${RAMPI_RUST_SOURCE_ARCHIVE:?Vollständige Cargo-Abhängigkeitsquellen erforderlich}"
+test -s "$sources"
 test -s "$licenses/packages.json"
 test -s "$licenses/Rust-standard-library-COPYRIGHT.html"
 readelf -h "$binary" | grep -q AArch64
@@ -50,6 +52,8 @@ cd "$work"
 ./build-docker.sh
 mkdir -p "$root/artifacts/image"
 find deploy -maxdepth 1 -name '*.img.xz' -exec cp '{}' "$root/artifacts/image/" \;
+cp deploy/dependency-sources.tar.xz deploy/debian-source-archives.json "$root/artifacts/image/"
+cp "$sources" "$root/artifacts/image/rust-dependency-sources.tar.xz"
 shopt -s nullglob
 images=("$root"/artifacts/image/*.img.xz)
 if ((${#images[@]} != 1)); then echo 'Genau ein Image erwartet.' >&2; exit 1; fi
@@ -62,4 +66,5 @@ docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
     -v "$root:/src" -v "$binary:/tmp/rampi-binary:ro" -v "$licenses:/tmp/rampi-licenses:ro" \
     rampi-rust-dev python3 scripts/package-native.py --binary /tmp/rampi-binary \
     --licenses /tmp/rampi-licenses --output /src/artifacts/image
-(cd "$root/artifacts/image"; sha256sum -- "$(basename "${images[0]}")" "$(basename "$bundle")" > SHA256SUMS)
+(cd "$root/artifacts/image"; sha256sum -- "$(basename "${images[0]}")" "$(basename "$bundle")" \
+    dependency-sources.tar.xz debian-source-archives.json rust-dependency-sources.tar.xz > SHA256SUMS)
