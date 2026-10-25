@@ -1,0 +1,7 @@
+# The legacy ABI is still required by a Lite utility. Its Raspberry Pi binary
+# remains published after its exact source version left the source index.
+# Use maintained Debian Trixie packages for this ABI only. The current Pi
+# labwc/wlroots ABI keeps its normal repository selection.
+Package: libwlroots-0.18:any
+Pin: release o=Debian
+Pin-Priority: 700
