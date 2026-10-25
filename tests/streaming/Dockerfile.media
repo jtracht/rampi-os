@@ -3,5 +3,19 @@ FROM ${SDK_IMAGE}
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg gstreamer1.0-libav gstreamer1.0-plugins-bad gstreamer1.0-plugins-good libcurl4-openssl-dev \
+    cmake build-essential pkg-config libopus-dev libevdev-dev libudev-dev libsdl2-dev \
+    libavcodec-dev libavutil-dev libexpat1-dev libavahi-client-dev uuid-dev \
     && rm -rf /var/lib/apt/lists/*
+# Reuse the same official C library and ABI as the existing streaming SDK.
+# Build only its upstream target; do not install a second player or display.
+RUN git clone https://github.com/moonlight-stream/moonlight-embedded.git /opt/moonlight-source \
+    && git -C /opt/moonlight-source checkout --detach 775444287305849ebdf4736c75298ad0713e2d5d \
+    && git -C /opt/moonlight-source submodule update --init --recursive \
+    && test "$(git -C /opt/moonlight-source/third_party/moonlight-common-c rev-parse HEAD)" = b126e481a195fdc7152d211def17190e3434bcce \
+    && cmake -S /opt/moonlight-source -B /opt/moonlight-build -DCMAKE_BUILD_TYPE=Release \
+       -DENABLE_SDL=ON -DENABLE_FFMPEG=ON -DENABLE_X11=OFF -DENABLE_CEC=OFF -DENABLE_PULSE=OFF \
+    && cmake --build /opt/moonlight-build --target moonlight-common --parallel 2 \
+    && install -m 755 /opt/moonlight-build/libgamestream/libmoonlight-common.so.2.7.1 /usr/local/lib/ \
+    && ldconfig
+ENV RAMPI_TEST_CONTAINER=1
 WORKDIR /src

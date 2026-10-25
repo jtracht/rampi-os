@@ -32,12 +32,12 @@ jobs:
       - name: Locked native Rust build, formatting, lint and core tests
         run: |
           docker run --rm -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-rust-dev bash -ec 'cargo fmt --all --check; cargo test --locked -p rampi-core; cargo test --locked -p rampi-stream -j1; cargo clippy --locked --workspace --all-targets -j 1 -- -D warnings; cargo build --locked --workspace -j 1'
-      - name: Actual windowless H264 and Opus decoding with bounded queues
+      - name: Actual Moonlight C lifecycle and windowless H264/Opus with bounded queues
         run: |
           set -euo pipefail
           docker build -t rampi-stream-media-test -f tests/streaming/Dockerfile.media .
           mkdir -p artifacts/rust
-          docker run --rm --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-stream-media-test bash -ec 'cargo test --locked -p rampi-stream --test transport_tls; cargo test --locked -p rampi-stream --lib media::tests::actual_h264_and_opus_roundtrip -- --ignored --nocapture' 2>&1 | tee artifacts/rust/stream-media.log
+          docker run --rm --memory=1g --memory-swap=1g --cpus=4 -v "$PWD:/src:ro" -v rampi-rust-build:/build -e CARGO_HOME=/build/cargo rampi-stream-media-test bash -ec 'cargo test --locked -p rampi-stream --test transport_tls; cargo test --locked -p rampi-stream --lib -- --ignored --nocapture --test-threads=1' 2>&1 | tee artifacts/rust/stream-media.log
       - name: Package the actual native ARM64 installer payload
         if: matrix.arch == 'arm64'
         run: |

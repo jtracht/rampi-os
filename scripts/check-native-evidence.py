@@ -12,6 +12,10 @@ if "RAMPI_STREAM_GSTREAMER_MEDIA_OK" not in (directory / "stream-media.log").rea
     encoding="utf-8"
 ):
     raise SystemExit("Actual windowless H264/Opus component acceptance missing")
+if "RAMPI_STREAM_NATIVE_C_LIFECYCLE_OK" not in (directory / "stream-media.log").read_text(
+    encoding="utf-8"
+):
+    raise SystemExit("Actual official Moonlight C lifecycle acceptance missing")
 runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"](
     directory / "gitea-live"
 )

@@ -19,6 +19,7 @@ tempfile = "3"
 gstreamer = { version = "0.25", features = ["v1_24"] }
 gstreamer-app = { version = "0.25", features = ["v1_24"] }
 gstreamer-video = { version = "0.25", features = ["v1_24"] }
+zeroize = "1"
 
 [lib]
 path = "src/lib.rs"
