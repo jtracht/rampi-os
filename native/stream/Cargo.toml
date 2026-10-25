@@ -16,6 +16,9 @@ pem = "3"
 base64 = "0.22"
 url = "2"
 tempfile = "3"
+gstreamer = { version = "0.25", features = ["v1_24"] }
+gstreamer-app = { version = "0.25", features = ["v1_24"] }
+gstreamer-video = { version = "0.25", features = ["v1_24"] }
 
 [lib]
 path = "src/lib.rs"

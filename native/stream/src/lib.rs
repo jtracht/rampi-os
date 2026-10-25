@@ -10,4 +10,6 @@
 #[allow(unsafe_op_in_unsafe_fn, clippy::all)]
 mod ffi;
 #[cfg(target_os = "linux")]
+pub mod media;
+#[cfg(target_os = "linux")]
 pub mod transport;

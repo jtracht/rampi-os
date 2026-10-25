@@ -1,0 +1,7 @@
+ARG SDK_IMAGE=rampi-rust-dev
+FROM ${SDK_IMAGE}
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg gstreamer1.0-libav gstreamer1.0-plugins-bad gstreamer1.0-plugins-good libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
