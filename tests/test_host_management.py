@@ -1,4 +1,3 @@
-
 from PySide6.QtCore import QCoreApplication
 from rampi.backend import Backend
 from rampi.config import Host, Settings

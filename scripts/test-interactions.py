@@ -62,7 +62,7 @@ with tempfile.TemporaryDirectory(prefix="rampi-interactions-") as home:
     artifacts.mkdir(parents=True, exist_ok=True)
     tiles = [
         item("liquid-" + icon)
-        for icon in ["columns-3", "terminal", "asterisk", "sparkles", "monitor", "globe"]
+        for icon in ["columns-3", "monitor", "globe"]
     ]
     wait(65)
     require(any(abs(tile.property("wave")) > 1 for tile in tiles), "No actual startup deformation")
@@ -83,11 +83,11 @@ with tempfile.TemporaryDirectory(prefix="rampi-interactions-") as home:
     first_phase = tile.property("phase")
     wait(100)
     require(tile.property("phase") != first_phase, "Focused surface does not keep flowing")
-    point = tiles[4].mapToScene(tiles[4].boundingRect().center()).toPoint()
+    point = tiles[1].mapToScene(tiles[1].boundingRect().center()).toPoint()
     QTest.mouseMove(window, point)
     wait(40)
-    require(tiles[4].property("activeFocus"), "Mouse hover did not select a tile")
-    require(abs(tiles[4].property("wave")) > 1, "Mouse hover did not animate the tile")
+    require(tiles[1].property("activeFocus"), "Mouse hover did not select a tile")
+    require(abs(tiles[1].property("wave")) > 1, "Mouse hover did not animate the tile")
     feedback = item("interactionFeedback")
     require(feedback.property("selectionCount") > 0, "Focus/hover feedback did not run")
     # Reduced motion must stop every tile immediately, including in-flight bursts.

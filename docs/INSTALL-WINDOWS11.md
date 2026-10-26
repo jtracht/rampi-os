@@ -23,9 +23,9 @@ den offiziellen Windows OpenSSH Server ein und erhält bestehende Konfiguratione
 Die eigene grafische Schlüsselverwaltung prüft Hostfingerabdrücke unabhängig und
 verwendet den persönlichen OpenSSH-Agenten. Bestehende Schlüssel nicht ersetzen.
 
-`-Install` und `-InstallMissing` bleiben kompatible Auditoptionen, installieren aber
-keine zusätzlichen Programme. Der frühere persönliche KI-Adapter wird nicht mehr
-ausgeliefert. Die Deinstallation kann eine alte Adapterdatei ausdrücklich entfernen;
+Die früheren Optionen `-Install` und `-InstallMissing` sowie das wirkungslose
+Adapter-Update entfallen. Der persönliche KI-Adapter wird nicht mehr ausgeliefert.
+Die Deinstallation kann eine alte Adapterdatei ausdrücklich entfernen;
 Windows-Dienste, persönliche Daten und vorhandene Programme bleiben erhalten.
 
 Die RDP-Softwareabnahme verwendet einen isolierten echten XRDP-Server auf Linux.

@@ -54,7 +54,7 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 | hosts[].username | string / leer | eigenes Windows-Konto |
 | hosts[].port | int / 22 | SSH-Port 1–65535 |
 | hosts[].identity | string / leer | existierender privater SSH-Schlüsselpfad; kein Schlüsselinhalt |
-| hosts[].project | string / leer | zugängliches Projektverzeichnis auf Windows |
+| hosts[].project | string / leer | Altdatenkompatibilität; wird erhalten, nicht angeboten oder ausgeführt |
 | hosts[].resolution | string / 1280x720 | bevorzugte Moonlight-Streamingauflösung |
 | browser_url | string / https://www.raspberrypi.com | HTTPS-Startseite ohne eingebettete Credentials |
 | board_source | string / leer | JSON-Dateipfad oder anbieterspezifische Projektkennung |

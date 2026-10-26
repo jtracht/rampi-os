@@ -98,10 +98,10 @@ ApplicationWindow {
         LiquidTile {
           required property var modelData
           required property int index
-          width: (tiles.width - 10) / 6; height: tiles.height
+          width: (tiles.width - tiles.spacing * (window.modules.length - 1)) / window.modules.length; height: tiles.height
           title: modelData.title; subtitle: modelData.subtitle
           caption: modelData.caption; symbol: modelData.symbol
-          iconFile: ["columns-3", "terminal", "asterisk", "sparkles", "monitor", "globe"][index]
+          iconFile: ["columns-3", "monitor", "globe"][index]
           startupDelay: index * 35
           accent: modelData.accent; darkInk: modelData.dark
           selected: window.selected === index

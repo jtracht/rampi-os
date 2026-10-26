@@ -38,10 +38,6 @@ def test_host_rejects_options_and_shell_input(address):
         Host(address=address, username="alice").validate()
 
 
-
-
-
-
 def test_rdp_never_disables_certificate_verification_or_embeds_password(monkeypatch):
     monkeypatch.setattr("rampi.launch.executable", lambda *names: "xfreerdp3")
     args = rdp_args(Host(address="host", username="alice"))

@@ -959,6 +959,16 @@ pub fn setup(
                 click(&host, "Hostprofil speichern")?;
             }
             ensure!(conf.borrow().hosts.len() == 2, "Profiles not saved");
+            ensure!(
+                named(&host, "host-project").is_none(),
+                "Removed project editor remains"
+            );
+            conf.borrow_mut().hosts[1].project = "C:\\Existing personal project".into();
+            click(&host, "Hostprofil speichern")?;
+            ensure!(
+                conf.borrow().hosts[1].project == "C:\\Existing personal project",
+                "Editing a host lost its legacy personal data"
+            );
             click(&host, "Ausgewählten Host verwenden")?;
             ensure!(conf.borrow().host()?.username == "bob");
             field("port", "0")?;

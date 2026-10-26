@@ -8,7 +8,15 @@ log="$(mktemp /tmp/rampi-first-run.XXXXXX)"
 /build/target/debug/rampi-native > "$log" 2>&1 &
 application_pid=$!
 trap 'kill "$application_pid" 2>/dev/null || true; wait "$application_pid" 2>/dev/null || true; rm -f -- "$log"' EXIT
-sleep 0.7
+# A cold GTK launch may map after the former fixed 700 ms delay. Send the
+# single real keyboard sequence only after the compositor sees the window.
+mapped=0
+for _ in $(seq 1 100); do
+    if wlrctl toplevel list | grep -Fq 'org.rampi.Workstation'; then mapped=1; break; fi
+    if ! kill -0 "$application_pid" 2>/dev/null; then cat "$log"; exit 1; fi
+    sleep 0.1
+done
+if ((mapped != 1)); then cat "$log"; echo 'First-run window did not map.' >&2; exit 1; fi
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then
     grim "$RAMPI_TEST_ARTIFACTS/rust-first-run.png"
     chmod 644 "$RAMPI_TEST_ARTIFACTS/rust-first-run.png"

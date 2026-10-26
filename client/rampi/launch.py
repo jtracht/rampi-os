@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 import os
@@ -18,54 +17,6 @@ def executable(*names: str) -> str:
         if found:
             return found
     raise RuntimeError(f"Nicht installiert: {' / '.join(names)}")
-
-
-def ps_literal(value: str) -> str:
-    if "\x00" in value:
-        raise ValueError("Nullzeichen sind nicht erlaubt.")
-    return "'" + value.replace("'", "''") + "'"
-
-
-
-
-
-
-
-
-def ssh_command(host: Host, script: str, interactive: bool = True) -> list[str]:
-    host.validate()
-    encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
-    args = [
-        "ssh",
-        "-tt" if interactive else "-T",
-        "-o",
-        "StrictHostKeyChecking=yes",
-        "-o",
-        "IdentitiesOnly=yes",
-        "-o",
-        "ServerAliveInterval=15",
-        "-o",
-        "ServerAliveCountMax=3",
-        "-o",
-        "ConnectTimeout=8",
-        "-p",
-        str(host.port),
-    ]
-    if not interactive:
-        args += ["-o", "BatchMode=yes"]
-    if host.identity:
-        args += ["-i", str(Path(host.identity).expanduser())]
-    args += [
-        "-l",
-        host.username,
-        host.address,
-        "powershell.exe",
-        "-NoLogo",
-        "-NoProfile",
-        "-EncodedCommand",
-        encoded,
-    ]
-    return args
 
 
 def terminal_args(args: list[str], title: str) -> list[str]:

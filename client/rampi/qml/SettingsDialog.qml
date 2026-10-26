@@ -14,12 +14,12 @@ FullPage {
     hostName.text = value.name || "Windows";
     address.text = value.address || ""; username.text = value.username || "";
     port.value = value.port || 22; identity.text = value.identity || "";
-    project.text = value.project || ""; resolution.text = value.resolution || "1280x720";
+    resolution.text = value.resolution || "1280x720";
     verified.checked = false;
   }
   function showPage(index) { tabs.currentIndex = index; open(); }
   function hostValues() { return {name: hostName.text, address: address.text, username: username.text, port: port.value,
-      identity: identity.text, project: project.text, resolution: resolution.text}; }
+      identity: identity.text, resolution: resolution.text}; }
   onOpened: {
     addingHost = false; editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1;
     loadHost(dialog.host);
@@ -78,7 +78,6 @@ FullPage {
             enabled: verified.checked && rampi.hostKey.fingerprints !== ""
             onClicked: { rampi.trustHost(dialog.hostValues()); verified.checked = false; }
           }
-          TextField { visible: false; id: project; text: dialog.host.project || ""; placeholderText: "C:\\Projects\\MeinProjekt"; Layout.fillWidth: true }
           Label { text: "Streaming-Auflösung · Breite x Höhe" }
           TextField { id: resolution; placeholderText: "1280x720"; Layout.fillWidth: true }
           RampiButton {

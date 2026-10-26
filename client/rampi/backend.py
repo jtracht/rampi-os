@@ -232,11 +232,9 @@ class Backend(QObject):
         self._board_filters = (project, priority, status)
         self.boardChanged.emit()
 
-
     @Property("QVariantMap", notify=changed)
     def hostKey(self):
         return self._host_key
-
 
     def _host_busy(self) -> bool:
         local = {"rdp", "stream", "stream-pair"}
@@ -249,9 +247,7 @@ class Backend(QObject):
         old = self.settings.hosts[self.settings.active_host] if self.settings.hosts else None
         new = candidate.hosts[candidate.active_host] if candidate.hosts else None
         if old != new and self._host_busy():
-            raise ValueError(
-                "Zuerst die lokalen Verbindungen schließen."
-            )
+            raise ValueError("Zuerst die lokalen Verbindungen schließen.")
         candidate.save()
         self.settings = candidate
         if old != new:
@@ -335,8 +331,6 @@ class Backend(QObject):
             return "Lokale Verbindungen geschlossen."
 
         self.jobs.submit("disconnect-clients", disconnect)
-
-
 
     @Property(str, constant=True)
     def logoUrl(self):

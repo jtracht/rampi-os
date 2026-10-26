@@ -59,19 +59,6 @@ pub fn streaming(host: &Host, pair: bool) -> Result<Vec<OsString>> {
     Ok(args)
 }
 
-pub fn rdp(host: &Host) -> Result<Vec<OsString>> {
-    host.validate()?;
-    Ok([
-        "wlfreerdp3".into(),
-        format!("/v:{}", host.address).into(),
-        format!("/u:{}", host.username).into(),
-        "/f".into(),
-        "/cert:tofu".into(),
-        "/dynamic-resolution".into(),
-        "/network:auto".into(),
-    ]
-    .to_vec())
-}
 #[cfg(test)]
 mod tests {
     use super::*;

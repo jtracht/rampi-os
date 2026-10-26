@@ -1,11 +1,8 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [switch]$Install,
-    [switch]$InstallMissing,
     [switch]$EnableOpenSsh,
     [switch]$EnableRdp,
-    [switch]$AllowNonTarget,
-    [string]$SourceRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+    [switch]$AllowNonTarget
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
