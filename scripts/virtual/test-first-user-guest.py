@@ -4,6 +4,7 @@ No account creation, password reset, replacement wizard or PAM bypass is allowed
 here. Keyboard input comes from the host through QEMU's existing QMP API.
 """
 
+import atexit
 import hashlib
 import json
 import os
@@ -29,6 +30,32 @@ def enabled(unit):
     return command("systemctl", "is-enabled", "--quiet", unit).returncode == 0
 
 
+def monitor_precredential_keyboard():
+    """Existing evtest observes only the designated emulated keyboard, without grab."""
+    devices = [
+        item for item in Path("/sys/class/input").glob("event*/device/name")
+        if item.read_text().strip() == "QEMU QEMU USB Keyboard"
+    ]
+    if len(devices) != 1:
+        raise RuntimeError("Exactly one emulated USB keyboard is required")
+    destination = CAPTURES / "first-user-precredential-input.log"
+    stream = destination.open("wb")
+    device = "/dev/input/" + devices[0].parents[1].name
+    process = subprocess.Popen(
+        ["stdbuf", "-oL", "evtest", device], stdout=stream, stderr=subprocess.STDOUT
+    )
+
+    def stop():
+        if process.poll() is None:
+            process.terminate()
+            process.wait(timeout=10)
+        stream.close()
+        destination.chmod(0o644)
+
+    atexit.register(stop)
+    return stop
+
+
 def main():
     if os.geteuid() or not Path("/etc/rampi-image-acceptance-vm").is_file():
         raise RuntimeError("Only in the disposable installed-image guest")
@@ -47,6 +74,7 @@ def main():
     # existing graphical test. Do not start greetd or alter stock userconf.
     api["configure_test_session"]()
     Path("/run/rampi-image-test-session-configured").touch()
+    stop_keyboard_monitor = monitor_precredential_keyboard()
     started = time.monotonic()
     seen = set()
     keyboard_seen = set()
@@ -70,6 +98,9 @@ def main():
                 phase = candidate
                 break
         if phase and phase not in seen:
+            # Finish the non-grabbing diagnostic before the host is allowed to
+            # send any username/password. No credential key event is recorded.
+            stop_keyboard_monitor()
             seen.add(phase)
             print("RAMPI_FIRST_USER_INPUT=" + phase, flush=True)
         elif phase is None:

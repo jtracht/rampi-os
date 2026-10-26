@@ -76,6 +76,7 @@ def drive(qmp_path, serial, credentials):
                 for character in value:
                     key(character)
                 key("ret")
+                print("RAMPI_FIRST_USER_QMP_SENT=" + phase, flush=True)
             time.sleep(0.3)
         raise TimeoutError("Pristine first-user wizard exceeded its input deadline")
     finally:

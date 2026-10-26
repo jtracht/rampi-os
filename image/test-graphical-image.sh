@@ -62,7 +62,7 @@ sudo chmod 755 "$work/root/usr/sbin/policy-rc.d"
 sudo rm -f "$work/root/etc/resolv.conf"
 sudo cp -L /etc/resolv.conf "$work/root/etc/resolv.conf"
 sudo chroot "$work/root" dpkg-query -W | tee "$work/packages-before.tsv" > /dev/null
-sudo chroot "$work/root" /bin/sh -ec 'apt-get update -qq; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends wtype grim wlrctl python3-pil; apt-get clean' 2>&1 | tee "$output/test-support-install.log"
+sudo chroot "$work/root" /bin/sh -ec 'apt-get update -qq; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends wtype grim wlrctl python3-pil evtest; apt-get clean' 2>&1 | tee "$output/test-support-install.log"
 sudo chroot "$work/root" dpkg-query -W | tee "$work/packages-after.tsv" > /dev/null
 python3 - "$work/packages-before.tsv" "$work/packages-after.tsv" <<'PY'
 import sys
@@ -197,7 +197,7 @@ data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=Fals
             guest_exit_code=int(sys.argv[6]) if sys.argv[6] else None,
             stopped_after_synced_guest_result=bool(sys.argv[6]),
             temporary_dtb_watchdog_disabled=True,
-            test_support_packages=["wtype", "grim", "wlrctl", "python3-pil"])
+            test_support_packages=["wtype", "grim", "wlrctl", "python3-pil", "evtest"])
 (directory / "environment.json").write_text(json.dumps(data, indent=2) + "\n")
 PY
 [[ "$guest_result" == 0 ]]
