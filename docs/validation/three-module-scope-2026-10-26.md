@@ -24,6 +24,14 @@ Das persönliche Modell erhält alte Projektwerte beim Bearbeiten eines Hosts;
 dies prüft die echte GTK-Hostbearbeitung. Die eingebettete RDW-/IronRDP-Verbindung,
 OpenSSH-Schlüsselverwaltung und lokale Systemterminals bleiben erhalten.
 
+Die erste neue Imageprüfung deckte eine übrig gebliebene Diagnoseabhängigkeit
+auf: `gdbus` wurde nur zum Protokollieren von Schlüsselbundmetadaten verwendet,
+musste aber im netzunabhängigen QEMU-Gast nachinstalliert werden. Diese Ausgabe
+und Abhängigkeit entfallen. Tatsächliches Speichern/Laden über den Rust-Adapter,
+Dateitrennung und erneute PAM-Anmeldung bleiben unverändert. Benötigte Testtools
+werden vor dem Boot bereitgestellt; während der Abnahme werden keine Pakete oder
+Bibliotheken des installierten Gasts aktualisiert.
+
 Der GTK-Test aktiviert alle drei tatsächlichen Dashboardkacheln, prüft ihre
 Zielseiten und den Rückweg sowie genau ein Fenster. Der Container hat dabei
 keinen Netzwerkzugang. Er verlangt zusätzlich drei Kacheln und keine alten

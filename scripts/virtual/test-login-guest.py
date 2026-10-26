@@ -112,60 +112,11 @@ def native_keyring(user, mode, attribute, secret):
         raise RuntimeError("Native Secret Service acceptance result missing")
 
 
-def keyring_state(user):
-    # Collection identity/lock state is diagnostic metadata, never a secret.
-    for alias in ["default", "login"]:
-        result = as_user(
-            user,
-            "gdbus",
-            "call",
-            "--session",
-            "--dest",
-            "org.freedesktop.secrets",
-            "--object-path",
-            "/org/freedesktop/secrets",
-            "--method",
-            "org.freedesktop.Secret.Service.ReadAlias",
-            alias,
-            check=False,
-        )
-        print(
-            f"RAMPI_PAM_KEYRING_ALIAS {user} {alias}: status={result.returncode} "
-            + result.stdout.decode().strip()
-            + " "
-            + result.stderr.decode().strip(),
-            flush=True,
-        )
-    result = as_user(
-        user,
-        "gdbus",
-        "call",
-        "--session",
-        "--dest",
-        "org.freedesktop.secrets",
-        "--object-path",
-        "/org/freedesktop/secrets/aliases/default",
-        "--method",
-        "org.freedesktop.DBus.Properties.Get",
-        "org.freedesktop.Secret.Collection",
-        "Locked",
-        check=False,
-    )
-    print(
-        f"RAMPI_PAM_KEYRING_LOCKED {user}: status={result.returncode} "
-        + result.stdout.decode().strip()
-        + " "
-        + result.stderr.decode().strip(),
-        flush=True,
-    )
-
-
 def keyring_store(user, attribute, secret):
     # Exercise the real Secret Service. Never feed a keyring password or invoke
     # its unlock method: only the preceding greetd/PAM login may unlock it.
     # The production adapter must work before libsecret can create or select a
     # collection on its behalf. This prevents a generic CLI masking a Rampi bug.
-    keyring_state(user)
     native_keyring(user, "store", attribute, secret)
     as_user(
         user,
@@ -289,9 +240,10 @@ def main():
     ):
         raise SystemExit("Only inside the designated isolated QEMU guest")
     os.umask(0o077)
-    for executable, package in [("wlrctl", "wlrctl"), ("gdbus", "libglib2.0-bin")]:
-        if shutil.which(executable) is None:
-            run("apt-get", "install", "-y", "--no-install-recommends", package)
+    # Provision test tools before boot. The installed-image guest has no
+    # package-network dependency, and acceptance must not update its libraries.
+    if shutil.which("wlrctl") is None:
+        raise RuntimeError("Test guest was not provisioned with wlrctl")
     if image_test:
         # The image's actual installed program, assets, launchers and greeter
         # profile stay in place. Only fixture accounts and headless test input
