@@ -6,25 +6,25 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 
 | Bereich | Vorhanden | Wesentliche offene Arbeit |
 |---|---|---|
-| Sitzung/Dashboard | Rust/GTK/labwc, drei Module, Live-Status, Offline-Bedienung | Gesamtabnahme aller externen Module |
+| Sitzung/Dashboard | Rust/GTK/labwc, drei abgenommene native Module, Live-Status, Offline-Bedienung | Gesamtprodukt bleibt eine Vorabversion |
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
-| Einrichtung | Fortsetzbare 12 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
-| Linux-Konto | Grafischer greetd-/PAM-Login mit Original-Branding, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd und private SSH-Agenten auf AMD64/ARM64 abgenommen | Neue Image-Abnahme der durchgängigen PAM-/Schlüsselbund-Entsperrung |
+| Einrichtung | Fortsetzbare 12 Stationen und gemeinsame Einstellungen | Sprach-/Localewechsel und weitere Einrichtungsrandfälle |
+| Linux-Konto | Grafischer greetd-/PAM-Login mit Original-Branding, eigenes passwd, Abmeldung, private SSH-Agenten und persönliche Schlüsselbünde | Softwareabnahme einschließlich Streaming-Geheimnissen und erneuter Anmeldung im neuen Image bestanden |
 | WLAN | Eigene integrierte Seite; sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private Profile; WPA2, sichtbares/verstecktes WPA3, DHCP und Kontentrennung in frischen AMD64-/ARM64-QEMU-Gästen abgenommen | Unternehmensnetze benötigen vorhandenes NM-Profil; physische Funkqualität ausgeschlossen |
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart; Mehradapteroberfläche und tatsächliche virtuelle BlueZ-Bindungen auf AMD64/ARM64 abgenommen | Durchgängige HID-/Remote-Eingabeabnahmen; physischer Funk ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
-| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; kein zusätzlicher Sitzungsadapter erforderlich | Windows-NLA nicht gegen einen Windows-Testhost geprüft |
+| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; kein zusätzlicher Sitzungsadapter erforderlich | Windows-NLA und Konten-/Sitzungszuordnung softwareseitig absichern; Windows-Testhosts sind ausgeschlossen |
 | Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
-| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettete Moonlight-/GStreamer-Seite mit privater Kopplung | Versionsgebundene Streaming-/Image-Nachweise vor Freigabe verpflichtend; Windows-NLA und Pi-Decoderpfad offen |
+| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettetes Moonlight-/GStreamer-Streaming mit privater Kopplung und Dauerlastprüfung | Windows-NLA und Pi-Decoderpfad offen; Sunshine gibt über die Kopplung seine Host-Sitzung frei |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
-| Image/Release | Gebauter nativer Kandidat, Lizenzen/Provenienz, QEMU-Boot und grafische PAM-Anmeldung mit zwei Konten | Reguläre native Release-Funktionsgleichheit |
+| Image/Release | Veröffentlichtes v0.6.0-dev.2, vollständige Quellen/Lizenzen, QEMU-Boot, grafische PAM-Anmeldung mit zwei Konten und unabhängig geprüfte öffentliche Downloads | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
 
 ## Fehler eingrenzen
 
 **Host nicht erreichbar:** Aktives Profil, Hostadresse, SSH-Port und VPN prüfen.
 Die Anzeige prüft nur TCP. „Erreichbar“ bestätigt weder Windows-Version noch
-Benutzeranmeldung oder Anbieter-CLI. Der Laptop muss eingeschaltet sein.
+Benutzeranmeldung. Der Laptop muss eingeschaltet sein.
 
 **SSH lehnt den Host ab:** Den Ed25519-Fingerprint unabhängig auf Windows anzeigen
 und vergleichen. Einen geänderten bestehenden Hosteintrag nicht blind löschen;
@@ -34,7 +34,7 @@ zuerst die Identität klären. Private Schlüssel gehören nicht in Fehlerberich
 Das gespeicherte aktive Hostprofil prüfen und unter **Host & SSH** den
 **Aktiven SSH-Schlüssel entsperren**. Die Eingabe erfolgt im eingebetteten
 OpenSSH-Terminal. Der Agent muss in derselben Linux-Anmeldung erreichbar sein.
-Die erweiterte Sitzung wird erst nach der vollständigen CI freigegeben.
+Die persönliche SSH-Agent-Sitzung ist in den frischen Anmeldetests abgenommen.
 
 **Vorhandener WLAN-Zugang scheitert:** Das tatsächlich verwendete NM-Profil prüfen.
 Eine neue Kennworteingabe ersetzt dessen gespeichertes Geheimnis nicht automatisch.

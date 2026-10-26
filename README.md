@@ -1,14 +1,13 @@
 # Rampi OS
 
 Native Remote-Arbeitsumgebung für Raspberry Pi 3 Model B+ und Windows 11 Pro.
-Die Anwendung und ihre Oberfläche werden auf **Rust / GTK 4 / Wayland** umgestellt.
+Die native Anwendung und ihre Oberfläche verwenden **Rust / GTK 4 / Wayland**.
 Die neue Sitzung verwendet labwc und benötigt kein `startx`. Terminals und Browser
 werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
 weiterhin vorhandene Systemdienste. Eigenentwickelter Code: Apache-2.0.
 
-**Aktuell: Rust-Port in Entwicklung; noch kein neuer regulärer Release.**
-Zuletzt abgenommener Gesamtstand vor der Umfangsänderung: **81 %**; Bewertung und offene Arbeiten stehen in
-[PROGRESS.md](docs/PROGRESS.md).
+**Aktuell: 90,5 % (86/95 Punkte im Drei-Modul-Umfang); native Vorabversion.**
+Bewertung, Abnahmen und offene Arbeiten stehen in [PROGRESS.md](docs/PROGRESS.md).
 Die [Migrationsübersicht](docs/RUST-MIGRATION.md) nennt Quellcode, Start,
 softwareseitige Nachweise und verbleibende Funktionen. Der frühere Stand von
 ca. 75 % gehört zum Python-/QML-Prototyp; er wird nicht als Fertigstellungsgrad
@@ -19,8 +18,10 @@ Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Rust wird mit
 Docker/Wayland, nativer ARM64-CI und anschließend neuen Image-/QEMU-Tests geprüft.
 
 Rampi umfasst drei Hauptmodule: **Kanban**, **Remote Desktop** und **Browser**.
-Das veröffentlichte [v0.6.0-dev.1](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.1)
-enthält noch den früheren Funktionsumfang; neue Änderungen verändern alte Images nicht.
+[v0.6.0-dev.2](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.2)
+enthält ein frisch gebautes und grafisch in QEMU geprüftes ARM64-Image mit
+eingebettetem Streaming, RDP und persönlichen PAM-Schlüsselbünden. Alle 28 öffentlichen
+Dateien wurden nach Veröffentlichung unabhängig geprüft. Alte Releases bleiben unverändert.
 
 ## Rust-Entwicklung unter Linux
 
@@ -59,9 +60,11 @@ Der native Checkout benötigt ein dazu gebautes ARM64-Programm unter
 ```sh
 ./setup.sh --check
 sudo ./setup.sh --install
-# Optional vorhandene Tailscale-/Moonlight-Installationen erkennen, sonst ergänzen:
-sudo ./setup.sh --install --with-extras
 ```
+
+Der native Installer verwendet eine kompatible vorhandene Moonlight-C-Bibliothek
+oder baut ausschließlich das offizielle Bibliotheksziel. Ein externer Player ist
+für das integrierte Streaming nicht erforderlich.
 
 Im vorhandenen Anmeldebildschirm die Sitzung **Rampi** wählen. Das Skript prüft
 Pakete, verändert keine Firmwareeinstellungen und ersetzt keine vorhandenen

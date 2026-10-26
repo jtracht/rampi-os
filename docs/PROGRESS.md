@@ -9,33 +9,35 @@ Prozentwert vergleichbar. Nach Abzug der früheren drei Anbieter-CLI-Punkte
 beträgt die vergleichbare Basis **78/95 = 82,1 %**. Die entfernten fünf möglichen
 Punkte werden nicht auf andere Bereiche verteilt.
 
-Die Drei-Modul-Abnahme **81/95 = 85,3 %** ist bestanden und in `86c208a`
-integriert. Allgemeine und native Push-CI sind erfolgreich; die unabhängigen
-Programm-, Login-, Radio-, Paket- und frischen Image-Nachweise bestehen.
-Der aktuelle Streaming-Entwicklungszweig ist darin noch nicht enthalten. [Umfang, Kriterien und Nachweise](validation/three-module-scope-2026-10-26.md).
+Aktuell abgenommen sind **86/95 = 90,5 %**. Das veröffentlichte
+[v0.6.0-dev.2](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.2)
+enthält den integrierten Drei-Modul-Stand mit eingebettetem Streaming. Allgemeine
+und native main-CI, unabhängige Programm-/Konten-/Paketprüfungen, frischer Imagebau,
+grafische Image-Anmeldung und Kontrolle aller öffentlichen Downloads bestehen.
+[Abnahme und offene Punkte](validation/native-streaming-dev2-release.md).
 
-| Bereich | Basis / 5 | Nach bestandener Zielabnahme / 5 |
+| Bereich | Basis / 5 | Aktuell abgenommen / 5 |
 |---|---:|---:|
 | Grafische Sitzung und Dashboard | 4 | 5 |
 | Tastatur und Maus | 4 | 4 |
 | Setup-Assistent | 4 | 4 |
-| Linux-Konten und Login | 4 | 4 |
+| Linux-Konten und Login | 4 | 5 |
 | WLAN | 5 | 5 |
 | Bluetooth | 4 | 4 |
 | VPN | 4 | 4 |
 | Windows-Host | 4 | 4 |
-| Remote Desktop und Streaming | 3 | 3 |
+| Remote Desktop und Streaming | 3 | 4 |
 | Kanban | 4 | 4 |
 | Browser | 5 | 5 |
 | Installer und Reparatur | 4 | 5 |
 | Sicherheit und Isolation | 4 | 4 |
 | Design und Branding | 4 | 4 |
 | GitHub und CI/CD | 4 | 5 |
-| Systemimage | 4 | 4 |
+| Systemimage | 4 | 5 |
 | Manuelle Updates | 5 | 5 |
-| Dokumentation | 4 | 4 |
-| Performance | 4 | 4 |
-| **Summe** | **78 / 95** | **81 / 95** |
+| Dokumentation | 4 | 5 |
+| Performance | 4 | 5 |
+| **Summe** | **78 / 95** | **86 / 95** |
 
 Die Bewertungsstufen bleiben unverändert: 0 fehlt, 1 Grundlage, 2 teilweise,
 3 wesentliche Funktionen, 4 weitgehend umgesetzt und softwaregeprüft,
@@ -52,11 +54,10 @@ GitHub/CI/CD ergänzt den erfolgreich veröffentlichten nativen Entwicklungsrele
 mit frischem Image und vollständig unabhängig geprüften öffentlichen Downloads.
 Die genauen Grenzen und Artefaktzuordnungen stehen im verlinkten Nachweis.
 
-Das veröffentlichte [v0.6.0-dev.1](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.1)
-ist eine ausdrücklich unvollständige Vorabversion und enthält die spätere
-Schlüsselbundintegration und KI-Entfernung noch nicht. Ein bestehendes Image
-wird niemals still durch neueren Code ersetzt. Reguläre Release-Funktionsgleichheit,
-eingebettetes Streaming, Sprachwechsel und Windows-NLA bleiben offen.
+Das neue Release bleibt eine ausdrücklich unvollständige Vorabversion.
+Das frühere dev1-Release bleibt unverändert. Streaming, PAM-Schlüsselbünde und
+die Entfernung der KI-Module sind jetzt im neuen Image enthalten. Sprachwechsel,
+Windows-NLA und die weiteren dokumentierten Funktionsdetails bleiben offen.
 Physische Hardwaretests und Windows-Testhosts sind auf Nutzerwunsch ausgeschlossen.
 Es werden keine Modellanfragen ausgelöst.
 
@@ -66,13 +67,12 @@ Es werden keine Modellanfragen ausgelöst.
 [Entwicklung](NATIVE-DEVELOPMENT.de.md), [Umfang und Fehlerhilfe](NATIVE-SUPPORT.de.md).
 
 
-## Nächster vereinbarter Meilenstein: mindestens 90 Prozent
+## Abgenommener 90-Prozent-Meilenstein
 
-Der Nenner bleibt unverändert bei 95 Punkten. Der nächste Kandidat zielt auf
-**86/95 = 90,5 %**, erhält diese Bewertung aber erst nach vollständiger Abnahme.
-Bis dahin bleibt der bestätigte Gesamtstand bei **85,3 %**.
+Der Nenner bleibt unverändert bei 95 Punkten. Die vorab festgelegte Erweiterung
+ist mit **86/95 = 90,5 %** bestanden.
 
-| Bereich | Bestätigt / 5 | Kandidat nach vollständiger Abnahme / 5 |
+| Bereich | Vor der Erweiterung / 5 | Jetzt abgenommen / 5 |
 |---|---:|---:|
 | Linux-Konten und Login | 4 | 5 |
 | Remote Desktop und Streaming | 3 | 4 |
@@ -80,18 +80,16 @@ Bis dahin bleibt der bestätigte Gesamtstand bei **85,3 %**.
 | Dokumentation | 4 | 5 |
 | Performance | 4 | 5 |
 
-Alle übrigen Bereiche behalten ihre bestehende Bewertung. Konten benötigen die
-vollständigen persönlichen Zugangsdatenpfade einschließlich Streaming-Geheimnissen
-über frische PAM-Anmeldungen und erneute Anmeldung beider Benutzer. Streaming
-benötigt die tatsächliche eingebettete Bild-/Eingabe-/Kopplungsabnahme. Performance
-benötigt zusätzlich zu den bisherigen Mischlastprüfungen den vorab definierten
-zehnminütigen bewegten Stream unter 1 GiB/vier CPUs auf beiden Architekturen.
-Dokumentation muss die tatsächlichen drei Module, Bedienung, Installation,
-Rückwechsel und Grenzen vollständig beschreiben. Systemimage benötigt die native
-Funktionsgleichheit dieser drei Module sowie einen neu veröffentlichten,
-unabhängig heruntergeladenen und mit vollständigen Quellen geprüften Versionsstand.
-Dies ist die Softwareabnahme des Images; `regular_release` bleibt für das noch
-unvollständige Gesamtprodukt ausdrücklich `false`.
+Alle übrigen Bereiche behalten ihre bestehende Bewertung. Frische PAM-Anmeldungen,
+erneute Anmeldung und persönliche Streaming-Geheimnisse beider Konten bestehen.
+Die tatsächliche eingebettete Bild-/Eingabe-/Kopplungsabnahme und der vorab definierte
+zehnminütige bewegte Stream unter 1 GiB/vier CPUs bestehen auf beiden Architekturen.
+Bedienung, Installation, Rückwechsel und Grenzen der drei Module sind dokumentiert.
+Der neue native Versionsstand wurde mit vollständigen Quellen veröffentlicht und
+anschließend tatsächlich heruntergeladen und unabhängig geprüft. Die detaillierten
+Nachweise und die verbleibenden neun Punkte stehen in der
+[Release-Abnahme](validation/native-streaming-dev2-release.md).
+`regular_release` bleibt für das unvollständige Gesamtprodukt ausdrücklich `false`.
 
 [Kriterien für die Erweiterung](validation/native-streaming-ui-2026-10-26.md).
 Eine lokale Komponentenprüfung, Testanzahl oder Wartezeit allein gibt keinen

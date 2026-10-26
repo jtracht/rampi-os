@@ -240,7 +240,9 @@ Im Remote-Modul **Desktop-Streaming · integriert** öffnen. Auf dem aktiven Hos
 muss Sunshine erreichbar sein. **Host neu koppeln** zeigt einen PIN direkt auf
 der Rampi-Seite; diesen im Sunshine-Host bestätigen. Die bestätigte Identität
 liegt im persönlichen Linux-Schlüsselbund, getrennt nach Host und Windows-Konto.
-Eine andere Linux-Anmeldung verwendet ihren eigenen Schlüsselbund. Private
+Eine andere Linux-Anmeldung verwendet ihren eigenen Schlüsselbund. Die Windowskennung
+trennt die gespeicherten Profile. Sunshine gibt mit der bestätigten Kopplung seine
+Host-Sitzung frei. Für eine gesonderte Windows-Kontoanmeldung steht RDP zur Verfügung. Private
 Schlüssel werden nicht in die normale Konfiguration oder Befehlszeile geschrieben.
 
 **Kopplung laden / Anwendungen aktualisieren** verwendet eine gespeicherte

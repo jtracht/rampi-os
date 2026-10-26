@@ -1,12 +1,15 @@
 # Native Installation, Updates und Wiederherstellung
 
 Zielsystem ist Raspberry Pi OS Lite Trixie ARM64 auf dem Pi 3 B+.
-Der Installer verwendet ein vorab gebautes ARM64-Programm; er kompiliert nicht
-auf dem Gerät. Es gibt noch kein reguläres natives Release. Verwende bis zur Freigabe einen
-nachgewiesenen Entwicklungsbau. Verwende ausschließlich vollständig grüne CI-Läufe.
+Der Installer verwendet ein vorab gebautes ARM64-Rust-Programm. Eine kompatible
+vorhandene Moonlight-C-Bibliothek bleibt erhalten; fehlt sie, baut der Installer
+das geprüfte offizielle Bibliotheksziel aus den festgelegten Quellen.
+[v0.6.0-dev.2](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.2) ist die
+geprüfte native Vorabversion. Ein reguläres Gesamtprodukt-Release steht noch aus.
+Verwende ausschließlich vollständig grüne CI-Läufe.
 Das CI-Artefakt `native-installer-arm64` enthält
 Quellarchiv, ARM64-Paket, Installer und Prüfsummen für denselben Stand.
-Das einzelne veröffentlichte `setup.sh` lädt künftig beide passenden Archive über
+Das einzelne veröffentlichte `setup.sh` lädt beide passenden Archive über
 HTTPS, prüft jede SHA256-Summe und gleicht Quellrevision und Binary ab, bevor der
 Installer läuft. Es installiert niemals selbstständig zu einem späteren Zeitpunkt.
 
