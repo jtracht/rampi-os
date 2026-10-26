@@ -22,6 +22,16 @@ if [ -L "$session_config" ] || [ ! -O "$session_config" ]; then
     echo 'Unsicherer persönlicher Sitzungsordner.' >&2; exit 1
 fi
 chmod 700 "$session_config"
+# PAM may provide XDG_RUNTIME_DIR without setting the session bus address.
+# Reuse the existing personal systemd/D-Bus session before creating a bus.
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -n "${XDG_RUNTIME_DIR:-}" ] \
+    && [ -S "$XDG_RUNTIME_DIR/bus" ] && [ -O "$XDG_RUNTIME_DIR/bus" ]; then
+    personal_bus="unix:path=$XDG_RUNTIME_DIR/bus"
+    if busctl --address="$personal_bus" --timeout=3 --no-pager call \
+        org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus GetId >/dev/null 2>&1; then
+        export DBUS_SESSION_BUS_ADDRESS="$personal_bus"
+    fi
+fi
 if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
     exec dbus-run-session -- labwc -C "$session_config" -c /etc/xdg/rampi/labwc/rc.xml -S /usr/local/bin/rampi-wayland-start
 fi

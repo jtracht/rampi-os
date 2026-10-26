@@ -19,6 +19,8 @@ if "RAMPI_STREAM_NATIVE_C_LIFECYCLE_OK" not in (directory / "stream-media.log").
 runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.py")))["check"](
     directory / "streaming-live"
 )
+if "RAMPI_KEYRING_PROFILE_PRESERVATION_OK" not in (directory / "keyring-profile.log").read_text():
+    raise SystemExit("Actual unprivileged keyring profile preservation did not pass")
 runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"](
     directory / "gitea-live"
 )
@@ -42,13 +44,15 @@ for marker in [
 log = (directory / "wayland.log").read_text(encoding="utf-8")
 markers = [
     "RAMPI_RUST_FIRST_RUN_KEYBOARD_OK",
+    "RAMPI_RUST_SETUP_PUBLISHED_RESUME_OK",
     "RAMPI_RUST_UI_OK",
+    "RAMPI_RUST_NO_PROVIDER_ROUTES_OK",
+    "RAMPI_RUST_THREE_MODULE_NAVIGATION_OK",
     "RAMPI_RUST_SETUP_HOSTS_OK",
     "RAMPI_RUST_SETUP_ALL_ROUTES_OK",
     "RAMPI_RUST_SSH_TRUST_OK",
     "RAMPI_RUST_SSH_AGENT_UNLOCK_OK",
     "RAMPI_RUST_SSH_AGENT_LIFETIME_OK",
-    "RAMPI_RUST_AI_SESSION_PAGES_OK",
     "RAMPI_RUST_DASHBOARD_STATUS_OK",
     "RAMPI_RUST_SYSTEM_SETTINGS_OK",
     "RAMPI_RUST_WAYLAND_KEYBOARD_OK",

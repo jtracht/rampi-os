@@ -30,9 +30,6 @@ ApplicationWindow {
   property var selectedCard: ({title: "", description: "", project: "", priority: "", status: ""})
   readonly property var modules: [
     {title: "Kanban Board", subtitle: "Projekte im Blick", caption: "READ ONLY  |  PROJECTS", symbol: "▥", accent: "#ff3c61", key: "kanban", dark: false},
-    {title: "ChatGPT", subtitle: "Codex", caption: "CHAT  |  CODE  |  CREATE", symbol: "⌘", accent: "#087cf5", key: "codex", dark: false},
-    {title: "Claude", subtitle: "Claude Code", caption: "ANALYZE  |  BUILD  |  THINK", symbol: "✳", accent: "#ffd53d", key: "claude", dark: true},
-    {title: "Gemini", subtitle: "Antigravity CLI", caption: "RESEARCH  |  MULTIMODAL", symbol: "✦", accent: "#15cbbb", key: "antigravity", dark: true},
     {title: "Remote Desktop", subtitle: "Deine Windows-Workstation", caption: "STREAMING  |  RDP", symbol: "▱", accent: "#4934c8", key: "remote", dark: false},
     {title: "Webbrowser", subtitle: "Dein Fenster ins Web", caption: "BROWSE  |  WORK  |  STREAM", symbol: "◎", accent: "#1d3448", key: "browser", dark: false}
   ]
@@ -101,18 +98,18 @@ ApplicationWindow {
         LiquidTile {
           required property var modelData
           required property int index
-          width: (tiles.width - 10) / 6; height: tiles.height
+          width: (tiles.width - tiles.spacing * (window.modules.length - 1)) / window.modules.length; height: tiles.height
           title: modelData.title; subtitle: modelData.subtitle
           caption: modelData.caption; symbol: modelData.symbol
-          iconFile: ["columns-3", "terminal", "asterisk", "sparkles", "monitor", "globe"][index]
+          iconFile: ["columns-3", "monitor", "globe"][index]
           startupDelay: index * 35
           accent: modelData.accent; darkInk: modelData.dark
           selected: window.selected === index
           reducedMotion: rampi.configuration.reduce_motion
           onActiveFocusChanged: if (activeFocus) window.selected = index
           onActivated: window.activate(index)
-          Keys.onRightPressed: { window.keyboardMode = true; tileRepeater.itemAt((index + 1) % 6).forceActiveFocus(); }
-          Keys.onLeftPressed: { window.keyboardMode = true; tileRepeater.itemAt((index + 5) % 6).forceActiveFocus(); }
+          Keys.onRightPressed: { window.keyboardMode = true; tileRepeater.itemAt((index + 1) % window.modules.length).forceActiveFocus(); }
+          Keys.onLeftPressed: { window.keyboardMode = true; tileRepeater.itemAt((index + window.modules.length - 1) % window.modules.length).forceActiveFocus(); }
           Component.onCompleted: if (index === 0) forceActiveFocus()
         }
       }
@@ -225,7 +222,7 @@ ApplicationWindow {
       columns: 2; columnSpacing: 12; rowSpacing: 12
       visible: window.page === "dashboard"
       Repeater {
-        model: [window.modules[1], window.modules[2], window.modules[3], window.modules[5]]
+        model: [window.modules[1], window.modules[2]]
         Panel {
           required property var modelData
           Layout.fillWidth: true; Layout.fillHeight: true
@@ -233,7 +230,7 @@ ApplicationWindow {
             anchors.fill: parent; anchors.margins: 14; spacing: 8
             Item {
               Layout.fillWidth: true; Layout.preferredHeight: 28
-              Image { id: previewIcon; anchors.left: parent.left; width: 28; height: 28; source: "../icons/" + ({codex: "terminal-preview", claude: "asterisk-preview", antigravity: "sparkles-preview", browser: "globe"})[modelData.key] + ".svg"; sourceSize: Qt.size(28, 28) }
+              Image { id: previewIcon; anchors.left: parent.left; width: 28; height: 28; source: "../icons/" + ({remote: "monitor", browser: "globe"})[modelData.key] + ".svg"; sourceSize: Qt.size(28, 28) }
               Text { anchors { left: previewIcon.right; leftMargin: 8; right: previewStatus.left; rightMargin: 8; verticalCenter: parent.verticalCenter } text: modelData.title + (modelData.key === "browser" ? "" : " / " + modelData.subtitle); color: "#edf3fa"; font.pixelSize: 15; font.bold: true; elide: Text.ElideRight }
               Rectangle { id: previewStatus; anchors { right: parent.right; verticalCenter: parent.verticalCenter } width: 8; height: 8; radius: 3; color: "#627487" }
             }
@@ -241,8 +238,8 @@ ApplicationWindow {
               Layout.fillWidth: true; Layout.fillHeight: true; radius: 10; color: "#080f17"
               ColumnLayout {
                 anchors.fill: parent; anchors.margins: 13; spacing: 9
-                Text { Layout.fillWidth: true; elide: Text.ElideRight; text: modelData.key === "browser" ? rampi.configuration.browser_url : "> " + (modelData.key === "antigravity" ? "agy" : modelData.key); color: modelData.key === "browser" ? "#78b9ff" : "#55d98b"; font.family: "monospace"; font.pixelSize: 13 }
-                Text { Layout.fillWidth: true; Layout.fillHeight: true; text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : rampi.previews[modelData.key]; clip: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: "#9cacbe"; font.family: "monospace"; font.pixelSize: 12; lineHeight: 1.3 }
+                Text { Layout.fillWidth: true; elide: Text.ElideRight; text: modelData.key === "browser" ? rampi.configuration.browser_url : "Windows-Desktop"; color: modelData.key === "browser" ? "#78b9ff" : "#55d98b"; font.family: "monospace"; font.pixelSize: 13 }
+                Text { Layout.fillWidth: true; Layout.fillHeight: true; text: modelData.key === "browser" ? "Lokaler Browser · eigenes Profil" : "Persönliches Hostprofil · RDP oder Streaming"; clip: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: "#9cacbe"; font.family: "monospace"; font.pixelSize: 12; lineHeight: 1.3 }
                 Text { Layout.fillWidth: true; visible: modelData.key === "browser" || !rampi.configuration.hosts.length; text: modelData.key === "browser" ? "Zum Öffnen auswählen →" : "Windows-Host noch nicht eingerichtet"; wrapMode: Text.WordWrap; color: "#6f8498"; font.pixelSize: 11 }
               }
             }

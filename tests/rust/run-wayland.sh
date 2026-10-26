@@ -45,7 +45,6 @@ wait "$keyboard_pid"
 python3 tests/rust/test-dashboard.py
 timeout 45 python3 tests/rust/test-ssh-agent-session.py
 ssh-agent -- python3 tests/rust/test-ssh-setup.py
-python3 tests/rust/test-ai-pages.py
 timeout 20 /build/target/debug/rampi-native --setup-ui-check
 timeout 40 /build/target/debug/rampi-native --system-ui-check
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then

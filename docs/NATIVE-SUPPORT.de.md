@@ -6,15 +6,14 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 
 | Bereich | Vorhanden | Wesentliche offene Arbeit |
 |---|---|---|
-| Sitzung/Dashboard | Rust/GTK/labwc, sechs Module, Live-Status, Offline-Bedienung | Gesamtabnahme aller externen Module |
+| Sitzung/Dashboard | Rust/GTK/labwc, drei Module, Live-Status, Offline-Bedienung | Gesamtabnahme aller externen Module |
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
-| Einrichtung | Fortsetzbare 15 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
-| Linux-Konto | Grafischer greetd-/PAM-Login mit Original-Branding, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd und private SSH-Agenten auf AMD64/ARM64 abgenommen | Durchgängige PAM-/Schlüsselbund-Entsperrung und reguläre Release-Abnahme |
+| Einrichtung | Fortsetzbare 12 Stationen und gemeinsame Einstellungen | Vollständige Anbieter-Einrichtung, Sprachwechsel |
+| Linux-Konto | Grafischer greetd-/PAM-Login mit Original-Branding, eigenes passwd, Abmeldung; neue Konten über sudo/useradd/passwd und private SSH-Agenten auf AMD64/ARM64 abgenommen | Neue Image-Abnahme der durchgängigen PAM-/Schlüsselbund-Entsperrung |
 | WLAN | Eigene integrierte Seite; sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private Profile; WPA2, sichtbares/verstecktes WPA3, DHCP und Kontentrennung in frischen AMD64-/ARM64-QEMU-Gästen abgenommen | Unternehmensnetze benötigen vorhandenes NM-Profil; physische Funkqualität ausgeschlossen |
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart; Mehradapteroberfläche und tatsächliche virtuelle BlueZ-Bindungen auf AMD64/ARM64 abgenommen | Durchgängige HID-/Remote-Eingabeabnahmen; physischer Funk ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
-| Windows/KI | Persönliche Hosts, OpenSSH-Schlüssel/Trust, bestehender nativer psmux-/ConPTY-Adapter | Zusammenhängende Windows-11-Pro-Abnahme mit neuer Oberfläche und Anbieteranmeldungen |
-| Antigravity | Offizielle Windows-CLI `agy`, eigene Einrichtungs-/Sitzungsseite und Installationsprüfung | Persönliche Installation, Anmeldung und tatsächliche Anbieteranfrage |
+| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; kein zusätzlicher Sitzungsadapter erforderlich | Windows-NLA nicht gegen einen Windows-Testhost geprüft |
 | Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
 | RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; Moonlight-Aufruf | Windows-NLA, integriertes Streaming und Pi-Decoderpfad |

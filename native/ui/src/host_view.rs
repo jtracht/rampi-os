@@ -24,7 +24,6 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         ("Windows-Benutzername", "username"),
         ("SSH-Port", "port"),
         ("Privater SSH-Schlüssel · Dateipfad", "identity"),
-        ("Projektverzeichnis auf Windows", "project"),
         ("Streaming-Auflösung · z. B. 1280x720", "resolution"),
     ] {
         page.append(&label(name));
@@ -43,7 +42,6 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
                 host.username.clone(),
                 host.port.to_string(),
                 host.identity.clone(),
-                host.project.clone(),
                 host.resolution.clone(),
             ]) {
                 field.set_text(&value);
@@ -128,14 +126,18 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
     );
     save.connect_clicked(move |_| {
         let result = (|| -> anyhow::Result<()> {
+            let project = e
+                .get()
+                .and_then(|index| c.borrow().hosts.get(index).map(|host| host.project.clone()))
+                .unwrap_or_default();
             let host = Host {
                 name: fields[0].text().trim().into(),
                 address: fields[1].text().trim().into(),
                 username: fields[2].text().trim().into(),
                 port: fields[3].text().parse()?,
                 identity: fields[4].text().trim().into(),
-                project: fields[5].text().into(),
-                resolution: fields[6].text().trim().into(),
+                project,
+                resolution: fields[5].text().trim().into(),
             };
             let mut candidate = c.borrow().clone();
             let index = if let Some(index) = e.get() {

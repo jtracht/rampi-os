@@ -142,7 +142,11 @@ def check(directory, revision, lock):
     }
     if binaries != image_packages:
         raise ValueError("Distro source inventory differs from installed image packages")
-    entries = inventory(directory / "dependency-sources.tar.xz", "opt/rampi-corresponding-sources")
+    source_archive = runpy.run_path(str(Path(__file__).with_name("release-assets.py")))[
+        "source_archive"
+    ]
+    with source_archive(directory) as source:
+        entries = inventory(source, "opt/rampi-corresponding-sources")
     if entries["packages-and-sources.tsv"]["data"] != manifest:
         raise ValueError("Distro source archive uses a different package manifest")
     proof = json.loads(entries["source-archives.json"]["data"])

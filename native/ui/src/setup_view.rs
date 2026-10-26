@@ -4,7 +4,7 @@ use gtk::{glib, prelude::*};
 use rampi_core::config;
 use std::{cell::Cell, rc::Rc};
 
-const STEPS: [(&str, &str, &str); 15] = [
+const STEPS: [(&str, &str, &str); config::SETUP_STEP_IDS.len()] = [
     (
         "Sprache und Tastatur",
         "Die Oberfläche ist derzeit deutsch. Unter System die persönliche Tastaturbelegung auswählen, anwenden und direkt im Testfeld prüfen.",
@@ -37,28 +37,13 @@ const STEPS: [(&str, &str, &str); 15] = [
     ),
     (
         "Windows-Host",
-        "Persönliche Hosts anlegen und den aktiven Windows-11-Pro-Host auswählen. Windows benötigt das Rampi-Hostpaket.",
+        "Persönliche Hosts anlegen und den aktiven Windows-11-Pro-Host auswählen. Für RDP benötigt Windows keine zusätzliche Rampi-Software.",
         "host",
     ),
     (
         "SSH-Schlüssel",
         "Einen persönlichen Schlüssel mit OpenSSH innerhalb von Rampi erstellen oder einen bestehenden Schlüssel verwenden. Den Hostfingerabdruck unabhängig am Windows-Host prüfen und erst danach in Rampi übernehmen. Ausschließlich den öffentlichen Schlüssel zum Windows-Konto übertragen.",
         "host",
-    ),
-    (
-        "Codex",
-        "Host und Sitzung prüfen, die offizielle Einrichtung anzeigen und die Windows-CLI öffnen. Die Anbieteranmeldung erfolgt im offiziellen Programm und wird durch eine Installationsprüfung nicht bestätigt.",
-        "codex",
-    ),
-    (
-        "Claude Code",
-        "Die offizielle Windows-CLI muss unter deinem Windows-Konto installiert und angemeldet sein. Das Modul verwendet die bestehende persistente Hostintegration.",
-        "claude",
-    ),
-    (
-        "Antigravity",
-        "Die offizielle native Windows-CLI heißt agy. Auf der Modulseite Installation und Sitzung prüfen; die Einrichtung beim Anbieter und die Anmeldung im offiziellen Programm abschließen.",
-        "antigravity",
     ),
     (
         "Desktop-Streaming",
@@ -108,7 +93,7 @@ pub fn build(
         actions.append(b);
     }
     page.append(&actions);
-    let current = Rc::new(Cell::new(conf.borrow().setup_step));
+    let current = Rc::new(Cell::new(conf.borrow().setup_index()));
     let render: Rc<dyn Fn()> = {
         let (current, title, description, progress, previous, next, finish) = (
             current.clone(),
@@ -121,12 +106,17 @@ pub fn build(
         );
         Rc::new(move || {
             let i = current.get();
-            title.set_text(&format!("Einrichtung · {} / 15 · {}", i + 1, STEPS[i].0));
+            title.set_text(&format!(
+                "Einrichtung · {} / {} · {}",
+                i + 1,
+                STEPS.len(),
+                STEPS[i].0
+            ));
             description.set_text(STEPS[i].1);
-            progress.set_fraction((i + 1) as f64 / 15.0);
+            progress.set_fraction((i + 1) as f64 / STEPS.len() as f64);
             previous.set_sensitive(i > 0);
-            next.set_sensitive(i < 14);
-            finish.set_visible(i == 14);
+            next.set_sensitive(i + 1 < STEPS.len());
+            finish.set_visible(i + 1 == STEPS.len());
         })
     };
     render();
@@ -138,9 +128,12 @@ pub fn build(
             status.clone(),
         );
         b.connect_clicked(move |_| {
-            let target = i.get().saturating_add_signed(direction).min(14);
+            let target = i
+                .get()
+                .saturating_add_signed(direction)
+                .min(STEPS.len() - 1);
             let mut candidate = c.borrow().clone();
-            candidate.setup_step = target;
+            candidate.setup_step = config::SETUP_STEP_IDS[target];
             let result =
                 config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
             if result.is_ok() {
@@ -151,21 +144,10 @@ pub fn build(
             status_result(&stat, result);
         });
     }
-    let (s, t, p, i, c, stat, feedback) = (
-        stack.clone(),
-        tabs.clone(),
-        page.clone(),
-        current,
-        conf.clone(),
-        status.clone(),
-        f.clone(),
-    );
+    let (s, t, p, i) = (stack.clone(), tabs.clone(), page.clone(), current);
     open.connect_clicked(move |_| {
         p.set_widget_name("setup-return");
         match STEPS[i.get()].2 {
-            module @ ("codex" | "claude" | "antigravity") => {
-                crate::ai_view::open(&s, &c, module, &stat, &feedback)
-            }
             "remote" => s.set_visible_child_name("remote"),
             "diagnostics" => s.set_visible_child_name("diagnostics"),
             tab => {
