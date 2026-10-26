@@ -10,6 +10,7 @@ import json
 import os
 import pwd
 import runpy
+import secrets
 import subprocess
 import time
 from pathlib import Path
@@ -53,6 +54,13 @@ def monitor_precredential_keyboard():
         destination.chmod(0o644)
 
     atexit.register(stop)
+    # Opening a process is not proof that its input descriptor is ready. Do
+    # not permit the host's first key before evtest is actually listening.
+    deadline = time.monotonic() + 15
+    while "Testing ... (interrupt to exit)" not in destination.read_text(errors="replace"):
+        if process.poll() is not None or time.monotonic() >= deadline:
+            raise RuntimeError("Precredential input observer did not become ready")
+        time.sleep(0.1)
     return stop
 
 
@@ -199,6 +207,26 @@ def main():
 
     shutil.copyfile(screenshot, CAPTURES / "first-user.png")
     (CAPTURES / "first-user.png").chmod(0o644)
+    # The stock first account existed before /etc/skel was installed. Require
+    # its real Secret Service as well as those of the later fixture accounts.
+    attribute, secret = secrets.token_hex(16), secrets.token_urlsafe(32)
+    api["keyring_store"](account.pw_name, attribute, secret)
+    api["as_user"](account.pw_name, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
+    api["greeter_ready"]()
+    api["wait"](
+        lambda: command(
+            "pgrep", "-u", "1000", "-f", "(^|/)gnome-keyring-daemon( |$)"
+        ).returncode != 0,
+        "first account's keyring daemon termination", seconds=30,
+    )
+    api["login"](account.pw_name, credentials["password"])
+    api["wait"](
+        lambda: b"org.rampi.Workstation" in api["as_user"](
+            account.pw_name, "wlrctl", "toplevel", "list", check=False
+        ).stdout,
+        "first account's actual session after another PAM login",
+    )
+    api["native_keyring"](account.pw_name, "check", attribute, secret)
     api["as_user"](account.pw_name, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
     api["greeter_ready"]()
     CREDENTIALS.unlink()
@@ -208,6 +236,7 @@ def main():
         "credentials_preconfigured": False,
         "graphical_login_after_userconf": True,
         "wizard_password_authenticated_by_pam": True,
+        "pam_keyring_relogin": True,
         "native_surface_visible": True,
         "uid": 1000,
         "session_uid": int(proof.read_text()),

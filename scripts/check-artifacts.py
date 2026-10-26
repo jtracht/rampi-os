@@ -39,6 +39,7 @@ if args.image:
             "pi-gen-revision.txt",
             "readiness.json",
             "release-ci.json",
+            "graphical-login-evidence.tar.xz",
             f"rampi-linux-arm64-{version}.tar.xz",
         ]
     )
@@ -69,6 +70,9 @@ with tarfile.open(directory / source) as archive:
         ".github/workflows/release.yml",
         ".github/workflows/rust.yml",
         "scripts/check-release-ci.py",
+        "scripts/check-graphical-archive.py",
+        "scripts/check-image-login-evidence.py",
+        "scripts/check-login-evidence.py",
         "scripts/release-assets.py",
         "LICENSE",
         "client/rampi/qml/Main.qml",
@@ -119,6 +123,10 @@ if args.image or (directory / f"rampi-linux-arm64-{version}.tar.xz").is_file():
         read_native("rust-licenses/packages.json")
         read_native("rust-licenses/Rust-standard-library-COPYRIGHT.html")
 if args.image:
+    runpy.run_path(str(Path(__file__).with_name("check-graphical-archive.py")))["check"](
+        directory / "graphical-login-evidence.tar.xz", revision,
+        checksums[images[0].name], hashlib.sha256(binary).hexdigest(),
+    )
     runpy.run_path(str(Path(__file__).with_name("check-source-archives.py")))["check"](
         directory, revision, source_lock
     )

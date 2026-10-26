@@ -102,18 +102,13 @@ def assemble(root, image_dir, version, revision):
     evidence = output / "graphical-login-evidence.tar.xz"
     if evidence.exists():
         raise ValueError("Image evidence asset already exists")
-    names = [
-        "environment.json",
-        "serial.log",
-        "captures/login-proof.json",
-        "captures/greeter.png",
-        "captures/rampi-login.png",
-        "captures/rampi-other.png",
-    ]
+    graphical = runpy.run_path(str(root / "scripts/check-graphical-archive.py"))
+    names = graphical["FILES"]
     with tarfile.open(evidence, "w:xz") as archive:
         for name in names:
             source = regular_file(image_dir / "graphical-login" / name)
             archive.add(source, arcname="graphical-login/" + name, recursive=False)
+    graphical["check"](evidence, revision, image_sha, binary_sha)
     manifest = {
         "schema": 1,
         "kind": "prerelease",

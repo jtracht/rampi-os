@@ -37,6 +37,7 @@ def check_first_user(first, binary_sha256):
         "stock_interactive_userconf",
         "graphical_login_after_userconf",
         "wizard_password_authenticated_by_pam",
+        "pam_keyring_relogin",
         "native_surface_visible",
         "stock_wizard_disabled",
         "completion_service_disabled",

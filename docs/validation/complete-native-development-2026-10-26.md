@@ -121,6 +121,20 @@ Drücken und Loslassen. Das ist noch kein erfolgreicher Erststartnachweis.
 Der originale Systemdialog, PAM und alle installierten Programmdateien bleiben
 unverändert; die Eingabediagnose endet vor jeder Zugangsdatenanforderung.
 
+Die Erstkontoprüfung wurde zusätzlich auf den tatsächlichen Rust-Schlüsselbund-
+Adapter und eine zweite echte PAM-Anmeldung erweitert. Das ursprüngliche Konto
+existiert bereits vor der Installation der Vorlagen unter `/etc/skel`; deshalb
+genügen die zwei später angelegten Konten hierfür nicht. Diese strengere
+Erstkontoabnahme ist noch offen. Der Eingabeprüfer wartet nun außerdem auf die
+tatsächliche Bereitschaft von evtest, bevor er den ersten Tastendruck anfordert.
+
+Die Release-Verpackung übernimmt jetzt ausdrücklich Erstkonto-JSON und sichtbares
+Erstkonto-PNG in das Belegarchiv. Ein gemeinsamer Prüfer verlangt genau die acht
+freigegebenen regulären Dateien, begrenzte Größen, keine zusätzlichen privaten
+Dateien oder Verweise und prüft die entpackten Nachweise erneut gegen Quelle,
+Image und Programm. Die sieben zusätzlichen Archivtests verwenden synthetische
+Dateien ausschließlich als Format-/Ablehnungsfälle und zählen nicht als Anmeldung.
+
 ## Noch vor der Komplettversion
 
 1. Den unveränderten Erststart im frisch gebauten Image und den folgenden
