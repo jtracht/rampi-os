@@ -65,6 +65,14 @@ mod ssh_setup;
 #[cfg(target_os = "linux")]
 mod ssh_view;
 #[cfg(target_os = "linux")]
+mod stream_checks;
+#[cfg(target_os = "linux")]
+mod stream_input;
+#[cfg(target_os = "linux")]
+mod stream_soak;
+#[cfg(target_os = "linux")]
+mod stream_view;
+#[cfg(target_os = "linux")]
 mod system_checks;
 #[cfg(target_os = "linux")]
 mod system_settings;

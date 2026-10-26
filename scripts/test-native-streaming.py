@@ -13,7 +13,7 @@ import uuid
 from pathlib import Path
 
 
-def main(server_image: str, client_image: str, output: Path):
+def main(server_image: str, client_image: str, output: Path, gtk: bool = False, soak: bool = False):
     root = Path(__file__).resolve().parents[1]
     fixture = runpy.run_path(str(root / "scripts/test-streaming.py"))
     run = fixture["run"]
@@ -51,7 +51,14 @@ def main(server_image: str, client_image: str, output: Path):
                 "RAMPI_TEST_CONTAINER=1",
             ]
             args += (
-                ["-e", "DISPLAY=:99"]
+                [
+                    "-e",
+                    "DISPLAY=:99",
+                    "-e",
+                    f"RAMPI_TEST_INPUT_RECEIPTS={int(gtk)}",
+                    "-e",
+                    f"RAMPI_TEST_STREAM_SOAK={int(soak)}",
+                ]
                 if role == "server"
                 else [
                     "-v",
@@ -64,6 +71,14 @@ def main(server_image: str, client_image: str, output: Path):
             )
             containers.append(run(*args, image, "sleep", "infinity").stdout.strip())
         server, client = containers
+        limits = json.loads(run("docker", "inspect", client).stdout)[0]["HostConfig"]
+        client_limits = {key: limits[key] for key in ["Memory", "MemorySwap", "NanoCpus"]}
+        if client_limits != {
+            "Memory": 1073741824,
+            "MemorySwap": 1073741824,
+            "NanoCpus": 4000000000,
+        }:
+            raise RuntimeError("Actual native streaming resource limits differ")
         run(
             "docker",
             "exec",
@@ -186,6 +201,63 @@ def main(server_image: str, client_image: str, output: Path):
                 if process.poll() is None:
                     process.terminate()
                     process.wait(timeout=10)
+        if gtk:
+            execute(client, "cargo", "build", "--locked", "-p", "rampi-ui", "--bin", "rampi-native")
+            execute(client, "rm", "-f", "/run/rampi-acceptance/pairing-pin")
+            with (output / "gtk-client.log").open("wb") as log:
+                process = subprocess.Popen(
+                    [
+                        "docker",
+                        "exec",
+                        "-e",
+                        f"RAMPI_TEST_SUNSHINE={address}",
+                        "-e",
+                        f"RAMPI_TEST_STREAM_SOAK={int(soak)}",
+                        client,
+                        "dbus-run-session",
+                        "--",
+                        "bash",
+                        "tests/streaming/run-gtk.sh",
+                    ],
+                    stdout=log,
+                    stderr=log,
+                )
+                try:
+                    for _ in range(240):
+                        pin = execute(
+                            client, "cat", "/run/rampi-acceptance/pairing-pin", check=False
+                        ).stdout.strip()
+                        if re.fullmatch(r"\d{4}", pin):
+                            break
+                        if process.poll() is not None:
+                            raise RuntimeError(
+                                "Actual GTK client ended before pairing PIN; see gtk-client.log"
+                            )
+                        time.sleep(0.25)
+                    else:
+                        raise RuntimeError("Actual GTK pairing PIN missing")
+                    execute(
+                        server, "sh", "-c", "cat > /home/rampi/sunshine-pin", input_text=pin + "\n"
+                    )
+                    if process.wait(timeout=1000 if soak else 240) != 0:
+                        raise RuntimeError("Actual GTK stream failed; see gtk-client.log")
+                finally:
+                    if process.poll() is None:
+                        process.terminate()
+                        process.wait(timeout=10)
+            for index in range(2):
+                run(
+                    "docker",
+                    "cp",
+                    f"{client}:/run/rampi-acceptance/gtk-stream-{index}.png",
+                    str(output / f"gtk-stream-{index}.png"),
+                )
+            run(
+                "docker",
+                "cp",
+                f"{client}:/build/target/debug/rampi-native",
+                str(output / "rampi-native"),
+            )
         run(
             "docker",
             "cp",
@@ -221,6 +293,7 @@ def main(server_image: str, client_image: str, output: Path):
             "docker", "cp", f"{client}:/run/rampi-acceptance/moonlight-sources.tar.xz", str(sources)
         )
         evidence = {
+            "client_limits": client_limits,
             "source_revision": run("git", "rev-parse", "HEAD").stdout.strip(),
             "dirty_checkout": bool(run("git", "status", "--porcelain").stdout.strip()),
             "client_test_sha256": binary_sha,
@@ -235,11 +308,51 @@ def main(server_image: str, client_image: str, output: Path):
             "audio_window_sha256": hashlib.sha256(sample.read_bytes()).hexdigest(),
             "physical_hardware": False,
             "windows_host": False,
-            "gtk_presentation": False,
+            "gtk_presentation": gtk,
             "sunshine_package_version": execute(
                 server, "dpkg-query", "-W", "-f=${Version}", "sunshine"
             ).stdout.strip(),
         }
+        if gtk:
+            evidence["gtk_soak"] = soak
+            if soak:
+                run(
+                    "docker",
+                    "cp",
+                    f"{client}:/run/rampi-acceptance/gtk-soak.json",
+                    str(output / "gtk-soak.json"),
+                )
+                evidence["gtk_soak_sha256"] = hashlib.sha256(
+                    (output / "gtk-soak.json").read_bytes()
+                ).hexdigest()
+            evidence["gtk_client_sha256"] = hashlib.sha256(
+                (output / "rampi-native").read_bytes()
+            ).hexdigest()
+            evidence["gtk_screenshot_sha256"] = {
+                f"gtk-stream-{index}.png": hashlib.sha256(
+                    (output / f"gtk-stream-{index}.png").read_bytes()
+                ).hexdigest()
+                for index in range(2)
+            }
+            raw_log = execute(server, "cat", "/home/rampi/sunshine.log").stdout
+            packets = re.findall(
+                r"--begin ((?:keyboard|(?:absolute|relative) mouse move|"
+                r"mouse (?:button|scroll|hscroll)) packet)--(.*?)--end \1--",
+                raw_log,
+                re.S,
+            )
+            receipts = [
+                {
+                    "kind": kind,
+                    "fields": dict(re.findall(r"([A-Za-z0-9]+)\s*\[([0-9A-Fa-f -]+)\]", body)),
+                }
+                for kind, body in packets
+            ]
+            (output / "sunshine-input.json").write_text(json.dumps(receipts, indent=2) + "\n")
+            evidence["sunshine_input_sha256"] = hashlib.sha256(
+                (output / "sunshine-input.json").read_bytes()
+            ).hexdigest()
+            evidence["input_proof_scope"] = "Sunshine decoded packets; platform injection disabled"
         (output / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
         print(
             "RAMPI_STREAM_SUNSHINE_AUDIO_VIDEO_OK: actual Rust pairing, pinned TLS rejection, "
@@ -262,6 +375,29 @@ def main(server_image: str, client_image: str, output: Path):
                 check=False,
             )
             run("docker", "rm", "--force", container, check=False)
+        if gtk and (output / "sunshine.log").is_file():
+            text = (output / "sunshine.log").read_text(encoding="utf-8", errors="replace")
+            if not (output / "sunshine-input.json").exists():
+                packets = re.findall(
+                    r"--begin ((?:keyboard|(?:absolute|relative) mouse move|"
+                    r"mouse (?:button|scroll|hscroll)) packet)--(.*?)--end \1--",
+                    text,
+                    re.S,
+                )
+                rows = [
+                    {
+                        "kind": kind,
+                        "fields": dict(re.findall(r"([A-Za-z0-9]+)\s*\[([0-9A-Fa-f -]+)\]", body)),
+                    }
+                    for kind, body in packets
+                ]
+                (output / "sunshine-input.json").write_text(json.dumps(rows, indent=2) + "\n")
+            safe = [
+                line
+                for line in text.splitlines()
+                if re.search(r"\]: (?:Info|Warning|Error|Fatal):", line)
+            ]
+            (output / "sunshine.log").write_text("\n".join(safe) + "\n", encoding="utf-8")
         if network:
             run("docker", "network", "rm", network, check=False)
 
@@ -271,5 +407,17 @@ if __name__ == "__main__":
     parser.add_argument("--server-image", default="rampi-native-sunshine-test")
     parser.add_argument("--client-image", default="rampi-stream-media-test")
     parser.add_argument("--output", type=Path, default=Path("artifacts/rust/streaming-live"))
+    parser.add_argument(
+        "--gtk",
+        action="store_true",
+        help="Also exercise the actual embedded GTK page and private keyring",
+    )
+    parser.add_argument(
+        "--soak",
+        action="store_true",
+        help="Also require 600 seconds of real animated GTK streaming",
+    )
     args = parser.parse_args()
-    main(args.server_image, args.client_image, args.output)
+    if args.soak and not args.gtk:
+        parser.error("--soak requires --gtk")
+    main(args.server_image, args.client_image, args.output, args.gtk, args.soak)

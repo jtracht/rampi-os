@@ -12,7 +12,7 @@ if [[ "$mode" != --image ]]; then
     if [[ "$model" != *'Raspberry Pi 3 Model B Plus'* && "$model" != *'Raspberry Pi 3 Model B+'* ]]; then echo "Nicht validierte Zielhardware: $model" >&2; exit 1; fi
 fi
 packages=(libgtk-4-1 libvte-2.91-gtk4-0 libwebkitgtk-6.0-4 libgtk-4-media-gstreamer librsvg2-common
-    gstreamer1.0-plugins-good gstreamer1.0-pulseaudio libcanberra0 libcanberra-pulse labwc greetd wlgreet dbus-user-session
+    gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav libcurl4t64 gstreamer1.0-pulseaudio libcanberra0 libcanberra-pulse labwc greetd wlgreet dbus-user-session
     network-manager libnm0 bluez wireguard-tools openssh-client libgstreamer-plugins-base1.0-0 libssl3t64
     libusbredirparser1t64 libusb-1.0-0
     wlr-randr libsecret-tools gnome-keyring libpam-gnome-keyring curl
@@ -66,6 +66,8 @@ install -d -m 755 /opt/rampi
 install -d -m 700 /run/rampi-install
 exec 9>/run/rampi-install/lock
 flock -x 9
+# Reuse a compatible existing library; otherwise build only upstream Moonlight C.
+bash "$source_root/installer/raspberrypi/third-party.sh" --runtime-only
 fingerprint="$(sha256sum "$binary" | cut -d ' ' -f 1)"
 assets_hash="$(find "$source_root/client/rampi/branding" "$source_root/client/rampi/icons" "$source_root/client/rampi/sounds" -type f -print0 | sort -z | xargs -0 sha256sum | awk '{print $1}' | sha256sum | cut -d ' ' -f 1)"
 target="/opt/rampi/$version-${fingerprint:0:12}-${assets_hash:0:12}"

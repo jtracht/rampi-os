@@ -45,6 +45,9 @@ impl Drop for SavedIdentity {
     }
 }
 impl SavedIdentity {
+    pub fn matches_target(&self, address: &str, port: u16) -> Result<bool> {
+        Ok(self.port == port && target(&self.address, self.port)? == target(address, port)?)
+    }
     /// Store only with the existing personal secret store. No Debug output.
     pub fn to_secret(&self) -> Result<Zeroizing<String>> {
         Ok(Zeroizing::new(serde_json::to_string(self)?))

@@ -99,7 +99,9 @@ Hostfingerprints übernehmen. Für RDP wird kein Rampi-Adapter auf Windows benö
 WLAN, Bluetooth und VPN haben eigene integrierte Einstellungsseiten. System bietet
 persönliche Tastaturbelegung, Auflösungen mit Rücksetzung, Kennwort und Abmeldung.
 WebKit-Downloads und Webseitenabfragen bleiben innerhalb der Rampi-Anwendung.
-RDP-/Streaming-Ansichten sind gegenwärtig noch eigene Wayland-Flächen.
+RDP und Desktop-Streaming verwenden eingebettete GTK-Flächen im vorhandenen Fenster.
+Streaming verwendet die vorhandenen Moonlight-/GStreamer-Bibliotheken und persönliche
+Schlüsselbünde; die Abnahme des aktuellen Entwicklungszweigs ist noch ausstehend.
 
 ## Historische Regression und Auslieferung
 

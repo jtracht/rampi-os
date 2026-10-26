@@ -799,7 +799,7 @@ pub fn board_preview(conf: &Shared) -> gtk::Box {
     });
     panel
 }
-pub fn remote(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+pub fn remote(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
     let back = button("← Zurück", f);
     back.set_widget_name("rampi-back");
@@ -823,24 +823,10 @@ pub fn remote(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedba
         crate::rdp_view::open(&s, &host_settings, &feedback);
     });
     page.append(&b);
-    for (title, pair) in [
-        ("Desktop-Streaming öffnen", false),
-        ("Streaming-Host koppeln", true),
-    ] {
-        let b = button(title, f);
-        let (conf, s, stat) = (conf.clone(), stack.clone(), status.clone());
-        b.connect_clicked(move |_| {
-            let result = conf
-                .borrow()
-                .host()
-                .and_then(|h| rampi_core::launch::streaming(h, pair));
-            match result {
-                Ok(args) => terminal(&s, if pair { "stream-pair" } else { "stream" }, args, &stat),
-                Err(e) => stat.set_text(&e.to_string()),
-            }
-        });
-        page.append(&b);
-    }
+    let streaming = button("Desktop-Streaming · integriert", f);
+    let (settings, route, feedback) = (conf.clone(), stack.clone(), f.clone());
+    streaming.connect_clicked(move |_| crate::stream_view::open(&route, &settings, &feedback));
+    page.append(&streaming);
     page
 }
 pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) {

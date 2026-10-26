@@ -16,8 +16,8 @@ if "RAMPI_STREAM_NATIVE_C_LIFECYCLE_OK" not in (directory / "stream-media.log").
     encoding="utf-8"
 ):
     raise SystemExit("Actual official Moonlight C lifecycle acceptance missing")
-runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.py")))["check"](
-    directory / "streaming-live"
+streaming = runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.py")))["check"](
+    directory / "streaming-live", require_gtk=True, require_soak=True
 )
 if "RAMPI_KEYRING_PROFILE_PRESERVATION_OK" not in (directory / "keyring-profile.log").read_text():
     raise SystemExit("Actual unprivileged keyring profile preservation did not pass")
@@ -172,6 +172,7 @@ if width < 960 or height < 540:
     raise SystemExit("Actual native screenshot is smaller than the supported interface")
 proof = {
     "rdp_input": rdp_input,
+    "streaming": streaming,
     "required_stages": markers,
     "peak_mib": round(peak / 1024**2, 1),
     "screenshot": [width, height],

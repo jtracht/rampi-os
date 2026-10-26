@@ -39,6 +39,7 @@ def evidence(tmp_path):
                 "RAMPI_GRAPHICAL_LOGIN_BRANDING_OK",
                 "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK",
                 "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK",
+                "RAMPI_GRAPHICAL_LOGIN_PAM_STREAM_KEYRING_OK",
                 "RAMPI_GRAPHICAL_LOGIN_OK",
                 "RAMPI_GUEST_EXIT=0",
             ]
@@ -135,6 +136,7 @@ def test_reject_insecure_or_stale_session(evidence, key, value):
         "RAMPI_GRAPHICAL_LOGIN_REJECT_OK",
         "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK",
         "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK",
+        "RAMPI_GRAPHICAL_LOGIN_PAM_STREAM_KEYRING_OK",
     ],
 )
 def test_reject_missing_pam_rejection_or_keyring_stage(evidence, marker):

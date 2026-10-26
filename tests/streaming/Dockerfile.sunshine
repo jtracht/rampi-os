@@ -1,7 +1,7 @@
 FROM debian:trixie@sha256:913f6706df59a68922d1dd08f78c2476560a8d367897200a6005b00e5f67c2d5
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 xvfb x11-xserver-utils pulseaudio pulseaudio-utils iproute2 curl ca-certificates
+    ffmpeg python3 xvfb x11-xserver-utils pulseaudio pulseaudio-utils iproute2 curl ca-certificates
 COPY tests/streaming/install-sunshine.sh /tmp/install-sunshine.sh
 RUN RAMPI_FIXTURE_BUILD=1 sh /tmp/install-sunshine.sh && rm /tmp/install-sunshine.sh && rm -rf /var/lib/apt/lists/*
 RUN useradd --create-home --uid 1000 rampi

@@ -47,7 +47,7 @@ const STEPS: [(&str, &str, &str); config::SETUP_STEP_IDS.len()] = [
     ),
     (
         "Desktop-Streaming",
-        "Sunshine auf Windows und einen kompatiblen Moonlight-Client einrichten. Kopplung und Streaming erreichst du anschließend im Remote-Modul.",
+        "Sunshine auf dem Host einrichten. Im Remote-Modul die integrierte Streaming-Seite öffnen, den angezeigten PIN in Sunshine bestätigen und eine Anwendung auswählen. Kopplungen verwaltet dein persönlicher Linux-Schlüsselbund.",
         "remote",
     ),
     (

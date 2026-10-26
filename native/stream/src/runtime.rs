@@ -5,10 +5,12 @@ use crate::{
     media::{AudioPlayback, VideoDecoder, VideoFrame},
 };
 use anyhow::{Context, Result, bail, ensure};
+pub use moonlight_common::stream::control::{
+    KeyAction, KeyModifiers, MouseButton, MouseButtonAction,
+};
 use moonlight_common::stream::{
     MoonlightStreamConfig, MoonlightStreamSettings,
     audio::AudioConfig,
-    control::{KeyAction, KeyModifiers, MouseButton, MouseButtonAction},
     video::{DecodeResult, VideoFormats},
 };
 use std::{

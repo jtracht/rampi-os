@@ -16,7 +16,7 @@ Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 | Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; kein zusätzlicher Sitzungsadapter erforderlich | Windows-NLA nicht gegen einen Windows-Testhost geprüft |
 | Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
-| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; Moonlight-Aufruf | Windows-NLA, integriertes Streaming und Pi-Decoderpfad |
+| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettete Moonlight-/GStreamer-Seite mit privater Kopplung | Neue durchgängige Streaming-/Image-Abnahme, Windows-NLA und Pi-Decoderpfad |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
 | Image/Release | Gebauter nativer Kandidat, Lizenzen/Provenienz, QEMU-Boot und grafische PAM-Anmeldung mit zwei Konten | Reguläre native Release-Funktionsgleichheit |
 

@@ -13,6 +13,7 @@ done < "$output/packages-and-sources.tsv"
 if [[ -f /usr/share/doc/rampi/moonlight-embedded-2.7.1-source.tar.gz ]]; then
     cp /usr/share/doc/rampi/moonlight-embedded-2.7.1-source.tar.gz "$output/"
     cp /usr/share/doc/rampi/moonlight-LICENSE "$output/"
+    cp /usr/share/doc/rampi/moonlight-runtime.sha256 /usr/share/doc/rampi/moonlight-source-revisions.txt "$output/"
 fi
 printf '%s\n' \
     'Third-party packages retain their individual licenses; see copyright/.' \

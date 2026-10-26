@@ -49,6 +49,22 @@ pub fn run() -> Result<()> {
             value == token,
             "Personal native Secret Service value mismatch"
         );
+        let stream_source = "https://sunshine-acceptance.invalid:47989";
+        let stream_secret = serde_json::json!({"private_fixture_value": token}).to_string();
+        if mode == "store" {
+            crate::secret_service::store_stream(profile, stream_source, &stream_secret).await?;
+        }
+        ensure!(
+            crate::secret_service::load_stream(profile, stream_source).await? == stream_secret,
+            "Personal streaming keyring value differs after PAM login"
+        );
+        ensure!(
+            crate::secret_service::load_stream(profile, "https://another-host.invalid:47989")
+                .await
+                .is_err(),
+            "Another streaming host could read the profile"
+        );
+        println!("RAMPI_NATIVE_PAM_STREAM_KEYRING_OK");
         println!("RAMPI_NATIVE_PAM_KEYRING_OK");
         Ok(())
     })

@@ -3278,7 +3278,6 @@ dependencies = [
  "base64 0.22.1",
  "serde",
  "serde_json",
- "sha2",
  "tempfile",
 ]
 
@@ -3311,12 +3310,15 @@ dependencies = [
  "anyhow",
  "gtk4",
  "rampi-core",
+ "rampi-stream",
+ "rdw-keycodemap",
  "rdw4",
  "rdw4-rdp",
  "serde_json",
  "tempfile",
  "vte4",
  "webkit6",
+ "zeroize",
 ]
 
 [[package]]

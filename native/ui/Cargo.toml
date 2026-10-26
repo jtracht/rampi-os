@@ -21,6 +21,9 @@ serde_json.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk.workspace = true
+rampi-stream = { path = "../stream" }
+zeroize = "1"
+keycodemap = { package = "rdw-keycodemap", path = "../../vendor/rdw/keycodemap" }
 vte = { package = "vte4", version = "0.10", features = ["v0_76"] }
 webkit6 = "0.6.1"
 tempfile = "3"
