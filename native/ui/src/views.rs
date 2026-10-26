@@ -663,9 +663,9 @@ pub fn confirm(
     heading.add_css_class("heading");
     page.append(&heading);
     page.append(&label(text));
-    let no = button("Abbrechen", f);
+    let no = button(&rampi_core::i18n::text("action-cancel", &[]), f);
     no.set_widget_name("rampi-back");
-    let yes = button("Bewusst bestätigen", f);
+    let yes = button(&rampi_core::i18n::text("action-confirm", &[]), f);
     page.append(&no);
     page.append(&yes);
     stack.add_named(&page, Some("confirmation"));

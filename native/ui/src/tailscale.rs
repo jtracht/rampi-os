@@ -1,11 +1,13 @@
-//! Asynchronous, bounded read-only invocation of the installed official CLI.
+//! Asynchronous, bounded integration with the installed official Tailscale CLI.
 use anyhow::{Result, ensure};
 use gtk::{glib, prelude::*};
+use rampi_core::i18n::text as tr;
 
 pub async fn snapshot() -> Result<rampi_core::tailscale::Status> {
     ensure!(
         glib::find_program_in_path("tailscale").is_some(),
-        "Tailscale ist nicht installiert. Die offizielle Software muss zuerst eingerichtet werden."
+        "{}",
+        tr("tailscale-missing", &[])
     );
     let (ok, bytes) = crate::process::output(
         "tailscale",
@@ -14,18 +16,13 @@ pub async fn snapshot() -> Result<rampi_core::tailscale::Status> {
         262_144,
     )
     .await
-    .map_err(|e| {
-        anyhow::anyhow!("Tailscale antwortet nicht oder liefert eine zu große Antwort: {e}")
-    })?;
-    ensure!(
-        ok,
-        "Tailscale-Dienst nicht erreichbar oder Zugriff verweigert. Dienst und Berechtigungen prüfen."
-    );
+    .map_err(|e| anyhow::anyhow!(tr("tailscale-response-error", &[("error", &e.to_string())])))?;
+    ensure!(ok, "{}", tr("tailscale-unavailable", &[]));
     rampi_core::tailscale::Status::parse(&bytes)
 }
 pub async fn status() -> Result<String> {
     if glib::find_program_in_path("tailscale").is_none() {
-        return Ok("Tailscale ist nicht installiert. Die offizielle Software muss zuerst eingerichtet werden.".into());
+        return Ok(tr("tailscale-missing", &[]));
     }
     Ok(snapshot().await?.description())
 }
@@ -48,17 +45,18 @@ pub async fn change(connect: bool) -> Result<rampi_core::tailscale::Status> {
     let state = snapshot().await?;
     ensure!(
         ok || (connect && state.backend == "NeedsLogin" && state.login_url().is_some()),
-        "Tailscale konnte die Änderung nicht ausführen. Ein Administrator muss dein Linux-Konto für das angemeldete Tailscale-Profil als Operator freigeben. Nach der ersten Anmeldung oder einem Profilwechsel kann eine erneute Freigabe nötig sein; bestehende Einstellungen werden nicht zurückgesetzt."
+        "{}",
+        tr("tailscale-action-error", &[])
     );
     Ok(state)
 }
 
 pub fn view(feedback: &crate::widgets::Feedback) -> gtk::Box {
     let page = crate::widgets::column();
-    let output = crate::widgets::label("Tailscale-Status wird beim Öffnen geladen.");
+    let output = crate::widgets::label(&tr("tailscale-loading", &[]));
     output.set_widget_name("tailscale-status");
     page.append(&output);
-    let refresh = crate::widgets::button("Tailscale-Status aktualisieren", feedback);
+    let refresh = crate::widgets::button(&tr("tailscale-refresh", &[]), feedback);
     let weak_output = output.downgrade();
     refresh.connect_clicked(move |button| {
         if !button.is_sensitive() {
@@ -101,8 +99,8 @@ pub fn actions(
 ) -> gtk::Box {
     use crate::widgets::*;
     let page = column();
-    page.append(&label("1 · Dienst prüfen  →  2 · Verbinden  →  3 · Bei Bedarf anmelden\nEin Administrator muss dein Linux-Konto einmalig als Tailscale-Operator freigeben. VPN und Anmeldung gelten systemweit."));
-    let operator = button("Meine Tailscale-Berechtigung einrichten", feedback);
+    page.append(&label(&tr("tailscale-steps", &[])));
+    let operator = button(&tr("tailscale-operator", &[]), feedback);
     operator.set_widget_name("tailscale-operator");
     operator.set_sensitive(
         glib::find_program_in_path("tailscale").is_some()
@@ -113,17 +111,30 @@ pub fn actions(
         let account = glib::user_name();
         let args = match rampi_core::accounts::tailscale_operator(&account.to_string_lossy()) {
             Ok(args) => args,
-            Err(error) => { stat.set_text(&error.to_string()); return; }
+            Err(error) => {
+                stat.set_text(&error.to_string());
+                return;
+            }
         };
         let (destination, output, args) = (route.clone(), stat.clone(), args.clone());
-        crate::views::confirm(&route, "Tailscale-Berechtigung einrichten",
-            &format!("Das vorhandene sudo fragt hier nach deinem Linux-Kennwort und prüft deine Administratorrechte. Danach darf ›{}‹ die systemweite Tailscale-Verbindung verwalten. Eine bisherige Operatorzuordnung wird ersetzt; VPN-Routen und andere Einstellungen werden nicht zurückgesetzt.", account.to_string_lossy()),
-            &f, move || crate::views::terminal(&destination, "tailscale-operator", args.clone(), &output));
+        crate::views::confirm(
+            &route,
+            &tr("tailscale-operator-heading", &[]),
+            &tr(
+                "tailscale-operator-confirm",
+                &[("account", &account.to_string_lossy())],
+            ),
+            &f,
+            move || {
+                crate::views::terminal(&destination, "tailscale-operator", args.clone(), &output)
+            },
+        );
     });
     page.append(&operator);
     let busy = std::rc::Rc::new(std::cell::Cell::new(false));
-    for (title, connect) in [("Tailscale verbinden", true), ("Tailscale trennen", false)] {
-        let action = button(title, feedback);
+    for (message, connect) in [("tailscale-connect", true), ("tailscale-disconnect", false)] {
+        let title = tr(message, &[]);
+        let action = button(&title, feedback);
         let (s, stat, f, busy) = (
             stack.clone(),
             status.clone(),
@@ -137,7 +148,7 @@ pub fn actions(
                 if busy.replace(true) {
                     return;
                 }
-                stat.set_text("Tailscale wird aktualisiert …");
+                stat.set_text(&tr("tailscale-updating", &[]));
                 let (stat, busy) = (stat.clone(), busy.clone());
                 glib::MainContext::default().spawn_local(async move {
                     match change(connect).await {
@@ -145,9 +156,9 @@ pub fn actions(
                             "{}{}",
                             state.description(),
                             if state.login_url().is_some() {
-                                "\nWeiter mit ›Tailscale-Anmeldung öffnen‹."
+                                format!("\n{}", tr("tailscale-login-next", &[]))
                             } else {
-                                ""
+                                String::new()
                             }
                         )),
                         Err(e) => stat.set_text(&e.to_string()),
@@ -157,27 +168,32 @@ pub fn actions(
             };
             crate::views::confirm(
                 &route,
-                title,
-                "Diese Aktion ändert die VPN-Verbindung für alle Benutzer dieses Geräts.",
+                &title,
+                &tr("tailscale-global-confirm", &[]),
                 &f,
                 execute,
             );
         });
         page.append(&action);
     }
-    let login = button("Tailscale-Anmeldung öffnen", feedback);
+    let login = button(&tr("tailscale-open-login", &[]), feedback);
     let (s, stat, f) = (stack.clone(), status.clone(), feedback.clone());
     login.connect_clicked(move |b| {
-        if !b.is_sensitive() { return; }
+        if !b.is_sensitive() {
+            return;
+        }
         b.set_sensitive(false);
         let (b, s, stat, f) = (b.clone(), s.clone(), stat.clone(), f.clone());
         glib::MainContext::default().spawn_local(async move {
             let state = snapshot().await;
-            if !b.is_mapped() { b.set_sensitive(true); return; }
+            if !b.is_mapped() {
+                b.set_sensitive(true);
+                return;
+            }
             match state {
                 Ok(state) => match state.login_url() {
                     Some(url) => login_page(&s, url, &stat, &f),
-                    None => stat.set_text("Kein offizieller Anmeldelink verfügbar. Zuerst ›Tailscale verbinden‹ wählen und Dienststatus prüfen."),
+                    None => stat.set_text(&tr("tailscale-no-login", &[])),
                 },
                 Err(e) => stat.set_text(&e.to_string()),
             }
@@ -200,7 +216,7 @@ fn login_page(
         stack.remove(&old);
     }
     let page = column();
-    page.append(&label("Tailscale anmelden · danach zurück zum VPN-Status\nAnmeldung erfolgt beim Anbieter. Rampi speichert keine Kennwörter oder Anmelde-URLs."));
+    page.append(&label(&tr("tailscale-login-description", &[])));
     let session = webkit6::NetworkSession::new_ephemeral();
     session.set_tls_errors_policy(webkit6::TLSErrorsPolicy::Fail);
     session.connect_download_started(|_, download| download.cancel());
@@ -211,7 +227,7 @@ fn login_page(
         .build();
     web.set_widget_name("tailscale-login-webview");
     crate::browser_prompts::install(&web, stack, status, feedback);
-    let back = button("← Zurück zu VPN", feedback);
+    let back = button(&tr("tailscale-back", &[]), feedback);
     back.set_widget_name("rampi-back");
     let (s, w) = (stack.clone(), web.downgrade());
     back.connect_clicked(move |_| {
@@ -252,7 +268,7 @@ fn login_page(
     });
     let stat = status.clone();
     web.connect_load_failed_with_tls_errors(move |_, _, _, _| {
-        stat.set_text("Das Anmeldezertifikat ist ungültig. Die Verbindung wurde abgewiesen.");
+        stat.set_text(&tr("tailscale-certificate-invalid", &[]));
         true
     });
     web.load_uri(url);

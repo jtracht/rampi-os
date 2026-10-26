@@ -86,6 +86,14 @@ endgültigen Programmstands auf beiden Architekturen stehen noch aus. Daher kein
 zusätzlicher Fortschrittspunkt. Die regulären nativen Prüfungen verlangen nun
 auch den tatsächlichen privaten Tunnelbeleg mit identischem Programmhash.
 
+Die Tailscale-Seite einschließlich Zustandsmeldungen, Anmeldeseite, Operator-
+Einrichtung und allgemeiner Bestätigungsaktionen verwendet jetzt beide Fluent-
+Kataloge. Der tatsächliche englische GTK-Test öffnet die Berechtigungsseite und
+bricht sie wieder ab; es bleibt bei einem Fenster. Der bisherige deutsche Test
+prüft weiterhin Status, Bestätigung, eingebettete Anmeldung und Trennung.
+Nachweis: `artifacts/complete-vpn-language-ui-fixed.log`. Dies ist keine echte
+Anbieteranmeldung und keine Abnahme der sudo-Kennworteingabe.
+
 ## Noch vor der Komplettversion
 
 1. Den unveränderten Erststart im frisch gebauten Image und den folgenden

@@ -1,4 +1,5 @@
 //! Read the documented status JSON from the official CLI; no VPN protocol code.
+use crate::i18n::text as tr;
 use anyhow::{Result, ensure};
 use serde::Deserialize;
 use std::net::IpAddr;
@@ -23,11 +24,18 @@ pub struct Node {
 }
 impl Status {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
-        ensure!(bytes.len() <= 262_144, "Tailscale-Antwort ist zu groß.");
-        let status: Self = serde_json::from_slice(bytes).map_err(|_| {
-            anyhow::anyhow!("Tailscale liefert ein nicht unterstütztes Statusformat.")
-        })?;
-        ensure!(status.backend.len() <= 128, "Ungültiger Tailscale-Status.");
+        ensure!(
+            bytes.len() <= 262_144,
+            "{}",
+            tr("tailscale-data-large", &[])
+        );
+        let status: Self = serde_json::from_slice(bytes)
+            .map_err(|_| anyhow::anyhow!(tr("tailscale-data-invalid", &[])))?;
+        ensure!(
+            status.backend.len() <= 128,
+            "{}",
+            tr("tailscale-state-invalid", &[])
+        );
         Ok(status)
     }
     pub fn login_url(&self) -> Option<&str> {
@@ -48,19 +56,20 @@ impl Status {
             && self.addresses.as_ref().is_some_and(|ips| !ips.is_empty())
     }
     pub fn description(&self) -> String {
-        let state = match self.backend.as_str() {
-            "Running" if self.connected() => "Verbunden",
+        let message = match self.backend.as_str() {
+            "Running" if self.connected() => "tailscale-state-connected",
             "Running" if self.node.as_ref().is_some_and(|n| n.online == Some(false)) => {
-                "Dienst aktiv, Verbindung unterbrochen"
+                "tailscale-state-offline"
             }
-            "Running" => "Dienst aktiv, Verbindungsstatus unvollständig",
-            "NeedsLogin" => "Anmeldung erforderlich",
-            "NeedsMachineAuth" => "Freigabe des Geräts im Tailscale-Konto erforderlich",
-            "Stopped" => "Getrennt",
-            "Starting" => "Verbindung wird aufgebaut",
-            "NoState" => "Dienst wird initialisiert",
-            _ => "Unbekannter Status; offizielle Tailscale-Diagnose verwenden",
+            "Running" => "tailscale-state-incomplete",
+            "NeedsLogin" => "tailscale-state-login",
+            "NeedsMachineAuth" => "tailscale-state-approval",
+            "Stopped" => "tailscale-state-stopped",
+            "Starting" => "tailscale-state-starting",
+            "NoState" => "tailscale-state-initializing",
+            _ => "tailscale-state-unknown",
         };
+        let state = tr(message, &[]);
         let mut text = format!("Tailscale · {state}");
         if self.connected() {
             let ips = self
@@ -70,7 +79,8 @@ impl Status {
                 .iter()
                 .map(ToString::to_string)
                 .collect::<Vec<_>>();
-            text.push_str(&format!("\nVPN-Adressen: {}", ips.join(", ")));
+            text.push('\n');
+            text.push_str(&tr("tailscale-addresses", &[("address", &ips.join(", "))]));
         }
         if let Some(health) = &self.health {
             for message in health.iter().take(8) {
@@ -80,7 +90,8 @@ impl Status {
                     .take(500)
                     .collect();
                 if !message.is_empty() {
-                    text.push_str(&format!("\nHinweis: {message}"));
+                    text.push('\n');
+                    text.push_str(&tr("tailscale-health", &[("error", &message)]));
                 }
             }
         }

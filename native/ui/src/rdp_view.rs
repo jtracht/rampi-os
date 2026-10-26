@@ -179,7 +179,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
         let secret = zeroize::Zeroizing::new(password.text().to_string());
         password.set_text("");
         if secret.is_empty() {
-            state.set_text(&tr("rdp-missing-password", &[]));
+            state.set_text(&tr("rdp-auth-required", &[]));
             return;
         }
         let resolution = host.resolution.split_once('x').and_then(|(width, height)| {

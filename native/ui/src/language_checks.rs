@@ -29,6 +29,21 @@ pub fn run(
             let keyboard = named(&system, "keyboard-layout").context("No inline layouts")?;
             ensure!(keyboard.is::<gtk::ListBox>(), "Keyboard choices opened a popup");
             ensure!(find_button(&system, "Apply keyboard layout").is_some());
+            let vpn = pages.child_by_name("vpn").context("No VPN page")?;
+            ensure!(find_button(&vpn, "Refresh Tailscale status").is_some());
+            ensure!(find_button(&vpn, "Connect Tailscale").is_some());
+            ensure!(find_button(&vpn, "Open Tailscale sign-in").is_some());
+            pages.set_visible_child_name("vpn");
+            find_button(&vpn, "Set up my Tailscale permissions").unwrap().emit_clicked();
+            ensure!(stack.visible_child_name().as_deref() == Some("confirmation"));
+            let confirmation = stack.child_by_name("confirmation").context("No permissions page")?;
+            ensure!(find_button(&confirmation, "Confirm change").is_some());
+            find_button(&confirmation, "Cancel").unwrap().emit_clicked();
+            ensure!(stack.visible_child_name().as_deref() == Some("settings"));
+            ensure!(rampi_core::tailscale::Status::parse(
+                br#"{"BackendState":"NeedsLogin"}"#
+            )?.description() == "Tailscale · Sign-in required");
+            pages.set_visible_child_name("system");
             let languages = named(&system, "language-choices").unwrap()
                 .downcast::<gtk::ListBox>().unwrap();
             languages.select_row(languages.row_at_index(0).as_ref());
