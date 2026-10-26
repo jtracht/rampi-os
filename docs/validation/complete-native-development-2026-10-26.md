@@ -103,6 +103,24 @@ Nachweis: `artifacts/complete-vpn-language-ui-fixed.log`. Dieser Sprachtest ist
 keine Anbieteranmeldung; die tatsächliche sudo-Kennworteingabe ist separat im
 oben genannten privaten Tunneltest abgenommen.
 
+Die erste vollständige native CI dieses Entwicklungszweigs (`40413505616`,
+Quelle `8a04e51`) ist noch fehlgeschlagen: AMD64 verglich den Bluetooth-Zähler
+ohne die unsichtbaren Fluent-Isolationszeichen. Der korrigierte Vergleich erhält
+die Zeichen in der Oberfläche und besteht lokal. ARM64 bestand den tatsächlichen
+zehnminütigen Bild-/Ton-Dauerlauf, aber die erforderlichen R-Tastenquittungen
+fehlten auf dem Sunshine-Server. Der lokale Gegentest empfängt und überträgt R
+und Enter auf beiden Verbindungen; das ist keine ARM64-Abnahme. Zusätzliche
+GTK-Tastencodes und öffentliche serverseitige Tastenanzahlen werden deshalb
+als Diagnose aufgezeichnet. Die unveränderten Ende-zu-Ende-Eingabegates bleiben
+verbindlich.
+
+Der zweite Erststart-Diagnoselauf (`40415182410`) hat gezeigt, dass der bisherige
+QMP-Befehl quittiert wurde, aber evtest im Linux-Gast keinerlei Tastendruck sah.
+Der Test verwendet nun die regulären direkten QMP-Tastenereignisse mit getrenntem
+Drücken und Loslassen. Das ist noch kein erfolgreicher Erststartnachweis.
+Der originale Systemdialog, PAM und alle installierten Programmdateien bleiben
+unverändert; die Eingabediagnose endet vor jeder Zugangsdatenanforderung.
+
 ## Noch vor der Komplettversion
 
 1. Den unveränderten Erststart im frisch gebauten Image und den folgenden
@@ -112,7 +130,10 @@ oben genannten privaten Tunneltest abgenommen.
    Einrichtungsbeschreibungen sind integriert; weitere Seiten und Fehlermeldungen
    sind noch nicht vollständig übersetzt.
 3. Echte virtuelle Bluetooth-Tastatur und -Maus einschließlich Wiederverbindung
-   sowie Tailscale-Anmeldung, Tunnelverkehr und Rechte-/Routengrenzen abnehmen.
+   abnehmen. Die lokale private Tailscale-Tunnel-/PAM-Abnahme muss auf der
+   endgültigen Quelle beider Architekturen bestehen. Ein integrierter manueller
+   Installationspfad für eine fehlende offizielle Tailscale-Installation ist
+   ebenfalls noch nötig; das aktuelle native Image enthält diesen Dienst nicht.
 4. Die übrigen Decoder-, Eingabe-, Isolations- und Bedienungsgrenzen der
    unveränderten Fortschrittsskala schließen und dokumentieren.
 5. Auf der endgültigen Quelle sämtliche AMD64-/ARM64-Prüfungen, grafischen

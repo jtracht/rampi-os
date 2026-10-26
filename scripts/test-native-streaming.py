@@ -10,6 +10,7 @@ import runpy
 import subprocess
 import time
 import uuid
+from collections import Counter
 from pathlib import Path
 
 
@@ -128,6 +129,7 @@ def main(
             "cargo",
             "test",
             "--locked",
+            "-j", "1",
             "-p",
             "rampi-stream",
             "--lib",
@@ -213,7 +215,8 @@ def main(
         if gtk:
             if soak:
                 execute(server, "touch", "/home/rampi/stream-soak-start")
-            execute(client, "cargo", "build", "--locked", "-p", "rampi-ui", "--bin", "rampi-native")
+            execute(client, "cargo", "build", "--locked", "-j", "1", "-p", "rampi-ui",
+                    "--bin", "rampi-native")
             execute(client, "rm", "-f", "/run/rampi-acceptance/pairing-pin")
             with (output / "gtk-client.log").open("wb") as log:
                 process = subprocess.Popen(
@@ -346,6 +349,11 @@ def main(
                 for index in range(2)
             }
             raw_log = execute(server, "cat", "/home/rampi/sunshine.log").stdout
+            # Public fixture key-code counts distinguish absent packets from a
+            # receipt-parser problem without retaining raw auth/session logs.
+            (output / "sunshine-key-counts.json").write_text(json.dumps(
+                Counter(re.findall(r"keyCode\s*\[([0-9A-Fa-f]+)\]", raw_log)), indent=2
+            ) + "\n")
             packets = re.findall(
                 r"--begin ((?:keyboard|(?:absolute|relative) mouse move|"
                 r"mouse (?:button|scroll|hscroll)) packet)--(.*?)--end \1--",

@@ -45,8 +45,16 @@ def drive(qmp_path, serial, credentials):
                 return
 
     def key(code):
-        execute("send-key", {"keys": [{"type": "qcode", "data": code}], "hold-time": 40})
-        time.sleep(0.10)
+        # Use the standard direct input API, which validates that a handler
+        # exists. The legacy send-key may acknowledge silently dropped input
+        # and relies on a separate virtual-clock key-release queue.
+        for down in (True, False):
+            execute("input-send-event", {"events": [{
+                "type": "key", "data": {
+                    "down": down, "key": {"type": "qcode", "data": code}
+                }
+            }]})
+            time.sleep(0.15)
 
     execute("qmp_capabilities")
     handled = set()

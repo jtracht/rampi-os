@@ -60,6 +60,18 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, conf: &Shared, feedback: 
                 .downcast()
                 .ok()
                 .context("Wrong display type")?;
+            // Test-only observation at the actual GTK surface; keep the server
+            // packet receipts as the required end-to-end input proof.
+            let observed = gtk::EventControllerKey::new();
+            observed.set_propagation_phase(gtk::PropagationPhase::Capture);
+            observed.connect_key_pressed(|_, _, code, _| {
+                println!("RAMPI_STREAM_TEST_KEY_DOWN={code}");
+                glib::Propagation::Proceed
+            });
+            observed.connect_key_released(|_, _, code, _| {
+                println!("RAMPI_STREAM_TEST_KEY_UP={code}");
+            });
+            picture.add_controller(observed);
             let pair = button("stream-pair")?;
             let load = button("stream-load")?;
             let connect = button("stream-connect")?;

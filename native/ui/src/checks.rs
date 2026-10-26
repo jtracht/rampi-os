@@ -647,7 +647,12 @@ pub fn dashboard(
                     value.push_str(&all_text(&w));
                     child = w.next_sibling();
                 }
+                // Fluent isolates interpolated values for bidirectional text.
+                // Assert the visible semantic state, retaining isolation in UI.
                 value
+                    .chars()
+                    .filter(|c| !matches!(c, '\u{2068}' | '\u{2069}'))
+                    .collect()
             }
             let preview = named(&root, "dashboard-preview-0")
                 .unwrap()

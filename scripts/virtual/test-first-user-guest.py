@@ -117,7 +117,7 @@ def main():
                         "Tastaturmodell:",
                         "Herkunftsland",
                         "Tastaturbelegung:",
-                        "AltGr",
+                        "Taste, die als AltGr fungieren soll:",
                         "Compose-Taste:",
                     ]
                     if marker in screen
