@@ -1,49 +1,33 @@
-# Windows 11 Pro einrichten
+# Windows 11 Pro für RDP einrichten
 
-Laptop eingeschaltet, geöffnet und im Netz erreichbar halten. Für jeden
-Rampi-Benutzer ein eigenes Windows-Konto mit minimalen Rechten verwenden.
+Für Remote Desktop den Laptop eingeschaltet, geöffnet und erreichbar halten.
+Jeder Rampi-Benutzer verwendet sein eigenes Windows-Konto mit minimalen Rechten.
+Für RDP ist kein Rampi-Sitzungsadapter und keine Anbieter-CLI erforderlich.
 
-1. Vollständigen Quellbaum oder Windows-Host-ZIP entpacken.
-2. `./setup.ps1` prüft nur vorhandene Programme, Edition und Build.
-3. `./setup.ps1 -Install` installiert den kleinen Adapter nach
-   `%LOCALAPPDATA%\Rampi\rampi-session.ps1` mit persönlicher ACL.
-4. `-InstallMissing` installiert ausschließlich fehlendes psmux 3.4.0 über
-   WinGet-ID `marlocarlo.psmux`. Neue Programme erscheinen gegebenenfalls erst in
-   einer neuen Shell im PATH.
-5. Bei Bedarf in einer erhöhten PowerShell ausdrücklich `-EnableOpenSsh` wählen.
-   Bestehende sshd-Konfiguration wird erhalten; Dienststart und TCP-22-Regel sind
-   die transparenten Änderungen. Ohne vorhandene Regel wird nur Profil Private geöffnet.
-6. RDP wird ausschließlich mit `-EnableRdp` aktiviert, inklusive NLA und einer
-   eigenen TCP-3389-Regel für private Netze. Remote-Firewallzugriff auf das eigene
-   VPN weiter einschränken, bevor entfernte Netze verwendet werden.
+1. In Windows Remote Desktop aktivieren. Alternativ zeigt das mitgelieferte
+   `setup.ps1` zunächst nur den Bestand an; `-EnableRdp` aktiviert ausdrücklich
+   den vorhandenen RDP-Dienst mit NLA und eine TCP-3389-Regel für private Netze.
+   `-WhatIf` zeigt die vorgesehenen Änderungen. Keine dieser Aktionen geschieht
+   beim bloßen Öffnen von Rampi.
+2. Den Host über das gewählte VPN erreichbar machen. Firewallzugriff auf das
+   eigene Netz begrenzen; Rampi öffnet keine Routerports.
+3. Unter Einstellungen → Host & SSH das persönliche Hostprofil auswählen.
+4. Remote Desktop → RDP öffnen. Port (normalerweise 3389), Windows-Konto und den
+   unabhängig geprüften SHA256-Fingerabdruck des RDP-Serverzertifikats angeben.
+   Das ist nicht der SSH-Hostfingerabdruck. Das Kennwort bleibt nur im laufenden
+   Verbindungsaufbau und wird nicht in Einstellungen oder Befehlsargumenten gespeichert.
+5. Strg+Alt+Pos1 führt zum Dashboard. Trennen meldet das Windows-Konto nicht ab.
 
-Windows OpenSSH erwartet normale Benutzerschlüssel in `~/.ssh/authorized_keys`.
-Administratorkonten können gemäß bestehender sshd-Konfiguration stattdessen
-`%ProgramData%\ssh\administrators_authorized_keys` verwenden. Bestehende Regeln
-nicht blind überschreiben; Microsoft-Dokumentation befolgen:
-https://learn.microsoft.com/windows-server/administration/openssh/openssh_keymanagement
+OpenSSH ist für Administration optional. `-EnableOpenSsh` richtet ausdrücklich
+den offiziellen Windows OpenSSH Server ein und erhält bestehende Konfigurationen.
+Die eigene grafische Schlüsselverwaltung prüft Hostfingerabdrücke unabhängig und
+verwendet den persönlichen OpenSSH-Agenten. Bestehende Schlüssel nicht ersetzen.
 
-Pi-Hostschlüsselprüfung: Fingerprints auf Windows lokal ermitteln, beispielsweise
-mit `ssh-keygen -lf C:\ProgramData\ssh\ssh_host_ed25519_key.pub -E sha256`;
-für weitere angebotene Hostschlüssel entsprechend wiederholen. Unabhängig
-abgleichen und erst dann die passende bekannte Hostidentität im persönlichen
-Linux-OpenSSH-Profil über Einstellungen → Host & SSH speichern.
-Rampi verwendet strikt `StrictHostKeyChecking=yes`.
+`-Install` und `-InstallMissing` bleiben kompatible Auditoptionen, installieren aber
+keine zusätzlichen Programme. Der frühere persönliche KI-Adapter wird nicht mehr
+ausgeliefert. Die Deinstallation kann eine alte Adapterdatei ausdrücklich entfernen;
+Windows-Dienste, persönliche Daten und vorhandene Programme bleiben erhalten.
 
-Anbieter-CLIs aus offiziellen Quellen installieren und im persönlichen Konto
-anmelden. Sunshine und VPN werden erkannt, nicht automatisch ersetzt oder geöffnet.
-`-WhatIf` zeigt Änderungen. Uninstall entfernt keine Windows-Dienste und beendet
-keine bestehenden psmux-Sitzungen. Hostneustarts beenden laufende Prozesse.
-
-Nach einem Clientupdate den mitgelieferten Hostadapter durch erneutes
-`setup.ps1 -Install` aktualisieren. Die grafische Seite **KI-Sitzungen** benötigt
-die Adapteraktion `Status`; ältere Adapter werden als nicht verfügbar angezeigt.
-Je Anbieter und Windows-Konto besteht eine persistente Sitzung. Ein anderes
-Projektverzeichnis gilt beim nächsten Start einer neuen Sitzung. **Windows-Sitzung
-beenden** beendet den KI-Prozess; **lokale Verbindungen schließen** trennt lediglich
-die Clients. Hostprofile können nur ohne laufende lokale Verbindung gewechselt
-werden. Das Entfernen eines Profils löscht keine Schlüssel oder Windows-Prozesse.
-
-Sunshine teilt die aktive Windows-Konsole, während RDP eine Windows-Anmeldung
-prüft. Geräte-Pairing ersetzt keine Benutzeranmeldung. Für gemeinsam genutzte
-Hosts RDP verwenden; [Streaming und getrennte Kopplungsschlüssel](STREAMING.md).
+Die RDP-Softwareabnahme verwendet einen isolierten echten XRDP-Server auf Linux.
+Ein Windows-Testhost wird auf Nutzerwunsch nicht verwendet; Windows-NLA ist damit
+nicht als praktisch abgenommen ausgewiesen. [Streaming](STREAMING.md) bleibt separat.

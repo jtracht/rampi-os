@@ -14,7 +14,7 @@ $edition = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion
 if (-not $AllowNonTarget -and ([int]$os.BuildNumber -lt 22000 -or $edition -ne 'Professional')) {
     throw 'Rampi unterstützt zunächst Windows 11 Pro. Andere Editionen sind nicht validiert.'
 }
-$names = @('ssh','sshd','codex','claude','agy','psmux','tailscale','wireguard','sunshine')
+$names = @('ssh','sshd','tailscale','wireguard','sunshine')
 $programs = @{}
 foreach ($name in $names) {
     $found = Get-Command $name -ErrorAction SilentlyContinue
@@ -22,21 +22,6 @@ foreach ($name in $names) {
 }
 [PSCustomObject]@{System=$os.Caption; Build=$os.BuildNumber; Edition=$edition; Programs=$programs} |
     ConvertTo-Json -Depth 4 | Write-Output
-if ($programs['psmux']) {
-    $muxVersion = (& $programs['psmux'] --version 2>&1 | Out-String)
-    Write-Output $muxVersion.Trim()
-    if ($muxVersion -notmatch 'psmux\s+(3\.\d+\.\d+)' -or [version]$Matches[1] -lt [version]'3.4.0') {
-        if ($Install -or $InstallMissing) { throw 'Vorhandenes psmux ist nicht kompatibel. Mindestens Version 3.4.0 der 3.x-Reihe erforderlich; bestehende Installation bewusst aktualisieren.' }
-        Write-Warning 'Vorhandenes psmux vor Verwendung auf eine kompatible Version der 3.x-Reihe aktualisieren.'
-    }
-}
-if ($InstallMissing -and -not $programs['psmux']) {
-    $winget = Get-Command winget.exe -ErrorAction Stop
-    if ($PSCmdlet.ShouldProcess('psmux 3.4.0', 'Mit WinGet aus offizieller Quelle installieren')) {
-        & $winget.Source install --id marlocarlo.psmux --exact --version 3.4.0 --source winget
-        if ($LASTEXITCODE -ne 0) { throw 'psmux-Installation fehlgeschlagen.' }
-    }
-}
 if ($EnableOpenSsh) {
     $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
         [Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -67,34 +52,4 @@ if ($EnableRdp -and $PSCmdlet.ShouldProcess('Microsoft RDP', 'RDP mit NLA aktivi
             -Direction Inbound -Protocol TCP -LocalPort 3389 -Action Allow -Profile Private | Out-Null
     }
 }
-if ($Install) {
-    $target = Join-Path $env:LOCALAPPDATA 'Rampi'
-    $source = Join-Path $SourceRoot 'host\windows\rampi-session.ps1'
-    if (-not (Test-Path -LiteralPath $source)) { throw "Hostpaket unvollständig: $source" }
-    if ($PSCmdlet.ShouldProcess($target, 'Persönlichen Rampi-Sitzungsadapter installieren')) {
-        New-Item -ItemType Directory -Path $target -Force | Out-Null
-        $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-        $directoryAcl = [Security.AccessControl.DirectorySecurity]::new()
-        $directoryAcl.SetAccessRuleProtection($true,$false)
-        $directoryAcl.SetOwner([Security.Principal.SecurityIdentifier]::new($sid))
-        $fileAcl = [Security.AccessControl.FileSecurity]::new()
-        $fileAcl.SetAccessRuleProtection($true,$false)
-        $fileAcl.SetOwner([Security.Principal.SecurityIdentifier]::new($sid))
-        foreach ($identitySid in @($sid,'S-1-5-18')) {
-            $identityReference = [Security.Principal.SecurityIdentifier]::new($identitySid)
-            $directoryAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
-                $identityReference, [Security.AccessControl.FileSystemRights]::FullControl,
-                [Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit',
-                [Security.AccessControl.PropagationFlags]::None,
-                [Security.AccessControl.AccessControlType]::Allow))
-            $fileAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
-                $identityReference, [Security.AccessControl.FileSystemRights]::FullControl,
-                [Security.AccessControl.AccessControlType]::Allow))
-        }
-        Set-Acl -LiteralPath $target -AclObject $directoryAcl
-        $adapter = Join-Path $target 'rampi-session.ps1'
-        Copy-Item -LiteralPath $source -Destination $adapter -Force
-        Set-Acl -LiteralPath $adapter -AclObject $fileAcl
-    }
-}
-Write-Output 'Audit beendet. Anbieter-CLIs, Sunshine und VPN bleiben unter ihren offiziellen Installationswegen.'
+Write-Output 'Audit beendet. RDP verwendet den vorhandenen Windows-Dienst. Sunshine und VPN bleiben unter ihren offiziellen Installationswegen.'

@@ -1,11 +1,10 @@
-import base64
 import json
 import os
 
 import pytest
 from rampi.config import Host, Settings, atomic_json, safe_url
 from rampi.kanban import Board, Card, from_json, github, load_board
-from rampi.launch import ps_literal, rdp_args, ssh_args
+from rampi.launch import rdp_args
 
 
 def test_settings_atomic_roundtrip_and_private_permissions(tmp_path):
@@ -39,19 +38,8 @@ def test_host_rejects_options_and_shell_input(address):
         Host(address=address, username="alice").validate()
 
 
-def test_windows_project_is_encoded_as_literal_not_executable():
-    project = "C:\\Projects\\O'Brien; $(whoami)"
-    args = ssh_args(Host(address="host", username="alice", project=project), "codex")
-    decoded = base64.b64decode(args[-1]).decode("utf-16le")
-    assert "'C:\\Projects\\O''Brien; $(whoami)'" in decoded
-    assert "StrictHostKeyChecking=yes" in args
-    assert project not in args
-    assert ps_literal("'a") == "'''a'"
 
 
-def test_arbitrary_ai_commands_are_rejected():
-    with pytest.raises(ValueError):
-        ssh_args(Host(address="host", username="alice"), "powershell; rm")
 
 
 def test_rdp_never_disables_certificate_verification_or_embeds_password(monkeypatch):

@@ -39,7 +39,7 @@ pub fn run(
             let keyboard = gtk::gio::Subprocess::newv(&["wtype".as_ref(), "-s".as_ref(), "45000".as_ref()], gtk::gio::SubprocessFlags::NONE)?;
             let directory = PathBuf::from(std::env::var("RAMPI_TEST_ARTIFACTS")?);
             let dashboard = stack.child_by_name("dashboard").context("No dashboard")?;
-            let blue = named(&dashboard, "ChatGPT").context("No blue tile")?;
+            let blue = named(&dashboard, "Remote Desktop").context("No remote tile")?;
             let records = Rc::new(RefCell::new(serde_json::Map::new()));
             let capture = |name: &'static str| {
                 let (window, blue, directory, records) = (window.clone(), blue.clone(), directory.clone(), records.clone());

@@ -1,4 +1,4 @@
-"""Measure rendered blue-tile contours in actual compositor PNGs (no image synthesis)."""
+"""Measure rendered remote-tile contours in actual compositor PNGs (no image synthesis)."""
 
 import json
 import os
@@ -20,8 +20,8 @@ def mask(name):
     pixels = image.load()
     return [
         [
-            pixels[x + i, y + j][0] < 40
-            and 90 < pixels[x + i, y + j][1] < 180
+            50 < pixels[x + i, y + j][0] < 145
+            and 35 < pixels[x + i, y + j][1] < 125
             and pixels[x + i, y + j][2] > 180
             for i in range(width)
         ]

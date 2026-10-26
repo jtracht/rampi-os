@@ -37,7 +37,6 @@ FullPage {
       RampiTabButton { objectName: "bluetoothTab"; text: "Bluetooth" }
       RampiTabButton { text: "VPN" }
       RampiTabButton { text: "Kanban & Browser" }
-      RampiTabButton { text: "KI-Sitzungen" }
     }
     StackLayout {
       currentIndex: tabs.currentIndex
@@ -79,8 +78,7 @@ FullPage {
             enabled: verified.checked && rampi.hostKey.fingerprints !== ""
             onClicked: { rampi.trustHost(dialog.hostValues()); verified.checked = false; }
           }
-          Label { text: "Projektverzeichnis auf Windows" }
-          TextField { id: project; text: dialog.host.project || ""; placeholderText: "C:\\Projects\\MeinProjekt"; Layout.fillWidth: true }
+          TextField { visible: false; id: project; text: dialog.host.project || ""; placeholderText: "C:\\Projects\\MeinProjekt"; Layout.fillWidth: true }
           Label { text: "Streaming-Auflösung · Breite x Höhe" }
           TextField { id: resolution; placeholderText: "1280x720"; Layout.fillWidth: true }
           RampiButton {
@@ -95,7 +93,7 @@ FullPage {
             }
           }
           RampiButton { text: "Lokale Remote-Verbindungen schließen"; onClicked: rampi.disconnectClients() }
-          Label { text: "Die offiziellen CLIs und psmux müssen im Windows-Benutzerkonto eingerichtet sein. Anmeldungen erfolgen in den jeweiligen offiziellen Programmen."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+          Label { text: "RDP verwendet den vorhandenen Windows-Remotedesktopdienst. SSH bleibt optional für die Systemverwaltung."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
       }
       ScrollView {
@@ -183,32 +181,6 @@ FullPage {
           Label { text: "Browserprofile, SSH-Schlüssel und Konfigurationen bleiben im persönlichen Linux-Konto."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         }
       }
-      ScrollView {
-        clip: true
-        ColumnLayout {
-          width: parent.width - 20; spacing: 18
-          Label { text: "Persistente Windows-KI-Sitzungen"; font.pixelSize: 23; font.bold: true }
-          Label { text: "Host: " + (dialog.host.name || "Nicht eingerichtet") + (dialog.host.username ? " · " + dialog.host.username : ""); wrapMode: Text.WordWrap; Layout.fillWidth: true }
-          Label { text: "Pro Anbieter und Windows-Benutzer bleibt eine Sitzung erhalten. Öffnen verbindet erneut. Ein geändertes Projekt gilt beim nächsten Sitzungsstart; eine vorhandene Sitzung zuerst bewusst beenden."; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-          RampiButton { text: "Sitzungen auf Windows prüfen"; onClicked: rampi.refreshSessions() }
-          Repeater {
-            model: rampi.sessions
-            Frame {
-              required property var modelData
-              Layout.fillWidth: true
-              contentItem: ColumnLayout {
-                Label { text: modelData.title; font.pixelSize: 20; font.bold: true }
-                Label { text: modelData.state; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-                RowLayout {
-                  RampiButton { text: "Öffnen / wiederverbinden"; onClicked: rampi.launch(modelData.module) }
-                  RampiButton { text: "Windows-Sitzung beenden"; enabled: modelData.state === "Läuft auf Windows"; onClicked: { stopSession.module = modelData.module; stopSession.open(); } }
-                }
-              }
-            }
-          }
-          RampiButton { text: "Nur lokale Verbindungen schließen"; onClicked: rampi.disconnectClients() }
-        }
-      }
     }
     RowLayout {
       RampiButton {
@@ -229,11 +201,5 @@ FullPage {
     standardButtons: Dialog.Yes | Dialog.No
     Label { text: "Nur das ausgewählte Profil wird entfernt. SSH- und Streaming-Schlüssel sowie Windows-Prozesse bleiben erhalten."; width: 460; wrapMode: Text.WordWrap }
     onAccepted: { if (rampi.removeHost(dialog.editIndex)) { dialog.editIndex = rampi.configuration.hosts.length ? rampi.configuration.active_host : -1; dialog.loadHost(dialog.host); } }
-  }
-  FullPage {
-    id: stopSession; property string module: ""; title: "Windows-KI-Sitzung beenden?"
-    standardButtons: Dialog.Yes | Dialog.No
-    Label { text: "Der laufende KI-Prozess dieser Sitzung auf dem aktiven Windows-Host wird beendet. Zum bloßen Trennen stattdessen die lokale Verbindung schließen."; width: 460; wrapMode: Text.WordWrap }
-    onAccepted: rampi.stopSession(module)
   }
 }

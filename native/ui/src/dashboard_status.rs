@@ -121,7 +121,7 @@ pub fn install(
             .unwrap_or_else(|_| "Windows-Host noch nicht eingerichtet".into());
         for (index, label) in labels.iter().enumerate() {
             if let Some(label) = label.upgrade() {
-                label.set_text(if index == 3 {
+                label.set_text(if index == 1 {
                     &settings.browser_url
                 } else {
                     &host_label
@@ -223,7 +223,7 @@ pub fn install(
                 }
                 for (index, label) in labels.iter().enumerate() {
                     if let Some(label) = label.upgrade() {
-                        label.set_text(if index == 3 {
+                        label.set_text(if index == 1 {
                             &settings.browser_url
                         } else {
                             &host

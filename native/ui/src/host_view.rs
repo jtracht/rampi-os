@@ -27,10 +27,14 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         ("Projektverzeichnis auf Windows", "project"),
         ("Streaming-Auflösung · z. B. 1280x720", "resolution"),
     ] {
-        page.append(&label(name));
+        if id != "project" {
+            page.append(&label(name));
+        }
         let field = gtk::Entry::new();
         field.set_widget_name(&format!("host-{id}"));
-        page.append(&field);
+        if id != "project" {
+            page.append(&field);
+        }
         fields.push(field);
     }
     let fields = Rc::new(fields);

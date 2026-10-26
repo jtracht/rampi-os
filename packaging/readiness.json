@@ -5,7 +5,6 @@
   "evidence": {
     "native_qml_and_keyboard": "docs/validation/software-acceptance-2026-10-20.md",
     "docker_networkmanager_import": "docs/validation/software-acceptance-2026-10-20.md",
-    "windows_native_persistence": "docs/validation/software-acceptance-2026-10-20.md",
     "configuration_and_secret_isolation": "docs/validation/software-acceptance-2026-10-20.md",
     "kanban_contracts_and_cache": "docs/validation/software-acceptance-2026-10-20.md",
     "installer_script_validation": "docs/validation/software-acceptance-2026-10-20.md",
@@ -14,5 +13,5 @@
     "qemu_software_boot": "docs/validation/software-acceptance-2026-10-20.md",
     "release_artifact_completeness": "docs/validation/software-acceptance-2026-10-20.md"
   },
-  "migration": "Rust/GTK4/Wayland port in progress. Previous Python/QML evidence does not validate the new runtime. Release remains withheld until native parity, ARM64 CI, installer/image and QEMU checks pass."
+  "migration": "Rust/GTK4/Wayland. Native development release v0.6.0-dev.1 was published and independently checked. Direct provider modules and their Windows session adapter are removed from the current scope. Physical hardware and Windows-testhost acceptance are excluded. Regular-release parity remains open."
 }

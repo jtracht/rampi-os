@@ -11,8 +11,6 @@ from pathlib import Path
 
 from .config import Host, Settings, config_home, private_dir, safe_url
 
-MODULES = ("codex", "claude", "antigravity")
-
 
 def executable(*names: str) -> str:
     for name in names:
@@ -28,38 +26,10 @@ def ps_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
-def ssh_args(host: Host, module: str) -> list[str]:
-    host.validate()
-    if module not in MODULES:
-        raise ValueError("Unbekanntes KI-Modul.")
-    script = (
-        "$ErrorActionPreference='Stop'; "
-        "$s=Join-Path $env:LOCALAPPDATA 'Rampi\\rampi-session.ps1'; "
-        f"& $s -Module {ps_literal(module)} -Project {ps_literal(host.project)}; "
-        "exit $LASTEXITCODE"
-    )
-    return ssh_command(host, script)
 
 
-def preview_args(host: Host, module: str) -> list[str]:
-    if module not in MODULES:
-        raise ValueError("Unbekanntes KI-Modul.")
-    script = (
-        "$ErrorActionPreference='Stop'; "
-        f"psmux.exe capture-pane -p -t {ps_literal('rampi-' + module)}; exit $LASTEXITCODE"
-    )
-    return ssh_command(host, script, interactive=False)
 
 
-def session_args(host: Host, module: str, action: str) -> list[str]:
-    if module not in MODULES or action not in {"Status", "Stop"}:
-        raise ValueError("Unbekannte Sitzungsaktion.")
-    script = (
-        "$ErrorActionPreference='Stop'; "
-        "$s=Join-Path $env:LOCALAPPDATA 'Rampi\\rampi-session.ps1'; "
-        f"& $s -Module {ps_literal(module)} -Action {ps_literal(action)}; exit $LASTEXITCODE"
-    )
-    return ssh_command(host, script, interactive=False)
 
 
 def ssh_command(host: Host, script: str, interactive: bool = True) -> list[str]:

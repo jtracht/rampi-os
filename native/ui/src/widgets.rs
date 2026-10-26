@@ -145,9 +145,6 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
     content.set_margin_end(12);
     let icon = match title {
         "Kanban Board" => "columns-3",
-        "ChatGPT" => "terminal",
-        "Claude" => "asterisk",
-        "Gemini" => "sparkles",
         "Remote Desktop" => "monitor",
         _ => "globe",
     };

@@ -137,7 +137,6 @@ with zipfile.ZipFile(directory / host) as archive:
     for name in [
         "setup.ps1",
         "installer/windows/setup.ps1",
-        "host/windows/rampi-session.ps1",
         "STREAMING.md",
     ]:
         if name not in archive.namelist():

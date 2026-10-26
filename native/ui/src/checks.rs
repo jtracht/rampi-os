@@ -986,9 +986,6 @@ pub fn setup(
                 "vpn",
                 "host",
                 "host",
-                "ai-codex",
-                "ai-claude",
-                "ai-antigravity",
                 "remote",
                 "remote",
                 "board",
@@ -1000,15 +997,7 @@ pub fn setup(
                     "Wizard lost the current step"
                 );
                 click(&setup, "Jetzt einrichten")?;
-                if [
-                    "remote",
-                    "diagnostics",
-                    "ai-codex",
-                    "ai-claude",
-                    "ai-antigravity",
-                ]
-                .contains(&destination)
-                {
+                if ["remote", "diagnostics"].contains(&destination) {
                     ensure!(
                         stack.visible_child_name().as_deref() == Some(destination),
                         "Wrong setup destination"
@@ -1029,7 +1018,7 @@ pub fn setup(
                     stack.visible_child_name().as_deref() == Some("setup"),
                     "Setup return path lost"
                 );
-                if index < 14 {
+                if index < 11 {
                     click(&setup, "Weiter / Schritt überspringen")?;
                 }
             }

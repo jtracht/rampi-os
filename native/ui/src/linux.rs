@@ -128,15 +128,6 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
             false,
             "kanban",
         ),
-        ("ChatGPT", "Codex", (0.03, 0.49, 0.96), false, "codex"),
-        ("Claude", "Claude Code", (1.0, 0.83, 0.24), true, "claude"),
-        (
-            "Gemini",
-            "Antigravity CLI",
-            (0.08, 0.80, 0.73),
-            true,
-            "antigravity",
-        ),
         (
             "Remote Desktop",
             "Windows-Workstation",
@@ -178,8 +169,6 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         b.connect_clicked(move |_| {
             if name == "browser" {
                 views::browser(&s, &conf, &stat, &f);
-            } else if ["codex", "claude", "antigravity"].contains(&name) {
-                crate::ai_view::open(&s, &conf, name, &stat, &f);
             } else {
                 s.set_visible_child_name(name);
             }
@@ -190,28 +179,20 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     let previews = row();
     previews.set_homogeneous(true);
     previews.append(&views::board_preview(&settings));
-    let assistant_previews = gtk::Grid::new();
-    assistant_previews.set_column_homogeneous(true);
-    assistant_previews.set_row_homogeneous(true);
-    assistant_previews.set_column_spacing(14);
-    assistant_previews.set_row_spacing(14);
+    let module_previews = gtk::Grid::new();
+    module_previews.set_column_homogeneous(true);
+    module_previews.set_row_homogeneous(true);
+    module_previews.set_column_spacing(14);
+    module_previews.set_row_spacing(14);
     let mut live_previews = vec![];
-    for (i, title) in [
-        "ChatGPT / Codex",
-        "Claude / Claude Code",
-        "Gemini / Antigravity",
-        "Webbrowser",
-    ]
-    .iter()
-    .enumerate()
-    {
+    for (i, title) in ["Remote Desktop", "Webbrowser"].iter().enumerate() {
         let host = settings
             .borrow()
             .hosts
             .get(settings.borrow().active_host)
             .map(|h| format!("{} · {}@{}", h.name, h.username, h.address))
             .unwrap_or_else(|| "Windows-Host noch nicht eingerichtet".into());
-        let text = if i == 3 {
+        let text = if i == 1 {
             format!("{} · Lokaler Browser", settings.borrow().browser_url)
         } else {
             host
@@ -234,9 +215,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         detail.set_widget_name(&format!("dashboard-preview-{i}"));
         live_previews.push(detail.clone());
         panel.append(&detail);
-        assistant_previews.attach(&panel, (i % 2) as i32, (i / 2) as i32, 1, 1);
+        module_previews.attach(&panel, 0, i as i32, 1, 1);
     }
-    previews.append(&assistant_previews);
+    previews.append(&module_previews);
     dashboard.append(&previews);
     let footer = row();
     let open_settings = button("⚙  Einstellungen", &feedback);
@@ -425,9 +406,6 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--keyboard-test") {
         crate::checks::keyboard(app, &stack);
     }
-    if std::env::args().any(|a| a == "--ai-ui-check") {
-        crate::ai_checks::run(app, &stack, &settings, &feedback);
-    }
     if std::env::args().any(|a| a == "--interaction-check") {
         crate::interaction_checks::run(app, &window, &stack, &tabs, &settings, &feedback);
     }
@@ -487,7 +465,19 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         );
         glib::timeout_add_local_once(std::time::Duration::from_millis(1000), move || {
             assert_eq!(app.windows().len(), 1);
-            assert_eq!(b.len(), 6);
+            assert_eq!(b.len(), 3);
+            for removed in ["ai-codex", "ai-claude", "ai-antigravity"] {
+                assert!(s.child_by_name(removed).is_none());
+            }
+            println!("RAMPI_RUST_NO_PROVIDER_ROUTES_OK");
+            for (tile, destination) in b.iter().zip(["kanban", "remote", "browser"]) {
+                tile.emit_clicked();
+                assert_eq!(s.visible_child_name().as_deref(), Some(destination));
+                assert_eq!(app.windows().len(), 1);
+                crate::views::go_back(&s);
+                assert_eq!(s.visible_child_name().as_deref(), Some("dashboard"));
+            }
+            println!("RAMPI_RUST_THREE_MODULE_NAVIGATION_OK");
             for name in ["wifi", "bluetooth", "host", "system", "vpn", "board"] {
                 t.set_visible_child_name(name);
                 s.set_visible_child_name("settings");
@@ -505,7 +495,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
                     std::process::exit(1);
                 }
                 println!(
-                    "RAMPI_RUST_UI_OK backend={} windows=1 modules=6 settings=6",
+                    "RAMPI_RUST_UI_OK backend={} windows=1 modules=3 settings=6",
                     gdk::Display::default()
                         .map(|d| d.type_().name().to_string())
                         .unwrap_or_default()

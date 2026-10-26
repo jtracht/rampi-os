@@ -7,7 +7,7 @@ werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
 weiterhin vorhandene Systemdienste. Eigenentwickelter Code: Apache-2.0.
 
 **Aktuell: Rust-Port in Entwicklung; noch kein neuer regulärer Release.**
-Geschätzter Gesamtstand: **81 %**; Bewertung und offene Arbeiten stehen in
+Zuletzt abgenommener Gesamtstand vor der Umfangsänderung: **81 %**; Bewertung und offene Arbeiten stehen in
 [PROGRESS.md](docs/PROGRESS.md).
 Die [Migrationsübersicht](docs/RUST-MIGRATION.md) nennt Quellcode, Start,
 softwareseitige Nachweise und verbleibende Funktionen. Der frühere Stand von
@@ -17,6 +17,10 @@ werden deshalb gesondert bewertet.
 
 Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Rust wird mit
 Docker/Wayland, nativer ARM64-CI und anschließend neuen Image-/QEMU-Tests geprüft.
+
+Rampi umfasst drei Hauptmodule: **Kanban**, **Remote Desktop** und **Browser**.
+Das veröffentlichte [v0.6.0-dev.1](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.1)
+enthält noch den früheren Funktionsumfang; neue Änderungen verändern alte Images nicht.
 
 ## Rust-Entwicklung unter Linux
 
@@ -43,7 +47,7 @@ python -m venv .venv
 Unter Linux dieselben Python-Befehle mit `.venv/bin/python` beziehungsweise
 `.venv/bin/rampi` ausführen. Ohne Linux-Dienste bleibt das Dashboard nutzbar und
 zeigt deren tatsächliche Nichtverfügbarkeit. Es werden keine Demo-Verbindungen
-oder laufenden KI-Sitzungen vorgetäuscht.
+vorgetäuscht.
 
 ## Raspberry Pi
 
@@ -68,12 +72,12 @@ Netzwerkmanager. Bei einem aktiven konkurrierenden Netzwerkmanager stoppt es.
 
 ```powershell
 .\setup.ps1                  # Bestandsaufnahme, keine Systemänderung
-.\setup.ps1 -Install         # Nur persönlicher Sitzungsadapter
+.\setup.ps1 -EnableRdp       # RDP ausdrücklich aktivieren (erhöhte PowerShell)
 ```
 
-OpenSSH, RDP und fehlendes psmux werden ausschließlich über ausdrückliche Optionen
-eingerichtet. Die offiziellen Anbieter-CLIs behalten ihre eigene Anmeldung und
-Sicherheitsdialoge. [Windows-Einrichtung](docs/INSTALL-WINDOWS11.md)
+OpenSSH und RDP werden ausschließlich über ausdrückliche Optionen eingerichtet.
+Direkte KI-Module und der zusätzliche Windows-Sitzungsadapter wurden auf
+Nutzerwunsch entfernt. [Windows-Einrichtung](docs/INSTALL-WINDOWS11.md)
 
 ## Bedienung
 
@@ -82,18 +86,16 @@ Sicherheitsdialoge. [Windows-Einrichtung](docs/INSTALL-WINDOWS11.md)
 - Escape: zurück auf Rampi-Seiten; im Terminal und Browser bleibt es für diese nutzbar.
 - Strg+Alt+F2: reguläre Linux-Systemkonsole.
 
-Kanban ist schreibgeschützt. Browser und KI-Terminals starten erst bei Bedarf.
+Kanban ist schreibgeschützt. Browser und lokale Systemkonsole starten erst bei Bedarf.
 Updates erfolgen ausschließlich durch manuelle Ausführung der Update-Skripte.
 Kanban kombiniert Suche mit Projekt-, Prioritäts- und Statusfiltern. Die
 Spaltenreihenfolge lässt sich in den Einstellungen ändern; zusätzliche Statuswerte
 bleiben sichtbar. Die VPN-Seite bietet eine Auswahl persönlicher WireGuard-Profile
 mit tatsächlichem Verbindungszustand.
 
-Unter **Einstellungen → Host & SSH** lassen sich mehrere persönliche Hosts mit
-Projektverzeichnis verwalten und aktivieren, OpenSSH-Schlüssel erzeugen und
-unabhängig geprüfte Hostfingerprints übernehmen. Dafür den Windows-Adapter mit
-`setup.ps1 -Install` aktualisieren. Lokales Trennen lässt KI-Prozesse auf Windows
-weiterlaufen. Eine eigene vollständige native KI-Sitzungsverwaltung bleibt offen.
+Unter **Einstellungen → Host & SSH** lassen sich mehrere persönliche Hosts
+verwalten und aktivieren, OpenSSH-Schlüssel erzeugen und unabhängig geprüfte
+Hostfingerprints übernehmen. Für RDP wird kein Rampi-Adapter auf Windows benötigt.
 WLAN, Bluetooth und VPN haben eigene integrierte Einstellungsseiten. System bietet
 persönliche Tastaturbelegung, Auflösungen mit Rücksetzung, Kennwort und Abmeldung.
 WebKit-Downloads und Webseitenabfragen bleiben innerhalb der Rampi-Anwendung.
