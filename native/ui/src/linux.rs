@@ -394,6 +394,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--system-ui-check") {
         crate::system_checks::run(app, &stack, &tabs, &status, &feedback);
     }
+    if std::env::args().any(|a| a == "--language-ui-check") {
+        crate::language_checks::run(app, &stack, &tabs, &feedback);
+    }
     if std::env::args().any(|a| a == "--account-ui-check") {
         crate::account_checks::run(app, &stack, &tabs);
     }

@@ -75,3 +75,6 @@ print('RAMPI_RUST_SETUP_PUBLISHED_RESUME_OK')
 PY
 stop_application
 rm -- "$settings"
+printf '%s\n' '{"language":"en","setup_complete":true}' > "$settings"
+timeout 30 /build/target/debug/rampi-native --language-ui-check
+rm -- "$settings"

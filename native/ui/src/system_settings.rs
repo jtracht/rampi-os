@@ -2,6 +2,7 @@
 use crate::widgets::*;
 use anyhow::{Context, Result, ensure};
 use gtk::{glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use std::{cell::Cell, path::PathBuf, rc::Rc};
 
 const LAYOUTS: [(&str, &str); 6] = [
@@ -196,9 +197,14 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
         }
     });
     page.append(&save_language);
-    page.append(&label("Tastatur · persönliche Belegung der Rampi-Sitzung"));
-    let choices = gtk::DropDown::from_strings(&LAYOUTS.map(|(_, title)| title));
+    page.append(&label(&tr("keyboard-heading", &[])));
+    let choices = gtk::ListBox::new();
+    choices.set_selection_mode(gtk::SelectionMode::Single);
+    for (_, title) in LAYOUTS {
+        choices.append(&label(title));
+    }
     choices.set_widget_name("keyboard-layout");
+    choices.select_row(choices.row_at_index(0).as_ref());
     if let Ok(path) = keyboard_file()
         && let Ok(text) = std::fs::read_to_string(path)
         && let Some(index) = LAYOUTS.iter().position(|(code, _)| {
@@ -206,33 +212,46 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
                 .any(|l| l == format!("XKB_DEFAULT_LAYOUT={code}"))
         })
     {
-        choices.set_selected(index as u32);
+        choices.select_row(choices.row_at_index(index as i32).as_ref());
     }
     page.append(&choices);
-    let save = button("Tastaturbelegung anwenden", f);
+    let save = button(&tr("keyboard-apply", &[]), f);
     let stat = status.clone();
     save.connect_clicked(move |b| {
-        let index = choices.selected() as usize;
-        let Some((code, _)) = LAYOUTS.get(index) else { return; };
-        if let Err(e) = save_keyboard(code) { stat.set_text(&e.to_string()); return; }
+        let Some(row) = choices.selected_row() else {
+            return;
+        };
+        let index = row.index() as usize;
+        let Some((code, _)) = LAYOUTS.get(index) else {
+            return;
+        };
+        if let Err(e) = save_keyboard(code) {
+            stat.set_text(&e.to_string());
+            return;
+        }
         b.set_sensitive(false);
         let (b, stat) = (b.clone(), stat.clone());
         glib::MainContext::default().spawn_local(async move {
             let result = crate::process::output("labwc", &["--reconfigure".into()], 3, 16384).await;
-            stat.set_text(if matches!(result, Ok((true, _))) {
-                "Persönliche Tastaturbelegung gespeichert und an die Rampi-Sitzung übergeben. Hier im Testfeld prüfen."
-            } else { "Belegung gespeichert. Sie gilt ab der nächsten Rampi-Anmeldung; laufende Sitzung konnte nicht neu geladen werden." });
+            stat.set_text(&tr(
+                if matches!(result, Ok((true, _))) {
+                    "keyboard-applied"
+                } else {
+                    "keyboard-saved-relogin"
+                },
+                &[],
+            ));
             b.set_sensitive(true);
         });
     });
     page.append(&save);
     let test = gtk::Entry::builder()
-        .placeholder_text("Tastatur hier testen: Y Z @ €")
+        .placeholder_text(tr("keyboard-test", &[]))
         .build();
     test.set_widget_name("keyboard-try");
     page.append(&test);
-    page.append(&label("Bildschirm · angebotene Auflösungen der laufenden Wayland-Sitzung. Änderungen gelten bis zur Abmeldung."));
-    let refresh = button("Bildschirme und Auflösungen anzeigen", f);
+    page.append(&label(&tr("display-heading", &[])));
+    let refresh = button(&tr("display-refresh", &[]), f);
     page.append(&refresh);
     let list = column();
     page.append(&list);
@@ -254,9 +273,9 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
                 Err(e) => stat.set_text(&e.to_string()),
                 Ok(outputs) => {
                     for output in outputs {
-                        list.append(&label(&format!(
-                            "{} · aktuell {}",
-                            output.name, output.current
+                        list.append(&label(&tr(
+                            "display-current",
+                            &[("output", &output.name), ("mode", &output.current)],
                         )));
                         for mode in output.modes.clone() {
                             let action = button(&format!("{} · {mode}", output.name), &feedback);
@@ -287,11 +306,11 @@ pub(crate) fn confirm(
         return;
     }
     let page = column();
-    let countdown = label("Auflösung wird geändert …");
+    let countdown = label(&tr("display-changing", &[]));
     page.append(&countdown);
-    let no = button("Zurücksetzen", f);
+    let no = button(&tr("display-revert", &[]), f);
     no.set_widget_name("rampi-back");
-    let yes = button("Auflösung beibehalten", f);
+    let yes = button(&tr("display-keep", &[]), f);
     yes.set_sensitive(false);
     page.append(&no);
     page.append(&yes);
@@ -352,8 +371,9 @@ pub(crate) fn confirm(
                     }
                     let seconds = remaining.get().saturating_sub(1);
                     remaining.set(seconds);
-                    countdown.set_text(&format!(
-                        "Auflösung beibehalten? Automatisches Zurücksetzen in {seconds} Sekunden."
+                    countdown.set_text(&tr(
+                        "display-countdown",
+                        &[("seconds", &seconds.to_string())],
                     ));
                     if seconds == 0 || s.visible_child_name().as_deref() != Some("display-confirm")
                     {

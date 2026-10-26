@@ -1,6 +1,7 @@
 //! Rampi connection controls around the existing RDW/IronRDP desktop widget.
 use crate::widgets::*;
 use gtk::{glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use rdw::DisplayExt;
 use std::{cell::RefCell, rc::Rc};
 
@@ -11,41 +12,38 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
     }
     let page = column();
     let toolbar = row();
-    let back = button("← Dashboard", f);
+    let back = button(&tr("back-dashboard", &[]), f);
     back.set_widget_name("rampi-back");
     let route = stack.clone();
     back.connect_clicked(move |_| route.set_visible_child_name("dashboard"));
     toolbar.append(&back);
-    let disconnect = button("Verbindung trennen", f);
+    let disconnect = button(&tr("rdp-disconnect", &[]), f);
     disconnect.set_sensitive(false);
     toolbar.append(&disconnect);
     page.append(&toolbar);
     let form = column();
-    let target = label("Aktives Windows-Hostprofil");
+    let target = label(&tr("rdp-active-profile", &[]));
     form.append(&target);
     let port = gtk::Entry::builder().text("3389").build();
     port.set_widget_name("rdp-port");
-    form.append(&label("RDP-Port"));
+    form.append(&label(&tr("rdp-port", &[])));
     form.append(&port);
     let fingerprint = gtk::Entry::builder()
-        .placeholder_text("64 Hex-Zeichen · SHA-256 des Windows-RDP-Zertifikats")
+        .placeholder_text(tr("rdp-fingerprint-placeholder", &[]))
         .build();
     fingerprint.set_widget_name("rdp-certificate-pin");
-    form.append(&label(
-        "Zertifikat-Fingerabdruck · unabhängig auf Windows prüfen",
-    ));
+    form.append(&label(&tr("rdp-fingerprint-label", &[])));
     form.append(&fingerprint);
     let password = gtk::PasswordEntry::builder()
-        .placeholder_text("Windows-Kennwort · wird nicht gespeichert")
+        .placeholder_text(tr("rdp-password-placeholder", &[]))
         .show_peek_icon(true)
         .build();
     password.set_widget_name("rdp-password");
     form.append(&password);
-    let connect = button("Mit Windows verbinden", f);
+    let connect = button(&tr("rdp-connect", &[]), f);
     form.append(&connect);
     page.append(&form);
-    let status =
-        label("Host und Windows-Konto werden aus deinem aktiven persönlichen Profil übernommen.");
+    let status = label(&tr("rdp-profile-description", &[]));
     status.set_widget_name("rdp-status");
     page.append(&status);
     let certificate = label("");
@@ -62,7 +60,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
     let state = status.clone();
     display.connect_local("rdp-error", false, move |values| {
         let error = values[1].get::<String>().unwrap_or_default();
-        state.set_text(&format!("Windows-Verbindung fehlgeschlagen: {error}"));
+        state.set_text(&tr("rdp-connection-failed", &[("error", &error)]));
         None
     });
     let expected: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
@@ -70,13 +68,13 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
     display.connect_verify_tls_certificate(move |_, bytes| {
         let actual = glib::compute_checksum_for_data(glib::ChecksumType::Sha256, &bytes).unwrap();
         let matches = actual.as_str() == pin.borrow().as_str();
-        cert.set_text(&format!(
-            "Server-Zertifikat SHA-256: {actual}{}",
+        cert.set_text(&tr(
             if matches {
-                " · stimmt überein"
+                "rdp-certificate-matched"
             } else {
-                " · nicht bestätigt; Anmeldung abgewiesen"
-            }
+                "rdp-certificate-rejected"
+            },
+            &[("hash", &actual)],
         ));
         matches
     });
@@ -91,9 +89,13 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
             return;
         }
         match c.borrow().host() {
-            Ok(host) => summary.set_text(&format!(
-                "{} · {} · Windows-Konto {}",
-                host.name, host.address, host.username
+            Ok(host) => summary.set_text(&tr(
+                "rdp-target",
+                &[
+                    ("name", &host.name),
+                    ("address", &host.address),
+                    ("account", &host.username),
+                ],
             )),
             Err(error) => state.set_text(&error.to_string()),
         }
@@ -109,7 +111,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
             return;
         }
         stop.set_sensitive(false);
-        state.set_text("Verbindung unterbrochen. Du kannst dich erneut verbinden.");
+        state.set_text(&tr("rdp-interrupted", &[]));
         let (d, start, controls) = (d.clone(), start.clone(), controls.clone());
         glib::MainContext::default().spawn_local(async move {
             let _ = d.rdp_disconnect().await;
@@ -129,10 +131,11 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
             (d.clone(), state.clone(), start.clone(), controls.clone());
         glib::MainContext::default().spawn_local(async move {
             match d.rdp_disconnect().await {
-                Ok(()) => state.set_text(
-                    "Verbindung getrennt. Die Windows-Sitzung wird dadurch nicht abgemeldet.",
-                ),
-                Err(error) => state.set_text(&format!("Trennen fehlgeschlagen: {error}")),
+                Ok(()) => state.set_text(&tr("rdp-disconnected", &[])),
+                Err(error) => state.set_text(&tr(
+                    "rdp-disconnect-failed",
+                    &[("error", &error.to_string())],
+                )),
             }
             controls.set_visible(true);
             start.set_sensitive(true);
@@ -155,11 +158,11 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
             }
         };
         let Ok(port) = port.text().parse::<u16>() else {
-            state.set_text("Bitte einen gültigen RDP-Port eingeben.");
+            state.set_text(&tr("rdp-invalid-port", &[]));
             return;
         };
         if port == 0 {
-            state.set_text("Bitte einen gültigen RDP-Port eingeben.");
+            state.set_text(&tr("rdp-invalid-port", &[]));
             return;
         }
         let pin = fingerprint
@@ -169,26 +172,26 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
             .collect::<String>()
             .to_ascii_lowercase();
         if pin.len() != 64 || !pin.bytes().all(|b| b.is_ascii_hexdigit()) {
-            state.set_text("Bitte den unabhängig geprüften SHA-256-Fingerabdruck eingeben.");
+            state.set_text(&tr("rdp-missing-fingerprint", &[]));
             return;
         }
         *expected.borrow_mut() = pin;
         let secret = zeroize::Zeroizing::new(password.text().to_string());
         password.set_text("");
         if secret.is_empty() {
-            state.set_text("Bitte dein Windows-Kennwort eingeben.");
+            state.set_text(&tr("rdp-missing-password", &[]));
             return;
         }
         let resolution = host.resolution.split_once('x').and_then(|(width, height)| {
             Some((width.parse::<u16>().ok()?, height.parse::<u16>().ok()?))
         });
         let Some(resolution) = resolution else {
-            state.set_text("Die Auflösung des Hostprofils ist ungültig.");
+            state.set_text(&tr("rdp-invalid-resolution", &[]));
             return;
         };
         let layout = crate::system_settings::rdp_keyboard_layout();
         button.set_sensitive(false);
-        state.set_text("Windows-Verbindung wird hergestellt …");
+        state.set_text(&tr("rdp-connecting", &[]));
         let (d, state, stop, start, controls, route) = (
             d.clone(),
             state.clone(),
@@ -210,7 +213,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                 .await
             {
                 Ok(()) => {
-                    state.set_text("Verbunden · Strg+Alt+Pos1 führt zurück zu Rampi.");
+                    state.set_text(&tr("rdp-connected", &[]));
                     controls.set_visible(false);
                     stop.set_sensitive(true);
                     if route.visible_child_name().as_deref() == Some("rdp-session") {
@@ -218,7 +221,10 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                     }
                 }
                 Err(error) => {
-                    state.set_text(&format!("Windows-Verbindung fehlgeschlagen: {error}"));
+                    state.set_text(&tr(
+                        "rdp-connection-failed",
+                        &[("error", &error.to_string())],
+                    ));
                     let _ = d.rdp_disconnect().await;
                     start.set_sensitive(true);
                 }

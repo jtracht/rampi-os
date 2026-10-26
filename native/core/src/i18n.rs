@@ -99,6 +99,14 @@ mod tests {
                     ("step", "1"),
                     ("total", "12"),
                     ("title", "Keyboard"),
+                    ("error", "Fixture error"),
+                    ("hash", "0123456789abcdef"),
+                    ("name", "My host"),
+                    ("address", "host.example"),
+                    ("account", "fixture"),
+                    ("output", "HDMI-A-1"),
+                    ("mode", "1280x720"),
+                    ("seconds", "15"),
                 ] {
                     args.set(name, value);
                 }

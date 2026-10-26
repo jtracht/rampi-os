@@ -47,6 +47,7 @@ for marker in [
 log = (directory / "wayland.log").read_text(encoding="utf-8")
 markers = [
     "RAMPI_RUST_FIRST_RUN_KEYBOARD_OK",
+    "RAMPI_RUST_LANGUAGE_NAVIGATION_PERSISTENCE_OK",
     "RAMPI_RUST_SETUP_PUBLISHED_RESUME_OK",
     "RAMPI_RUST_UI_OK",
     "RAMPI_RUST_NO_PROVIDER_ROUTES_OK",

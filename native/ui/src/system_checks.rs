@@ -31,9 +31,9 @@ pub fn run(
             )?;
             let choices = named(&page, "keyboard-layout")
                 .context("No keyboard picker")?
-                .downcast::<gtk::DropDown>()
+                .downcast::<gtk::ListBox>()
                 .unwrap();
-            choices.set_selected(0);
+            choices.select_row(choices.row_at_index(0).as_ref());
             let save =
                 find_button(&page, "Tastaturbelegung anwenden").context("No keyboard action")?;
             save.emit_clicked();

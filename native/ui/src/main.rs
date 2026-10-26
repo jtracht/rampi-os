@@ -35,6 +35,8 @@ mod interaction_checks;
 #[cfg(target_os = "linux")]
 mod kanban_checks;
 #[cfg(target_os = "linux")]
+mod language_checks;
+#[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
 mod login_branding;
