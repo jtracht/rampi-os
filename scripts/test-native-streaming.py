@@ -202,6 +202,8 @@ def main(server_image: str, client_image: str, output: Path, gtk: bool = False, 
                     process.terminate()
                     process.wait(timeout=10)
         if gtk:
+            if soak:
+                execute(server, "touch", "/home/rampi/stream-soak-start")
             execute(client, "cargo", "build", "--locked", "-p", "rampi-ui", "--bin", "rampi-native")
             execute(client, "rm", "-f", "/run/rampi-acceptance/pairing-pin")
             with (output / "gtk-client.log").open("wb") as log:

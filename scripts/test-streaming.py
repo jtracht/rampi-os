@@ -66,22 +66,25 @@ def server():
             os.close(descriptor)
             try:
                 animation = None
-                if os.environ.get("RAMPI_TEST_STREAM_SOAK") == "1":
-                    animation = subprocess.Popen(
-                        [
-                            "ffplay",
-                            "-loglevel",
-                            "error",
-                            "-nostats",
-                            "-noborder",
-                            "-f",
-                            "lavfi",
-                            "testsrc2=size=1280x720:rate=30",
-                        ],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                    )
-                for step in range(600 if animation else 120):
+                long_run = os.environ.get("RAMPI_TEST_STREAM_SOAK") == "1"
+                for step in range(600 if long_run else 120):
+                    if long_run and animation is None and (home / "stream-soak-start").is_file():
+                        animation = subprocess.Popen(
+                            [
+                                "ffplay",
+                                "-loglevel",
+                                "error",
+                                "-nostats",
+                                "-noborder",
+                                "-f",
+                                "lavfi",
+                                "testsrc2=size=1280x720:rate=30",
+                            ],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+                    if animation is not None and animation.poll() is not None:
+                        raise RuntimeError("Actual animated FFplay source exited")
                     if process.poll() is not None:
                         raise RuntimeError(
                             "Sunshine exited: " + (home / "sunshine.log").read_text()
