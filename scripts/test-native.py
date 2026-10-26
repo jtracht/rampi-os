@@ -382,6 +382,24 @@ def acceptance(options):
                     ]
                 )
             )
+            print("Running actual native NLA-only authentication …", flush=True)
+            require(
+                run(
+                    [
+                        sys.executable,
+                        str(source / "tests/rust/test-rdp-nla.py"),
+                        "--image",
+                        options.image,
+                        "--server-image",
+                        "rampi-native-rdp-fixture",
+                        "--build-volume",
+                        volume,
+                        "--artifacts",
+                        str(output / "rdp-nla"),
+                    ],
+                    timeout=400,
+                )
+            )
             soak = output / "mixed-soak"
             soak.mkdir()
             # Runtime UID 1000 writes only nonsecret test captures here; the

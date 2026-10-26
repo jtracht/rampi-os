@@ -11,7 +11,15 @@ expected="$(awk -v wanted="$(basename "$image")" '{name=$2;sub(/^.*\//,"",name);
 printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 work="$(mktemp -d)"
 loop=''
+qemu_pid=''
+input_pid=''
 cleanup() {
+    for pid in "$input_pid" "$qemu_pid"; do
+        if [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+        fi
+    done
     for point in dev proc root boot; do
         directory="$work/$point"
         [[ "$point" == dev || "$point" == proc ]] && directory="$work/root/$point"
@@ -67,14 +75,27 @@ PY
 sudo umount "$work/root/proc" "$work/root/dev"
 sudo install -d -m 755 "$work/root/opt/rampi-source/scripts/virtual" "$work/root/opt/rampi-captures"
 sudo install -m 644 "$source_root/scripts/virtual/test-login-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
+sudo install -m 644 "$source_root/scripts/virtual/test-first-user-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
 sudo install -m 644 "$source_root/scripts/check-login-evidence.py" "$work/root/opt/rampi-source/scripts/"
+# Ephemeral test input, not a configured Linux account or release credential.
+# The original image remains account/password-free; only QMP types these into
+# its stock interactive wizard in this disposable copy.
+python3 - "$work/first-user-credentials.json" <<'PY'
+import json
+import os
+import secrets
+import sys
+with open(sys.argv[1], 'x', opener=lambda path, flags: os.open(path, flags, 0o600)) as file:
+    json.dump({"user": "abcdef", "password": ''.join(secrets.choice('abcdef') for _ in range(48))}, file)
+PY
+sudo install -m 600 "$work/first-user-credentials.json" "$work/root/opt/rampi-source/first-user-credentials.json"
 if [[ "${RAMPI_IMAGE_GREETER_DIAGNOSTIC:-0}" == 1 ]]; then
     sudo touch "$work/root/etc/rampi-greeter-diagnostic"
 fi
 sudo touch "$work/root/etc/rampi-acceptance-vm" "$work/root/etc/rampi-image-acceptance-vm"
 # Record the image's installed implementation before any guest test. Its config,
 # executable, assets and launchers must still match after login and logout.
-sudo chroot "$work/root" /bin/sh -ec 'find -L /opt/rampi/current /usr/local/lib/libmoonlight-common.so.2.7.1 /usr/local/bin/rampi /usr/local/bin/rampi-session /usr/local/bin/rampi-wayland-start /usr/local/bin/rampi-greeter /etc/systemd/user/rampi.service /etc/xdg/rampi /etc/skel -type f -print0 | sort -z | xargs -0 sha256sum' | tee "$work/installed-files.sha256" > /dev/null
+sudo chroot "$work/root" /bin/sh -ec 'find -L /opt/rampi/current /usr/local/lib/libmoonlight-common.so.2.7.1 /usr/local/bin/rampi /usr/local/bin/rampi-session /usr/local/bin/rampi-wayland-start /usr/local/bin/rampi-greeter /usr/local/libexec/rampi-first-user-complete /etc/systemd/system/rampi-first-user.service /etc/systemd/user/rampi.service /etc/xdg/rampi /etc/skel -type f -print0 | sort -z | xargs -0 sha256sum' | tee "$work/installed-files.sha256" > /dev/null
 sudo cp "$work/installed-files.sha256" "$work/root/opt/rampi-source/installed-files.sha256"
 sudo tee "$work/root/usr/local/bin/rampi-image-login-test" > /dev/null <<'SH'
 #!/bin/bash
@@ -82,13 +103,17 @@ set -uo pipefail
 mkdir -p /opt/rampi-captures
 extra=()
 if [[ -f /etc/rampi-greeter-diagnostic ]]; then extra=(--greeter-diagnostic); fi
-python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image "${extra[@]}" > /opt/rampi-captures/guest.log 2>&1
+python3 /opt/rampi-source/scripts/virtual/test-first-user-guest.py --installed-image 2>&1 | tee /opt/rampi-captures/first-user.log
 result=$?
+if [[ "$result" == 0 ]]; then
+    python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image "${extra[@]}" > /opt/rampi-captures/guest.log 2>&1
+    result=$?
+fi
 if sha256sum --check --status /opt/rampi-source/installed-files.sha256; then
     echo RAMPI_INSTALLED_FILES_UNCHANGED_OK
 else result=1
 fi
-cat /opt/rampi-captures/guest.log
+if [[ -f /opt/rampi-captures/guest.log ]]; then cat /opt/rampi-captures/guest.log; fi
 printf 'RAMPI_GUEST_EXIT=%s\n' "$result" > /opt/rampi-captures/result.txt
 sync
 cat /opt/rampi-captures/result.txt
@@ -103,7 +128,7 @@ Wants=systemd-logind.service systemd-user-sessions.service
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/rampi-image-login-test
-TimeoutStartSec=1500
+TimeoutStartSec=2100
 StandardOutput=journal+console
 StandardError=journal+console
 UNIT
@@ -115,15 +140,19 @@ power=1
 while ((power < size)); do power=$((power * 2)); done
 truncate -s "$power" "$work/disk.img"
 set +e
-timeout 1800 qemu-system-aarch64 -M raspi3b -accel tcg,thread=multi -m 1G -smp 4 -nographic -monitor none -nic none \
+timeout 2400 qemu-system-aarch64 -M raspi3b -accel tcg,thread=multi -m 1G -smp 4 -nographic -monitor none -nic none \
+    -qmp "unix:$work/qmp.sock,server=on,wait=off" \
     -no-reboot -kernel "$work/kernel8.img" -dtb "$work/pi3.dtb" "${initrd[@]}" \
     -device usb-kbd -device usb-tablet \
     -drive "file=$work/disk.img,format=raw,if=sd" \
     -append 'root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait console=ttyAMA1,115200 plymouth.enable=0 systemd.unit=multi-user.target systemd.wants=rampi-image-login-test.service rampi.image_acceptance=1' \
     > "$output/serial.log" 2>&1 &
 qemu_pid=$!
+python3 "$source_root/scripts/virtual/drive-first-user-qmp.py" --qmp "$work/qmp.sock" \
+    --serial "$output/serial.log" --credentials "$work/first-user-credentials.json" > "$output/first-user-input.log" 2>&1 &
+input_pid=$!
 guest_result=''
-for ((attempt=0; attempt<900; attempt++)); do
+for ((attempt=0; attempt<1200; attempt++)); do
     guest_result="$(sed -n 's/.*RAMPI_GUEST_EXIT=\([0-9][0-9]*\).*/\1/p' "$output/serial.log" | tail -1)"
     if [[ -n "$guest_result" ]] || ! kill -0 "$qemu_pid" 2>/dev/null; then break; fi
     sleep 2
@@ -134,6 +163,10 @@ done
 if kill -0 "$qemu_pid" 2>/dev/null; then kill "$qemu_pid"; fi
 wait "$qemu_pid"
 qemu_result=$?
+qemu_pid=''
+wait "$input_pid"
+input_result=$?
+input_pid=''
 set -e
 loop="$(sudo losetup --partscan --find --show "$work/disk.img")"
 sudo udevadm settle
@@ -168,6 +201,7 @@ data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=Fals
 (directory / "environment.json").write_text(json.dumps(data, indent=2) + "\n")
 PY
 [[ "$guest_result" == 0 ]]
+[[ "$input_result" == 0 ]]
 python3 "$source_root/scripts/check-image-login-evidence.py" "$output" --expected-source "$revision" --expected-image-sha256 "$expected"
 printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 echo 'RAMPI_INSTALLED_IMAGE_GRAPHICAL_OK: original image unchanged; actual installed GUI, PAM and two accounts tested in disposable QEMU copy.'

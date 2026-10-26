@@ -1,6 +1,14 @@
 #!/bin/sh
 set -eu
 export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
+LANG="${LANG:-C.UTF-8}"
+LANGUAGE="${LANGUAGE:-${LANG%%[._]*}}"
+LC_MESSAGES="${LC_MESSAGES:-$LANG}"
+LC_TIME="${LC_TIME:-$LANG}"
+export LANG LANGUAGE LC_MESSAGES LC_TIME
+systemctl --user unset-environment LC_ALL
+systemctl --user import-environment LANG LANGUAGE LC_MESSAGES LC_TIME
+dbus-update-activation-environment --systemd LANG LANGUAGE LC_MESSAGES LC_TIME
 systemctl --user import-environment WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP DBUS_SESSION_BUS_ADDRESS GDK_BACKEND GSK_RENDERER SDL_VIDEODRIVER
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP GDK_BACKEND GSK_RENDERER SDL_VIDEODRIVER
 if [ -n "${SSH_AUTH_SOCK:-}" ]; then

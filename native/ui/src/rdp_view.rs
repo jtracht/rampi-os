@@ -173,12 +173,20 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
             return;
         }
         *expected.borrow_mut() = pin;
-        let secret = password.text().to_string();
+        let secret = zeroize::Zeroizing::new(password.text().to_string());
         password.set_text("");
         if secret.is_empty() {
             state.set_text("Bitte dein Windows-Kennwort eingeben.");
             return;
         }
+        let resolution = host.resolution.split_once('x').and_then(|(width, height)| {
+            Some((width.parse::<u16>().ok()?, height.parse::<u16>().ok()?))
+        });
+        let Some(resolution) = resolution else {
+            state.set_text("Die Auflösung des Hostprofils ist ungültig.");
+            return;
+        };
+        let layout = crate::system_settings::rdp_keyboard_layout();
         button.set_sensitive(false);
         state.set_text("Windows-Verbindung wird hergestellt …");
         let (d, state, stop, start, controls, route) = (
@@ -191,7 +199,14 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
         );
         glib::MainContext::default().spawn_local(async move {
             match d
-                .rdp_connect(&host.address, port, &host.username, &secret)
+                .rdp_connect_configured(
+                    &host.address,
+                    port,
+                    &host.username,
+                    &secret,
+                    resolution,
+                    layout,
+                )
                 .await
             {
                 Ok(()) => {

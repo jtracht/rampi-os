@@ -10,6 +10,14 @@ test -e "$root/boot/firmware/config.txt"
 test -e "$root/boot/firmware/cmdline.txt"
 test -e "$root/boot/firmware/kernel8.img"
 test -e "$root/boot/firmware/bcm2710-rpi-3-b-plus.dtb"
+test -x "$root/usr/local/libexec/rampi-first-user-complete"
+test -e "$root/etc/systemd/system/rampi-first-user.service"
+test "$(systemctl get-default)" = multi-user.target
+systemctl is-enabled --quiet userconfig.service
+systemctl is-enabled --quiet rampi-first-user.service
+if systemctl is-enabled --quiet greetd.service; then
+    echo 'Die grafische Anmeldung darf nicht vor der ersten Benutzereinrichtung starten.' >&2; exit 1
+fi
 test "$(dpkg --print-architecture)" = arm64
 if find -L "$root/opt/rampi/current" "$root/opt/rampi/current/assets" \( -perm /022 -o ! -uid 0 -o ! -gid 0 \) -print -quit | grep -q .; then
     echo 'Programmdateien müssen root gehören und für andere Benutzer schreibgeschützt sein.' >&2; exit 1

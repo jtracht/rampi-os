@@ -16,7 +16,7 @@ packages=(libgtk-4-1 libvte-2.91-gtk4-0 libwebkitgtk-6.0-4 libgtk-4-media-gstrea
     network-manager libnm0 bluez wireguard-tools openssh-client libgstreamer-plugins-base1.0-0 libssl3t64
     libusbredirparser1t64 libusb-1.0-0
     wlr-randr libsecret-tools gnome-keyring libpam-gnome-keyring curl
-    plymouth plymouth-themes fonts-dejavu-core accountsservice whois binutils sudo passwd)
+    plymouth plymouth-themes fonts-dejavu-core accountsservice whois binutils sudo passwd locales)
 if ! dpkg-query -W -f='${Status}' pulseaudio 2>/dev/null | grep -q '^install ok installed$'; then
     packages+=(pipewire-audio)
 fi
@@ -59,6 +59,12 @@ if [[ "$mode" != --image ]]; then
     done
 fi
 if ((${#missing[@]})); then apt-get update; apt-get install --no-install-recommends -y "${missing[@]}"; fi
+# Add only the supported missing locale data; preserve system defaults and other locales.
+for locale_name in de_DE en_US; do
+    if ! locale -a | grep -Eqi "^${locale_name}[.]utf-?8$"; then
+        localedef -i "$locale_name" -f UTF-8 "$locale_name.UTF-8"
+    fi
+done
 version="$("$binary" --version | sed -n 's/^Rampi \([^ ]*\).*/\1/p')"
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]*)$ ]]; then echo 'Ungültige Binary-Version.' >&2; exit 1; fi
 # Serialize manual installs; prepare a complete version before activating it.

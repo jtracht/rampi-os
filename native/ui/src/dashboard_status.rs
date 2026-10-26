@@ -1,6 +1,7 @@
 //! Read authoritative service state without discovery, connection changes or authentication.
 use crate::{bus, widgets::Shared};
 use gtk::{gio, glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 fn text(button: &gtk::Button, value: &str) {
@@ -39,39 +40,44 @@ async fn network() -> (String, Option<bool>) {
             }
         }
         Ok((
-            if wifi {
-                "WLAN · verbunden"
-            } else if radio == Some(false) {
-                "WLAN · aus"
-            } else if radio == Some(true) {
-                "WLAN · bereit"
-            } else {
-                "WLAN · ungeprüft"
-            }
-            .into(),
+            tr(
+                if wifi {
+                    "status-wifi-connected"
+                } else if radio == Some(false) {
+                    "status-wifi-off"
+                } else if radio == Some(true) {
+                    "status-wifi-ready"
+                } else {
+                    "status-wifi-unknown"
+                },
+                &[],
+            ),
             vpn,
         ))
     }
     .await;
     result
         .map(|(wifi, vpn)| (wifi, Some(vpn)))
-        .unwrap_or(("WLAN · nicht verfügbar".into(), None))
+        .unwrap_or((tr("status-wifi-unavailable", &[]), None))
 }
 async fn bluetooth() -> String {
     match bus::bluetooth_snapshot().await {
         Ok((adapters, devices)) => {
             let connected = devices.iter().filter(|d| d.connected).count();
             if connected > 0 {
-                format!("Bluetooth · {connected} verbunden")
+                tr(
+                    "status-bluetooth-connected",
+                    &[("count", &connected.to_string())],
+                )
             } else if adapters.is_empty() {
-                "Bluetooth · kein Adapter".into()
+                tr("status-bluetooth-no-adapter", &[])
             } else if adapters.iter().any(|a| a.powered) {
-                "Bluetooth · bereit".into()
+                tr("status-bluetooth-ready", &[])
             } else {
-                "Bluetooth · aus".into()
+                tr("status-bluetooth-off", &[])
             }
         }
-        Err(_) => "Bluetooth · nicht verfügbar".into(),
+        Err(_) => tr("status-bluetooth-unavailable", &[]),
     }
 }
 
@@ -118,7 +124,7 @@ pub fn install(
                     h.name, h.username, h.address
                 )
             })
-            .unwrap_or_else(|_| "Windows-Host noch nicht eingerichtet".into());
+            .unwrap_or_else(|_| tr("host-not-configured", &[]));
         for (index, label) in labels.iter().enumerate() {
             if let Some(label) = label.upgrade() {
                 label.set_text(if index == 1 {
@@ -143,10 +149,10 @@ pub fn install(
         glib::MainContext::default().spawn_local(async move {
             let (wifi, wireguard) = glib::future_with_timeout(Duration::from_secs(3), network())
                 .await
-                .unwrap_or(("WLAN · ungeprüft".into(), None));
+                .unwrap_or((tr("status-wifi-unknown", &[]), None));
             let bluetooth = glib::future_with_timeout(Duration::from_secs(3), bluetooth())
                 .await
-                .unwrap_or_else(|_| "Bluetooth · ungeprüft".into());
+                .unwrap_or_else(|_| tr("status-bluetooth-unknown", &[]));
             let tailscale = if glib::find_program_in_path("tailscale").is_some() {
                 match crate::process::output(
                     "tailscale",
@@ -164,15 +170,18 @@ pub fn install(
             } else {
                 Some(false)
             };
-            let vpn = if wireguard == Some(true) {
-                "VPN · aktiv (System)"
-            } else if tailscale == Some(true) {
-                "VPN · Tailscale aktiv"
-            } else if wireguard.is_some() && tailscale.is_some() {
-                "VPN · getrennt"
-            } else {
-                "VPN · ungeprüft"
-            };
+            let vpn = tr(
+                if wireguard == Some(true) {
+                    "status-vpn-system"
+                } else if tailscale == Some(true) {
+                    "status-vpn-tailscale"
+                } else if wireguard.is_some() && tailscale.is_some() {
+                    "status-vpn-disconnected"
+                } else {
+                    "status-vpn-unknown"
+                },
+                &[],
+            );
             let host = if let Ok(host) = settings.host() {
                 let client = gio::SocketClient::new();
                 client.set_timeout(2);
@@ -198,7 +207,7 @@ pub fn install(
                     }
                 )
             } else {
-                "Windows-Host noch nicht eingerichtet".into()
+                tr("host-not-configured", &[])
             };
             // Ignore replies for a profile that changed while the check was running.
             let same_host = c
@@ -219,7 +228,7 @@ pub fn install(
                     text(&b, &bluetooth);
                 }
                 if let Some(v) = v.upgrade() {
-                    v.set_label(vpn);
+                    v.set_label(&vpn);
                 }
                 for (index, label) in labels.iter().enumerate() {
                     if let Some(label) = label.upgrade() {

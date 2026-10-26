@@ -22,6 +22,7 @@ def check(directory: Path):
         or environment.get("cards") != 2
         or environment.get("refresh") is not True
         or environment.get("offline") is not True
+        or environment.get("project_scopes") != ["repository", "organization", "individual"]
     ):
         raise ValueError("Missing actual pinned/private Gitea scope or write rejection")
     issues = environment.get("actual_server_issues", [])
@@ -39,10 +40,10 @@ def check(directory: Path):
         for suffix in ("ready", "continue"):
             if (directory / f"gitea-{name}-{suffix}").read_text() != name:
                 raise ValueError("Missing actual Gitea phase handshake")
-    if "RAMPI_RUST_GITEA_LIVE_PAGE_OK" not in (directory / "gitea-live.log").read_text(
-        encoding="utf-8"
-    ):
-        raise ValueError("Actual Gitea GTK/keyring acceptance missing")
+    log = (directory / "gitea-live.log").read_text(encoding="utf-8")
+    for marker in ("RAMPI_RUST_GITEA_LIVE_PAGE_OK", "RAMPI_RUST_GITEA_ORG_USER_PROJECTS_OK"):
+        if marker not in log:
+            raise ValueError("Actual Gitea GTK/keyring/scope acceptance missing: " + marker)
     with (directory / "gitea-live.png").open("rb") as capture:
         header = capture.read(24)
     if (

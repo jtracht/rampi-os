@@ -9,12 +9,16 @@ Prozentwert vergleichbar. Nach Abzug der früheren drei Anbieter-CLI-Punkte
 beträgt die vergleichbare Basis **78/95 = 82,1 %**. Die entfernten fünf möglichen
 Punkte werden nicht auf andere Bereiche verteilt.
 
-Aktuell abgenommen sind **86/95 = 90,5 %**. Das veröffentlichte
+Der belegte Stand wird wegen des nachträglich festgestellten Erststartfehlers auf
+**85/95 = 89,5 %** korrigiert. Das veröffentlichte
 [v0.6.0-dev.2](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.2)
 enthält den integrierten Drei-Modul-Stand mit eingebettetem Streaming. Allgemeine
 und native main-CI, unabhängige Programm-/Konten-/Paketprüfungen, frischer Imagebau,
 grafische Image-Anmeldung und Kontrolle aller öffentlichen Downloads bestehen.
-[Abnahme und offene Punkte](validation/native-streaming-dev2-release.md).
+[Bisherige Abnahme](validation/native-streaming-dev2-release.md). Diese prüfte bereits
+vorbereitete Konten und übersah den unveränderten Erststart: `pi` bleibt gesperrt,
+während greetd bereits die Anmeldung zeigt. Es gibt kein Standardpasswort.
+Die Korrektur im Komplettversionszweig ist noch nicht frisch abgenommen.
 
 | Bereich | Basis / 5 | Aktuell abgenommen / 5 |
 |---|---:|---:|
@@ -33,11 +37,11 @@ grafische Image-Anmeldung und Kontrolle aller öffentlichen Downloads bestehen.
 | Sicherheit und Isolation | 4 | 4 |
 | Design und Branding | 4 | 4 |
 | GitHub und CI/CD | 4 | 5 |
-| Systemimage | 4 | 5 |
+| Systemimage | 4 | 4 |
 | Manuelle Updates | 5 | 5 |
 | Dokumentation | 4 | 5 |
 | Performance | 4 | 5 |
-| **Summe** | **78 / 95** | **86 / 95** |
+| **Summe** | **78 / 95** | **85 / 95** |
 
 Die Bewertungsstufen bleiben unverändert: 0 fehlt, 1 Grundlage, 2 teilweise,
 3 wesentliche Funktionen, 4 weitgehend umgesetzt und softwaregeprüft,
@@ -54,7 +58,7 @@ GitHub/CI/CD ergänzt den erfolgreich veröffentlichten nativen Entwicklungsrele
 mit frischem Image und vollständig unabhängig geprüften öffentlichen Downloads.
 Die genauen Grenzen und Artefaktzuordnungen stehen im verlinkten Nachweis.
 
-Das neue Release bleibt eine ausdrücklich unvollständige Vorabversion.
+Das veröffentlichte dev2-Release bleibt eine ausdrücklich unvollständige Vorabversion.
 Das frühere dev1-Release bleibt unverändert. Streaming, PAM-Schlüsselbünde und
 die Entfernung der KI-Module sind jetzt im neuen Image enthalten. Sprachwechsel,
 Windows-NLA und die weiteren dokumentierten Funktionsdetails bleiben offen.
@@ -67,16 +71,20 @@ Es werden keine Modellanfragen ausgelöst.
 [Entwicklung](NATIVE-DEVELOPMENT.de.md), [Umfang und Fehlerhilfe](NATIVE-SUPPORT.de.md).
 
 
-## Abgenommener 90-Prozent-Meilenstein
+## Korrigierte Image-Abnahme
 
-Der Nenner bleibt unverändert bei 95 Punkten. Die vorab festgelegte Erweiterung
-ist mit **86/95 = 90,5 %** bestanden.
+Der Nenner bleibt unverändert bei 95 Punkten. Die frühere Bewertung von 90,5 %
+wird wegen der fehlenden Erstbenutzereinrichtung auf 89,5 % zurückgenommen.
+Vor dem nächsten Release muss ein frischer unveränderter Gast den vorhandenen
+Raspberry-Pi-Benutzerassistenten tatsächlich durchlaufen und danach die normale
+grafische PAM-Anmeldung erreichen. Eine vorherige Testkontenerstellung ersetzt
+diesen Nachweis nicht. Es wird kein Standardpasswort eingeführt.
 
 | Bereich | Vor der Erweiterung / 5 | Jetzt abgenommen / 5 |
 |---|---:|---:|
 | Linux-Konten und Login | 4 | 5 |
 | Remote Desktop und Streaming | 3 | 4 |
-| Systemimage | 4 | 5 |
+| Systemimage | 4 | 4 |
 | Dokumentation | 4 | 5 |
 | Performance | 4 | 5 |
 
@@ -93,5 +101,8 @@ Nachweise und die verbleibenden neun Punkte stehen in der
 
 [Kriterien für die Erweiterung](validation/native-streaming-ui-2026-10-26.md).
 Eine lokale Komponentenprüfung, Testanzahl oder Wartezeit allein gibt keinen
-zusätzlichen Punkt frei. Sprachwechsel, Windows-NLA und der echte Pi-Decoderpfad
-bleiben offen. Keine Hardwaretests, Windows-Testhosts oder Modellanfragen.
+zusätzlichen Punkt frei. Der neue Komplettversionszweig enthält inzwischen reale
+Linux-NLA- und zusätzliche Gitea-Projekt-Komponentennachweise. Vollständiger
+Sprachwechsel, Erststart-Image-Abnahme und weitere Funktionsdetails bleiben offen:
+[gemeinsamer Entwicklungsstand](validation/complete-native-development-2026-10-26.md).
+Keine Hardwaretests, Windows-Testhosts oder Modellanfragen.

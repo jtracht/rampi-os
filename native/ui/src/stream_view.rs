@@ -395,8 +395,8 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                         );
                         picture.set_paintable(Some(&texture));
                         state.set_text(&format!(
-                            "Stream verbunden · {}×{} / 30 Bilder pro Sekunde",
-                            frame.width, frame.height
+                            "Stream verbunden · {}×{} · Ziel 30 Bilder/s · Decoder: {}",
+                            frame.width, frame.height, frame.decoder
                         ));
                     }
                     Ok(None) => (),

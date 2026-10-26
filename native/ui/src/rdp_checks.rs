@@ -132,7 +132,7 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedba
                 .context("No fixture password")?;
             settings.borrow_mut().hosts = vec![rampi_core::config::Host {
                 address: "rdp-server".into(),
-                username: "rdpuser".into(),
+                username: fixture["username"].as_str().unwrap_or("rdpuser").into(),
                 ..Default::default()
             }];
             settings.borrow_mut().active_host = 0;
@@ -185,6 +185,50 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedba
                     .as_str()
                     .context("No certificate pin")?,
             );
+            if fixture["nla"].as_bool() == Some(true) {
+                // Additional acceptance against a real FreeRDP/WinPR NLA-only
+                // server. The regular XRDP/input/reconnect test remains intact.
+                let account = settings.borrow().hosts[0].username.clone();
+                for (username, candidate) in [
+                    (account.as_str(), "deliberately-incorrect-fixture-password"),
+                    ("RAMPI\\missing-account", secret),
+                ] {
+                    settings.borrow_mut().hosts[0].username = username.into();
+                    password.set_text(candidate);
+                    connect.emit_clicked();
+                    until(|| connect.is_sensitive()).await?;
+                    ensure!(
+                        !display.property::<bool>("rdp-connected"),
+                        "NLA accepted invalid credentials"
+                    );
+                }
+                settings.borrow_mut().hosts[0].username = account;
+                for attempt in 0..2 {
+                    password.set_text(secret);
+                    connect.emit_clicked();
+                    until(|| stop.is_sensitive() || connect.is_sensitive()).await?;
+                    ensure!(
+                        display.property::<bool>("rdp-connected"),
+                        "NLA failed: {}",
+                        state.text()
+                    );
+                    until(|| display.display_size() == Some((1280, 720)))
+                        .await
+                        .with_context(|| {
+                            format!("NLA frame/profile resolution: {:?}", display.display_size())
+                        })?;
+                    display.grab_focus();
+                    type_remote(&format!("rampinla{attempt}")).await?;
+                    glib::timeout_future(std::time::Duration::from_millis(500)).await;
+                    stop.emit_clicked();
+                    until(|| connect.is_sensitive()).await?;
+                    ensure!(!display.property::<bool>("rdp-connected"));
+                }
+                keyboard.force_exit();
+                println!("RAMPI_RUST_RDP_NLA_BAD_ACCOUNT_REJECT_OK");
+                println!("RAMPI_RUST_RDP_NLA_DOMAIN_RECONNECT_OK");
+                return Ok(());
+            }
             for attempt in 0..2 {
                 password.set_text(secret);
                 connect.emit_clicked();

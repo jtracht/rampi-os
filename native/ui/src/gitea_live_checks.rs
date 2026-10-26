@@ -115,6 +115,38 @@ pub fn ui(
                 loaded.board.cards.iter().all(|c| c.status == "Review"),
                 "Gitea project membership differs"
             );
+            let scopes = credential["gitea"]["additional_projects"]
+                .as_array()
+                .context("Missing actual organization/user project fixtures")?;
+            ensure!(scopes.len() == 2, "Incomplete Gitea scope acceptance");
+            for scope in scopes {
+                let source = scope["source"].as_str().context("Missing scope source")?;
+                let title = scope["title"].as_str().context("Missing scope title")?;
+                let kind = scope["scope"].as_str().context("Missing project scope")?;
+                ensure!(["organization", "individual"].contains(&kind));
+                let profile = format!("live-gitea-{kind}");
+                crate::secret_service::store(&profile, "gitea", source, "fixture", token).await?;
+                let mut selected = settings.clone();
+                selected.board_source = source.into();
+                selected.board_token_key = profile;
+                let scoped = crate::board_data::load(selected).await?;
+                ensure!(!scoped.cached && scoped.board.title == title);
+                ensure!(scoped.board.cards.len() == 2);
+                ensure!(scoped.board.columns.iter().any(|column| column == "Empty"));
+                ensure!(
+                    scoped
+                        .board
+                        .cards
+                        .iter()
+                        .all(|card| card.status == "Review")
+                );
+                ensure!(
+                    crate::secret_service::load("live-gitea", "gitea", source)
+                        .await
+                        .is_err()
+                );
+            }
+            println!("RAMPI_RUST_GITEA_ORG_USER_PROJECTS_OK");
             phase("refresh").await?;
             find_button(&board, "Aufgaben neu laden")
                 .unwrap()

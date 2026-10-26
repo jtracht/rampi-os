@@ -6,7 +6,7 @@ Die neue Sitzung verwendet labwc und benötigt kein `startx`. Terminals und Brow
 werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
 weiterhin vorhandene Systemdienste. Eigenentwickelter Code: Apache-2.0.
 
-**Aktuell: 90,5 % (86/95 Punkte im Drei-Modul-Umfang); native Vorabversion.**
+**Aktuell: 89,5 % (85/95 Punkte im Drei-Modul-Umfang); native Vorabversion.**
 Bewertung, Abnahmen und offene Arbeiten stehen in [PROGRESS.md](docs/PROGRESS.md).
 Die [Migrationsübersicht](docs/RUST-MIGRATION.md) nennt Quellcode, Start,
 softwareseitige Nachweise und verbleibende Funktionen. Der frühere Stand von
@@ -22,6 +22,13 @@ Rampi umfasst drei Hauptmodule: **Kanban**, **Remote Desktop** und **Browser**.
 enthält ein frisch gebautes und grafisch in QEMU geprüftes ARM64-Image mit
 eingebettetem Streaming, RDP und persönlichen PAM-Schlüsselbünden. Alle 28 öffentlichen
 Dateien wurden nach Veröffentlichung unabhängig geprüft. Alte Releases bleiben unverändert.
+
+Beim unveränderten Erststart von dev.2 wurde anschließend ein Anmeldefehler gefunden:
+Das ursprüngliche Konto `pi` bleibt gesperrt, während bereits die grafische Anmeldung
+erscheint. Es gibt kein Standardpasswort. Die Korrektur und die weitergehenden
+Funktionen entstehen gemeinsam für die Komplettversion; deren frische
+[Erststart- und Gesamtabnahme](docs/validation/complete-native-development-2026-10-26.md)
+steht noch aus. Die bisherigen Image-Anmeldetests hatten Konten vorab angelegt.
 
 ## Rust-Entwicklung unter Linux
 

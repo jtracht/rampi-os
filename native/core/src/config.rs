@@ -174,6 +174,10 @@ impl Settings {
         Ok(h)
     }
     pub fn validate(&self) -> Result<()> {
+        ensure!(
+            crate::i18n::locale(&self.language).is_some(),
+            "Unbekannte Sprache"
+        );
         ensure!(self.setup_step < 15, "Ungültiger Einrichtungsschritt");
         ensure!(self.hosts.len() <= 64, "Zu viele Hostprofile");
         validate_https(&self.browser_url)?;

@@ -1,5 +1,6 @@
 use crate::{bus, widgets::*};
 use gtk::{gio, glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use rampi_core::{
     board::Board,
     config::{self},
@@ -19,7 +20,7 @@ pub fn settings(
 ) -> (gtk::Box, gtk::Stack) {
     let page = column();
     let header = row();
-    let back = button("← Dashboard", f);
+    let back = button(&tr("back-dashboard", &[]), f);
     back.set_widget_name("rampi-back");
     let tabs = gtk::Stack::builder()
         .hexpand(true)
@@ -47,59 +48,62 @@ pub fn settings(
         let wizard = root
             .child_by_name("setup")
             .is_some_and(|p| p.widget_name() == "setup-return");
-        button.set_label(if wizard {
-            "← Einrichtung"
-        } else if pages.visible_child_name().as_deref() == Some("categories") {
-            "← Dashboard"
-        } else {
-            "← Einstellungen"
-        });
+        button.set_label(&tr(
+            if wizard {
+                "back-setup"
+            } else if pages.visible_child_name().as_deref() == Some("categories") {
+                "back-dashboard"
+            } else {
+                "back-settings"
+            },
+            &[],
+        ));
     });
     header.append(&back);
-    let title = label("Einstellungen");
+    let title = label(&tr("settings-heading", &[]));
     title.add_css_class("heading");
     header.append(&title);
     page.append(&header);
     let menu = column();
     menu.add_css_class("settings-categories");
-    menu.append(&label("Wähle einen Bereich. Mit Escape kommst du zurück."));
+    menu.append(&label(&tr("settings-instructions", &[])));
     let mut choices = Vec::new();
     let last_category = Rc::new(Cell::new(0usize));
     for (name, heading, hint, icon) in [
         (
             "host",
-            "Host & SSH",
-            "Windows-PC und persönliche Verbindung einrichten",
+            "category-host",
+            "category-host-description",
             "computer-symbolic",
         ),
         (
             "wifi",
-            "WLAN",
-            "Netzwerke suchen und verbinden",
+            "category-wifi",
+            "category-wifi-description",
             "network-wireless-symbolic",
         ),
         (
             "bluetooth",
-            "Bluetooth",
-            "Tastatur, Maus und weitere Geräte koppeln",
+            "category-bluetooth",
+            "category-bluetooth-description",
             "bluetooth-symbolic",
         ),
         (
             "vpn",
-            "VPN",
-            "Tailscale oder WireGuard verwalten",
+            "category-vpn",
+            "category-vpn-description",
             "network-vpn-symbolic",
         ),
         (
             "board",
-            "Kanban & Browser",
-            "Aufgabenquelle und Browserstartseite festlegen",
+            "category-board",
+            "category-board-description",
             "view-list-symbolic",
         ),
         (
             "system",
-            "System",
-            "Anzeige, Klang, Bedienung und Konto anpassen",
+            "category-system",
+            "category-system-description",
             "preferences-system-symbolic",
         ),
     ] {
@@ -112,10 +116,10 @@ pub fn settings(
         content.append(&image);
         let text = gtk::Box::new(gtk::Orientation::Vertical, 3);
         text.set_hexpand(true);
-        let heading_label = label(heading);
+        let heading_label = label(&tr(heading, &[]));
         heading_label.add_css_class("preview-title");
         text.append(&heading_label);
-        let description = label(hint);
+        let description = label(&tr(hint, &[]));
         description.add_css_class("status");
         text.append(&description);
         content.append(&text);
@@ -161,25 +165,28 @@ pub fn settings(
             last_category.set(index);
         }
         let caption = match name.as_str() {
-            "host" => "Host & SSH",
-            "wifi" => "WLAN",
-            "bluetooth" => "Bluetooth",
-            "vpn" => "VPN",
-            "board" => "Kanban & Browser",
-            "system" => "System",
-            _ => "Einstellungen",
+            "host" => "category-host",
+            "wifi" => "category-wifi",
+            "bluetooth" => "category-bluetooth",
+            "vpn" => "category-vpn",
+            "board" => "category-board",
+            "system" => "category-system",
+            _ => "settings-heading",
         };
-        heading.set_text(caption);
+        heading.set_text(&tr(caption, &[]));
         let wizard = root
             .child_by_name("setup")
             .is_some_and(|p| p.widget_name() == "setup-return");
-        back_button.set_label(if wizard {
-            "← Einrichtung"
-        } else if name == "categories" {
-            "← Dashboard"
-        } else {
-            "← Einstellungen"
-        });
+        back_button.set_label(&tr(
+            if wizard {
+                "back-setup"
+            } else if name == "categories" {
+                "back-dashboard"
+            } else {
+                "back-settings"
+            },
+            &[],
+        ));
         if name == "categories" {
             buttons[last_category.get()].grab_focus();
         }
@@ -191,10 +198,10 @@ pub fn settings(
         "Host & SSH",
     );
     let system = column();
-    let reduce = gtk::CheckButton::with_label("Bewegung reduzieren");
+    let reduce = gtk::CheckButton::with_label(&tr("settings-reduce-motion", &[]));
     reduce.set_active(conf.borrow().reduce_motion);
     system.append(&reduce);
-    let sound = gtk::CheckButton::with_label("Dezente Klickklänge bei Hover, Fokus und Auswahl");
+    let sound = gtk::CheckButton::with_label(&tr("settings-sound", &[]));
     sound.set_active(conf.borrow().sound_effects);
     system.append(&sound);
     let (c, s) = (conf.clone(), stack.clone());
@@ -206,7 +213,7 @@ pub fn settings(
     });
     let c = conf.clone();
     sound.connect_toggled(move |b| c.borrow_mut().sound_effects = b.is_active());
-    let save = button("Persönliche Einstellungen speichern", f);
+    let save = button(&tr("settings-save", &[]), f);
     let (c, stat) = (conf.clone(), status.clone());
     save.connect_clicked(move |_| {
         status_result(

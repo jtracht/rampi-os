@@ -1,6 +1,7 @@
 use crate::{views, widgets::*};
 use gtk::{gdk, gio, glib, prelude::*};
 use rampi_core::config::{self, Settings};
+use rampi_core::i18n::text as tr;
 use std::{cell::RefCell, rc::Rc};
 
 pub fn run() -> glib::ExitCode {
@@ -40,6 +41,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
             Settings::default()
         }
     }));
+    rampi_core::i18n::select(&settings.borrow().language);
     let feedback = Feedback::new(settings.clone());
     let window = gtk::ApplicationWindow::builder()
         .application(app)
@@ -100,7 +102,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     brand.add_css_class("brand");
     brand.set_hexpand(true);
     header.append(&brand);
-    let wifi = icon_button("WLAN", "wifi", &feedback);
+    let wifi = icon_button(&tr("category-wifi", &[]), "wifi", &feedback);
     wifi.set_valign(gtk::Align::Center);
     wifi.set_widget_name("dashboard-wifi");
     let bluetooth = icon_button("Bluetooth", "bluetooth", &feedback);
@@ -108,7 +110,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     bluetooth.set_widget_name("dashboard-bluetooth");
     header.append(&wifi);
     header.append(&bluetooth);
-    let vpn = button("VPN · ungeprüft", &feedback);
+    let vpn = button(&tr("status-vpn-unknown", &[]), &feedback);
     if let Some(label) = vpn.child().and_downcast::<gtk::Label>() {
         label.set_max_width_chars(17);
         label.set_wrap(true);
@@ -122,22 +124,22 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     dashboard.append(&header);
     let modules = [
         (
-            "Kanban Board",
-            "Projekte im Blick",
+            "module-board",
+            "module-board-description",
             (1.0, 0.23, 0.38),
             false,
             "kanban",
         ),
         (
-            "Remote Desktop",
-            "Windows-Workstation",
+            "module-remote",
+            "module-remote-description",
             (0.29, 0.20, 0.78),
             false,
             "remote",
         ),
         (
-            "Webbrowser",
-            "Dein Fenster ins Web",
+            "module-browser",
+            "module-browser-description",
             (0.11, 0.20, 0.28),
             false,
             "browser",
@@ -148,10 +150,11 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     tiles.set_vexpand(true);
     let mut tile_buttons = vec![];
     for (i, (title, sub, color, dark, name)) in modules.into_iter().enumerate() {
+        let (title, subtitle) = (tr(title, &[]), tr(sub, &[]));
         let b = tile(
             TileSpec {
-                title,
-                subtitle: sub,
+                title: &title,
+                subtitle: &subtitle,
                 color,
                 dark,
                 delay: i as f64 * 0.035,
@@ -185,15 +188,18 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     module_previews.set_column_spacing(14);
     module_previews.set_row_spacing(14);
     let mut live_previews = vec![];
-    for (i, title) in ["Remote Desktop", "Webbrowser"].iter().enumerate() {
+    for (i, title) in ["module-remote", "module-browser"].iter().enumerate() {
         let host = settings
             .borrow()
             .hosts
             .get(settings.borrow().active_host)
             .map(|h| format!("{} · {}@{}", h.name, h.username, h.address))
-            .unwrap_or_else(|| "Windows-Host noch nicht eingerichtet".into());
+            .unwrap_or_else(|| tr("host-not-configured", &[]));
         let text = if i == 1 {
-            format!("{} · Lokaler Browser", settings.borrow().browser_url)
+            tr(
+                "local-browser-preview",
+                &[("url", &settings.borrow().browser_url)],
+            )
         } else {
             host
         };
@@ -202,7 +208,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         panel.add_css_class("panel");
         panel.set_hexpand(true);
         panel.set_vexpand(true);
-        let heading = label(title);
+        let heading = label(&tr(title, &[]));
         heading.set_single_line_mode(true);
         heading.set_ellipsize(gtk::pango::EllipsizeMode::End);
         heading.add_css_class("preview-title");
@@ -220,9 +226,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     previews.append(&module_previews);
     dashboard.append(&previews);
     let footer = row();
-    let open_settings = button("⚙  Einstellungen", &feedback);
+    let open_settings = button(&tr("open-settings", &[]), &feedback);
     footer.append(&open_settings);
-    let console = button("Konsole", &feedback);
+    let console = button(&tr("open-console", &[]), &feedback);
     footer.append(&console);
     let version = label(&format!(
         "Rampi {} · Rust / Wayland",
@@ -255,11 +261,11 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         &crate::setup_view::diagnostics(&stack, &settings, &feedback),
         Some("diagnostics"),
     );
-    let setup_button = button("Einrichtung fortsetzen", &feedback);
+    let setup_button = button(&tr("setup-resume", &[]), &feedback);
     let route = stack.clone();
     setup_button.connect_clicked(move |_| route.set_visible_child_name("setup"));
     footer.append(&setup_button);
-    let diagnose = button("Diagnose", &feedback);
+    let diagnose = button(&tr("open-diagnostics", &[]), &feedback);
     let route = stack.clone();
     diagnose.connect_clicked(move |_| route.set_visible_child_name("diagnostics"));
     footer.append(&diagnose);

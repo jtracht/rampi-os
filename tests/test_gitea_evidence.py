@@ -25,6 +25,7 @@ def evidence(tmp_path):
         "cards": 2,
         "refresh": True,
         "offline": True,
+        "project_scopes": ["repository", "organization", "individual"],
         "actual_server_issues": [
             {"id": 1, "title": "Rampi first updated"},
             {"id": 2, "title": "Rampi second"},
@@ -33,7 +34,9 @@ def evidence(tmp_path):
     }
     (tmp_path / "gitea-environment.json").write_text(json.dumps(report))
     (tmp_path / "gitea-program-sha256.txt").write_text("b" * 64)
-    (tmp_path / "gitea-live.log").write_text("RAMPI_RUST_GITEA_LIVE_PAGE_OK")
+    (tmp_path / "gitea-live.log").write_text(
+        "RAMPI_RUST_GITEA_LIVE_PAGE_OK\nRAMPI_RUST_GITEA_ORG_USER_PROJECTS_OK\n"
+    )
     (tmp_path / "gitea-live.png").write_bytes(
         b"\x89PNG\r\n\x1a\n" + bytes(8) + struct.pack(">II", 1280, 720)
     )
@@ -57,6 +60,7 @@ def test_complete_synthetic_guard_input(evidence):
         ("page_size", 100),
         ("binary_sha256", "c" * 64),
         ("actual_server_issues", []),
+        ("project_scopes", ["repository"]),
     ],
 )
 def test_incomplete_or_wrong_scope_rejected(evidence, field, value):

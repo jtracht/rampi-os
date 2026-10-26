@@ -1,0 +1,13 @@
+[Unit]
+Description=Finish the existing Raspberry Pi first-user setup before Rampi login
+After=userconfig.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/rampi-first-user-complete
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

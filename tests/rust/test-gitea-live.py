@@ -259,7 +259,10 @@ DEFAULT_PAGING_NUM = 1
             "--random-password",
             "--must-change-password=false",
         )
-        for name, scopes in [("setup", "all"), ("reader", "read:repository,read:issue")]:
+        for name, scopes in [
+            ("setup", "all"),
+            ("reader", "read:repository,read:issue,read:organization,read:user"),
+        ]:
             tokens.append(
                 cli(
                     "admin",
@@ -313,12 +316,97 @@ DEFAULT_PAGING_NUM = 1
                 expected=201,
             )
         api(base + "/issues", reader, "POST", {"title": "forbidden"}, 403)
+        # Gitea 28's actual organization and authenticated-user project APIs.
+        # Use real owner-matching repositories; no response fixtures or guessed
+        # endpoints, and the workstation still receives only a read-only token.
+        api(
+            "/orgs",
+            setup_token,
+            "POST",
+            {
+                "username": "rampiorg",
+                "visibility": "private",
+            },
+            201,
+        )
+        api(
+            "/orgs/rampiorg/repos",
+            setup_token,
+            "POST",
+            {
+                "name": "board",
+                "private": True,
+                "auto_init": True,
+            },
+            201,
+        )
+        additional_projects = []
+        for scope, api_base, issue_base in [
+            ("organization", "/orgs/rampiorg", "/repos/rampiorg/board"),
+            ("individual", "/user", base),
+        ]:
+            scope_title = "Rampi " + scope + " " + uuid.uuid4().hex
+            scope_project = api(
+                api_base + "/projects",
+                setup_token,
+                "POST",
+                {
+                    "title": scope_title,
+                    "template_type": "none",
+                    "card_type": "text_only",
+                },
+                201,
+            )
+            scope_endpoint = api_base + "/projects/" + str(scope_project["id"])
+            scope_column = api(
+                scope_endpoint + "/columns",
+                setup_token,
+                "POST",
+                {
+                    "title": "Review",
+                    "color": "#112233",
+                },
+                201,
+            )
+            api(scope_endpoint + "/columns", setup_token, "POST", {"title": "Empty"}, 201)
+            scope_issues = issues
+            if scope == "organization":
+                scope_issues = [
+                    api(
+                        issue_base + "/issues",
+                        setup_token,
+                        "POST",
+                        {
+                            "title": "Organization " + suffix,
+                            "body": "Actual private organization issue",
+                        },
+                        201,
+                    )
+                    for suffix in ("first", "second")
+                ]
+            for issue in scope_issues:
+                api(
+                    scope_endpoint + f"/columns/{scope_column['id']}/issues/{issue['id']}",
+                    setup_token,
+                    "POST",
+                    expected=201,
+                )
+            assert api(scope_endpoint, reader)["type"] == scope
+            api(scope_endpoint + "/columns", reader, "POST", {"title": "forbidden"}, 403)
+            additional_projects.append(
+                {
+                    "scope": scope,
+                    "title": scope_title,
+                    "source": "https://gitea-server:3000/api/v1" + scope_endpoint,
+                }
+            )
         ca = run("docker", "exec", server, "cat", "/data/gitea/cert.pem").stdout.decode()
         credentials = {
             "gitea": {
                 "token": reader,
                 "title": title,
                 "source": f"https://gitea-server:3000/rampitest/board/projects/{project['id']}",
+                "additional_projects": additional_projects,
             },
             "ca": ca,
         }
@@ -419,6 +507,7 @@ DEFAULT_PAGING_NUM = 1
                     "refresh": True,
                     "offline": True,
                     "actual_server_issues": observations,
+                    "project_scopes": ["repository", "organization", "individual"],
                     "binary_sha256": (artifacts / "gitea-program-sha256.txt").read_text().strip(),
                 },
                 indent=2,

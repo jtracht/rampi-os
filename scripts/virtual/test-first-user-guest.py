@@ -1,0 +1,174 @@
+"""Observe stock userconf and authenticate its first account in the disposable image.
+
+No account creation, password reset, replacement wizard or PAM bypass is allowed
+here. Keyboard input comes from the host through QEMU's existing QMP API.
+"""
+
+import hashlib
+import json
+import os
+import pwd
+import runpy
+import subprocess
+import time
+from pathlib import Path
+
+CAPTURES = Path("/opt/rampi-captures")
+CREDENTIALS = Path("/opt/rampi-source/first-user-credentials.json")
+
+
+def command(*args):
+    return subprocess.run(args, capture_output=True, timeout=15)
+
+
+def active(unit):
+    return command("systemctl", "is-active", "--quiet", unit).returncode == 0
+
+
+def enabled(unit):
+    return command("systemctl", "is-enabled", "--quiet", unit).returncode == 0
+
+
+def main():
+    if os.geteuid() or not Path("/etc/rampi-image-acceptance-vm").is_file():
+        raise RuntimeError("Only in the disposable installed-image guest")
+    os.umask(0o077)
+    if command("systemctl", "get-default").stdout.strip() != b"multi-user.target":
+        raise RuntimeError("Pristine image did not boot into stock first-user setup")
+    if not enabled("userconfig.service") or not enabled("rampi-first-user.service"):
+        raise RuntimeError("First-user services were not installed and enabled")
+    original = pwd.getpwuid(1000)
+    state = command("passwd", "-S", original.pw_name).stdout.split()
+    if len(state) < 2 or state[1] != b"L" or active("greetd.service"):
+        raise RuntimeError("Fixture accounts or a premature graphical login invalidate this test")
+    credentials = json.loads(CREDENTIALS.read_text())
+    api = runpy.run_path("/opt/rampi-source/scripts/virtual/test-login-guest.py")
+    # Use the same headless rendering/test-input adaptation as the image's
+    # existing graphical test. Do not start greetd or alter stock userconf.
+    api["configure_test_session"]()
+    Path("/run/rampi-image-test-session-configured").touch()
+    started = time.monotonic()
+    seen = set()
+    keyboard_seen = set()
+    keyboard_questions = 0
+    while time.monotonic() - started < 480:
+        # Read screen characters only to identify known stock dialogs. Never
+        # export the console buffer: it may contain personal input.
+        try:
+            screen = Path("/dev/vcs8").read_bytes().decode("latin1")
+        except OSError:
+            screen = ""
+        phase = None
+        for marker, candidate in [
+            ("Please enter new username:", "username"),
+            ("Please set a password for", "password"),
+            ("Please confirm the password:", "confirmation"),
+        ]:
+            if marker in screen:
+                phase = candidate
+                break
+        if phase and phase not in seen:
+            seen.add(phase)
+            print("RAMPI_FIRST_USER_INPUT=" + phase, flush=True)
+        elif phase is None:
+            keyboard_marker = next(
+                (
+                    marker
+                    for marker in [
+                        "Keyboard model:",
+                        "Country of origin for the keyboard:",
+                        "Keyboard layout:",
+                        "Key to function as AltGr:",
+                        "Compose key:",
+                        "Control+Alt+Backspace",
+                        "Tastaturmodell:",
+                        "Herkunftsland der Tastatur:",
+                        "Tastaturbelegung:",
+                        "AltGr",
+                        "Compose-Taste:",
+                    ]
+                    if marker in screen
+                ),
+                None,
+            )
+            if keyboard_marker and keyboard_marker not in keyboard_seen:
+                keyboard_seen.add(keyboard_marker)
+                keyboard_questions += 1
+                if keyboard_questions > 8:
+                    raise RuntimeError("Unexpected stock keyboard configuration loop")
+                print(f"RAMPI_FIRST_USER_INPUT=keyboard-{keyboard_questions}", flush=True)
+                time.sleep(1)
+        if active("greetd.service"):
+            if not {"username", "password", "confirmation"}.issubset(seen):
+                raise RuntimeError("Graphical login appeared before stock account creation")
+            break
+        time.sleep(0.3)
+    else:
+        raise RuntimeError("Stock first-user setup did not reach graphical login")
+    account = pwd.getpwuid(1000)
+    state = command("passwd", "-S", account.pw_name).stdout.split()
+    if (
+        account.pw_name != credentials["user"]
+        or state[1] != b"P"
+        or enabled("userconfig.service")
+        or enabled("rampi-first-user.service")
+        or not enabled("greetd.service")
+        or command("systemctl", "get-default").stdout.strip() != b"graphical.target"
+    ):
+        raise RuntimeError("Stock setup did not produce the expected usable account and boot state")
+    api["greeter_ready"]()
+    api["login"](account.pw_name, credentials["password"])
+    proof = Path(account.pw_dir, ".rampi-login-uid")
+    api["wait"](proof.is_file, "first account's actual PAM login")
+    if proof.read_text().strip() != "1000":
+        raise RuntimeError("First account session has the wrong UID")
+    api["wait"](
+        lambda: (
+            b"org.rampi.Workstation"
+            in api["as_user"](account.pw_name, "wlrctl", "toplevel", "list", check=False).stdout
+        ),
+        "first account's mapped native workstation",
+    )
+    screenshot = str(Path(account.pw_dir, ".rampi-first-user.png"))
+    visible = runpy.run_path("/opt/rampi-source/scripts/check-login-evidence.py")["visible_capture"]
+
+    def painted():
+        api["as_user"](account.pw_name, "grim", screenshot)
+        try:
+            visible(Path(screenshot))
+            return True
+        except ValueError:
+            return False
+
+    api["wait"](painted, "visibly painted first-account workstation")
+    import shutil
+
+    shutil.copyfile(screenshot, CAPTURES / "first-user.png")
+    (CAPTURES / "first-user.png").chmod(0o644)
+    api["as_user"](account.pw_name, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
+    api["greeter_ready"]()
+    CREDENTIALS.unlink()
+    evidence = {
+        "pristine_locked_account": True,
+        "stock_interactive_userconf": True,
+        "credentials_preconfigured": False,
+        "graphical_login_after_userconf": True,
+        "wizard_password_authenticated_by_pam": True,
+        "native_surface_visible": True,
+        "uid": 1000,
+        "session_uid": int(proof.read_text()),
+        "stock_wizard_disabled": True,
+        "completion_service_disabled": True,
+        "default_target": "graphical.target",
+        "input": "qemu-qmp-usb-keyboard",
+        "binary_sha256": hashlib.sha256(
+            Path("/opt/rampi/current/rampi-native").read_bytes()
+        ).hexdigest(),
+    }
+    (CAPTURES / "first-user-proof.json").write_text(json.dumps(evidence, indent=2) + "\n")
+    (CAPTURES / "first-user-proof.json").chmod(0o644)
+    print("RAMPI_PRISTINE_FIRST_USER_PAM_OK", flush=True)
+
+
+if __name__ == "__main__":
+    main()

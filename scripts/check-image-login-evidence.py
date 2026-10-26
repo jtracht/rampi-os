@@ -31,6 +31,29 @@ def check_metadata(environment, expected_source=None, expected_image=None):
         raise ValueError("Pi image must contain ARM64 userspace")
 
 
+def check_first_user(first, binary_sha256):
+    for key in (
+        "pristine_locked_account",
+        "stock_interactive_userconf",
+        "graphical_login_after_userconf",
+        "wizard_password_authenticated_by_pam",
+        "native_surface_visible",
+        "stock_wizard_disabled",
+        "completion_service_disabled",
+    ):
+        if first.get(key) is not True:
+            raise ValueError("Missing pristine first-user acceptance: " + key)
+    if (
+        first.get("credentials_preconfigured") is not False
+        or first.get("uid") != 1000
+        or first.get("session_uid") != 1000
+        or first.get("default_target") != "graphical.target"
+        or first.get("input") != "qemu-qmp-usb-keyboard"
+        or first.get("binary_sha256") != binary_sha256
+    ):
+        raise ValueError("First-user evidence does not match the installed workstation")
+
+
 def check(directory, expected_source=None, expected_image=None):
     environment = json.loads((directory / "environment.json").read_text(encoding="utf-8"))
     check_metadata(environment, expected_source, expected_image)
@@ -40,6 +63,13 @@ def check(directory, expected_source=None, expected_image=None):
     log = (directory / "serial.log").read_text(encoding="utf-8", errors="replace")
     if "RAMPI_INSTALLED_FILES_UNCHANGED_OK" not in log:
         raise ValueError("Installed workstation file preservation was not verified")
+    if "RAMPI_PRISTINE_FIRST_USER_PAM_OK" not in log:
+        raise ValueError("Actual stock first-user wizard and PAM login were not verified")
+    first = json.loads((directory / "captures/first-user-proof.json").read_text(encoding="utf-8"))
+    check_first_user(first, environment["native_binary_sha256"])
+    runpy.run_path(str(Path(__file__).with_name("check-login-evidence.py")))["visible_capture"](
+        directory / "captures/first-user.png"
+    )
     return environment
 
 

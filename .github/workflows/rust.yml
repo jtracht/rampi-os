@@ -90,6 +90,12 @@ jobs:
           set -euo pipefail
           docker build --build-arg BASE_IMAGE=rampi-rust-dev -f tests/remote/Dockerfile -t rampi-rdp-fixture .
           python3 tests/rust/test-rdp.py --image rampi-rust-dev --artifacts artifacts/rust 2>&1 | tee artifacts/rust/rdp-acceptance.log
+      - name: Native NLA-only authentication against existing FreeRDP and WinPR
+        run: |
+          set -euo pipefail
+          python3 tests/rust/test-rdp-nla.py --image rampi-rust-dev --server-image rampi-rdp-fixture --artifacts artifacts/rust/rdp-nla
+          expected=$(docker run --rm -v rampi-rust-build:/build:ro rampi-rust-dev sha256sum /build/target/debug/rampi-native | cut -d ' ' -f 1)
+          python3 scripts/check-rdp-nla-evidence.py artifacts/rust/rdp-nla --expected-binary "$expected"
       - name: Ten-minute mixed RDP, WebKit and three-PTY workload in 1 GiB
         run: |
           set -euo pipefail

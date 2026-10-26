@@ -27,6 +27,9 @@ runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"
 rdp_input = runpy.run_path(str(Path(__file__).with_name("check-rdp-input-evidence.py")))["check"](
     directory
 )
+nla = runpy.run_path(str(Path(__file__).with_name("check-rdp-nla-evidence.py")))["check"](
+    directory / "rdp-nla", streaming["gtk_client_sha256"]
+)
 runpy.run_path(str(Path(__file__).with_name("check-soak-evidence.py")))["check"](
     directory / "mixed-soak"
 )
@@ -172,6 +175,7 @@ if width < 960 or height < 540:
     raise SystemExit("Actual native screenshot is smaller than the supported interface")
 proof = {
     "rdp_input": rdp_input,
+    "rdp_nla": nla,
     "streaming": streaming,
     "required_stages": markers,
     "peak_mib": round(peak / 1024**2, 1),

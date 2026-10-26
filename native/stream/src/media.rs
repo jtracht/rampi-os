@@ -15,6 +15,8 @@ pub struct VideoFrame {
     pub height: u32,
     pub stride: usize,
     pub rgba: Vec<u8>,
+    /// Actual factory selected by GStreamer, not a hardware-capability claim.
+    pub decoder: String,
 }
 
 fn pipeline(description: &str) -> Result<gst::Pipeline> {
@@ -69,6 +71,7 @@ pub struct VideoDecoder {
     pipeline: gst::Pipeline,
     source: AppSrc,
     sink: AppSink,
+    decoder: std::sync::OnceLock<String>,
 }
 
 impl VideoDecoder {
@@ -92,6 +95,7 @@ impl VideoDecoder {
             pipeline,
             source,
             sink,
+            decoder: std::sync::OnceLock::new(),
         })
     }
 
@@ -130,11 +134,34 @@ impl VideoDecoder {
             .get(offset..end)
             .context("Unvollständiges Bild")?
             .to_vec();
+        if self.decoder.get().is_none() {
+            let mut pending = vec![self.pipeline.clone().upcast::<gst::Element>()];
+            for _ in 0..128 {
+                let Some(element) = pending.pop() else {
+                    break;
+                };
+                if let Some(factory) = element.factory() {
+                    let class = factory.metadata("klass").unwrap_or_default();
+                    if class.contains("Decoder") && class.contains("Video") {
+                        let _ = self.decoder.set(factory.name().to_string());
+                        break;
+                    }
+                }
+                if let Ok(bin) = element.downcast::<gst::Bin>() {
+                    pending.extend(bin.children());
+                }
+            }
+        }
         Ok(Some(VideoFrame {
             width: info.width(),
             height: info.height(),
             stride,
             rgba,
+            decoder: self
+                .decoder
+                .get()
+                .cloned()
+                .unwrap_or_else(|| "GStreamer".into()),
         }))
     }
 }
@@ -247,6 +274,11 @@ mod tests {
                 .expect("encoded H264 input");
             let frame = next_frame(&decoder);
             assert_eq!((frame.width, frame.height), (160, 96));
+            assert!(
+                frame.decoder.contains("h264"),
+                "Actual decoder factory missing: {}",
+                frame.decoder
+            );
             let pixel = &frame.rgba[frame.stride * 48 + 80 * 4..][..4];
             assert!(pixel[channel] > 180, "decoded {color}: {pixel:?}");
             assert!(pixel[2 - channel] < 50, "decoded {color}: {pixel:?}");
@@ -259,6 +291,11 @@ mod tests {
             .push_h264(&encoded_color("green"))
             .expect("reconnect H264");
         let frame = next_frame(&decoder);
+        assert!(
+            frame.decoder.contains("h264"),
+            "Reconnected decoder factory missing: {}",
+            frame.decoder
+        );
         let pixel = &frame.rgba[frame.stride * 48 + 80 * 4..][..4];
         assert!(pixel[1] > 80 && pixel[0] < 50 && pixel[2] < 50, "{pixel:?}");
 

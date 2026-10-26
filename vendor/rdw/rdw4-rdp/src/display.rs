@@ -631,23 +631,49 @@ impl Display {
         username: &str,
         password: &str,
     ) -> Result<()> {
+        self.rdp_connect_configured(domain, port, username, password, (1920, 1080), 0)
+            .await
+    }
+
+    /// Configure the existing IronRDP connector without changing its TLS/CredSSP stack.
+    pub async fn rdp_connect_configured(
+        &self,
+        server: &str,
+        port: u16,
+        username: &str,
+        password: &str,
+        desktop_size: (u16, u16),
+        keyboard_layout: u32,
+    ) -> Result<()> {
+        if !(320..=7680).contains(&desktop_size.0) || !(240..=4320).contains(&desktop_size.1) {
+            return Err(Error::Other("Unsupported RDP desktop size".into()));
+        }
+        let (account_domain, account_name) = if let Some((domain, user)) = username.split_once('\\')
+        {
+            if domain.is_empty() || user.is_empty() || user.contains('\\') {
+                return Err(Error::Other("Invalid Windows domain/account".into()));
+            }
+            (Some(domain.to_owned()), user.to_owned())
+        } else {
+            (None, username.to_owned())
+        };
         let config = connector::Config {
             credentials: connector::Credentials::UsernamePassword {
-                username: username.to_owned(),
+                username: account_name,
                 password: password.to_owned(),
             },
-            domain: None,
+            domain: account_domain,
             enable_tls: true,
             enable_credssp: true,
             keyboard_type: KeyboardType::IbmEnhanced,
             keyboard_subtype: 0,
-            keyboard_layout: 0, // the server SHOULD use the default active input locale identifier
+            keyboard_layout,
             keyboard_functional_keys_count: 12,
             ime_file_name: "".to_owned(),
             dig_product_id: "".to_owned(),
             desktop_size: connector::DesktopSize {
-                width: 1920,
-                height: 1080,
+                width: desktop_size.0,
+                height: desktop_size.1,
             },
             desktop_scale_factor: 0, // Default to 0 per FreeRDP
             bitmap: None,
@@ -679,7 +705,7 @@ impl Display {
             multitransport_flags: None,
         };
 
-        self.imp().connect(domain, port, config).await
+        self.imp().connect(server, port, config).await
     }
 
     pub async fn rdp_disconnect(&self) -> Result<()> {

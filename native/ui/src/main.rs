@@ -92,6 +92,24 @@ mod wifi_hidden;
 mod wireguard;
 
 fn main() {
+    if std::env::args().any(|argument| argument == "--session-locale") {
+        let result = rampi_core::config::config_dir()
+            .and_then(|path| rampi_core::config::Settings::load(&path.join("settings.json")));
+        match result {
+            Ok(settings) => {
+                if let Some(locale) = rampi_core::i18n::locale(&settings.language) {
+                    println!(
+                        "LANGUAGE={}\nLANG={locale}\nLC_MESSAGES={locale}\nLC_TIME={locale}",
+                        settings.language
+                    );
+                    return;
+                }
+                eprintln!("Nicht unterstützte persönliche Sprache.");
+            }
+            Err(error) => eprintln!("Persönliche Sprache nicht lesbar: {error}"),
+        }
+        std::process::exit(1);
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--stream-runtime-check") {
         if let Err(error) = rampi_stream::runtime::MoonlightRuntime::load() {

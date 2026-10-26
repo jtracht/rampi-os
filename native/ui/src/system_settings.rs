@@ -13,6 +13,30 @@ const LAYOUTS: [(&str, &str); 6] = [
     ("it", "Italiano"),
 ];
 
+/// Standard Windows input-locale identifiers for the existing XKB choices.
+pub fn rdp_keyboard_layout() -> u32 {
+    let configured = keyboard_file().ok().and_then(|path| {
+        let metadata = std::fs::symlink_metadata(&path).ok()?;
+        if !metadata.is_file() || metadata.file_type().is_symlink() || metadata.len() > 16384 {
+            return None;
+        }
+        std::fs::read_to_string(path).ok()
+    });
+    let code = configured.as_deref().and_then(|text| {
+        text.lines()
+            .find_map(|line| line.strip_prefix("XKB_DEFAULT_LAYOUT="))
+    });
+    match code {
+        Some("de") => 0x0407,
+        Some("us") => 0x0409,
+        Some("gb") => 0x0809,
+        Some("fr") => 0x040c,
+        Some("es") => 0x040a,
+        Some("it") => 0x0410,
+        _ => 0,
+    }
+}
+
 pub fn keyboard_file() -> Result<PathBuf> {
     Ok(rampi_core::config::config_dir()?.join("labwc/environment"))
 }
@@ -141,6 +165,37 @@ pub async fn apply(name: &str, mode: &str) -> Result<()> {
 }
 
 pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) {
+    let messages = rampi_core::i18n::text;
+    page.append(&label(&messages("language-heading", &[])));
+    page.append(&label(&messages("language-description", &[])));
+    let languages = gtk::ListBox::new();
+    languages.set_widget_name("language-choices");
+    languages.set_selection_mode(gtk::SelectionMode::Single);
+    for (_, name, _) in rampi_core::i18n::LANGUAGES {
+        languages.append(&label(name));
+    }
+    let selected_language = f.settings_language();
+    let index = rampi_core::i18n::LANGUAGES
+        .iter()
+        .position(|item| item.0 == selected_language)
+        .unwrap_or(0);
+    languages.select_row(languages.row_at_index(index as i32).as_ref());
+    page.append(&languages);
+    let save_language = button(&messages("language-save", &[]), f);
+    let (feedback, stat) = (f.clone(), status.clone());
+    save_language.connect_clicked(move |_| {
+        let Some(selected) = languages.selected_row() else {
+            return;
+        };
+        let Some((code, _, _)) = rampi_core::i18n::LANGUAGES.get(selected.index() as usize) else {
+            return;
+        };
+        match feedback.save_language(code) {
+            Ok(()) => stat.set_text(&rampi_core::i18n::text("language-saved", &[])),
+            Err(error) => stat.set_text(&error.to_string()),
+        }
+    });
+    page.append(&save_language);
     page.append(&label("Tastatur · persönliche Belegung der Rampi-Sitzung"));
     let choices = gtk::DropDown::from_strings(&LAYOUTS.map(|(_, title)| title));
     choices.set_widget_name("keyboard-layout");

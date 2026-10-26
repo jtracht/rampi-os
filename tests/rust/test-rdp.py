@@ -215,10 +215,10 @@ def client():
         .split("bash tests/rust/test-first-run.sh")[0]
     )
     mode = " --mixed-soak-check" if options.soak else ""
-    prefix += (
-        f"\ntimeout {800 if options.soak else 160} "
-        f"/build/target/debug/rampi-native --rdp-ui-check{mode}\n"
+    client_timeout = (
+        800 if options.soak else 240 if json.loads(path.read_bytes()).get("nla") else 160
     )
+    prefix += f"\ntimeout {client_timeout} /build/target/debug/rampi-native --rdp-ui-check{mode}\n"
     try:
         subprocess.run(
             ["runuser", "-u", "rampi", "--", "dbus-run-session", "--", "bash", "-c", prefix],

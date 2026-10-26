@@ -251,7 +251,8 @@ def main():
         # The image's actual installed program, assets, launchers and greeter
         # profile stay in place. Only fixture accounts and headless test input
         # are added to a disposable disk copy by the external validator.
-        configure_test_session()
+        if not Path("/run/rampi-image-test-session-configured").is_file():
+            configure_test_session()
     else:
         install()
     users = ["rampi-login", "rampi-other"]

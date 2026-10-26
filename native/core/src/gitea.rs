@@ -6,6 +6,7 @@ use serde_json::Value;
 pub struct Project {
     endpoint: String,
     project_id: i64,
+    project_type: &'static str,
     columns: Vec<(i64, i64, String)>,
     stage: u8,
     column: usize,
@@ -29,47 +30,67 @@ impl Project {
                 .trim_end_matches('/')
                 .rsplit_once("/projects/")
                 .context("Die HTTPS-Adresse des Gitea-Repository-Projekts einfügen")?;
-            let (owner_path, repo) = repository
-                .rsplit_once('/')
-                .context("Gitea-Repository fehlt")?;
-            let (site, owner) = owner_path
-                .rsplit_once('/')
-                .context("Gitea-Eigentümer fehlt")?;
-            expanded = format!("repos/{owner}/{repo}/{id}");
-            (site, expanded.as_str())
+            if let Some((site, scope)) = repository.rsplit_once("/api/v1/") {
+                expanded = format!("{scope}/{id}");
+                (site, expanded.as_str())
+            } else if let Some((site, organization)) = repository.rsplit_once("/orgs/") {
+                expanded = format!("orgs/{organization}/{id}");
+                (site, expanded.as_str())
+            } else {
+                let (owner_path, repo) = repository
+                    .rsplit_once('/')
+                    .context("Gitea-Repository fehlt")?;
+                let (site, owner) = owner_path
+                    .rsplit_once('/')
+                    .context("Gitea-Eigentümer fehlt")?;
+                expanded = format!("repos/{owner}/{repo}/{id}");
+                (site, expanded.as_str())
+            }
         };
         crate::config::validate_https(site)?;
-        let site = site.trim_end_matches('/');
-        let mut parts = site[8..].split('/');
-        let authority = parts.next().unwrap_or("");
-        let (host, port) = authority.split_once(':').unwrap_or((authority, "443"));
         ensure!(
-            host.len() <= 253
-                && !host.is_empty()
-                && host.split('.').all(|label| !label.is_empty()
-                    && label.len() <= 63
-                    && !label.starts_with('-')
-                    && !label.ends_with('-')
-                    && label
-                        .bytes()
-                        .all(|c| c.is_ascii_alphanumeric() || c == b'-'))
-                && port.parse::<u16>().is_ok_and(|p| p > 0)
-                && parts.all(segment),
+            site[8..].split_once('/').is_none_or(|(_, path)| {
+                let path = path.trim_end_matches('/');
+                path.is_empty() || path.split('/').all(segment)
+            }),
+            "Ungültiger Gitea-Installationspfad"
+        );
+        let site_url = url::Url::parse(site).context("Ungültiger Gitea-Server")?;
+        ensure!(
+            site_url.scheme() == "https"
+                && site_url.host_str().is_some()
+                && site_url.username().is_empty()
+                && site_url.password().is_none()
+                && site_url.query().is_none()
+                && site_url.fragment().is_none()
+                && site_url
+                    .port_or_known_default()
+                    .is_some_and(|port| port > 0)
+                && site_url
+                    .path_segments()
+                    .is_some_and(|parts| parts.filter(|p| !p.is_empty()).all(segment)),
             "Ungültiger Gitea-Server oder Installationspfad"
         );
+        let site = site_url.as_str().trim_end_matches('/');
         let path: Vec<_> = path.split('/').collect();
-        ensure!(
-            path.len() == 4 && path[0] == "repos" && segment(path[1]) && segment(path[2]),
-            "Gitea benötigt repos/EIGENTÜMER/REPOSITORY/PROJEKT-ID"
-        );
-        let project_id: i64 = path[3].parse().context("Ungültige Gitea-Projekt-ID")?;
+        let (scope, id, project_type) = match path.as_slice() {
+            ["repos", owner, repo, id] if segment(owner) && segment(repo) => {
+                (format!("repos/{owner}/{repo}"), *id, "repository")
+            }
+            ["orgs", organization, id] if segment(organization) => {
+                (format!("orgs/{organization}"), *id, "organization")
+            }
+            ["user", id] => ("user".into(), *id, "individual"),
+            _ => anyhow::bail!(
+                "Gitea: repos/EIGENTÜMER/REPOSITORY/ID, orgs/ORGANISATION/ID oder user/ID angeben"
+            ),
+        };
+        let project_id: i64 = id.parse().context("Ungültige Gitea-Projekt-ID")?;
         ensure!(project_id > 0, "Ungültige Gitea-Projekt-ID");
         Ok(Self {
-            endpoint: format!(
-                "{site}/api/v1/repos/{}/{}/projects/{project_id}",
-                path[1], path[2]
-            ),
+            endpoint: format!("{site}/api/v1/{scope}/projects/{project_id}"),
             project_id,
+            project_type,
             columns: Vec::new(),
             stage: 0,
             column: 0,
@@ -92,6 +113,12 @@ impl Project {
                 data["id"].as_i64() == Some(self.project_id),
                 "Falsches Gitea-Projekt"
             );
+            if let Some(kind) = data["type"].as_str() {
+                ensure!(
+                    kind == self.project_type,
+                    "Gitea-Projekt gehört zu einem anderen Projektbereich"
+                );
+            }
             board.title = data["title"]
                 .as_str()
                 .context("Gitea-Projekttitel fehlt")?

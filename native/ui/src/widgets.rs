@@ -14,6 +14,21 @@ pub struct Feedback {
     last: Rc<Cell<Instant>>,
 }
 impl Feedback {
+    pub fn settings_language(&self) -> String {
+        self.settings.borrow().language.clone()
+    }
+    pub fn save_language(&self, language: &str) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            rampi_core::i18n::locale(language).is_some(),
+            "{}",
+            rampi_core::i18n::text("language-invalid", &[])
+        );
+        let mut updated = self.settings.borrow().clone();
+        updated.language = language.into();
+        updated.save(&rampi_core::config::config_dir()?.join("settings.json"))?;
+        *self.settings.borrow_mut() = updated;
+        Ok(())
+    }
     pub fn prepared(&self) -> bool {
         self.audio.is_some()
     }
@@ -107,7 +122,7 @@ pub fn scroll(child: &impl IsA<gtk::Widget>) -> gtk::ScrolledWindow {
 }
 pub fn status_result(status: &gtk::Label, result: anyhow::Result<()>) {
     status.set_text(&match result {
-        Ok(()) => "Vorgang abgeschlossen.".into(),
+        Ok(()) => rampi_core::i18n::text("action-completed", &[]),
         Err(e) => e.to_string(),
     });
 }

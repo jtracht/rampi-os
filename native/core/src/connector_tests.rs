@@ -174,3 +174,71 @@ fn gitea_preserves_project_columns_and_server_page_limits() {
     assert_eq!(b.columns, ["Doing", "Empty"]);
     assert_eq!(b.cards[0].status, "Doing");
 }
+
+#[test]
+fn gitea_scopes_bind_metadata_to_the_selected_origin_and_project_type() {
+    for (source, endpoint, kind) in [
+        (
+            "https://gitea.test/git#orgs/team/7",
+            "https://gitea.test/git/api/v1/orgs/team/projects/7",
+            "organization",
+        ),
+        (
+            "https://gitea.test/git/orgs/team/projects/7",
+            "https://gitea.test/git/api/v1/orgs/team/projects/7",
+            "organization",
+        ),
+        (
+            "https://gitea.test/git/api/v1/orgs/team/projects/7",
+            "https://gitea.test/git/api/v1/orgs/team/projects/7",
+            "organization",
+        ),
+        (
+            "https://[fd00::1]:8443/git#user/7",
+            "https://[fd00::1]:8443/git/api/v1/user/projects/7",
+            "individual",
+        ),
+        (
+            "https://gitea.test/git/api/v1/user/projects/7",
+            "https://gitea.test/git/api/v1/user/projects/7",
+            "individual",
+        ),
+    ] {
+        let mut connector = Connector::new("gitea", source, "fixture".into()).unwrap();
+        assert_eq!(connector.request().unwrap().url, endpoint);
+        assert!(
+            !connector
+                .accept(&json!({"id": 7, "title": "Private", "type": kind}))
+                .unwrap()
+        );
+        assert!(
+            connector
+                .request()
+                .unwrap()
+                .url
+                .starts_with(&format!("{endpoint}/columns?"))
+        );
+        assert!(connector.accept(&json!([])).unwrap());
+        assert_eq!(connector.finish().unwrap().title, "Private");
+        let mut wrong = Connector::new("gitea", source, "fixture".into()).unwrap();
+        assert!(
+            wrong
+                .accept(&json!({"id": 7, "title": "Other", "type": "repository"}))
+                .is_err()
+        );
+    }
+    for source in [
+        "https://[fd00::1]:0#user/7",
+        "https://gitea.test#user/0",
+        "https://gitea.test#users/another-user/7",
+        "https://gitea.test#orgs/../7",
+        "https://gitea.test/%2e%2e/git#user/7",
+        "https://gitea.test#user/7/extra",
+        "https://gitea.test#orgs/team/7?token=not-allowed",
+    ] {
+        assert!(
+            Connector::new("gitea", source, "fixture".into()).is_err(),
+            "{source}"
+        );
+    }
+}

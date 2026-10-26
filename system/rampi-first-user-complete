@@ -1,0 +1,29 @@
+#!/bin/bash
+# Complete the stock Raspberry Pi userconf flow before enabling the graphical login.
+set -euo pipefail
+export LC_ALL=C
+if [[ $EUID != 0 ]]; then exit 1; fi
+if systemctl is-enabled --quiet userconfig.service; then
+    echo 'Die Raspberry-Pi-Benutzereinrichtung ist noch nicht abgeschlossen.' >&2
+    exit 1
+fi
+entry="$(getent passwd 1000)"
+IFS=: read -r account _ uid _ _ _ login_shell <<< "$entry"
+case "$login_shell" in
+    ''|*/nologin|*/false) echo 'Das erste Konto ist noch nicht zur Anmeldung freigegeben.' >&2; exit 1 ;;
+esac
+if [[ -z "$account" || "$uid" != 1000 ]] \
+    || ! grep -Fxq -- "$login_shell" /etc/shells; then
+    echo 'Ein verwendbares persönliches Linux-Konto fehlt.' >&2
+    exit 1
+fi
+read -r checked_account password_state _ <<< "$(passwd -S "$account")"
+if [[ "$checked_account" != "$account" || "$password_state" != P ]]; then
+    echo 'Für das erste Konto wurde noch kein eigenes Passwort gesetzt.' >&2
+    exit 1
+fi
+systemctl enable greetd.service
+systemctl set-default graphical.target
+systemctl disable rampi-first-user.service
+# Do not wait for a target that itself depends on completion of multi-user.target.
+systemctl --no-block start graphical.target

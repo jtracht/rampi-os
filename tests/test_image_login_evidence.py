@@ -50,3 +50,55 @@ def test_reject_other_or_failed_image(key, value):
 def test_reject_different_producer():
     with pytest.raises(ValueError, match="provenance"):
         MODULE.check_metadata(metadata(), "c" * 40)
+
+
+def first_user():
+    return {
+        "pristine_locked_account": True,
+        "stock_interactive_userconf": True,
+        "credentials_preconfigured": False,
+        "graphical_login_after_userconf": True,
+        "wizard_password_authenticated_by_pam": True,
+        "native_surface_visible": True,
+        "uid": 1000,
+        "session_uid": 1000,
+        "stock_wizard_disabled": True,
+        "completion_service_disabled": True,
+        "default_target": "graphical.target",
+        "input": "qemu-qmp-usb-keyboard",
+        "binary_sha256": "d" * 64,
+    }
+
+
+def test_first_user_proof_matches_installed_binary():
+    MODULE.check_first_user(first_user(), "d" * 64)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("pristine_locked_account", False),
+        ("stock_interactive_userconf", False),
+        ("credentials_preconfigured", True),
+        ("graphical_login_after_userconf", False),
+        ("wizard_password_authenticated_by_pam", False),
+        ("native_surface_visible", False),
+        ("uid", 1001),
+        ("session_uid", 0),
+        ("stock_wizard_disabled", False),
+        ("completion_service_disabled", False),
+        ("default_target", "multi-user.target"),
+        ("input", "preconfigured-account"),
+        ("binary_sha256", "e" * 64),
+    ],
+)
+def test_seeded_or_incomplete_first_user_proof_cannot_pass(key, value):
+    proof = first_user()
+    proof[key] = value
+    with pytest.raises(ValueError):
+        MODULE.check_first_user(proof, "d" * 64)
+
+
+def test_existing_two_preseeded_users_do_not_prove_pristine_setup():
+    with pytest.raises(ValueError):
+        MODULE.check_first_user({}, "d" * 64)

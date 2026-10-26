@@ -2,67 +2,32 @@
 use crate::widgets::*;
 use gtk::{glib, prelude::*};
 use rampi_core::config;
+use rampi_core::i18n::text as tr;
 use std::{cell::Cell, rc::Rc};
 
 const STEPS: [(&str, &str, &str); config::SETUP_STEP_IDS.len()] = [
     (
-        "Sprache und Tastatur",
-        "Die Oberfläche ist derzeit deutsch. Unter System die persönliche Tastaturbelegung auswählen, anwenden und direkt im Testfeld prüfen.",
+        "setup-language-title",
+        "setup-language-description",
         "system",
     ),
+    ("setup-display-title", "setup-display-description", "system"),
+    ("category-wifi", "setup-wifi-description", "wifi"),
     (
-        "Bildschirm",
-        "Unter System die vom Bildschirm angebotene Auflösung auswählen. Jede Änderung muss innerhalb von 15 Sekunden bestätigt werden, sonst wird sie zurückgesetzt. Änderungen gelten bis zur Abmeldung.",
-        "system",
-    ),
-    (
-        "WLAN",
-        "Netze suchen, auswählen und verbinden. Vorhandene NetworkManager-Profile bleiben erhalten.",
-        "wifi",
-    ),
-    (
-        "Bluetooth",
-        "Tastatur und Maus suchen und koppeln. Die Bestätigung erscheint innerhalb von Rampi.",
+        "category-bluetooth",
+        "setup-bluetooth-description",
         "bluetooth",
     ),
+    ("setup-account-title", "setup-account-description", "system"),
+    ("category-vpn", "setup-vpn-description", "vpn"),
+    ("setup-host-title", "setup-host-description", "host"),
+    ("setup-ssh-title", "setup-ssh-description", "host"),
+    ("setup-stream-title", "setup-stream-description", "remote"),
+    ("module-remote", "setup-rdp-description", "remote"),
+    ("category-board", "setup-board-description", "board"),
     (
-        "Linux-Konto",
-        "Dein Linux-Konto und PAM bestimmen deine Rechte. Unter System kannst du dein Kennwort ändern und dich abmelden. Mit vorhandenen sudo-Rechten weitere Konten anlegen und deren Kennwort im eingebetteten Systemterminal setzen; neue Konten erhalten keine Administratorrechte.",
-        "system",
-    ),
-    (
-        "VPN",
-        "VPN wählen: Tailscale innerhalb der Seite verbinden und bei Bedarf beim Anbieter anmelden, oder ein persönliches WireGuard-Profil importieren und verbinden. Die Statusanzeige zeigt den tatsächlichen Dienstzustand; Routen gelten systemweit.",
-        "vpn",
-    ),
-    (
-        "Windows-Host",
-        "Persönliche Hosts anlegen und den aktiven Windows-11-Pro-Host auswählen. Für RDP benötigt Windows keine zusätzliche Rampi-Software.",
-        "host",
-    ),
-    (
-        "SSH-Schlüssel",
-        "Einen persönlichen Schlüssel mit OpenSSH innerhalb von Rampi erstellen oder einen bestehenden Schlüssel verwenden. Den Hostfingerabdruck unabhängig am Windows-Host prüfen und erst danach in Rampi übernehmen. Ausschließlich den öffentlichen Schlüssel zum Windows-Konto übertragen.",
-        "host",
-    ),
-    (
-        "Desktop-Streaming",
-        "Sunshine auf dem Host einrichten. Im Remote-Modul die integrierte Streaming-Seite öffnen, den angezeigten PIN in Sunshine bestätigen und eine Anwendung auswählen. Kopplungen verwaltet dein persönlicher Linux-Schlüsselbund.",
-        "remote",
-    ),
-    (
-        "Remote Desktop",
-        "Windows 11 Pro muss Remote Desktop erlauben. Host und Windows-Benutzer werden aus dem aktiven Profil übernommen.",
-        "remote",
-    ),
-    (
-        "Kanban und Browser",
-        "Aufgabenquelle wählen: lokale Datei, GitHub, Gitea, Trello, Jira, Asana oder Notion. Die drei Schritte führen durch Quelle, persönlichen Zugang und Verbindungsprüfung. Danach das Board direkt öffnen.",
-        "board",
-    ),
-    (
-        "Abschluss",
-        "Du kannst jeden Schritt überspringen und die Einrichtung später fortsetzen. Abschließen bestätigt nur deinen Einrichtungsdurchlauf, keine Verbindung oder Kompatibilität.",
+        "setup-finish-title",
+        "setup-finish-description",
         "diagnostics",
     ),
 ];
@@ -84,11 +49,11 @@ pub fn build(
     let progress = gtk::ProgressBar::new();
     page.append(&progress);
     let actions = column();
-    let previous = button("Vorheriger Schritt", f);
-    let open = button("Jetzt einrichten", f);
-    let next = button("Weiter / Schritt überspringen", f);
-    let later = button("Später fortsetzen", f);
-    let finish = button("Einrichtung abschließen", f);
+    let previous = button(&tr("setup-previous", &[]), f);
+    let open = button(&tr("setup-open", &[]), f);
+    let next = button(&tr("setup-next", &[]), f);
+    let later = button(&tr("setup-later", &[]), f);
+    let finish = button(&tr("setup-finish", &[]), f);
     for b in [&previous, &open, &next, &later, &finish] {
         actions.append(b);
     }
@@ -106,13 +71,15 @@ pub fn build(
         );
         Rc::new(move || {
             let i = current.get();
-            title.set_text(&format!(
-                "Einrichtung · {} / {} · {}",
-                i + 1,
-                STEPS.len(),
-                STEPS[i].0
+            title.set_text(&tr(
+                "setup-progress",
+                &[
+                    ("step", &(i + 1).to_string()),
+                    ("total", &STEPS.len().to_string()),
+                    ("title", &tr(STEPS[i].0, &[])),
+                ],
             ));
-            description.set_text(STEPS[i].1);
+            description.set_text(&tr(STEPS[i].1, &[]));
             progress.set_fraction((i + 1) as f64 / STEPS.len() as f64);
             previous.set_sensitive(i > 0);
             next.set_sensitive(i + 1 < STEPS.len());

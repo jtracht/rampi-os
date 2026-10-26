@@ -3,6 +3,17 @@ set -eu
 export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=Rampi
 export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
 unset DISPLAY XAUTHORITY
+# Load only validated locale identifiers; never source/evaluate user configuration.
+if locale_settings="$(timeout 3 /usr/local/bin/rampi --session-locale)"; then
+    unset LC_ALL
+    while IFS='=' read -r locale_key locale_value; do
+        case "$locale_key" in
+            LANG|LANGUAGE|LC_MESSAGES|LC_TIME) export "$locale_key=$locale_value" ;;
+        esac
+    done <<EOF
+$locale_settings
+EOF
+fi
 # Reuse a reachable personal OpenSSH agent, including an empty one. Otherwise
 # let OpenSSH own its lifetime around this graphical session.
 agent_status=2

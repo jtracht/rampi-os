@@ -152,7 +152,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
                     "Data-Source-ID",
                 ),
                 6 => (
-                    "Gitea-Projekt öffnen und seine HTTPS-Adresse hier einfügen. Rampi übernimmt die vorhandenen Spalten und Aufgaben. Dein Server muss die Projekt-Anbindung unterstützen.",
+                    "Gitea: Repository-Projektadresse oder vollständige HTTPS-API-Projektadresse einfügen. Alternativ: https://SERVER#repos/EIGENTÜMER/REPOSITORY/ID, https://SERVER#orgs/ORGANISATION/ID oder https://SERVER#user/ID. Persönliche Projekte verwenden den Eigentümer des Tokens. Spalten und Aufgaben bleiben schreibgeschützt.",
                     "https://git.example.org/team/app/projects/7",
                 ),
                 _ => (
