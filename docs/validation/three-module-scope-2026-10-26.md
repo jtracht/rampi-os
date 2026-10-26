@@ -15,6 +15,13 @@ kein Prozessstart, verständlicher Fehler und unverändertes persönliches Profi
 Alte Projektfelder bleiben zur verlustfreien Konfigurationskompatibilität lesbar,
 werden aber nicht mehr als Einrichtungsfeld angeboten oder ausgeführt.
 
+Die gespeicherten Einrichtungs-IDs behalten ihre ursprüngliche Bedeutung:
+Desktop-Streaming 11, RDP 12, Kanban 13 und Abschluss 14. Die Anzeige enthält zwölf
+Stationen; alte KI-Positionen 8–10 führen zur nächsten verbleibenden Station.
+So springt beispielsweise ein alter Stand 11 nicht versehentlich zum Abschluss.
+Laden verändert keine persönliche Datei. Der Regressionstest liest alte JSON-
+Dateien, setzt den nächsten gültigen Schritt fort und prüft unveränderte Hostdaten.
+
 Die ergänzende Bereinigung entfernt außerdem unaufgerufene allgemeine
 PowerShell-/SSH-Starthelfer, den in Rust nicht verwendeten externen FreeRDP-
 Starter, versteckte Projekt-Eingabewidgets, fünf unreferenzierte Symbolgrafiken

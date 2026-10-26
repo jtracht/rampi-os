@@ -4,6 +4,10 @@
 
 Die folgende gemeinsame Einstellungstabelle wird vom Rust-Core validiert.
 `setup_step` ist zusätzlich eine Zahl von 0 bis 14, Standard 0;
+die gespeicherten IDs bleiben zur Kompatibilität mit veröffentlichten Versionen
+stabil. Die zwölf aktuellen Stationen verwenden 0–7 und 11–14. Alte KI-Positionen
+8–10 führen zur nächsten verbleibenden Station (Desktop-Streaming, ID 11), ohne
+beim Laden die Datei umzuschreiben. Fortsetzen speichert wieder eine stabile ID;
 `sound_effects` ist ein boolescher Wert, Standard true. `language` ist vorgesehen,
 die Oberfläche gegenwärtig deutsch. Höchstens 64 Hosts sind zulässig.
 Eine Konfiguration über 1 MiB wird abgewiesen. Fehlerhafte bestehende Dateien

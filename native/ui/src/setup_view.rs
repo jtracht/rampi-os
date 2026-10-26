@@ -4,7 +4,7 @@ use gtk::{glib, prelude::*};
 use rampi_core::config;
 use std::{cell::Cell, rc::Rc};
 
-const STEPS: [(&str, &str, &str); 12] = [
+const STEPS: [(&str, &str, &str); config::SETUP_STEP_IDS.len()] = [
     (
         "Sprache und Tastatur",
         "Die Oberfläche ist derzeit deutsch. Unter System die persönliche Tastaturbelegung auswählen, anwenden und direkt im Testfeld prüfen.",
@@ -93,7 +93,7 @@ pub fn build(
         actions.append(b);
     }
     page.append(&actions);
-    let current = Rc::new(Cell::new(conf.borrow().setup_step.min(STEPS.len() - 1)));
+    let current = Rc::new(Cell::new(conf.borrow().setup_index()));
     let render: Rc<dyn Fn()> = {
         let (current, title, description, progress, previous, next, finish) = (
             current.clone(),
@@ -133,7 +133,7 @@ pub fn build(
                 .saturating_add_signed(direction)
                 .min(STEPS.len() - 1);
             let mut candidate = c.borrow().clone();
-            candidate.setup_step = target;
+            candidate.setup_step = config::SETUP_STEP_IDS[target];
             let result =
                 config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
             if result.is_ok() {

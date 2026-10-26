@@ -1003,7 +1003,7 @@ pub fn setup(
             ];
             for (index, destination) in destinations.into_iter().enumerate() {
                 ensure!(
-                    conf.borrow().setup_step == index,
+                    conf.borrow().setup_step == rampi_core::config::SETUP_STEP_IDS[index],
                     "Wizard lost the current step"
                 );
                 click(&setup, "Jetzt einrichten")?;
