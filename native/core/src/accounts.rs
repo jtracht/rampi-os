@@ -43,6 +43,17 @@ pub fn password(name: &str) -> Result<Vec<OsString>> {
         .map(OsString::from)
         .to_vec())
 }
+/// Existing sudo/PAM and the official CLI retain authority; no root Rampi broker.
+pub fn tailscale_operator(name: &str) -> Result<Vec<OsString>> {
+    validate_name(name)?;
+    Ok(vec![
+        "/usr/bin/sudo".into(),
+        "--".into(),
+        "tailscale".into(),
+        "set".into(),
+        format!("--operator={name}").into(),
+    ])
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,12 +75,24 @@ mod tests {
         ] {
             assert!(create(name).is_err(), "Accepted {name:?}");
             assert!(password(name).is_err());
+            assert!(tailscale_operator(name).is_err());
         }
         assert_eq!(create("alice-2").unwrap().last().unwrap(), "alice-2");
         assert!(create("alice").unwrap().contains(&"UMASK=077".into()));
         assert_eq!(
             password("alice").unwrap(),
             ["/usr/bin/sudo", "--", "/usr/bin/passwd", "--", "alice"].map(OsString::from)
+        );
+        assert_eq!(
+            tailscale_operator("alice-2").unwrap(),
+            [
+                "/usr/bin/sudo",
+                "--",
+                "tailscale",
+                "set",
+                "--operator=alice-2",
+            ]
+            .map(OsString::from)
         );
     }
 }

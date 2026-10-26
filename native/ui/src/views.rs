@@ -690,6 +690,10 @@ pub fn terminal(
         stack.set_visible_child_name(&key);
         return;
     }
+    let previous = stack
+        .visible_child_name()
+        .map(|name| name.to_string())
+        .unwrap_or_else(|| "dashboard".into());
     let term = vte::Terminal::new();
     term.set_hexpand(true);
     term.set_vexpand(true);
@@ -719,6 +723,7 @@ pub fn terminal(
         },
     );
     let s = stack.downgrade();
+    let exit_status = status.clone();
     term.connect_child_exited(move |_, code| {
         if let Some(s) = s.upgrade() {
             let was_visible = s.visible_child_name().is_some_and(|key| key == name);
@@ -726,9 +731,21 @@ pub fn terminal(
                 s.remove(&child);
             }
             if was_visible {
-                s.set_visible_child_name("dashboard");
+                s.set_visible_child_name(if s.child_by_name(&previous).is_some() {
+                    &previous
+                } else {
+                    "dashboard"
+                });
             }
         }
+        status_result(
+            &exit_status,
+            if code == 0 {
+                Ok(())
+            } else {
+                Err(anyhow::anyhow!("Systembefehl mit Status {code} beendet."))
+            },
+        );
         println!("RAMPI_TERMINAL_EXIT={code}");
     });
     term.grab_focus();

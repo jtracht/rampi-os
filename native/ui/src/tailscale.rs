@@ -31,7 +31,16 @@ pub async fn status() -> Result<String> {
 }
 pub async fn change(connect: bool) -> Result<rampi_core::tailscale::Status> {
     let args = if connect {
-        vec!["up".into(), "--timeout=3s".into(), "--json".into()]
+        let state = snapshot().await?;
+        if matches!(state.backend.as_str(), "Stopped" | "Running") {
+            // The official CLI's flag-free up preserves every existing
+            // non-default preference. Adding even JSON/timeout flags asks it
+            // to reconcile flags and rejects custom DNS/hostname/operator.
+            // Our existing subprocess deadline still bounds this operation.
+            vec!["up".into()]
+        } else {
+            vec!["up".into(), "--timeout=3s".into(), "--json".into()]
+        }
     } else {
         vec!["down".into()]
     };
@@ -39,7 +48,7 @@ pub async fn change(connect: bool) -> Result<rampi_core::tailscale::Status> {
     let state = snapshot().await?;
     ensure!(
         ok || (connect && state.backend == "NeedsLogin" && state.login_url().is_some()),
-        "Tailscale konnte die Änderung nicht ausführen. Ein Administrator muss dein Linux-Konto als Tailscale-Operator freigeben; bestehende Einstellungen werden nicht zurückgesetzt."
+        "Tailscale konnte die Änderung nicht ausführen. Ein Administrator muss dein Linux-Konto für das angemeldete Tailscale-Profil als Operator freigeben. Nach der ersten Anmeldung oder einem Profilwechsel kann eine erneute Freigabe nötig sein; bestehende Einstellungen werden nicht zurückgesetzt."
     );
     Ok(state)
 }
@@ -93,6 +102,25 @@ pub fn actions(
     use crate::widgets::*;
     let page = column();
     page.append(&label("1 · Dienst prüfen  →  2 · Verbinden  →  3 · Bei Bedarf anmelden\nEin Administrator muss dein Linux-Konto einmalig als Tailscale-Operator freigeben. VPN und Anmeldung gelten systemweit."));
+    let operator = button("Meine Tailscale-Berechtigung einrichten", feedback);
+    operator.set_widget_name("tailscale-operator");
+    operator.set_sensitive(
+        glib::find_program_in_path("tailscale").is_some()
+            && glib::find_program_in_path("sudo").is_some(),
+    );
+    let (route, stat, f) = (stack.clone(), status.clone(), feedback.clone());
+    operator.connect_clicked(move |_| {
+        let account = glib::user_name();
+        let args = match rampi_core::accounts::tailscale_operator(&account.to_string_lossy()) {
+            Ok(args) => args,
+            Err(error) => { stat.set_text(&error.to_string()); return; }
+        };
+        let (destination, output, args) = (route.clone(), stat.clone(), args.clone());
+        crate::views::confirm(&route, "Tailscale-Berechtigung einrichten",
+            &format!("Das vorhandene sudo fragt hier nach deinem Linux-Kennwort und prüft deine Administratorrechte. Danach darf ›{}‹ die systemweite Tailscale-Verbindung verwalten. Eine bisherige Operatorzuordnung wird ersetzt; VPN-Routen und andere Einstellungen werden nicht zurückgesetzt.", account.to_string_lossy()),
+            &f, move || crate::views::terminal(&destination, "tailscale-operator", args.clone(), &output));
+    });
+    page.append(&operator);
     let busy = std::rc::Rc::new(std::cell::Cell::new(false));
     for (title, connect) in [("Tailscale verbinden", true), ("Tailscale trennen", false)] {
         let action = button(title, feedback);

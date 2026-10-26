@@ -19,6 +19,9 @@ if "RAMPI_STREAM_NATIVE_C_LIFECYCLE_OK" not in (directory / "stream-media.log").
 streaming = runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.py")))["check"](
     directory / "streaming-live", require_gtk=True, require_soak=True
 )
+runpy.run_path(str(Path(__file__).with_name("check-tailscale-evidence.py")))["check"](
+    directory / "tailscale-live", expected_binary=streaming["gtk_client_sha256"]
+)
 if "RAMPI_KEYRING_PROFILE_PRESERVATION_OK" not in (directory / "keyring-profile.log").read_text():
     raise SystemExit("Actual unprivileged keyring profile preservation did not pass")
 runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"](

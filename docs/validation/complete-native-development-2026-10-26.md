@@ -49,7 +49,42 @@ Kennwort über greetd/PAM eine sichtbare native Sitzung unter UID 1000 öffnen.
 Erst anschließend folgen die vorhandenen Zwei-Konten-/Schlüsselbundtests.
 Programmdateien müssen unverändert bleiben. Vorbereitete Konten allein werden
 vom strengeren Prüfer ausdrücklich zurückgewiesen. Dieser neue vollständige
-Image-Durchlauf wurde noch nicht ausgeführt.
+Image-Durchlauf wurde inzwischen ausgeführt: Der frische ARM64/pi-gen-Bau auf
+`c52c6f75d1ffad4f9aa018df4e9e1f5a9eff3684` war erfolgreich, die grafische
+Erststartprüfung blieb nach der ersten Tastaturfrage stehen. Das ist ausdrücklich
+keine Image-Abnahme. Der unveränderte komprimierte Kandidat hat SHA256
+`7c30d47509abed139e4fabaf69351b335846a73041e1255754fe86b67e5b12db`, sein
+Programm SHA256 `34ab0a711a824552d34d982dc1bbb62783b490f5627bb945a3da5a39c9d3afba`.
+Ein separater Prüflauf verwendet ausschließlich eine Wegwerfkopie dieses Images
+und protokolliert Konsolendaten nur vor jeder Anforderung von Zugangsdaten.
+Der endgültige Release benötigt weiterhin einen neuen vollständigen Imagebau.
+
+Der vorherige Bau stoppte korrekt an fehlenden Lizenzdateien zweier Fluent-
+Abhängigkeiten. Die unveränderten Apache-/MIT-Lizenztexte stammen jetzt aus den
+exakten, in den Crates dokumentierten Upstream-Revisionen; der reguläre Sammler
+prüft ihre Herkunft. Die vollständige lokale Sammlung für 450 Linux-Abhängigkeiten
+besteht. Es wurde keine Lizenzprüfung ausgenommen.
+
+Zusätzlich haben zwei offizielle Tailscale-Daemons in einer isolierten Docker-
+Umgebung über einen echten Kernel-Tunnel in beide Richtungen ICMP-Pakete
+übertragen. Der Test verwendet einen privaten Headscale-Koordinator und beweist
+keine öffentliche Anbieteranmeldung. Trennen, Wiederverbinden, Zugriffssperre für
+eine fremde UID, unveränderte Hauptrouten sowie unveränderte DNS-, Hostnamen-,
+Operator- und Routingpräferenzen sind inzwischen lokal bestanden. Tatsächlich
+getestetes Programm: `3b2d7d595fb7f126bb7c8c3034fd2923e6f31be4d8f64a848522e94a885741ff`;
+Komponentenbeleg unter `artifacts/complete-tailscale-receipts`; der strenge Prüfer
+hat auch die tatsächlichen Ping-Ausgaben vor/nach Trennung und die explizite
+Zugriffsverweigerung des offiziellen Daemons bestätigt.
+Der Test fand einen echten Fehler: `tailscale up` mit zusätzlichen JSON-/Timeout-
+Optionen verlangt vorhandene Sondereinstellungen erneut. Der vorhandene,
+parameterlose Wiederverbindungsaufruf erhält sie, während Rampi weiterhin eine
+Prozessfrist erzwingt. Erste Anmeldung und neue Profile benötigen die persönliche
+Operatorfreigabe am tatsächlich angemeldeten Profil; ein eingebetteter Terminal-
+Schritt verwendet dafür die vorhandene sudo-Authentifizierung.
+Die vollständige Bedienabnahme dieses Einrichtungsschritts und die Abnahme des
+endgültigen Programmstands auf beiden Architekturen stehen noch aus. Daher kein
+zusätzlicher Fortschrittspunkt. Die regulären nativen Prüfungen verlangen nun
+auch den tatsächlichen privaten Tunnelbeleg mit identischem Programmhash.
 
 ## Noch vor der Komplettversion
 

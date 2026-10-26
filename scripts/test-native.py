@@ -173,6 +173,11 @@ def acceptance(options):
                     ["--build-arg", "SDK_IMAGE=" + options.image],
                 ),
                 ("tests/streaming/Dockerfile.sunshine", sunshine_image, []),
+                (
+                    "tests/vpn/Dockerfile",
+                    "rampi-native-vpn-fixture",
+                    ["--build-arg", "SDK_IMAGE=" + options.image],
+                ),
             ]:
                 require(
                     run(
@@ -339,6 +344,16 @@ def acceptance(options):
                     + guarded
                     + user
                     + [options.image, "python3", "tests/rust/test-tailscale.py"],
+                ),
+                (
+                    "tailscale-live.log",
+                    [
+                        sys.executable,
+                        str(source / "tests/vpn/test-tailscale-live.py"),
+                        "--image", "rampi-native-vpn-fixture",
+                        "--build-volume", volume,
+                        "--artifacts", str(output / "tailscale-live"),
+                    ],
                 ),
                 (
                     "account-pam.log",

@@ -46,13 +46,48 @@ pub fn tailscale() -> Result<()> {
     let case = std::env::args().nth(2).context("Missing status case")?;
     gtk::glib::MainContext::default().block_on(async {
         if case.starts_with("action-") {
-            let result = crate::tailscale::change(case != "action-down").await;
+            let result = crate::tailscale::change(!matches!(
+                case.as_str(),
+                "action-down" | "action-denied-down"
+            ))
+            .await;
             let valid = match case.as_str() {
                 "action-login" => result
                     .as_ref()
                     .is_ok_and(|s| s.backend == "NeedsLogin" && s.login_url().is_some()),
-                "action-down" => result.as_ref().is_ok_and(|s| s.backend == "Stopped"),
-                "action-denied" => result.is_err(),
+                "action-down" => {
+                    let mut stopped = false;
+                    if result.is_ok() {
+                        for _ in 0..20 {
+                            if crate::tailscale::snapshot()
+                                .await
+                                .is_ok_and(|state| state.backend == "Stopped")
+                            {
+                                stopped = true;
+                                break;
+                            }
+                            gtk::glib::timeout_future(std::time::Duration::from_millis(250)).await;
+                        }
+                    }
+                    stopped
+                }
+                "action-denied" | "action-denied-down" => result.is_err(),
+                "action-up" => {
+                    let mut connected = false;
+                    if result.is_ok() {
+                        for _ in 0..20 {
+                            if crate::tailscale::snapshot()
+                                .await
+                                .is_ok_and(|state| state.connected())
+                            {
+                                connected = true;
+                                break;
+                            }
+                            gtk::glib::timeout_future(std::time::Duration::from_millis(250)).await;
+                        }
+                    }
+                    connected
+                }
                 _ => false,
             };
             ensure!(valid, "Tailscale action did not match expected state");

@@ -1,0 +1,33 @@
+{
+  "server_url": "https://login.tailscale.com",
+  "listen_addr": "0.0.0.0:443",
+  "metrics_listen_addr": "127.0.0.1:9090",
+  "grpc_listen_addr": "127.0.0.1:50443",
+  "grpc_allow_insecure": false,
+  "noise": {"private_key_path": "/run/rampi-vpn-control/noise.key"},
+  "prefixes": {"v4": "100.64.0.0/24", "v6": "fd7a:115c:a1e0::/64", "allocation": "sequential"},
+  "database": {"type": "sqlite", "sqlite": {"path": "/run/rampi-vpn-control/db.sqlite", "write_ahead_log": true}},
+  "derp": {
+    "server": {
+      "enabled": true,
+      "region_id": 999,
+      "region_code": "rampi",
+      "region_name": "Private Rampi fixture",
+      "verify_clients": true,
+      "stun_listen_addr": "0.0.0.0:3478",
+      "private_key_path": "/run/rampi-vpn-control/derp.key"
+    },
+    "urls": [], "paths": [], "auto_update_enabled": false
+  },
+  "dns": {
+    "magic_dns": false, "base_domain": "rampi.fixture.invalid",
+    "override_local_dns": false, "nameservers": {"global": [], "split": {}}
+  },
+  "tls_cert_path": "/run/rampi-vpn-control/server.crt",
+  "tls_key_path": "/run/rampi-vpn-control/server.key",
+  "disable_check_updates": true,
+  "log": {"level": "error", "format": "text"},
+  "policy": {"mode": "file", "path": ""},
+  "unix_socket": "/run/rampi-vpn-control/headscale.sock",
+  "unix_socket_permission": "0600"
+}
