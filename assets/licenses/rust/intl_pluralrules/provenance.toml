@@ -1,0 +1,5 @@
+repository = "zbraniecki/pluralrules"
+revision = "d0715d5b7cca72e228d6e6c4de154bd30dfdd06a" # pragma: allowlist secret - published crate VCS commit
+files = ["LICENSE-APACHE", "LICENSE-MIT"]
+# Original intl_pluralrules/LICENSE-* files at the published crate's VCS commit.
+# Cargo's include list omitted them; preserve the original texts without editing.

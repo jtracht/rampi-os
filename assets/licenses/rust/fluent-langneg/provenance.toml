@@ -1,0 +1,5 @@
+repository = "projectfluent/fluent-langneg-rs"
+revision = "7fdc590466ea63ca2367ac10fb1b881fe561f1a8" # pragma: allowlist secret - published crate VCS commit
+files = ["LICENSE-APACHE", "LICENSE-MIT"]
+# Exact upstream root files at the crate's .cargo_vcs_info.json revision.
+# The published crate's include list omitted these original license texts.
