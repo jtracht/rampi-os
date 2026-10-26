@@ -11,7 +11,8 @@
     "ci_security_and_packages": "docs/validation/software-acceptance-2026-10-20.md",
     "image_partitions_and_filesystems": "docs/validation/software-acceptance-2026-10-20.md",
     "qemu_software_boot": "docs/validation/software-acceptance-2026-10-20.md",
-    "release_artifact_completeness": "docs/validation/software-acceptance-2026-10-20.md"
+    "release_artifact_completeness": "docs/validation/software-acceptance-2026-10-20.md",
+    "native_embedded_rdp": "docs/validation/embedded-rdp-2026-10-23.md"
   },
   "migration": "Rust/GTK4/Wayland. Native development release v0.6.0-dev.1 was published and independently checked. Direct provider modules and their Windows session adapter are removed from the current scope. Physical hardware and Windows-testhost acceptance are excluded. Regular-release parity remains open."
 }
