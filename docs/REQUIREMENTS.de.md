@@ -1,3 +1,13 @@
+# Aktuelle Produktänderung vom 26.10.2026
+
+Die drei direkten KI-Integrationen einschließlich ihrer Einrichtung und
+Windows-Sitzungsverwaltung sind ausdrücklich aus dem Produktumfang entfernt.
+Aktuell bestehen drei Hauptmodule: Kanban, Remote Desktop und Browser.
+Rust/GTK4/Wayland, PAM, private Daten, manuelle Updates und beide VPN-Varianten
+bleiben verbindlich. Keine Hardwaretests oder Windows-Testhosts verwenden.
+Die folgende ursprüngliche Spezifikation ist als Historie erhalten und gilt
+bei Widersprüchen nachrangig zur aktuellen Änderung.
+
 # RAMPI OS – CODEX-MASTERPROMPT V3.1
 ## Vollständige Entwicklung, Nutzung bestehender Systemdienste, GitHub-Repository, automatisierte CI/CD-Pipelines und Releases
 

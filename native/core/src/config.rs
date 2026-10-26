@@ -6,6 +6,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+// Keep IDs written by published versions stable; removed steps are skipped.
+pub const SETUP_STEP_IDS: [usize; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14];
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Host {
@@ -156,6 +159,12 @@ pub fn validate_https(value: &str) -> Result<()> {
     Ok(())
 }
 impl Settings {
+    pub fn setup_index(&self) -> usize {
+        SETUP_STEP_IDS
+            .iter()
+            .position(|id| *id >= self.setup_step)
+            .unwrap_or(SETUP_STEP_IDS.len() - 1)
+    }
     pub fn host(&self) -> Result<&Host> {
         let h = self
             .hosts
@@ -333,5 +342,42 @@ mod tests {
         settings.setup_step = 0;
         settings.active_host = 2;
         assert!(settings.validate().is_err());
+    }
+
+    #[test]
+    fn published_setup_progress_survives_removed_provider_steps() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        for (old_id, expected_position, expected_next_id) in [
+            (7, 7, 11),
+            (8, 8, 12),
+            (9, 8, 12),
+            (10, 8, 12),
+            (11, 8, 12),
+            (12, 9, 13),
+            (13, 10, 14),
+            (14, 11, 14),
+        ] {
+            let original = serde_json::to_vec(&serde_json::json!({
+                "setup_step": old_id,
+                "hosts": [{"address": "host.example", "username": "alice", "project": "C:\\Personal"}]
+            })).unwrap();
+            fs::write(&path, &original).unwrap();
+            let mut settings = Settings::load(&path).unwrap();
+            assert_eq!(settings.setup_step, old_id);
+            assert_eq!(settings.setup_index(), expected_position);
+            assert_eq!(
+                fs::read(&path).unwrap(),
+                original,
+                "Loading rewrote personal data"
+            );
+            settings.setup_step =
+                SETUP_STEP_IDS[(settings.setup_index() + 1).min(SETUP_STEP_IDS.len() - 1)];
+            settings.save(&path).unwrap();
+            let saved = Settings::load(&path).unwrap();
+            assert_eq!(saved.setup_step, expected_next_id);
+            assert_eq!(saved.host().unwrap().project, "C:\\Personal");
+            assert!(!saved.setup_complete);
+        }
     }
 }

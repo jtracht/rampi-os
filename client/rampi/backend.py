@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import signal
@@ -21,10 +20,7 @@ from .kanban import Board, load_board, store_token
 from .launch import (
     browser_args,
     pair_args,
-    preview_args,
     rdp_args,
-    session_args,
-    ssh_args,
     stream_args,
     stream_profile,
     terminal_args,
@@ -72,10 +68,6 @@ class Backend(QObject):
             application.aboutToQuit.connect(self.bt_agent.close)
         self._host_key: dict = {"fingerprints": ""}
         self._host_generation = 0
-        self._sessions = {name: "Ungeprüft" for name in ("codex", "claude", "antigravity")}
-        self._previews = {
-            name: "Noch keine Verbindung." for name in ("codex", "claude", "antigravity")
-        }
         self.children_processes: dict[str, subprocess.Popen] = {}
         self.timer = QTimer(self)
         self.timer.setInterval(30000)
@@ -241,42 +233,26 @@ class Backend(QObject):
         self.boardChanged.emit()
 
     @Property("QVariantMap", notify=changed)
-    def previews(self):
-        return self._previews
-
-    @Property("QVariantMap", notify=changed)
     def hostKey(self):
         return self._host_key
 
-    @Property("QVariantList", notify=changed)
-    def sessions(self):
-        labels = {"codex": "ChatGPT / Codex", "claude": "Claude Code", "antigravity": "Antigravity"}
-        return [
-            {"module": name, "title": labels[name], "state": state}
-            for name, state in self._sessions.items()
-        ]
-
     def _host_busy(self) -> bool:
-        local = {"codex", "claude", "antigravity", "rdp", "stream", "stream-pair"}
+        local = {"rdp", "stream", "stream-pair"}
         return any(
             name in local and process.poll() is None
             for name, process in self.children_processes.items()
-        ) or any(name.startswith("session-stop-") for name in self.jobs.pending)
+        )
 
     def _commit_profile(self, candidate: Settings) -> None:
         old = self.settings.hosts[self.settings.active_host] if self.settings.hosts else None
         new = candidate.hosts[candidate.active_host] if candidate.hosts else None
         if old != new and self._host_busy():
-            raise ValueError(
-                "Zuerst die lokalen Verbindungen schließen. Windows-KI-Sitzungen bleiben erhalten."
-            )
+            raise ValueError("Zuerst die lokalen Verbindungen schließen.")
         candidate.save()
         self.settings = candidate
         if old != new:
             self._host_generation += 1
             self._host_key = {"fingerprints": ""}
-            self._previews = dict.fromkeys(self._previews, "Noch keine Verbindung.")
-            self._sessions = dict.fromkeys(self._sessions, "Ungeprüft")
         self.changed.emit()
 
     @Slot("QVariantMap", int, result=bool)
@@ -338,7 +314,7 @@ class Backend(QObject):
         clients = [
             process
             for name, process in self.children_processes.items()
-            if name in {"codex", "claude", "antigravity", "rdp", "stream", "stream-pair"}
+            if name in {"rdp", "stream", "stream-pair"}
         ]
 
         def disconnect():
@@ -352,33 +328,9 @@ class Backend(QObject):
                     else:
                         process.terminate()
                     process.wait(timeout=8)
-            return "Lokale Verbindungen geschlossen. Windows-KI-Prozesse laufen weiter."
+            return "Lokale Verbindungen geschlossen."
 
         self.jobs.submit("disconnect-clients", disconnect)
-
-    @Slot()
-    def refreshSessions(self):
-        try:
-            host = self.settings.host
-            for module in self._sessions:
-                self._sessions[module] = "Prüfung läuft …"
-                self.jobs.submit(
-                    f"session-{self._host_generation}-{module}",
-                    partial(command, session_args(host, module, "Status"), timeout=15),
-                )
-            self.changed.emit()
-        except (ValueError, OSError) as exc:
-            self.message.emit(str(exc))
-
-    @Slot(str)
-    def stopSession(self, module):
-        try:
-            args = session_args(self.settings.host, module, "Stop")
-            self.jobs.submit(
-                f"session-stop-{self._host_generation}-{module}", partial(command, args, timeout=15)
-            )
-        except (ValueError, OSError) as exc:
-            self.message.emit(str(exc))
 
     @Property(str, constant=True)
     def logoUrl(self):
@@ -393,17 +345,6 @@ class Backend(QObject):
             ("vpn", services.tailscale_status),
         ]:
             self.jobs.submit(name, check)
-        if self.settings.hosts:
-            for module in self._previews:
-                try:
-                    args = preview_args(self.settings.host, module)
-                    self.jobs.submit(
-                        f"preview-{self._host_generation}-{module}",
-                        partial(command, args, timeout=12),
-                    )
-                except (ValueError, OSError) as exc:
-                    self._previews[module] = str(exc)
-            self.changed.emit()
 
     @Slot()
     def refreshBoard(self):
@@ -497,30 +438,6 @@ class Backend(QObject):
                 return
             self._host_key = value
             self.changed.emit()
-        elif name.startswith("session-stop-"):
-            if name.removeprefix("session-stop-").split("-", 1)[0] != str(self._host_generation):
-                return
-            self._sessions[name.rsplit("-", 1)[1]] = "Keine Sitzung"
-            self.changed.emit()
-            self.message.emit("Windows-KI-Sitzung beendet.")
-        elif name.startswith("session-"):
-            _, generation, module = name.split("-", 2)
-            if generation != str(self._host_generation):
-                return
-            try:
-                status = json.loads(value)
-                if (
-                    status.get("schema") != 1
-                    or status.get("module") != module
-                    or not isinstance(status.get("running"), bool)
-                ):
-                    raise ValueError("Ungültiger Sitzungsstatus")
-                self._sessions[module] = (
-                    "Läuft auf Windows" if status["running"] else "Keine Sitzung"
-                )
-            except (ValueError, TypeError, AttributeError):
-                self._sessions[module] = "Windows-Adapter aktualisieren"
-            self.changed.emit()
         elif name in self._status:
             if name == "bluetooth":
                 value = "Bereit" if "Powered: yes" in value else "Aus"
@@ -535,12 +452,6 @@ class Backend(QObject):
         elif name in {"wg-import", "wg-up", "wg-down"}:
             self.message.emit(str(value))
             self.refreshVpnProfiles()
-            self.changed.emit()
-        elif name.startswith("preview-"):
-            _, generation, module = name.split("-", 2)
-            if generation != str(self._host_generation):
-                return
-            self._previews[module] = str(value)[-8000:] or "Sitzung ohne sichtbare Ausgabe."
             self.changed.emit()
         else:
             self.message.emit(str(value) or "Vorgang abgeschlossen.")
@@ -584,18 +495,6 @@ class Backend(QObject):
         elif name in {"wg-import", "wg-up", "wg-down"}:
             self.message.emit(error)
             self.refreshVpnProfiles()
-            self.changed.emit()
-        elif name.startswith("preview-"):
-            _, generation, module = name.split("-", 2)
-            if generation != str(self._host_generation):
-                return
-            self._previews[module] = "Host nicht erreichbar oder noch keine Sitzung."
-            self.changed.emit()
-        elif name.startswith("session-") and not name.startswith("session-stop-"):
-            _, generation, module = name.split("-", 2)
-            if generation != str(self._host_generation):
-                return
-            self._sessions[module] = "Nicht verfügbar · SSH/Host-Adapter prüfen"
             self.changed.emit()
         elif name in self._status:
             self._status[name] = "Nicht verfügbar"
@@ -697,9 +596,7 @@ class Backend(QObject):
     @Slot(str)
     def launch(self, module: str):
         try:
-            if module in {"codex", "claude", "antigravity"}:
-                args = terminal_args(ssh_args(self.settings.host, module), module)
-            elif module == "browser":
+            if module == "browser":
                 args = browser_args(self.settings)
             elif module == "rdp":
                 args = terminal_args(rdp_args(self.settings.host), "rdp")

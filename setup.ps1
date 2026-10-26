@@ -1,5 +1,5 @@
 [CmdletBinding(SupportsShouldProcess)]
-param([switch]$Install,[switch]$InstallMissing,[switch]$EnableOpenSsh,[switch]$EnableRdp)
+param([switch]$EnableOpenSsh,[switch]$EnableRdp)
 $localInstaller = Join-Path $PSScriptRoot 'installer\windows\setup.ps1'
 if (Test-Path -LiteralPath $localInstaller) {
     & $localInstaller @PSBoundParameters
@@ -25,7 +25,7 @@ try {
     if (-not $expected -or $expected -ne $actual) { throw 'Release-Prüfsumme stimmt nicht überein.' }
     $unpacked = Join-Path $temporary 'package'
     Expand-Archive -LiteralPath (Join-Path $temporary $archive) -DestinationPath $unpacked
-    & (Join-Path $unpacked 'installer\windows\setup.ps1') @PSBoundParameters -SourceRoot $unpacked
+    & (Join-Path $unpacked 'installer\windows\setup.ps1') @PSBoundParameters
 } finally {
     $absolute = [IO.Path]::GetFullPath($temporary)
     $parent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')

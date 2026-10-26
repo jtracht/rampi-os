@@ -64,7 +64,7 @@ pub fn run(
         glib::timeout_future(Duration::from_secs(2)).await;
         let startup_ms = samples.borrow_mut().pop().expect("First painted frame");
         let status = gtk::Label::new(None);
-        for name in ["perf-codex", "perf-claude", "perf-gemini"] {
+        for name in ["perf-console-a", "perf-console-b", "perf-console-c"] {
             crate::views::terminal(&stack, name, vec!["/bin/cat".into()], &status);
         }
         crate::views::browser(&stack, &conf, &status, &feedback);
@@ -73,7 +73,7 @@ pub fn run(
             let mut next = root.first_child(); while let Some(w) = next { if let Some(v) = web(&w) { return Some(v); } next = w.next_sibling(); } None
         }
         web(&stack.child_by_name("browser").unwrap()).unwrap().load_html("<title>Rampi performance fixture</title><h1>Offline browser</h1><script>document.body.dataset.ready='yes'</script>", None);
-        let routes = ["dashboard", "kanban", "terminal-perf-codex", "terminal-perf-claude", "terminal-perf-gemini", "remote", "browser", "settings"];
+        let routes = ["dashboard", "kanban", "terminal-perf-console-a", "terminal-perf-console-b", "terminal-perf-console-c", "remote", "browser", "settings"];
         let cpu_start = cpu_ns(); let wall = Instant::now(); let mut peak_rss = rss_kib();
         let mut warm_rss = 0;
         for index in 0..600 {

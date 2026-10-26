@@ -61,7 +61,7 @@ window.requestActivate()
 loop = QEventLoop()
 QTimer.singleShot(100, loop.quit)
 loop.exec()
-for expected in [1, 2, 3, 4, 5, 0]:
+for expected in [1, 2, 0]:
     QTest.keyClick(window, Qt.Key.Key_Right)
     if window.property("selected") != expected:
         raise SystemExit(f"Arrow key navigation failed at {expected}")
@@ -196,4 +196,4 @@ backend.jobs.pool.waitForDone(25000)
 engine.deleteLater()
 app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 personal_files.cleanup()
-print("PASS: QML keyboard filters, JSON refresh, column persistence, host and session settings.")
+print("PASS: QML keyboard filters, JSON refresh, column persistence, host settings.")

@@ -39,7 +39,7 @@ pub fn run(
             let keyboard = gtk::gio::Subprocess::newv(&["wtype".as_ref(), "-s".as_ref(), "45000".as_ref()], gtk::gio::SubprocessFlags::NONE)?;
             let directory = PathBuf::from(std::env::var("RAMPI_TEST_ARTIFACTS")?);
             let dashboard = stack.child_by_name("dashboard").context("No dashboard")?;
-            let blue = named(&dashboard, "ChatGPT").context("No blue tile")?;
+            let blue = named(&dashboard, "Remote Desktop").context("No remote tile")?;
             let records = Rc::new(RefCell::new(serde_json::Map::new()));
             let capture = |name: &'static str| {
                 let (window, blue, directory, records) = (window.clone(), blue.clone(), directory.clone(), records.clone());
@@ -96,7 +96,7 @@ pub fn run(
             ensure!(tabs.visible_child_name().as_deref() == Some("host"));
             let host = tabs.child_by_name("host").unwrap();
             let name = named(&host, "host-name").unwrap(); name.grab_focus();
-            tool("wtype", &["-M","ctrl","-k","a","-m","ctrl","Keyboard profile","-k","Tab","localhost","-k","Tab","alice","-k","Tab","-M","ctrl","-k","a","-m","ctrl","2222","-k","Tab","-k","Tab","C:\\Work","-k","Tab","-M","ctrl","-k","a","-m","ctrl","1280x720","-k","Tab","-k","Tab","-k","Return"]).await?;
+            tool("wtype", &["-M","ctrl","-k","a","-m","ctrl","Keyboard profile","-k","Tab","localhost","-k","Tab","alice","-k","Tab","-M","ctrl","-k","a","-m","ctrl","2222","-k","Tab","-k","Tab","-M","ctrl","-k","a","-m","ctrl","1280x720","-k","Tab","-k","Tab","-k","Return"]).await?;
             delay(150).await;
             ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.name == "Keyboard profile" && conf.borrow().host()?.port == 2222, "Actual Tab/typing/Enter did not save host");
             for category in ["host", "wifi", "bluetooth", "vpn", "board", "system"] {

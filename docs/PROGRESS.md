@@ -1,238 +1,66 @@
 # Entwicklungsfortschritt
 
-Aktueller Gesamtstand unter der Rust-/Wayland-Vorgabe: **ca. 81 %**.
-[81-Prozent-Erweiterung durch vollständige virtuelle WLAN-Modusabnahme](validation/rust-native-81-2026-10-24.md).
-[80-Prozent-Gesamtnachweis einschließlich grafischer Image-Abnahme](validation/rust-native-80-2026-10-24.md).
-[79-Prozent-Erweiterung durch zehnminütigen Mischbetrieb](validation/mixed-soak-2026-10-24.md).
-[78-Prozent-Erweiterung durch grafische PAM-Anmeldung](validation/graphical-login-2026-10-23.md).
-[77-Prozent-Erweiterung durch den nativen Browser](validation/browser-modern-profile-2026-10-23.md).
-[76-Prozent-Erweiterung durch integriertes RDP](validation/embedded-rdp-2026-10-23.md).
-[75-Prozent-Abnahme mit Quellstand, CI und Artefakten](validation/rust-native-75-2026-10-23.md).
-Das beauftragte Zwischenziel von mindestens 80 % ist softwareseitig belegt.
-Der fortgesetzte Auftrag verlangt nun 100 % nach derselben Skala. Die noch
-fehlenden Funktionen und echten Anbieter-/Windows-Abnahmen bleiben Bestandteil
-dieses Ziels; sie werden nicht durch zusätzliche Test-Fixtures ersetzt.
-Die Freigabe eines regulären nativen Releases bleibt offen. Dies ist ein Entwicklungsmeilenstein, kein vollständig
-fertiges Produkt und noch kein neuer regulärer nativer Release.
+Der Produktumfang wurde am 26.10.2026 ausdrücklich verkleinert: Codex, Claude
+Code und Gemini/Antigravity samt direkter CLI- und Sitzungsintegration entfallen.
+Es bleiben drei Hauptmodule: Kanban, Remote Desktop und Browser.
 
-Die bisherige [70-Prozent-Basis](validation/rust-native-70-2026-10-23.md) wird
-um je einen belegten Punkt bei Kanban, WLAN, Setup, VPN und manuellen Updates
-ergänzt. Frühere Python-/QML-Nachweise werden nicht als Rust-Abnahme übernommen.
+Die bisher abgenommenen **81/100** sind deshalb nicht direkt mit dem neuen
+Prozentwert vergleichbar. Nach Abzug der früheren drei Anbieter-CLI-Punkte
+beträgt die vergleichbare Basis **78/95 = 82,1 %**. Die entfernten fünf möglichen
+Punkte werden nicht auf andere Bereiche verteilt.
 
-| Bereich | Rust-Stand / 5 |
-|---|---:|
-| Grafische Sitzung und Dashboard | 4 |
-| Tastatur und Maus | 4 |
-| Setup-Assistent | 4 |
-| Linux-Konten und Login | 4 |
-| WLAN | 5 |
-| Bluetooth | 4 |
-| VPN | 4 |
-| Windows-Host und Persistenz | 4 |
-| Anbieter-CLIs | 3 |
-| Remote Desktop und Streaming | 3 |
-| Kanban | 4 |
-| Browser | 5 |
-| Installer und Reparatur | 4 |
-| Sicherheit und Isolation | 4 |
-| Design und Branding | 4 |
-| GitHub und CI/CD | 4 |
-| Systemimage | 4 |
-| Manuelle Updates | 5 |
-| Dokumentation | 4 |
-| Performance | 4 |
-| **Summe** | **81 / 100** |
+Die neue Zielabnahme umfasst **81/95 = 85,3 %**. Sie gilt erst, wenn beide neuen
+nativen CI-Läufe und die unabhängige Prüfung ihrer tatsächlich heruntergeladenen
+Programm-, Login-, Radio- und Paketnachweise bestehen. Bis dahin ist 85,3 % ein
+Zielwert. [Umfang, Kriterien und Nachweise](validation/three-module-scope-2026-10-26.md).
 
-Dashboard erreicht vier Punkte durch tatsächliche Dienstzustände, aktuelle Uhrzeit,
-Profilwechsel und getrennte Anzeigen für TCP-Erreichbarkeit und ungeprüfte Anmeldung.
-Die GTK-Abnahme prüft Live-Änderungen und die direkten Wege zu den Einstellungen.
+| Bereich | Basis / 5 | Nach bestandener Zielabnahme / 5 |
+|---|---:|---:|
+| Grafische Sitzung und Dashboard | 4 | 5 |
+| Tastatur und Maus | 4 | 4 |
+| Setup-Assistent | 4 | 4 |
+| Linux-Konten und Login | 4 | 4 |
+| WLAN | 5 | 5 |
+| Bluetooth | 4 | 4 |
+| VPN | 4 | 4 |
+| Windows-Host | 4 | 4 |
+| Remote Desktop und Streaming | 3 | 3 |
+| Kanban | 4 | 4 |
+| Browser | 5 | 5 |
+| Installer und Reparatur | 4 | 5 |
+| Sicherheit und Isolation | 4 | 4 |
+| Design und Branding | 4 | 4 |
+| GitHub und CI/CD | 4 | 5 |
+| Systemimage | 4 | 4 |
+| Manuelle Updates | 5 | 5 |
+| Dokumentation | 4 | 4 |
+| Performance | 4 | 4 |
+| **Summe** | **78 / 95** | **81 / 95** |
 
-Performance erreicht vier Punkte durch zehn Minuten tatsächlichen Mischbetrieb
-mit aktiver RDP-Verbindung, WebKit und drei VTE-Prozessen. Auf AMD64 und ARM64
-bestehen je 1.050 Seitenwechsel, wechselnde Remote-Bilder, bestätigte Eingaben und
-die Speichergrenzen unter 1 GiB ohne Swap. Die heruntergeladenen Nachweise und
-das identische ARM64-Paketprogramm sind unabhängig geprüft. Das ist eine
-Softwareabnahme; Pi-GPU-Leistung und Windows-Streaming-Timing bleiben offen.
+Die Bewertungsstufen bleiben unverändert: 0 fehlt, 1 Grundlage, 2 teilweise,
+3 wesentliche Funktionen, 4 weitgehend umgesetzt und softwaregeprüft,
+5 vollständiger vereinbarter Umfang des jeweiligen Bereichs samt Nachweisen.
+Testanzahl, Wartezeit und gelöschte Funktionen ergeben keine Punkte.
 
-Linux-Konten und Login erreichen vier Punkte durch frische QEMU-Anmeldungen auf
-AMD64 und ARM64 mit dem tatsächlichen greetd-/PAM-Ablauf, falschem Kennwort,
-zwei normalen Linux-Identitäten, privaten Konfigurationen und Rückkehr zur
-Anmeldung. Sichtbare native Frames werden geprüft; schwarze Compositor-Bilder
-werden abgewiesen. Die grafische Anmeldung im tatsächlichen Pi-Image ist zusätzlich geprüft;
-Die eigenen Kontooberflächen, das Original-Login-Branding und persönliche
-OpenSSH-Agenten sind inzwischen auf beiden Architekturen abgenommen und
-zusammengeführt. Ein durchgängiger Nachweis der automatischen PAM-Entsperrung
-des persönlichen Schlüsselbunds sowie die reguläre Release-Freigabe bleiben offen;
-der Bereich bleibt deshalb bei vier Punkten.
+Dashboard erhält den zusätzlichen Punkt nur für die tatsächlichen Hin- und
+Rückwege aller drei verbleibenden eingebetteten Module ohne Netzwerkzugang.
+Es bleibt genau ein Fenster; RDP, Kanban/Gitea und Browser behalten ihre echten
+Protokoll- und Profilabnahmen. Installer/Reparatur ergänzt die inzwischen
+vorhandene native Bootstrap-/Rückwechselabnahme um die tatsächlichen PAM- und
+Erhaltungsprüfungen für zwei Konten und vorhandene angepasste Dienste.
+GitHub/CI/CD ergänzt den erfolgreich veröffentlichten nativen Entwicklungsrelease
+mit frischem Image und vollständig unabhängig geprüften öffentlichen Downloads.
+Die genauen Grenzen und Artefaktzuordnungen stehen im verlinkten Nachweis.
 
-Browser erreicht fünf Punkte durch integrierte Navigation, echte HTTPS-/JavaScript-,
-Tastatur-, Maus-, Vollbild- und Download-/Upload-Abnahmen sowie persistente,
-getrennte Profile. Native CI und heruntergeladene Nachweise sind auf AMD64 und
-ARM64 geprüft. Das belegt die vereinbarte Softwarefunktion, keine Pi-GPU-Leistung.
+Das veröffentlichte [v0.6.0-dev.1](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.1)
+ist eine ausdrücklich unvollständige Vorabversion und enthält die spätere
+Schlüsselbundintegration und KI-Entfernung noch nicht. Ein bestehendes Image
+wird niemals still durch neueren Code ersetzt. Reguläre Release-Funktionsgleichheit,
+eingebettetes Streaming, Sprachwechsel und Windows-NLA bleiben offen.
+Physische Hardwaretests und Windows-Testhosts sind auf Nutzerwunsch ausgeschlossen.
+Es werden keine Modellanfragen ausgelöst.
 
-Remote Desktop erreicht drei Punkte durch die integrierte RDW-/IronRDP-Fläche,
-unabhängige Zertifikatsprüfung vor der Anmeldung, echte Desktop-Frames und
-serverseitig bestätigte Tastatureingaben. Dashboard-Wechsel, Wiederverbindung und
-erzwungener Serverabbruch sind auf AMD64 und ARM64 geprüft. Die heruntergeladenen
-Nachweise und das ARM64-Paket sind unabhängig erneut geprüft. Zusätzliche
-skalierte Maus-, Zwei-Achsen-Scroll- und Unicode-Zwischenablage-Abnahmen mit
-tatsächlichen Serverquittungen bestehen inzwischen ebenfalls auf beiden
-Architekturen und sind zusammengeführt. Windows-NLA und eingebettetes Streaming
-bleiben offen; der Bereich bleibt bei drei Punkten.
-
-WLAN erreicht fünf Punkte: Die eigene integrierte Einstellungsseite, Suche,
-Adapterauswahl, sichtbare/versteckte SSIDs und sichere Kennworteingabe verwenden
-NetworkManager. Vorhandene passende Profile werden wiederverwendet; Mehrdeutigkeit
-und ungültige Eingaben werden abgewiesen. Zusätzlich zur tatsächlichen GTK-/D-Bus-
-Abnahme bestehen auf AMD64 und ARM64 frische QEMU-Gäste mit virtuellen Funkgeräten:
-WPA2, reines WPA3/SAE und verstecktes WPA3, DHCP und tatsächlicher IP-Rundlauf,
-falsches Kennwort, Trennen, Wiederverbindung und je Modus abgewiesener Fremdzugriff.
-Die gesamte CI und heruntergeladenen Nachweise sind unabhängig geprüft und
-zusammengeführt. Unternehmensnetze verwenden vorhandene NM-Profile; physische
-Funkqualität bleibt wie vereinbart ausgeschlossen.
-Nachweis: [native Funkabnahme](validation/native-radio-modes-2026-10-24.md).
-
-Die frühere Drei-Punkte-Basis des Assistenten umfasst integrierte SSH-Einrichtung und persönliche
-Tastatur-/Bildschirmeinstellungen. Tastaturänderungen erhalten andere Einstellungen
-und verwenden labwc; angebotene Bildschirmmodi verwenden wlr-randr, einschließlich
-15-Sekunden-Bestätigung und Rücksetzung. Die tatsächliche Headless-Wayland-Abnahme
-prüft diese Abläufe mit dem angebotenen Modus, keine HDMI- oder physische XKB-Eingabe.
-Sprachwechsel und weitere Einrichtungsschritte bleiben offen.
-
-Sicherheit und Isolation erreichen vier Punkte durch die eigene SSH-Einrichtung
-mit tatsächlichem OpenSSH: passphrasegeschützte Schlüsselerstellung im eingebetteten
-Terminal, Wiederaufnahme derselben Erstellung statt paralleler Prozesse und
-Hostschlüsselimport nur nach Abgleich eines unabhängig erhaltenen Fingerabdrucks.
-Falsche Fingerabdrücke, vorhandene Schlüssel und bestehende Hosteinträge sind
-geschützt. Ein tatsächlicher isolierter OpenSSH-Server sowie GTK-/VTE-Abläufe
-prüfen diesen Ablauf; die vollständige lokale Abnahme bleibt erfolgreich.
-
-Systemimage erreicht vier Punkte: Ein tatsächliches flashbares Trixie-/ARM64-Image
-mit Rust-Programm, Wayland-Sitzung, Paketmanifest und Lizenzen ist gebaut.
-Partitionen, Prüfsummen und Quellzuordnung sind geprüft. QEMU startet den
-ursprünglichen Pi-Kernel mit 1 GiB; die tatsächliche grafische PAM-Anmeldung
-weist ein falsches Kennwort ab, startet zwei getrennte Linux-Benutzersitzungen
-mit sichtbarer nativer Oberfläche und kehrt zur Anmeldung zurück. Installierte
-Programmdateien bleiben unverändert; Testwerkzeuge liegen nur in der Wegwerfkopie.
-Der bekannte Bedarf des Greeters an einer vorhandenen Maus-Schnittstelle bleibt
-dokumentiert. Vollständige native Release-Funktionsgleichheit bleibt offen;
-dies ist ein Entwicklungskandidat, kein reguläres Release.
-Nachweis: [grafische Image-Abnahme](validation/image-graphical-2026-10-24.md).
-
-Installer und Reparatur erreichen vier Punkte: Der tatsächliche ARM64-Installer
-ist mit echten Trixie-Paketen, gewöhnlichem Quellbesitz, rootgeschützten
-Programmdateien, wiederholter Installation ohne Überschreiben laufender Dateien,
-atomarem Versionswechsel, Rückwechsel, abgewiesenen ungültigen/veränderten
-Programmen und Deinstallation geprüft. Persönliche Daten bleiben unverändert;
-ein fremder Login-Dienst bleibt erhalten. Weitere Anmelde-/Reparaturfälle
-und der allgemeine native Release-Bootstrap bleiben offen.
-Nachweis: [native CI-Abnahme](validation/rust-native-2026-10-23.md).
-
-Dokumentation erreicht vier Punkte: Bedienung, Betrieb, native Architektur mit
-Vertrauensgrenzen, aktuelles Konfigurationsschema, Funktionsmatrix, Fehlerhilfe
-und ein wiederholbarer Docker-Gesamtlauf mit eingefrorenen Quellen sind dokumentiert.
-Historische Prototypangaben sind getrennt; jede Nachweisart nennt ihre Grenze.
-[Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb](NATIVE-OPERATIONS.de.md),
-[Entwicklung](NATIVE-DEVELOPMENT.de.md), [Umfang und Hilfe](NATIVE-SUPPORT.de.md).
-
-Tastatur und Design erreichen je vier Punkte: Tatsächliche Wayland-Eingaben
-prüfen Hostformular, Tab-Reihenfolge, alle Einstellungsbereiche, Cursorwechsel und
-Escape im VTE. Das Compositor-Kürzel kehrt zum Dashboard zurück, ohne den Tastendruck
-in die PTY weiterzuleiten. Echte Compositor-PNGs belegen unterschiedliche Bewegung
-aller vier Kanten bei Start, Hover und Fokus; reduzierte Bewegung bleibt still.
-1280×720 und 1600×900 werden geprüft. Der Startimpuls beginnt erst beim Sichtbarwerden;
-Fokusverlust und reduzierte Bewegung zeichnen die Fläche korrekt neu. Weitere Windows-Remote-Eingabeprüfungen und eingebettetes Streaming bleiben offen.
-
-Bluetooth erreicht vier Punkte: Zusätzlich zu Vergleich, PIN/Passkey, Abbruch
-und fremden Absendern werden angezeigte Codes, eingegebene Stellen, Cancel/Release
-und ein wirklicher Neustart des Fixture-Prozesses geprüft. Der Agent meldet sich
-beim neuen Dienst an und verwirft alte Eingaben. Die private BlueZ-Fixture ist
-weiterhin kein Funknachweis; zusätzliche virtuelle Controller-Fälle bleiben offen.
-
-Der Rust-Assistent speichert den aktuellen Schritt, kann unterbrochen und
-fortgesetzt werden und nutzt die vorhandenen Einstellungsseiten. Die tatsächliche
-GTK-Abnahme prüft Navigation, Speichern, Überspringen, Abschluss, lokale Diagnose
-und mehrere Hostprofile einschließlich Aktivierung, ungültiger Eingaben und
-bestätigtem Entfernen. Mit den nativen Cloud- und Tailscale-Seiten sowie der Abnahme aller 15 Hin- und
-Rückwege erreicht der Assistent vier Punkte. Die Einrichtung persönlicher
-Windows-Anbieterzugänge und Sprachwechsel bleiben offen.
-
-VPN erhält einen zusätzlichen Punkt für die eigene Rust-WireGuard-Seite mit
-persönlicher Profilauswahl, Status, Import, Verbinden und Trennen. Die tatsächliche
-GTK-Seite ist gegen eine isolierte NetworkManager-Fixture geprüft. Zusätzlich
-importiert und aktiviert derselbe Rust-Adapter zwei echte WireGuard-Gegenstellen
-mit NetworkManager: verschlüsselter Verkehr, falscher Schlüssel, Trennen und
-Linux-Benutzerisolation sind lokal nachgewiesen. Die vollständige grafische
-Tailscale-Einrichtung und weitere VPN-Abläufe bleiben offen.
-
-Kanban erhält einen zusätzlichen Punkt für die lokale Rust-Oberfläche mit
-sofortigem Laden, kombinierter Suche und Projekt-/Prioritäts-/Statusfiltern,
-konfigurierbarer Spaltenreihenfolge, begrenztem initialem Kartenaufbau mit
-Nachladen sowie Erhalt geladener Aufgaben bei Quellfehlern. Der tatsächliche
-GTK-Test prüft Filter, erneutes Laden und unveränderte Quelldaten. Zusätzlich sind nun GitHub, Gitea, Trello, Jira, Asana und Notion nativ angebunden,
-mit persönlichen Schlüsselbund-Profilen und persistentem Offline-Cache. Die reale
-GTK-Seite, curl/TLS und ein verschlüsselter GNOME-Schlüsselbund sind in Docker
-geprüft. Dies erhöht Kanban auf vier Punkte. Persönliche Anbieteranmeldungen
-bleiben offen; Vertragstests sind kein Nachweis solcher Konten.
-
-Nachweise und Grenzen: [Rust-Migration](RUST-MIGRATION.md).
-Die eigene Tailscale-Statusanzeige ist zusätzlich mit offizieller CLI und einem
-isolierten Dienst geprüft. Das erhöht den Gesamtwert noch nicht: Kontoanmeldung,
-grafische Einrichtung und tatsächlicher Tailscale-Tunnelverkehr bleiben offen.
-Die folgenden Tabellen dokumentieren den bisherigen Python-/QML-Stand.
-
-Die Zahl bewertet den gesamten Masterprompt, einschließlich Integration,
-Bedienung und Nachweisen. Sie ist eine transparente Planungsschätzung, keine
-Messung der verbleibenden Arbeitszeit und keine Aussage, dass ein erfolgreich
-veröffentlichter Entwicklungsstand schon sämtliche Anforderungen erfüllt.
-Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen und gehören nicht
-zum Nenner. Windows- und Anbieterprüfungen werden dadurch nicht automatisch erfüllt.
-
-20 Bereiche erhalten jeweils bis zu fünf Punkte: 0 = fehlt, 1 = Grundlage,
-2 = teilweise implementiert, 3 = wesentliche Funktionen vorhanden, 4 = weitgehend
-umgesetzt und softwaregeprüft, 5 = vollständiger vereinbarter Umfang einschließlich
-Nachweisen und Dokumentation. Die Summe ergibt den geschätzten Prozentwert.
-Punkte steigen durch belegte Funktionen und Prüfungen, nicht durch
-Wartezeit, Commits, Testanzahl oder bloßen Release-Erfolg.
-
-| Bereich | Baseline / 5 | Wesentliche verbleibende Arbeit |
-|---|---:|---|
-| Grafische Sitzung und Dashboard | 4 | Gesamtabnahme aller Module und Offline-Wechsel |
-| Tastatur und Maus | 4 | Durchgängige Eingabeprüfung auch in echten Remote-Clients |
-| Setup-Assistent | 3 | Einheitliche eigene Einrichtung statt mehrerer Systemdialoge |
-| Linux-Konten und Login | 4 | Vollständige grafische Anmelde-/Abmeldeabnahme |
-| WLAN | 2 | Eigene Netzwerkauswahl, sichere Kennworteingabe und Dienstprüfung |
-| Bluetooth | 2 | Eigene Pairing-Oberfläche und softwareseitige BlueZ-Abnahme |
-| VPN | 3 | Grafische persönliche Profilauswahl und Tailscale-Abnahme |
-| Windows-Host und Persistenz | 4 | Zusammenhängende Windows-11-Pro-Abnahme |
-| Anbieter-CLIs | 3 | Persönliche Anmeldungen, native Anbieterabläufe und Antigravity-Einrichtung |
-| Remote Desktop und Streaming | 3 | Streaming-Audio/-Eingabe sowie Windows-NLA/-Aufnahme prüfen |
-| Kanban | 3 | Grafische Spaltenkonfiguration, getrennte Filter, echte Anbieterabnahmen |
-| Browser | 4 | Moderne Seiten, Downloads und Ressourcenbedarf im Gesamtsystem prüfen |
-| Installer und Reparatur | 4 | Weitere Wiederholungs-, Fehler- und Reparaturpfade abnehmen |
-| Sicherheit und Isolation | 4 | Abschließende Prüfung über die kombinierten Benutzerabläufe |
-| Design und Branding | 4 | Gesamtabgleich aller Ansichten und technischen Logo-Varianten |
-| GitHub und CI/CD | 5 | Automatische Prüfungen, Tags und vollständige Releases nachgewiesen |
-| Systemimage | 4 | Paketquellen für reproduzierbare Builds festhalten |
-| Manuelle Updates | 5 | Versionierte manuelle Installer; keine Geräte-Autoupdates |
-| Dokumentation | 3 | Einstellungen, Abläufe und Nachweise vollständig fortschreiben |
-| Performance | 1 | Längere Gesamtlast unter 1 GB, CPU-/Start-/Wechsel-/Animationsmessungen |
-| **Summe** | **69 / 100** | **Baseline: ca. 69 %** |
-
-Quellen: [vollständige Anforderungen](REQUIREMENTS.de.md),
-[Implementierungsstand](STATUS.md), [Tests und Grenzen](TESTING.md),
-[vereinbarter Abnahmeumfang](VALIDATION-SCOPE.md).
-
-Belegte Erweiterungen gegenüber der Baseline:
-
-| Bereich | Neuer Punktestand | Nachweis |
-|---|---:|---|
-| VPN | 4 / 5 | Eigene grafische Auswahl; offizielle D-Bus-Metadaten mit aktivem Zustand; gemeinsame/fremde Profile ausgeschlossen; UID statt Umgebungsvariablen bestimmt das Systemkonto |
-| Remote Desktop und Streaming | 4 / 5 | Echter 997-Hz-Testton über Sunshine/PulseAudio, Opus und Moonlight/SDL empfangen; erneute Verbindung; Stille und falscher Ton werden abgewiesen |
-| Kanban | 4 / 5 | Spaltenreihenfolge gespeichert; unabhängige Projekt-/Prioritäts-/Statusfilter mit Suche; tatsächliche QML-Tastaturtests und JSON-Neuladen |
-| WLAN | 4 / 5 | Eigene Oberfläche; tatsächliche WPA2-Anmeldung, DHCP, IP-Rundlauf, falsches Kennwort und Wiederverbindung mit NetworkManager/hostapd/supplicant auf virtuellen hwsim-Radios; ARM64-Gesamtabnahme noch offen |
-| Bluetooth | 3 / 5 | Eigene Geräte- und Kopplungsoberfläche; verifizierter BlueZ-Aufrufer; PIN/Passkey, Bestätigung, Geräteaktionen und Dienstneustart über tatsächliches QML/GIO mit D-Bus-Fixture; echte virtuelle HCI-Kopplung noch offen |
-
-Damit **75 / 100 Punkte**, entsprechend **ca. 75 %**. Lokale Prüfungen sind bestanden;
-die Änderungen durchlaufen zusätzlich die vollständige CI und einen frischen
-Release-Image-Build. Die verbleibenden Punkte in der Baseline bleiben offen.
+[Frühere 81-Punkte-Abnahme](validation/rust-native-81-2026-10-24.md),
+[grafische Image-Abnahme](validation/image-graphical-2026-10-24.md),
+[Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb und manuelle Updates](NATIVE-OPERATIONS.de.md),
+[Entwicklung](NATIVE-DEVELOPMENT.de.md), [Umfang und Fehlerhilfe](NATIVE-SUPPORT.de.md).

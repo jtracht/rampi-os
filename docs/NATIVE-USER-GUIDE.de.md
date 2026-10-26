@@ -1,14 +1,15 @@
 # Rampi mit Rust und Wayland bedienen
 
-Diese Anleitung gilt für den Entwicklungszweig mit `rampi-native`. Das öffentliche
-Release v0.5.0 enthält noch den früheren Python-/QML-Prototyp. Ein reguläres natives
-Release ist weiterhin gesperrt. Physische Hardwaretests sind auf Wunsch ausgeschlossen.
+Diese Anleitung gilt für den Entwicklungszweig mit `rampi-native`. Das veröffentlichte native
+Entwicklungsrelease v0.6.0-dev.1 liegt diesem Zweig vorausgehend zugrunde. Neuere
+Änderungen sind erst nach einem weiteren Release in dessen Image enthalten. Physische Hardwaretests sind auf Wunsch ausgeschlossen.
 
 ## Erster Start und Anmeldung
 
 Die Sitzung verwendet labwc unter Wayland. Der System-Login übernimmt die
 Authentifizierung über greetd und PAM; Rampi speichert kein eigenes Linux-Kennwort.
-Ein grafischer Login ist noch nicht vollständig softwareseitig abgenommen.
+Grafische Anmeldung und erneute persönliche Schlüsselbund-Entsperrung sind
+auf AMD64 und ARM64 mit zwei Konten softwareseitig abgenommen.
 Der reguläre TTY-Zugang bleibt vorhanden.
 
 Beim ersten Start erscheint die Einrichtung. **Weiter / Schritt überspringen**
@@ -18,12 +19,12 @@ im Dashboard gelangst du zurück. **Einrichtung abschließen** ist am letzten Sc
 möglich und bestätigt deinen Durchlauf; Verbindungen werden dadurch nicht als
 erfolgreich geprüft markiert.
 
-Die 15 Stationen zeigen auch fehlende Funktionen ausdrücklich an. Insbesondere
-Sprachwechsel und Kontenverwaltung sind noch nicht vollständig portiert.
+Die zwölf Stationen zeigen auch fehlende Funktionen ausdrücklich an. Insbesondere
+Sprachwechsel bleibt offen. Die Kontenverwaltung verwendet Linux-Systemkonten.
 
 ## Dashboard und Navigation
 
-Pfeil links/rechts wechselt zwischen den sechs Hauptkacheln, Enter öffnet das
+Pfeil links/rechts wechselt zwischen den drei Hauptkacheln (Kanban, Remote Desktop und Browser), Enter öffnet das
 Modul. Tab bewegt den Fokus zwischen Bedienelementen. Escape führt von einer
 Bestätigungsseite zurück beziehungsweise zum Dashboard; aus einem während der
 Einrichtung geöffneten Einstellungsbereich geht es zurück zur Einrichtung.
@@ -71,7 +72,7 @@ mit dem neuen Konto anmelden. Das Terminal bleibt mit seinem Ergebnis sichtbar;
 ein Modulwechsel startet keinen zweiten Vorgang.
 
 **Von Rampi abmelden** öffnet eine Bestätigungsseite. Lokale Anwendungen und
-Verbindungen werden geschlossen; persistente Windows-Prozesse laufen weiter.
+Verbindungen werden geschlossen; die Windows-Anmeldung wird dadurch nicht beendet.
 Die Klangwiedergabe verwendet den vorhandenen Pulse-kompatiblen Audiodienst.
 
 Auf derselben Systemseite eine persönliche Tastaturbelegung wählen und anwenden. Andere
@@ -124,10 +125,8 @@ Wert ein. Rampi speichert nur bei Übereinstimmung. Ein bereits bekannter Host
 wird nicht automatisch ersetzt. Dies ersetzt keine Windows-Anmeldung; die
 Übertragung des öffentlichen Benutzerschlüssels bleibt ein ausdrücklicher Schritt.
 
-Codex und Claude Code müssen unter deinem Windows-Konto installiert und
-angemeldet sein. Die vorhandene Windows-Integration erhält Prozesse mit psmux.
-Eine tatsächlich verfügbare offizielle native Antigravity-CLI ist nicht
-nachgewiesen; die entsprechende Kachel ist kein Nachweis der Anbieterunterstützung.
+Direkte KI-Module gehören seit der Produktänderung vom 26.10.2026 nicht mehr
+zu Rampi. Es werden keine Anbieterprogramme installiert, gestartet oder verwaltet.
 
 ## WLAN und Bluetooth
 

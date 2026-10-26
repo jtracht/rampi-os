@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 import os
@@ -11,8 +10,6 @@ from pathlib import Path
 
 from .config import Host, Settings, config_home, private_dir, safe_url
 
-MODULES = ("codex", "claude", "antigravity")
-
 
 def executable(*names: str) -> str:
     for name in names:
@@ -20,82 +17,6 @@ def executable(*names: str) -> str:
         if found:
             return found
     raise RuntimeError(f"Nicht installiert: {' / '.join(names)}")
-
-
-def ps_literal(value: str) -> str:
-    if "\x00" in value:
-        raise ValueError("Nullzeichen sind nicht erlaubt.")
-    return "'" + value.replace("'", "''") + "'"
-
-
-def ssh_args(host: Host, module: str) -> list[str]:
-    host.validate()
-    if module not in MODULES:
-        raise ValueError("Unbekanntes KI-Modul.")
-    script = (
-        "$ErrorActionPreference='Stop'; "
-        "$s=Join-Path $env:LOCALAPPDATA 'Rampi\\rampi-session.ps1'; "
-        f"& $s -Module {ps_literal(module)} -Project {ps_literal(host.project)}; "
-        "exit $LASTEXITCODE"
-    )
-    return ssh_command(host, script)
-
-
-def preview_args(host: Host, module: str) -> list[str]:
-    if module not in MODULES:
-        raise ValueError("Unbekanntes KI-Modul.")
-    script = (
-        "$ErrorActionPreference='Stop'; "
-        f"psmux.exe capture-pane -p -t {ps_literal('rampi-' + module)}; exit $LASTEXITCODE"
-    )
-    return ssh_command(host, script, interactive=False)
-
-
-def session_args(host: Host, module: str, action: str) -> list[str]:
-    if module not in MODULES or action not in {"Status", "Stop"}:
-        raise ValueError("Unbekannte Sitzungsaktion.")
-    script = (
-        "$ErrorActionPreference='Stop'; "
-        "$s=Join-Path $env:LOCALAPPDATA 'Rampi\\rampi-session.ps1'; "
-        f"& $s -Module {ps_literal(module)} -Action {ps_literal(action)}; exit $LASTEXITCODE"
-    )
-    return ssh_command(host, script, interactive=False)
-
-
-def ssh_command(host: Host, script: str, interactive: bool = True) -> list[str]:
-    host.validate()
-    encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
-    args = [
-        "ssh",
-        "-tt" if interactive else "-T",
-        "-o",
-        "StrictHostKeyChecking=yes",
-        "-o",
-        "IdentitiesOnly=yes",
-        "-o",
-        "ServerAliveInterval=15",
-        "-o",
-        "ServerAliveCountMax=3",
-        "-o",
-        "ConnectTimeout=8",
-        "-p",
-        str(host.port),
-    ]
-    if not interactive:
-        args += ["-o", "BatchMode=yes"]
-    if host.identity:
-        args += ["-i", str(Path(host.identity).expanduser())]
-    args += [
-        "-l",
-        host.username,
-        host.address,
-        "powershell.exe",
-        "-NoLogo",
-        "-NoProfile",
-        "-EncodedCommand",
-        encoded,
-    ]
-    return args
 
 
 def terminal_args(args: list[str], title: str) -> list[str]:

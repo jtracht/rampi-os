@@ -24,7 +24,7 @@ Die gemessene Softwarebaseline verwendet Cairo/Pixman, keine physische Pi-GPU.
 | System-Einstellungen | Persönliche XKB-Datei und angebotene Bildschirmmodi | labwc und wlr-randr |
 | Kontoaktionen | Eigenes Kennwort und bestätigte Abmeldung | passwd/PAM und systemd-Sitzungsaufsicht |
 | Browserseiten | Webseitenabfragen, Downloadziel, Fortschritt und Abbruch | WebKitGTK, TLS-Prüfung und Benutzerentscheidung |
-| Windows-Adapter | Anbieterprozess starten, prüfen und erneut verbinden | Windows-Konto, OpenSSH, psmux/ConPTY und Anbieter-CLI |
+| Remote Desktop | Integrierte RDW-/IronRDP-Fläche, Zertifikat-Pin, Eingaben und Zwischenablage | Windows-Konto, TLS/RDP und unabhängiger Zertifikatsvergleich |
 
 Rampi implementiert keine eigene Kontendatenbank, Kryptografie, Netzwerkprotokolle,
 Terminal-/Browser-Engine oder allgemeine Dienstverwaltung. Das Dashboard öffnet
@@ -38,13 +38,12 @@ Wayland-Sitzung wird diese verwendet. `rampi-wayland-start` übernimmt die Umgeb
 in den systemd-Benutzermanager und wartet auf `rampi.service`. Normales Beenden
 beendet den Sitzungslauf; Fehler können über `Restart=on-failure` neu starten.
 Linux-TTYs bleiben erhalten. Ein fremder Login-Dienst wird nicht ersetzt.
-Der vollständige grafische greetd-/PAM-Durchlauf ist noch nicht abgenommen.
+Grafischer greetd-/PAM-Durchlauf und persönliche Schlüsselbünde sind auf beiden Architekturen abgenommen.
 
 Ein GTK-Stack enthält Dashboard, Einstellungen, Assistent, Kanban, Browser,
 Terminals und Bestätigungsseiten. VTE und WebKit starten bei Bedarf. Seitenwechsel
-beenden laufende Terminalprozesse nicht. Windows-Prozesse bleiben zusätzlich
-unabhängig vom SSH-Client in psmux bestehen. Native FreeRDP-/Moonlight-Flächen
-sind gegenwärtig noch eigene Wayland-Oberflächen; vollständige Einbettung ist offen.
+beenden laufende Terminalprozesse nicht. RDP ist mit RDW/IronRDP in denselben GTK-Stack eingebettet. Die vollständige
+Moonlight-Einbettung bleibt separat offen; direkte KI-Sitzungen sind entfernt.
 
 Strg+Alt+Pos1 wird von labwc abgefangen. Der Starter aktiviert die einzelne
 GTK-Anwendung und kehrt zum Dashboard zurück. Der reservierte Tastendruck

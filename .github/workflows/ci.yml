@@ -96,22 +96,7 @@ jobs:
             Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Repository PSGallery -Force -Scope CurrentUser
           }
           $issues = Invoke-ScriptAnalyzer -Path installer/windows -Recurse -Severity Error
-          $issues += Invoke-ScriptAnalyzer -Path host/windows -Recurse -Severity Error
           if ($issues) { $issues | Format-List; exit 1 }
-      - name: Verified native psmux persistence test
-        shell: pwsh
-        run: |
-          Invoke-WebRequest 'https://github.com/psmux/psmux/releases/download/v3.4.0/psmux-v3.4.0-windows-x64.zip' -OutFile psmux.zip
-          if ((Get-FileHash psmux.zip -Algorithm SHA256).Hash.ToLower() -ne 'a66b6be7c13c6fa0dc3660a267b9e34eaa91a4eb7f07fbd55a0468018bd0f721') { throw 'psmux checksum mismatch' } # pragma: allowlist secret
-          Expand-Archive psmux.zip -DestinationPath psmux
-          ./scripts/test-persistence.ps1 -Psmux ./psmux/psmux.exe
-          ./scripts/test-session-controls.ps1 -Psmux ./psmux/psmux.exe
-      - name: Real Windows OpenSSH reconnect and cross-user isolation
-        shell: pwsh
-        run: ./scripts/test-windows-ssh.ps1 -Psmux ./psmux/psmux.exe
-      - name: Installer permissions and data preservation
-        shell: pwsh
-        run: ./scripts/test-windows-installer.ps1
   security:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

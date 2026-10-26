@@ -40,7 +40,7 @@ pub async fn run(
     let window = app.active_window().context("No native window")?;
     let status = gtk::Label::new(None);
     let mut terms = Vec::new();
-    for name in ["soak-codex", "soak-claude", "soak-gemini"] {
+    for name in ["soak-console-a", "soak-console-b", "soak-console-c"] {
         crate::views::terminal(
             stack,
             name,
@@ -80,9 +80,9 @@ pub async fn run(
     let routes = [
         "rdp-session",
         "browser",
-        "terminal-soak-codex",
-        "terminal-soak-claude",
-        "terminal-soak-gemini",
+        "terminal-soak-console-a",
+        "terminal-soak-console-b",
+        "terminal-soak-console-c",
         "dashboard",
         "settings",
     ];

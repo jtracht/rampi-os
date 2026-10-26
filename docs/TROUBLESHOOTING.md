@@ -1,3 +1,8 @@
+> Historischer Stand vor der Produktänderung vom 26.10.2026. Direkte KI-Module
+> und ihre Windows-Sitzungsverwaltung sind entfernt. Für aktuelle Funktionen,
+> Bedienung und Prüfgrenzen gelten [Umfang](NATIVE-SUPPORT.de.md),
+> [Bedienung](NATIVE-USER-GUIDE.de.md) und [Fortschritt](PROGRESS.md).
+
 # Fehlerdiagnose
 
 **Dashboard bleibt ohne Host nutzbar:** Hostausfall ist kein Fehler der lokalen

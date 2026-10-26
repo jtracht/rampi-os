@@ -4,6 +4,10 @@
 
 Die folgende gemeinsame Einstellungstabelle wird vom Rust-Core validiert.
 `setup_step` ist zusätzlich eine Zahl von 0 bis 14, Standard 0;
+die gespeicherten IDs bleiben zur Kompatibilität mit veröffentlichten Versionen
+stabil. Die zwölf aktuellen Stationen verwenden 0–7 und 11–14. Alte KI-Positionen
+8–10 führen zur nächsten verbleibenden Station (Desktop-Streaming, ID 11), ohne
+beim Laden die Datei umzuschreiben. Fortsetzen speichert wieder eine stabile ID;
 `sound_effects` ist ein boolescher Wert, Standard true. `language` ist vorgesehen,
 die Oberfläche gegenwärtig deutsch. Höchstens 64 Hosts sind zulässig.
 Eine Konfiguration über 1 MiB wird abgewiesen. Fehlerhafte bestehende Dateien
@@ -54,7 +58,7 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 | hosts[].username | string / leer | eigenes Windows-Konto |
 | hosts[].port | int / 22 | SSH-Port 1–65535 |
 | hosts[].identity | string / leer | existierender privater SSH-Schlüsselpfad; kein Schlüsselinhalt |
-| hosts[].project | string / leer | zugängliches Projektverzeichnis auf Windows |
+| hosts[].project | string / leer | Altdatenkompatibilität; wird erhalten, nicht angeboten oder ausgeführt |
 | hosts[].resolution | string / 1280x720 | bevorzugte Moonlight-Streamingauflösung |
 | browser_url | string / https://www.raspberrypi.com | HTTPS-Startseite ohne eingebettete Credentials |
 | board_source | string / leer | JSON-Dateipfad oder anbieterspezifische Projektkennung |

@@ -183,7 +183,7 @@ def main():
             "gnome-keyring",
             "libpam-gnome-keyring",
             "libsecret-tools",
-            "libglib2.0-bin",
+            "wlrctl",
             "fonts-dejavu-core",
         ]
         config["runcmd"][0][2] = (
