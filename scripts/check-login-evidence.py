@@ -52,6 +52,7 @@ def check(directory: Path, expected_binary: str | None = None):
         "RAMPI_GRAPHICAL_LOGIN_BRANDING_OK",
         "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK",
         "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK",
+        "RAMPI_GRAPHICAL_LOGIN_PAM_STREAM_KEYRING_OK",
         "RAMPI_GRAPHICAL_LOGIN_OK",
     ]:
         if marker not in log:

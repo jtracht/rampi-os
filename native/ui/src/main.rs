@@ -65,6 +65,14 @@ mod ssh_setup;
 #[cfg(target_os = "linux")]
 mod ssh_view;
 #[cfg(target_os = "linux")]
+mod stream_checks;
+#[cfg(target_os = "linux")]
+mod stream_input;
+#[cfg(target_os = "linux")]
+mod stream_soak;
+#[cfg(target_os = "linux")]
+mod stream_view;
+#[cfg(target_os = "linux")]
 mod system_checks;
 #[cfg(target_os = "linux")]
 mod system_settings;
@@ -84,6 +92,15 @@ mod wifi_hidden;
 mod wireguard;
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--stream-runtime-check") {
+        if let Err(error) = rampi_stream::runtime::MoonlightRuntime::load() {
+            eprintln!("Streaming-Laufzeit: {error}");
+            std::process::exit(1);
+        }
+        println!("RAMPI_STREAM_RUNTIME_LOAD_OK");
+        return;
+    }
     #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--pam-keyring-check") {
         if let Err(error) = pam_keyring_checks::run() {

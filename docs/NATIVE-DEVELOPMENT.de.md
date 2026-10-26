@@ -102,3 +102,11 @@ Sie prüft WPA2, DHCP, echten IP-Verkehr, falsches Kennwort, Wiederverbindung un
 einen zweiten Linux-Benutzer. [Nachweis und Wiederholung](validation/rust-wlan-qemu-2026-10-23.md).
 Die CI verwendet einen frischen offiziellen Debian-Gast; der lokale optionale
 `--prepared`-Cache ist ausschließlich für Entwicklung und wird im Nachweis markiert.
+
+
+Die vollständige lokale Archivabnahme mit `scripts/test-native.py` setzt einen
+eingecheckten, während des Laufs unveränderten Quellstand voraus. Sie friert das
+Programm ein und bindet nun auch die wirklichen Moonlight-/GTK-/Dauerlastbelege
+an diesen Stand. Für den normalen Bearbeitungszyklus bleiben Cargo-Tests und
+Clippy einzeln nutzbar. Ein nicht eingecheckter Komponentenlauf ist kein
+veröffentlichungsfähiger Nachweis.

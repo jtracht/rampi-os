@@ -16,7 +16,7 @@ fn cpu_ns() -> u64 {
         .parse()
         .unwrap()
 }
-fn rss_kib() -> u64 {
+pub(crate) fn rss_kib() -> u64 {
     std::fs::read_to_string("/proc/self/status")
         .unwrap()
         .lines()

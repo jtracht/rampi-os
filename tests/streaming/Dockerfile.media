@@ -1,0 +1,10 @@
+ARG SDK_IMAGE=rampi-rust-dev
+FROM ${SDK_IMAGE}
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+# The native SDK already provides the verified official C runtime and sources.
+RUN test -s /usr/local/lib/libmoonlight-common.so.2.7.1 \
+    && test "$(git -C /opt/moonlight-source/third_party/moonlight-common-c rev-parse HEAD)" = b126e481a195fdc7152d211def17190e3434bcce
+ENV RAMPI_TEST_CONTAINER=1
+WORKDIR /src

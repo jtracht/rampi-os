@@ -108,7 +108,10 @@ def native_keyring(user, mode, attribute, secret):
         "--pam-keyring-check",
         data=json.dumps(request).encode(),
     )
-    if b"RAMPI_NATIVE_PAM_KEYRING_OK" not in result.stdout:
+    if (
+        b"RAMPI_NATIVE_PAM_KEYRING_OK" not in result.stdout
+        or b"RAMPI_NATIVE_PAM_STREAM_KEYRING_OK" not in result.stdout
+    ):
         raise RuntimeError("Native Secret Service acceptance result missing")
 
 
@@ -518,6 +521,7 @@ def main():
         account["pam_keyring_relogin"] = True
     print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK", flush=True)
     print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK", flush=True)
+    print("RAMPI_GRAPHICAL_LOGIN_PAM_STREAM_KEYRING_OK", flush=True)
     if (
         run("pgrep", "-x", "Xorg", check=False).returncode == 0
         or run("pgrep", "-x", "Xwayland", check=False).returncode == 0

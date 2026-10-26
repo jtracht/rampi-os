@@ -88,7 +88,7 @@ sonst erfolgt die Rücksetzung. Die Auflösung gilt bis zur Abmeldung.
 Unter **Host & SSH** kannst du mehrere Profile anlegen. Wähle einen vorhandenen
 Eintrag oder **Neues Hostprofil**. Trage Profilname, Hostname/VPN-IP,
 Windows-Benutzername, SSH-Port, den Pfad eines vorhandenen persönlichen
-SSH-Schlüssels, Projektverzeichnis und Streaming-Auflösung ein.
+SSH-Schlüssels und die Streaming-Auflösung ein. Alte Projektwerte bleiben im Profil erhalten.
 
 **Hostprofil speichern** validiert und speichert. **Ausgewählten Host verwenden**
 setzt den Host für anschließend gestartete Verbindungen. Ein Wechsel der Auswahl
@@ -232,9 +232,42 @@ Textkopien aus Rampi und vom Host werden über die Zwischenablage in beide
 Richtungen übertragen. Die Auflösung bleibt beim Verbinden fest; die Fläche wird lokal skaliert.
 
 Die Softwareabnahme verwendet einen echten XRDP-Testserver. Eine native Windows-
-11-Pro-/NLA-Abnahme ist noch offen. Streaming verwendet weiterhin Moonlight mit
-Sunshine und eine eigene Wayland-Oberfläche; die eingebettete Streaming-Fläche
-bleibt offen.
+11-Pro-/NLA-Abnahme ist noch offen; ein Windows-Testhost wird auf Nutzerwunsch nicht verwendet.
+
+## Desktop-Streaming mit Sunshine
+
+Im Remote-Modul **Desktop-Streaming · integriert** öffnen. Auf dem aktiven Host
+muss Sunshine erreichbar sein. **Host neu koppeln** zeigt einen PIN direkt auf
+der Rampi-Seite; diesen im Sunshine-Host bestätigen. Die bestätigte Identität
+liegt im persönlichen Linux-Schlüsselbund, getrennt nach Host und Windows-Konto.
+Eine andere Linux-Anmeldung verwendet ihren eigenen Schlüsselbund. Private
+Schlüssel werden nicht in die normale Konfiguration oder Befehlszeile geschrieben.
+
+**Kopplung laden / Anwendungen aktualisieren** verwendet eine gespeicherte
+Kopplung. Eine angebotene Anwendung in der eingebetteten Liste wählen und starten.
+Das Bild bleibt im vorhandenen Rampi-Fenster; die Einrichtungsfelder werden während
+der Verbindung ausgeblendet. Das aktuelle Profil verwendet H.264, 30 Bilder pro Sekunde und Stereo. Die
+Auflösung stammt aus dem aktiven Hostprofil; unterstützt werden gerade Größen bis
+1920×1080. Der Standard 1280×720 ist die im Ressourcenlauf geprüfte Variante. GStreamer wählt vorhandene Decoder. Mauspositionen
+berücksichtigen die lokale Skalierung und Bildränder; beide Scrollachsen und
+Tastaturereignisse werden über Moonlight übertragen.
+
+**Stream trennen** stoppt die Verbindung und zeigt die Auswahl erneut. Sunshine
+und die entfernte Anwendung werden dadurch nicht beendet. **Strg+Alt+Pos1**
+kehrt zum Dashboard zurück und beendet den Stream. Escape und Tab bleiben bei
+fokussierter Desktopfläche für den entfernten Rechner verfügbar. Nach einem
+Netzabbruch die Kopplung erneut laden und verbinden. Rampi akzeptiert keinen
+geänderten gespeicherten Sunshine-Schlüssel stillschweigend; gegebenenfalls den
+Host unabhängig prüfen und ausdrücklich neu koppeln.
+
+Ist der persönliche Schlüsselbund gesperrt, mit der normalen PAM-Anmeldung
+entsperren; Rampi öffnet keinen zusätzlichen Entsperrdialog. Eine fehlende oder
+inkompatible Moonlight-C-Bibliothek wird als Fehler angezeigt. Der native Installer
+verwendet vorhandene kompatible Bibliotheken oder baut nur die offizielle
+Bibliothek; ein zusätzlicher Player oder Display-Server ist nicht nötig.
+Softwareprüfungen verwenden einen isolierten Sunshine-Server. Windows-NLA,
+physische Funk-/Videoeigenschaften und der Decoderpfad eines echten Pi sind damit
+nicht nachgewiesen.
 
 ## Diagnose und persönliche Daten
 

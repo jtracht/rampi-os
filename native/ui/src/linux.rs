@@ -309,14 +309,21 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         }
         let page = s.visible_child_name();
         let owns_escape = page.as_deref().is_some_and(|name| {
-            name.starts_with("terminal-") || name == "browser" || name == "rdp-session"
+            name.starts_with("terminal-")
+                || name == "browser"
+                || name == "rdp-session"
+                || name == "stream-session"
         });
         if ((key == gdk::Key::Escape && !owns_escape)
             || (key == gdk::Key::Home
                 && mods.contains(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::ALT_MASK)))
             && s.visible_child_name().is_some_and(|n| n != "dashboard")
         {
-            views::go_back(&s);
+            if key == gdk::Key::Home {
+                s.set_visible_child_name("dashboard");
+            } else {
+                views::go_back(&s);
+            }
             return glib::Propagation::Stop;
         }
         if s.visible_child_name().is_some_and(|n| n == "dashboard")
@@ -332,9 +339,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
                 })
                 .unwrap_or(0);
             let next = if key == gdk::Key::Right {
-                (current + 1) % 6
+                (current + 1) % buttons.len()
             } else {
-                (current + 5) % 6
+                (current + buttons.len() - 1) % buttons.len()
             };
             buttons[next].grab_focus();
             return glib::Propagation::Stop;
@@ -399,6 +406,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
                 app, &stack, &settings, &status, &feedback, expected,
             );
         }
+    }
+    if std::env::args().any(|a| a == "--stream-ui-check") {
+        crate::stream_checks::run(app, &stack, &settings, &feedback);
     }
     if std::env::args().any(|a| a == "--rdp-ui-check") {
         crate::rdp_checks::run(app, &stack, &settings, &feedback);

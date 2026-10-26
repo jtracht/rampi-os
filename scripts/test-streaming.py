@@ -56,6 +56,7 @@ def server():
         "hevc_mode = 1\nav1_mode = 1\nstream_audio = enabled\n"
         "keyboard = disabled\nmouse = disabled\ncontroller = disabled\n"
         "system_tray = disabled\nupnp = disabled\norigin_web_ui_allowed = pc\n"
+        + ("min_log_level = debug\n" if os.environ.get("RAMPI_TEST_INPUT_RECEIPTS") == "1" else "")
     )
     with (home / "sunshine.log").open("wb") as log:
         descriptor = os.open(pipe, os.O_RDWR)
@@ -64,7 +65,26 @@ def server():
         ) as process:
             os.close(descriptor)
             try:
-                for step in range(120):
+                animation = None
+                long_run = os.environ.get("RAMPI_TEST_STREAM_SOAK") == "1"
+                for step in range(600 if long_run else 120):
+                    if long_run and animation is None and (home / "stream-soak-start").is_file():
+                        animation = subprocess.Popen(
+                            [
+                                "ffplay",
+                                "-loglevel",
+                                "error",
+                                "-nostats",
+                                "-noborder",
+                                "-f",
+                                "lavfi",
+                                "testsrc2=size=1280x720:rate=30",
+                            ],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+                    if animation is not None and animation.poll() is not None:
+                        raise RuntimeError("Actual animated FFplay source exited")
                     if process.poll() is not None:
                         raise RuntimeError(
                             "Sunshine exited: " + (home / "sunshine.log").read_text()
@@ -76,6 +96,9 @@ def server():
                         run("pactl", "move-sink-input", line.split()[0], "@DEFAULT_SINK@")
                     time.sleep(2)
             finally:
+                if animation is not None:
+                    animation.terminate()
+                    animation.wait(timeout=10)
                 process.terminate()
 
 

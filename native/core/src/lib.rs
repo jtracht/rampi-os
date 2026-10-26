@@ -5,7 +5,6 @@ pub mod config;
 #[cfg(test)]
 mod connector_tests;
 pub mod connectors;
-pub mod launch;
 pub mod motion;
 pub mod tailscale;
 

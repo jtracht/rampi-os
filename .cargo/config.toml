@@ -1,0 +1,4 @@
+[env]
+# Reuse the installed OpenSSL even when an upstream optional dependency enables
+# openssl-sys's vendored feature. The native SDK already provides libssl-dev.
+OPENSSL_NO_VENDOR = "1"

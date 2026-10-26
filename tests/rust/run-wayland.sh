@@ -38,7 +38,8 @@ if grep -q 'Gtk-WARNING' "$test_home/application.log"; then echo 'GTK layout war
 /build/target/debug/rampi-native --keyboard-test &
 keyboard_pid=$!
 sleep 0.4
-wtype -s 150 -k Right -s 100 -k Left -s 100 -k Return
+# Wrap left from the first tile and right through all three actual tiles.
+wtype -s 100 -k Left -s 80 -k Right -s 80 -k Right -s 80 -k Right -s 80 -k Right -s 80 -k Return
 sleep 1.2
 wtype -s 150 -k Escape
 wait "$keyboard_pid"

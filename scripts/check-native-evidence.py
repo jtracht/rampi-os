@@ -8,6 +8,17 @@ import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+if "RAMPI_STREAM_GSTREAMER_MEDIA_OK" not in (directory / "stream-media.log").read_text(
+    encoding="utf-8"
+):
+    raise SystemExit("Actual windowless H264/Opus component acceptance missing")
+if "RAMPI_STREAM_NATIVE_C_LIFECYCLE_OK" not in (directory / "stream-media.log").read_text(
+    encoding="utf-8"
+):
+    raise SystemExit("Actual official Moonlight C lifecycle acceptance missing")
+streaming = runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.py")))["check"](
+    directory / "streaming-live", require_gtk=True, require_soak=True
+)
 if "RAMPI_KEYRING_PROFILE_PRESERVATION_OK" not in (directory / "keyring-profile.log").read_text():
     raise SystemExit("Actual unprivileged keyring profile preservation did not pass")
 runpy.run_path(str(Path(__file__).with_name("check-gitea-evidence.py")))["check"](
@@ -161,6 +172,7 @@ if width < 960 or height < 540:
     raise SystemExit("Actual native screenshot is smaller than the supported interface")
 proof = {
     "rdp_input": rdp_input,
+    "streaming": streaming,
     "required_stages": markers,
     "peak_mib": round(peak / 1024**2, 1),
     "screenshot": [width, height],

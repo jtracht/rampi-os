@@ -43,7 +43,9 @@ Grafischer greetd-/PAM-Durchlauf und persönliche Schlüsselbünde sind auf beid
 Ein GTK-Stack enthält Dashboard, Einstellungen, Assistent, Kanban, Browser,
 Terminals und Bestätigungsseiten. VTE und WebKit starten bei Bedarf. Seitenwechsel
 beenden laufende Terminalprozesse nicht. RDP ist mit RDW/IronRDP in denselben GTK-Stack eingebettet. Die vollständige
-Moonlight-Einbettung bleibt separat offen; direkte KI-Sitzungen sind entfernt.
+Die Streaming-Seite integriert Moonlight-C und GStreamer in dasselbe GTK-Fenster;
+persönliche Kopplungen verwenden den vorhandenen Secret Service. Alle blockierenden
+Kopplungs-/Verbindungsoperationen laufen auf Arbeitsthreads. Direkte KI-Sitzungen sind entfernt.
 
 Strg+Alt+Pos1 wird von labwc abgefangen. Der Starter aktiviert die einzelne
 GTK-Anwendung und kehrt zum Dashboard zurück. Der reservierte Tastendruck

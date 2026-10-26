@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import io
 import json
 import re
 import runpy
@@ -174,7 +175,79 @@ def check(directory, revision, lock):
         lock,
         revision,
     )
+    if any(item["name"] == "rampi-stream" for item in tomllib.loads(lock.decode())["package"]):
+        check_moonlight(directory / "dependency-licenses.tar.xz")
     print(f"PASS: exact sources for {len(packages)} distro packages and {rust} Cargo dependencies.")
+
+
+def check_moonlight(path):
+    """Verify the separately built C library's complete, pinned corresponding sources."""
+    with tarfile.open(path) as outer:
+
+        def read(name, limit):
+            item = outer.getmember("dependency-licenses/" + name)
+            if not item.isfile() or not 0 < item.size <= limit:
+                raise ValueError("Missing or oversized Moonlight source metadata")
+            return outer.extractfile(item).read()
+
+        revisions = read("moonlight-source-revisions.txt", 1024).decode().splitlines()
+        if len(revisions) != 2 or dict(line.split("=", 1) for line in revisions) != {
+            # Public pinned upstream Git revisions, not credentials.
+            "embedded": "775444287305849ebdf4736c75298ad0713e2d5d",  # pragma: allowlist secret
+            "common": "b126e481a195fdc7152d211def17190e3434bcce",  # pragma: allowlist secret
+        }:
+            raise ValueError("Moonlight C source revisions differ")
+        binary = read("moonlight-runtime.sha256", 1024).decode().strip().split("  ")
+        if (
+            len(binary) != 2
+            or not re.fullmatch(r"[a-f0-9]{64}", binary[0])
+            or binary[1] != "/usr/local/lib/libmoonlight-common.so.2.7.1"
+        ):
+            raise ValueError("Moonlight installed-library checksum missing")
+        manifest = read("moonlight-source-files.sha256", 2 * 1024**2).decode().splitlines()
+        expected = {}
+        for line in manifest:
+            digest, name = line.split("  ", 1)
+            if (
+                not re.fullmatch(r"[a-f0-9]{64}", digest)
+                or name in expected
+                or PurePosixPath(name).is_absolute()
+                or ".." in PurePosixPath(name).parts
+                or "\\" in name
+            ):
+                raise ValueError("Unsafe or duplicate Moonlight source inventory entry")
+            expected[name] = digest
+        if not 10 <= len(expected) <= 10000:
+            raise ValueError("Complete Moonlight source inventory missing")
+        compressed = read("moonlight-embedded-2.7.1-source.tar.gz", 32 * 1024**2)
+    actual = {}
+    total = 0
+    with tarfile.open(fileobj=io.BytesIO(compressed), mode="r|gz") as archive:
+        for item in archive:
+            if item.isdir():
+                continue
+            name = item.name.removeprefix("source/")
+            total += item.size
+            if (
+                not item.name.startswith("source/")
+                or not item.isfile()
+                or name in actual
+                or item.size > 64 * 1024**2
+                or total > 256 * 1024**2
+                or name not in expected
+            ):
+                raise ValueError("Unexpected Moonlight corresponding-source entry")
+            actual[name] = hashlib.file_digest(archive.extractfile(item), "sha256").hexdigest()
+    if actual != expected:
+        raise ValueError("Moonlight C source inventory differs from its full archive")
+    for name in [
+        "LICENSE",
+        "third_party/moonlight-common-c/LICENSE.txt",
+        "third_party/moonlight-common-c/src/Connection.c",
+    ]:
+        if name not in actual:
+            raise ValueError("Moonlight C source or license missing")
+    print(f"PASS: pinned Moonlight C corresponding sources, {len(actual)} checked files.")
 
 
 if __name__ == "__main__":

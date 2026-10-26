@@ -84,6 +84,9 @@ fn attributes(profile: &str, kind: &str, source: &str) -> HashMap<String, String
 pub async fn load(profile: &str, kind: &str, source: &str) -> Result<String> {
     validate_profile(profile)?;
     rampi_core::connectors::Connector::new(kind, source, "source-validation".into())?;
+    load_item(profile, kind, source).await
+}
+async fn load_item(profile: &str, kind: &str, source: &str) -> Result<String> {
     let bus = gio::bus_get_future(gio::BusType::Session).await?;
     let found = call(
         &bus,
@@ -172,6 +175,9 @@ pub async fn store(
         value.len() <= 16384,
         "Zugangsdaten überschreiten das Schlüsselbund-Limit"
     );
+    store_item(profile, kind, source, value).await
+}
+async fn store_item(profile: &str, kind: &str, source: &str, value: String) -> Result<()> {
     let bus = gio::bus_get_future(gio::BusType::Session).await?;
     let collection: ObjectPath = call(&bus, ROOT, SERVICE, "ReadAlias", &("default",).to_variant())
         .await?
@@ -203,7 +209,7 @@ pub async fn store(
         let props = HashMap::from([
             (
                 "org.freedesktop.Secret.Item.Label".to_string(),
-                format!("Rampi Kanban · {profile}").to_variant(),
+                format!("Rampi · {kind} · {profile}").to_variant(),
             ),
             (
                 "org.freedesktop.Secret.Item.Attributes".into(),
@@ -250,4 +256,21 @@ pub async fn store(
     .await;
     close(&bus, &session).await;
     result
+}
+
+// Streaming identities use the same personal bus/collection and never Prompt.
+// Keep connector validation at its public entry points; stream targets use HTTPS.
+pub async fn load_stream(profile: &str, source: &str) -> Result<String> {
+    validate_profile(profile)?;
+    rampi_core::config::validate_https(source)?;
+    load_item(profile, "sunshine", source).await
+}
+pub async fn store_stream(profile: &str, source: &str, value: &str) -> Result<()> {
+    validate_profile(profile)?;
+    rampi_core::config::validate_https(source)?;
+    ensure!(
+        !value.is_empty() && value.len() <= 16384 && !value.chars().any(char::is_control),
+        "Ungültige Streaming-Identität"
+    );
+    store_item(profile, "sunshine", source, value.to_owned()).await
 }
