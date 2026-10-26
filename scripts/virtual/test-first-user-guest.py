@@ -51,6 +51,8 @@ def main():
     seen = set()
     keyboard_seen = set()
     keyboard_questions = 0
+    keyboard_sent_at = None
+    precredential_diagnostic_saved = False
     while time.monotonic() - started < 480:
         # Read screen characters only to identify known stock dialogs. Never
         # export the console buffer: it may contain personal input.
@@ -97,7 +99,28 @@ def main():
                 if keyboard_questions > 8:
                     raise RuntimeError("Unexpected stock keyboard configuration loop")
                 print(f"RAMPI_FIRST_USER_INPUT=keyboard-{keyboard_questions}", flush=True)
+                keyboard_sent_at = time.monotonic()
                 time.sleep(1)
+        # This snapshot is permitted only before the host has received any
+        # username/password input request. Never export later console contents.
+        if (
+            not seen
+            and keyboard_sent_at is not None
+            and time.monotonic() - keyboard_sent_at > 8
+            and not precredential_diagnostic_saved
+        ):
+            diagnostic = {
+                "before_credential_input": True,
+                "keyboard_questions": keyboard_questions,
+                "matched_prompts": sorted(keyboard_seen),
+                "active_vt": command("fgconsole").stdout.decode(errors="replace").strip(),
+                "console_before_credentials": screen,
+                "process_names": command("ps", "-eo", "comm=").stdout.decode(errors="replace"),
+            }
+            destination = CAPTURES / "first-user-precredential.json"
+            destination.write_text(json.dumps(diagnostic, indent=2) + "\n")
+            destination.chmod(0o644)
+            precredential_diagnostic_saved = True
         if active("greetd.service"):
             if not {"username", "password", "confirmation"}.issubset(seen):
                 raise RuntimeError("Graphical login appeared before stock account creation")
