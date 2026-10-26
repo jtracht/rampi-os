@@ -271,6 +271,20 @@ impl Default for StreamOptions {
     }
 }
 impl StreamOptions {
+    pub fn for_resolution(value: &str) -> Result<Self> {
+        let (width, height) = value
+            .split_once('x')
+            .ok_or_else(|| anyhow!("Streaming-Auflösung: z. B. 1280x720 verwenden"))?;
+        let options = Self {
+            width: width.parse()?,
+            height: height.parse()?,
+            ..Self::default()
+        };
+        options
+            .settings()
+            .map_err(|_| anyhow!("Streaming benötigt eine gerade Auflösung bis 1920x1080"))?;
+        Ok(options)
+    }
     fn settings(self) -> Result<MoonlightStreamSettings> {
         ensure!(
             (32..=1920).contains(&self.width)
@@ -315,6 +329,14 @@ mod tests {
         time::{Duration, Instant},
     };
 
+    #[test]
+    fn configured_stream_resolution_is_validated_before_network_use() {
+        let hd = StreamOptions::for_resolution("1920x1080").unwrap();
+        assert_eq!((hd.width, hd.height, hd.fps), (1920, 1080, 30));
+        assert!(StreamOptions::for_resolution("3840x2160").is_err());
+        assert!(StreamOptions::for_resolution("1281x720").is_err());
+        assert!(StreamOptions::for_resolution("not-a-mode").is_err());
+    }
     #[test]
     fn identity_key_binding_and_target_validation() -> Result<()> {
         let first = PairRequest::new("127.0.0.1", 47989, "first")?;

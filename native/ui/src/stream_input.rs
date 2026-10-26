@@ -51,6 +51,33 @@ fn mouse_button(code: u32) -> Option<MouseButton> {
     }
 }
 
+fn coordinates(local: (i32, i32), remote: (i32, i32), x: f64, y: f64) -> Option<(i16, i16)> {
+    if local.0 <= 0
+        || local.1 <= 0
+        || remote.0 <= 0
+        || remote.1 <= 0
+        || remote.0 > i16::MAX as i32
+        || remote.1 > i16::MAX as i32
+    {
+        return None;
+    }
+    let scale = (local.0 as f64 / remote.0 as f64).min(local.1 as f64 / remote.1 as f64);
+    let left = (local.0 as f64 - remote.0 as f64 * scale) / 2.0;
+    let top = (local.1 as f64 - remote.1 as f64 * scale) / 2.0;
+    let (x, y) = ((x - left) / scale, (y - top) / scale);
+    if x >= 0.0 && y >= 0.0 && x < remote.0 as f64 && y < remote.1 as f64 {
+        Some((x as i16, y as i16))
+    } else {
+        None
+    }
+}
+fn mapped(picture: &gtk::Picture, x: f64, y: f64) -> Option<(i16, i16, i16, i16)> {
+    let paintable = picture.paintable()?;
+    let (width, height) = (paintable.intrinsic_width(), paintable.intrinsic_height());
+    let (x, y) = coordinates((picture.width(), picture.height()), (width, height), x, y)?;
+    Some((x, y, width as i16, height as i16))
+}
+
 pub fn attach(picture: &gtk::Picture, active: &Active) {
     let down = Rc::new(RefCell::new(BTreeMap::<u32, (i16, u8)>::new()));
     let mouse_down = Rc::new(RefCell::new(BTreeSet::<u32>::new()));
@@ -124,23 +151,9 @@ pub fn attach(picture: &gtk::Picture, active: &Active) {
             return;
         };
         if let Some(control) = a.borrow().as_ref()
-            && let Some(paintable) = picture.paintable()
+            && let Some((x, y, width, height)) = mapped(&picture, x, y)
         {
-            let (width, height) = (paintable.intrinsic_width(), paintable.intrinsic_height());
-            if width <= 0 || height <= 0 {
-                return;
-            }
-            let scale = (picture.width() as f64 / width as f64)
-                .min(picture.height() as f64 / height as f64);
-            if scale <= 0.0 {
-                return;
-            }
-            let left = (picture.width() as f64 - width as f64 * scale) / 2.0;
-            let top = (picture.height() as f64 - height as f64 * scale) / 2.0;
-            let (x, y) = ((x - left) / scale, (y - top) / scale);
-            if x >= 0.0 && y >= 0.0 && x < width as f64 && y < height as f64 {
-                let _ = control.mouse_position(x as i16, y as i16, width as i16, height as i16);
-            }
+            let _ = control.mouse_position(x, y, width, height);
         }
     });
     picture.add_controller(motion);
@@ -148,7 +161,7 @@ pub fn attach(picture: &gtk::Picture, active: &Active) {
     clicks.set_button(0);
     for press in [true, false] {
         let (a, weak, held) = (active.clone(), picture.downgrade(), mouse_down.clone());
-        let send = move |gesture: &gtk::GestureClick, _: i32, _: f64, _: f64| {
+        let send = move |gesture: &gtk::GestureClick, _: i32, x: f64, y: f64| {
             if let Some(picture) = weak.upgrade() {
                 picture.grab_focus();
             }
@@ -157,6 +170,17 @@ pub fn attach(picture: &gtk::Picture, active: &Active) {
                 return;
             };
             if press {
+                let Some(position) = weak.upgrade().and_then(|picture| mapped(&picture, x, y))
+                else {
+                    return;
+                };
+                if let Some(control) = a.borrow().as_ref()
+                    && control
+                        .mouse_position(position.0, position.1, position.2, position.3)
+                        .is_err()
+                {
+                    return;
+                }
                 held.borrow_mut().insert(code);
             } else if !held.borrow_mut().remove(&code) {
                 return;
@@ -200,6 +224,17 @@ pub fn attach(picture: &gtk::Picture, active: &Active) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn letterbox_bars_never_become_remote_clicks() {
+        assert_eq!(
+            coordinates((1000, 1000), (1280, 720), 500.0, 500.0),
+            Some((640, 360))
+        );
+        assert_eq!(coordinates((1000, 1000), (1280, 720), 500.0, 50.0), None);
+        assert_eq!(coordinates((1000, 1000), (1280, 720), 500.0, 950.0), None);
+        assert_eq!(coordinates((0, 0), (1280, 720), 0.0, 0.0), None);
+        assert_eq!(coordinates((1000, 1000), (1280, 720), f64::NAN, 10.0), None);
+    }
     #[test]
     fn existing_database_preserves_extended_physical_keys() {
         assert_eq!(virtual_key(38), Some((0x8041_u16 as i16, 0))); // physical A

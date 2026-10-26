@@ -13,7 +13,16 @@ import uuid
 from pathlib import Path
 
 
-def main(server_image: str, client_image: str, output: Path, gtk: bool = False, soak: bool = False):
+def main(
+    server_image: str,
+    client_image: str,
+    output: Path,
+    gtk: bool = False,
+    soak: bool = False,
+    build_volume="rampi-rust-build",
+):
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", build_volume):
+        raise ValueError("Invalid explicit streaming build volume")
     root = Path(__file__).resolve().parents[1]
     fixture = runpy.run_path(str(root / "scripts/test-streaming.py"))
     run = fixture["run"]
@@ -62,7 +71,7 @@ def main(server_image: str, client_image: str, output: Path, gtk: bool = False, 
                 if role == "server"
                 else [
                     "-v",
-                    "rampi-rust-build:/build",
+                    f"{build_volume}:/build",
                     "-e",
                     "CARGO_HOME=/build/cargo",
                     "-e",
@@ -419,7 +428,8 @@ if __name__ == "__main__":
         action="store_true",
         help="Also require 600 seconds of real animated GTK streaming",
     )
+    parser.add_argument("--build-volume", default="rampi-rust-build")
     args = parser.parse_args()
     if args.soak and not args.gtk:
         parser.error("--soak requires --gtk")
-    main(args.server_image, args.client_image, args.output, args.gtk, args.soak)
+    main(args.server_image, args.client_image, args.output, args.gtk, args.soak, args.build_volume)

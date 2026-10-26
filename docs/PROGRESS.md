@@ -9,10 +9,10 @@ Prozentwert vergleichbar. Nach Abzug der früheren drei Anbieter-CLI-Punkte
 beträgt die vergleichbare Basis **78/95 = 82,1 %**. Die entfernten fünf möglichen
 Punkte werden nicht auf andere Bereiche verteilt.
 
-Die neue Zielabnahme umfasst **81/95 = 85,3 %**. Sie gilt erst, wenn beide neuen
-nativen CI-Läufe und die unabhängige Prüfung ihrer tatsächlich heruntergeladenen
-Programm-, Login-, Radio- und Paketnachweise bestehen. Bis dahin ist 85,3 % ein
-Zielwert. [Umfang, Kriterien und Nachweise](validation/three-module-scope-2026-10-26.md).
+Die Drei-Modul-Abnahme **81/95 = 85,3 %** ist bestanden und in `86c208a`
+integriert. Allgemeine und native Push-CI sind erfolgreich; die unabhängigen
+Programm-, Login-, Radio-, Paket- und frischen Image-Nachweise bestehen.
+Der aktuelle Streaming-Entwicklungszweig ist darin noch nicht enthalten. [Umfang, Kriterien und Nachweise](validation/three-module-scope-2026-10-26.md).
 
 | Bereich | Basis / 5 | Nach bestandener Zielabnahme / 5 |
 |---|---:|---:|
@@ -64,3 +64,36 @@ Es werden keine Modellanfragen ausgelöst.
 [grafische Image-Abnahme](validation/image-graphical-2026-10-24.md),
 [Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb und manuelle Updates](NATIVE-OPERATIONS.de.md),
 [Entwicklung](NATIVE-DEVELOPMENT.de.md), [Umfang und Fehlerhilfe](NATIVE-SUPPORT.de.md).
+
+
+## Nächster vereinbarter Meilenstein: mindestens 90 Prozent
+
+Der Nenner bleibt unverändert bei 95 Punkten. Der nächste Kandidat zielt auf
+**86/95 = 90,5 %**, erhält diese Bewertung aber erst nach vollständiger Abnahme.
+Bis dahin bleibt der bestätigte Gesamtstand bei **85,3 %**.
+
+| Bereich | Bestätigt / 5 | Kandidat nach vollständiger Abnahme / 5 |
+|---|---:|---:|
+| Linux-Konten und Login | 4 | 5 |
+| Remote Desktop und Streaming | 3 | 4 |
+| Systemimage | 4 | 5 |
+| Dokumentation | 4 | 5 |
+| Performance | 4 | 5 |
+
+Alle übrigen Bereiche behalten ihre bestehende Bewertung. Konten benötigen die
+vollständigen persönlichen Zugangsdatenpfade einschließlich Streaming-Geheimnissen
+über frische PAM-Anmeldungen und erneute Anmeldung beider Benutzer. Streaming
+benötigt die tatsächliche eingebettete Bild-/Eingabe-/Kopplungsabnahme. Performance
+benötigt zusätzlich zu den bisherigen Mischlastprüfungen den vorab definierten
+zehnminütigen bewegten Stream unter 1 GiB/vier CPUs auf beiden Architekturen.
+Dokumentation muss die tatsächlichen drei Module, Bedienung, Installation,
+Rückwechsel und Grenzen vollständig beschreiben. Systemimage benötigt die native
+Funktionsgleichheit dieser drei Module sowie einen neu veröffentlichten,
+unabhängig heruntergeladenen und mit vollständigen Quellen geprüften Versionsstand.
+Dies ist die Softwareabnahme des Images; `regular_release` bleibt für das noch
+unvollständige Gesamtprodukt ausdrücklich `false`.
+
+[Kriterien für die Erweiterung](validation/native-streaming-ui-2026-10-26.md).
+Eine lokale Komponentenprüfung, Testanzahl oder Wartezeit allein gibt keinen
+zusätzlichen Punkt frei. Sprachwechsel, Windows-NLA und der echte Pi-Decoderpfad
+bleiben offen. Keine Hardwaretests, Windows-Testhosts oder Modellanfragen.

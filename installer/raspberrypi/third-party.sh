@@ -14,10 +14,10 @@ if [[ "$mode" != --legacy ]]; then
                 arm64) machine=AArch64 ;; amd64) machine='Advanced Micro Devices X86-64' ;; armhf) machine=ARM ;;
                 *) echo 'Nicht unterstützte Streaming-Architektur.' >&2; exit 1 ;;
             esac
-            if ! readelf -h "$candidate" | grep -Fq "${machine}"; then
+            if ! /usr/bin/readelf -h "$candidate" | grep -Fq "${machine}"; then
                 echo 'Vorhandene Streaming-Laufzeit hat eine andere Architektur; keine Überschreibung.' >&2; exit 1
             fi
-            symbols="$(readelf --dyn-syms --wide "$candidate")"
+            symbols="$(/usr/bin/readelf --dyn-syms --wide "$candidate")"
             for symbol in LiStartConnection LiStopConnection LiInitializeServerInformation LiSendKeyboardEvent LiSendMousePositionEvent LiGetLaunchUrlQueryParameters; do
                 if ! grep -Eq "[[:space:]]${symbol}$" <<< "$symbols"; then
                     echo 'Vorhandene Moonlight-Laufzeit ist inkompatibel; sie wird nicht überschrieben.' >&2; exit 1
@@ -93,6 +93,8 @@ if [[ "$mode" == --runtime-only ]] || ! command -v moonlight >/dev/null; then
     # Native loading uses the exact absolute file; preserve existing SONAME links.
     if [[ "$mode" == --legacy ]]; then ldconfig; fi
     install -d -m 755 /usr/share/doc/rampi
+    # Inventory actual tracked files, including every pinned submodule.
+    (cd "$temporary/source"; git ls-files --recurse-submodules -z | xargs -0 sha256sum --) > /usr/share/doc/rampi/moonlight-source-files.sha256
     # Corresponding upstream sources, including pinned submodules, accompany the binary.
     tar --exclude=.git -czf /usr/share/doc/rampi/moonlight-embedded-2.7.1-source.tar.gz -C "$temporary" source
     install -m 644 "$temporary/source/LICENSE" /usr/share/doc/rampi/moonlight-LICENSE

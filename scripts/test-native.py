@@ -86,6 +86,10 @@ def acceptance(options):
             + "\n",
             encoding="utf-8",
         )
+        if dirty:
+            raise RuntimeError(
+                "Commit changes before full archival acceptance; use cargo tests while editing"
+            )
         if not options.skip_image_build:
             print("Building the pinned native test environment …", flush=True)
             require(
@@ -135,6 +139,7 @@ def acceptance(options):
                     "bash",
                     "-ec",
                     "cargo fmt --all --check; cargo test --locked -p rampi-core; "
+                    "cargo test --locked -p rampi-ui --bin rampi-native -j1; "
                     "cargo test --locked -p rampi-stream -j1; "
                     "cargo clippy --locked --workspace --all-targets -j1 -- -D warnings; "
                     "cargo build --locked --workspace -j1",
@@ -159,6 +164,80 @@ def acceptance(options):
                     timeout=600,
                 )
             )
+            media_image = "rampi-native-stream-media-local"
+            sunshine_image = "rampi-native-stream-server-local"
+            for dockerfile, image, extra in [
+                (
+                    "tests/streaming/Dockerfile.media",
+                    media_image,
+                    ["--build-arg", "SDK_IMAGE=" + options.image],
+                ),
+                ("tests/streaming/Dockerfile.sunshine", sunshine_image, []),
+            ]:
+                require(
+                    run(
+                        [
+                            "docker",
+                            "build",
+                            *extra,
+                            "-f",
+                            str(source / dockerfile),
+                            "-t",
+                            image,
+                            str(source),
+                        ],
+                        timeout=1200,
+                    )
+                )
+            media = run(
+                base
+                + build
+                + [
+                    "-e",
+                    "CARGO_HOME=/build/cargo",
+                    media_image,
+                    "bash",
+                    "-ec",
+                    "cargo test --locked -p rampi-stream --test transport_tls; "
+                    "cargo test --locked -p rampi-stream --lib "
+                    "media::tests::actual_h264_and_opus_roundtrip -- --ignored --nocapture; "
+                    "cargo test --locked -p rampi-stream --lib "
+                    "runtime::tests::actual_c_start_cancel_and_reuse -- --ignored --nocapture",
+                ],
+                timeout=300,
+            )
+            (output / "stream-media.log").write_text(media.stdout + media.stderr, encoding="utf-8")
+            require(media)
+            print(
+                "Running actual Sunshine/GTK streaming and ten-minute bounded workload …",
+                flush=True,
+            )
+            streamed = run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts/test-native-streaming.py"),
+                    "--gtk",
+                    "--soak",
+                    "--client-image",
+                    media_image,
+                    "--server-image",
+                    sunshine_image,
+                    "--build-volume",
+                    volume,
+                    "--output",
+                    str(output / "streaming-live"),
+                ],
+                timeout=1500,
+            )
+            (output / "stream-acceptance.log").write_text(
+                streamed.stdout + streamed.stderr, encoding="utf-8"
+            )
+            require(streamed)
+            if (
+                require(run(["git", "rev-parse", "HEAD"])).strip() != revision
+                or require(run(["git", "status", "--porcelain"])).strip()
+            ):
+                raise RuntimeError("Source changed during actual streaming acceptance")
             stages = [
                 (
                     "rdp-acceptance.log",

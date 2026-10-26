@@ -24,7 +24,9 @@ if dpkg-query -W -f='${Status}' rpi-connect-lite 2>/dev/null | grep -q '^install
 fi
 test -s /usr/share/doc/rampi/moonlight-embedded-2.7.1-source.tar.gz
 test -s /usr/share/doc/rampi/moonlight-source-revisions.txt
+test -s /usr/share/doc/rampi/moonlight-source-files.sha256
 sha256sum --check --status /usr/share/doc/rampi/moonlight-runtime.sha256
+/opt/rampi/current/rampi-native --stream-runtime-check
 /usr/local/bin/rampi-health
 test -s /usr/share/doc/rampi/rust-licenses/packages.json
 test -s /usr/share/doc/rampi/rust-licenses/Rust-standard-library-COPYRIGHT.html

@@ -58,6 +58,18 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
     let settings_panel = column();
     page.append(&settings_panel);
     settings_panel.append(&label("Desktop-Streaming · Sunshine\nKopplungen liegen ausschließlich in deinem persönlichen Schlüsselbund. Ctrl+Alt+Home führt zurück zum Dashboard."));
+    let host_label = label("");
+    host_label.set_widget_name("stream-host");
+    settings_panel.append(&host_label);
+    let current = conf.clone();
+    page.connect_map(move |_| {
+        if let Ok(host) = current.borrow().host() {
+            host_label.set_text(&format!(
+                "{} · {} · Windows-Profil {} · {}",
+                host.name, host.address, host.username, host.resolution
+            ));
+        }
+    });
     let state = label("Aktiven Host koppeln oder vorhandene Kopplung laden.");
     state.set_widget_name("stream-status");
     page.append(&state);
@@ -83,7 +95,14 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
         title.upcast()
     });
     selection.set_widget_name("stream-applications");
-    settings_panel.append(&selection);
+    let app_scroll = gtk::ScrolledWindow::builder()
+        .child(&selection)
+        .min_content_height(40)
+        .max_content_height(160)
+        .propagate_natural_height(true)
+        .hexpand(true)
+        .build();
+    settings_panel.append(&app_scroll);
     let start = button("Ausgewählte Anwendung streamen", f);
     start.set_widget_name("stream-connect");
     start.set_sensitive(false);
@@ -196,7 +215,13 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                 match result {
                     Ok(list) => {
                         for app in list.into_iter().take(256) {
-                            apps.append(&app.title);
+                            let title: String = app
+                                .title
+                                .chars()
+                                .take(512)
+                                .map(|ch| if ch.is_control() { ' ' } else { ch })
+                                .collect();
+                            apps.append(&title);
                             ids.borrow_mut().push(app.id);
                         }
                         selected.select_row(selected.row_at_index(0).as_ref());
@@ -242,9 +267,10 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                         .unwrap_or(usize::MAX),
                 )
                 .ok_or_else(|| anyhow::anyhow!("Anwendung auswählen"))?;
-            Ok((target, id))
+            let options = StreamOptions::for_resolution(&conf.borrow().host()?.resolution)?;
+            Ok((target, id, options))
         });
-        let ((address, source, profile), app) = match result {
+        let ((address, source, profile), app, options) = match result {
             Ok(value) => value,
             Err(error) => {
                 state.set_text(&error.to_string());
@@ -276,11 +302,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                     "Kopplung gehört zu einem anderen Host"
                 );
                 gio::spawn_blocking(move || {
-                    PairedHost::restore(&saved)?.prepare(
-                        &MoonlightRuntime::load()?,
-                        app,
-                        StreamOptions::default(),
-                    )
+                    PairedHost::restore(&saved)?.prepare(&MoonlightRuntime::load()?, app, options)
                 })
                 .await
                 .map_err(|_| anyhow::anyhow!("Streamvorbereitung fehlgeschlagen"))?
@@ -372,7 +394,10 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                             frame.stride,
                         );
                         picture.set_paintable(Some(&texture));
-                        state.set_text("Stream verbunden · 720p / 30 Bilder pro Sekunde");
+                        state.set_text(&format!(
+                            "Stream verbunden · {}×{} / 30 Bilder pro Sekunde",
+                            frame.width, frame.height
+                        ));
                     }
                     Ok(None) => (),
                     Err(_) => {

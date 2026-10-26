@@ -93,6 +93,15 @@ mod wireguard;
 
 fn main() {
     #[cfg(target_os = "linux")]
+    if std::env::args().any(|a| a == "--stream-runtime-check") {
+        if let Err(error) = rampi_stream::runtime::MoonlightRuntime::load() {
+            eprintln!("Streaming-Laufzeit: {error}");
+            std::process::exit(1);
+        }
+        println!("RAMPI_STREAM_RUNTIME_LOAD_OK");
+        return;
+    }
+    #[cfg(target_os = "linux")]
     if std::env::args().any(|a| a == "--pam-keyring-check") {
         if let Err(error) = pam_keyring_checks::run() {
             eprintln!("Native PAM keyring acceptance failed: {error:#}");

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0-dev.2 — native development changes
+
+Native Rust/GTK/Wayland now has three main modules. Direct AI integrations are removed.
+Sunshine streaming stays inside the existing window, uses personal Secret Service
+pairing and supports reconnect, keyboard, scaled mouse and scrolling through Moonlight.
+The installer reuses compatible libraries and bundles corresponding C sources.
+PAM/keyring and sustained streaming checks remain mandatory before publication.
+
+
 ## [0.5.0](https://github.com/jtracht/rampi-os/compare/v0.4.0...v0.5.0) (2026-10-20)
 
 

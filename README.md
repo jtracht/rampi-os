@@ -101,7 +101,8 @@ persönliche Tastaturbelegung, Auflösungen mit Rücksetzung, Kennwort und Abmel
 WebKit-Downloads und Webseitenabfragen bleiben innerhalb der Rampi-Anwendung.
 RDP und Desktop-Streaming verwenden eingebettete GTK-Flächen im vorhandenen Fenster.
 Streaming verwendet die vorhandenen Moonlight-/GStreamer-Bibliotheken und persönliche
-Schlüsselbünde; die Abnahme des aktuellen Entwicklungszweigs ist noch ausstehend.
+Schlüsselbünde. Die freigegebenen Workflows und Release-Artefakte enthalten die
+Nachweise des jeweiligen unveränderlichen Versionsstands.
 
 ## Historische Regression und Auslieferung
 

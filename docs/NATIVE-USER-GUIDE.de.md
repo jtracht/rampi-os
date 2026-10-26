@@ -88,7 +88,7 @@ sonst erfolgt die Rücksetzung. Die Auflösung gilt bis zur Abmeldung.
 Unter **Host & SSH** kannst du mehrere Profile anlegen. Wähle einen vorhandenen
 Eintrag oder **Neues Hostprofil**. Trage Profilname, Hostname/VPN-IP,
 Windows-Benutzername, SSH-Port, den Pfad eines vorhandenen persönlichen
-SSH-Schlüssels und die RDP-Auflösung ein. Alte Projektwerte bleiben im Profil erhalten.
+SSH-Schlüssels und die Streaming-Auflösung ein. Alte Projektwerte bleiben im Profil erhalten.
 
 **Hostprofil speichern** validiert und speichert. **Ausgewählten Host verwenden**
 setzt den Host für anschließend gestartete Verbindungen. Ein Wechsel der Auswahl
@@ -246,8 +246,9 @@ Schlüssel werden nicht in die normale Konfiguration oder Befehlszeile geschrieb
 **Kopplung laden / Anwendungen aktualisieren** verwendet eine gespeicherte
 Kopplung. Eine angebotene Anwendung in der eingebetteten Liste wählen und starten.
 Das Bild bleibt im vorhandenen Rampi-Fenster; die Einrichtungsfelder werden während
-der Verbindung ausgeblendet. Das aktuelle Profil verwendet H.264, 1280×720,
-30 Bilder pro Sekunde und Stereo. GStreamer wählt vorhandene Decoder. Mauspositionen
+der Verbindung ausgeblendet. Das aktuelle Profil verwendet H.264, 30 Bilder pro Sekunde und Stereo. Die
+Auflösung stammt aus dem aktiven Hostprofil; unterstützt werden gerade Größen bis
+1920×1080. Der Standard 1280×720 ist die im Ressourcenlauf geprüfte Variante. GStreamer wählt vorhandene Decoder. Mauspositionen
 berücksichtigen die lokale Skalierung und Bildränder; beide Scrollachsen und
 Tastaturereignisse werden über Moonlight übertragen.
 
