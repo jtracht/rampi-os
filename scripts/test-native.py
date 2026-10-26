@@ -240,6 +240,13 @@ def acceptance(options):
                 raise RuntimeError("Source changed during actual streaming acceptance")
             stages = [
                 (
+                    "keyring-profile.log",
+                    base
+                    + guarded
+                    + budget
+                    + [options.image, "python3", "tests/rust/test-keyring-profile.py"],
+                ),
+                (
                     "rdp-acceptance.log",
                     [
                         sys.executable,
