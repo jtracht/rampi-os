@@ -81,18 +81,27 @@ parameterlose Wiederverbindungsaufruf erhält sie, während Rampi weiterhin eine
 Prozessfrist erzwingt. Erste Anmeldung und neue Profile benötigen die persönliche
 Operatorfreigabe am tatsächlich angemeldeten Profil; ein eingebetteter Terminal-
 Schritt verwendet dafür die vorhandene sudo-Authentifizierung.
-Die vollständige Bedienabnahme dieses Einrichtungsschritts und die Abnahme des
-endgültigen Programmstands auf beiden Architekturen stehen noch aus. Daher kein
-zusätzlicher Fortschrittspunkt. Die regulären nativen Prüfungen verlangen nun
-auch den tatsächlichen privaten Tunnelbeleg mit identischem Programmhash.
+Die lokale Bedienabnahme dieses Einrichtungsschritts besteht inzwischen ebenfalls:
+Der originale sudo-Prozess im tatsächlichen VTE-Terminal weist ein falsches
+Kennwort ab, nimmt erst an seiner zweiten Abfrage das richtige entgegen und setzt
+die Operatorfreigabe im echten angemeldeten Profil. Das Kennwort erscheint nicht
+im Terminal; die Anwendung kehrt in demselben Fenster zur Einstellungsseite
+zurück. Anschließend bestehen fremde UID-Sperre, Verkehr, Trennung und
+Wiederverbindung weiterhin. Beleg: `artifacts/complete-tailscale-operator-pam-ready`,
+Programm `892e28a7a5a3eaf9c044ba6bc636eee5ae8eafc14c3b1c97c5b9815af86149a7`.
+Der Prüfer verlangt beide tatsächlichen sudo-/PAM-Quittungen zusätzlich zu den
+Netzwerkbelegen und gleichem Programmhash. Die Abnahme des endgültigen
+Programmstands auf beiden Architekturen steht noch aus. Daher kein zusätzlicher
+Fortschrittspunkt.
 
 Die Tailscale-Seite einschließlich Zustandsmeldungen, Anmeldeseite, Operator-
 Einrichtung und allgemeiner Bestätigungsaktionen verwendet jetzt beide Fluent-
 Kataloge. Der tatsächliche englische GTK-Test öffnet die Berechtigungsseite und
 bricht sie wieder ab; es bleibt bei einem Fenster. Der bisherige deutsche Test
 prüft weiterhin Status, Bestätigung, eingebettete Anmeldung und Trennung.
-Nachweis: `artifacts/complete-vpn-language-ui-fixed.log`. Dies ist keine echte
-Anbieteranmeldung und keine Abnahme der sudo-Kennworteingabe.
+Nachweis: `artifacts/complete-vpn-language-ui-fixed.log`. Dieser Sprachtest ist
+keine Anbieteranmeldung; die tatsächliche sudo-Kennworteingabe ist separat im
+oben genannten privaten Tunneltest abgenommen.
 
 ## Noch vor der Komplettversion
 

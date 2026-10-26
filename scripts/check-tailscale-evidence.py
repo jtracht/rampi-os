@@ -16,6 +16,7 @@ def check(directory, expected_binary=None):
         "bidirectional_icmp", "down_blocks_traffic", "reconnect_restores_traffic",
         "other_user_change_denied", "unrelated_routes_preserved",
         "existing_preferences_preserved",
+        "embedded_operator_pam",
     ):
         if report.get(key) is not True:
             raise ValueError("Missing actual Tailscale boundary: " + key)
@@ -28,6 +29,12 @@ def check(directory, expected_binary=None):
     if not isinstance(report.get("client_version"), dict):
         raise ValueError("Missing actual official client version")
     log = (directory / "native-tailscale.log").read_text(encoding="utf-8")
+    for marker in (
+        "RAMPI_RUST_TAILSCALE_OPERATOR_BAD_PASSWORD_REJECTED",
+        "RAMPI_RUST_TAILSCALE_OPERATOR_EMBEDDED_PAM_OK",
+    ):
+        if log.splitlines().count(marker) != 1:
+            raise ValueError("Missing actual embedded sudo/PAM receipt: " + marker)
     for action, count in (("action-login", 2), ("action-denied-down", 1),
                           ("action-down", 1), ("action-up", 1)):
         if log.splitlines().count("RAMPI_RUST_TAILSCALE_ACTION_OK " + action) != count:

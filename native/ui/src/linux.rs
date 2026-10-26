@@ -446,6 +446,9 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     if std::env::args().any(|a| a == "--tailscale-ui-check") {
         crate::checks::tailscale(app, &stack, &tabs);
     }
+    if std::env::args().any(|a| a == "--tailscale-operator-ui-check") {
+        crate::account_checks::tailscale_operator(app, &stack, &tabs);
+    }
     if std::env::args().any(|a| a == "--sound-test") {
         let (app, f) = (app.clone(), feedback.clone());
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {

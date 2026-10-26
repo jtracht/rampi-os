@@ -14,6 +14,96 @@ async fn prompt(term: &vte::Terminal, wanted: &str) -> anyhow::Result<()> {
     }
     anyhow::bail!("Official passwd prompt not received: {wanted}")
 }
+
+pub fn tailscale_operator(app: &gtk::Application, stack: &gtk::Stack, pages: &gtk::Stack) {
+    assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
+    assert!(std::path::Path::new("/.dockerenv").is_file());
+    let (app, stack, pages) = (app.clone(), stack.clone(), pages.clone());
+    glib::MainContext::default().spawn_local(async move {
+        let result: anyhow::Result<()> = async {
+            use crate::checks::find_button;
+            let file = std::env::var("RAMPI_TEST_OPERATOR_FILE")?;
+            let password = zeroize::Zeroizing::new(std::fs::read_to_string(file)?);
+            pages.set_visible_child_name("vpn");
+            stack.set_visible_child_name("settings");
+            let page = pages.child_by_name("vpn").context("No VPN page")?;
+            let setup = find_button(&page, "Meine Tailscale-Berechtigung einrichten")
+                .context("No operator setup")?;
+            ensure!(setup.is_sensitive(), "Existing sudo/CLI were not detected");
+            setup.emit_clicked();
+            ensure!(stack.visible_child_name().as_deref() == Some("confirmation"));
+            find_button(
+                &stack.child_by_name("confirmation").unwrap(),
+                "Bewusst bestätigen",
+            )
+            .context("No explicit permissions confirmation")?
+            .emit_clicked();
+            let key = "terminal-tailscale-operator";
+            let terminal = stack
+                .child_by_name(key)
+                .context("No embedded sudo terminal")?
+                .downcast::<vte::Terminal>()
+                .map_err(|_| anyhow::anyhow!("Not a VTE terminal"))?;
+            prompt(&terminal, "password for rampi").await?;
+            terminal.feed_child(b"deliberately-wrong-fixture-password\n");
+            prompt(&terminal, "Sorry, try again.").await?;
+            println!("RAMPI_RUST_TAILSCALE_OPERATOR_BAD_PASSWORD_REJECTED");
+            // sudo restores terminal echo between attempts. Wait for its real
+            // second prompt, not just the rejection printed before it.
+            for _ in 0..500 {
+                if terminal
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|screen| screen.matches("password for rampi").count() >= 2)
+                {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                terminal
+                    .text_format(vte::Format::Text)
+                    .is_some_and(|screen| screen.matches("password for rampi").count() >= 2),
+                "Official sudo second prompt did not appear"
+            );
+            let input = zeroize::Zeroizing::new(format!("{}\n", password.as_str()).into_bytes());
+            terminal.feed_child(&input);
+            for _ in 0..500 {
+                if stack.child_by_name(key).is_none() {
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                stack.child_by_name(key).is_none(),
+                "Official sudo did not finish"
+            );
+            ensure!(
+                stack.visible_child_name().as_deref() == Some("settings"),
+                "Operator terminal returned to {:?}",
+                stack.visible_child_name()
+            );
+            ensure!(
+                app.windows().len() == 1,
+                "Permission setup opened another window"
+            );
+            ensure!(
+                !terminal
+                    .text_format(vte::Format::Text)
+                    .unwrap_or_default()
+                    .contains(password.as_str()),
+                "The credential was echoed"
+            );
+            println!("RAMPI_RUST_TAILSCALE_OPERATOR_EMBEDDED_PAM_OK");
+            Ok(())
+        }
+        .await;
+        if let Err(error) = result {
+            eprintln!("Actual embedded operator/PAM acceptance failed: {error:#}");
+            std::process::exit(1);
+        }
+        app.quit();
+    });
+}
 pub fn creation(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) {
     assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
     let (app, stack, tabs) = (app.clone(), stack.clone(), tabs.clone());

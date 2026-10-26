@@ -13,6 +13,7 @@ import re
 import shutil
 import stat
 import subprocess
+import tempfile
 import time
 import urllib.parse
 import uuid
@@ -133,6 +134,56 @@ def peer():
             stderr=subprocess.STDOUT,
             check=True,
         )
+
+
+def operator_ui():
+    isolated()
+    if os.geteuid() != 0:
+        raise RuntimeError("Private container fixture root required")
+    password = uuid.uuid4().hex
+    run("chpasswd", data=("rampi:" + password + "\n").encode())
+    policy = Path("/etc/sudoers.d/rampi-vpn-fixture")
+    if policy.exists():
+        raise RuntimeError("An existing policy must not be replaced")
+    cli = shutil.which("tailscale")
+    if not cli or not re.fullmatch(r"/[a-zA-Z0-9/_-]+", cli):
+        raise RuntimeError("Unexpected official CLI path")
+    try:
+        policy.write_text(
+            "Defaults:rampi timestamp_timeout=0\n"
+            f"rampi ALL=(root) PASSWD: {cli} set --operator=rampi\n"
+        )
+        policy.chmod(0o440)
+        run("visudo", "-cf", "/etc/sudoers")
+        with tempfile.TemporaryDirectory(prefix="rampi-vpn-operator-") as directory:
+            root = Path(directory)
+            root.chmod(0o755)
+            secret = root / "input"
+            secret.write_text(password)
+            secret.chmod(0o600)
+            os.chown(secret, 1000, 1000)
+            prefix = Path("/src/tests/rust/run-wayland.sh").read_text().split(
+                "bash tests/rust/test-first-run.sh"
+            )[0]
+            script = root / "session.sh"
+            script.write_text(
+                prefix + "timeout 40 /build/target/debug/rampi-native "
+                "--tailscale-operator-ui-check\n"
+            )
+            script.chmod(0o644)
+            result = subprocess.run(
+                ["runuser", "-u", "rampi", "--", "dbus-run-session", "--", "bash", str(script)],
+                env={**os.environ, "LC_ALL": "C", "RAMPI_TEST_OPERATOR_FILE": str(secret)},
+                capture_output=True, timeout=50,
+            )
+            output = result.stdout + result.stderr
+            if password.encode() in output:
+                raise RuntimeError("Private operator credential appeared in output")
+            if result.returncode:
+                raise RuntimeError("Actual operator UI/PAM test failed: " + output.decode())
+            print(result.stdout.decode(), end="")
+    finally:
+        policy.unlink(missing_ok=True)
 
 
 def integration(args):
@@ -327,7 +378,21 @@ def integration(args):
             # the same official command exposed by the product's setup action.
             prefs = json.loads(execute(name, "tailscale", "debug", "prefs").stdout)
             needed = prefs.get("OperatorUser") != "rampi"
-            if needed:
+            if index == 0:
+                verified_ui = execute(
+                    name, "python3", "/src/tests/vpn/test-tailscale-live.py", "--operator-ui",
+                    check=False,
+                )
+                if verified_ui.returncode:
+                    diagnostic = (verified_ui.stdout + verified_ui.stderr).decode(errors="replace")
+                    for capability in capabilities:
+                        diagnostic = diagnostic.replace(
+                            capability, "<private-registration-redacted>"
+                        )
+                    (output / "operator-ui-error.log").write_text(diagnostic)
+                    raise RuntimeError("Actual operator UI/PAM acceptance failed; diagnostic saved")
+                logs.append(verified_ui.stdout.decode())
+            elif needed:
                 execute(name, "tailscale", "set", "--operator=rampi")
             prefs = json.loads(execute(name, "tailscale", "debug", "prefs").stdout)
             if prefs.get("OperatorUser") != "rampi":
@@ -403,6 +468,7 @@ def integration(args):
                     "initial_login_required_profile_operator_assignment": profile_operator_setup,
                     "unrelated_routes_preserved": True,
                     "existing_preferences_preserved": True,
+                    "embedded_operator_pam": True,
                 },
                 indent=2,
             )
@@ -436,6 +502,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--control", action="store_true")
     parser.add_argument("--peer", action="store_true")
+    parser.add_argument("--operator-ui", action="store_true")
     parser.add_argument("--image", default="rampi-complete-vpn-fixture")
     parser.add_argument("--build-volume", default="rampi-rust-build")
     parser.add_argument("--artifacts", type=Path, default=Path("artifacts/tailscale-live"))
@@ -444,5 +511,7 @@ if __name__ == "__main__":
         control()
     elif options.peer:
         peer()
+    elif options.operator_ui:
+        operator_ui()
     else:
         integration(options)

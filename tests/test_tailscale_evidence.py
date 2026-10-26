@@ -18,6 +18,7 @@ def evidence(tmp_path):
         "down_blocks_traffic", "reconnect_restores_traffic", "other_user_change_denied",
         "unrelated_routes_preserved",
         "existing_preferences_preserved",
+        "embedded_operator_pam",
     ), True)
     report.update(dict.fromkeys(("public_provider_oauth_tested", "published_ports",
                                "physical_devices", "userspace_fake_tunnel"), False))
@@ -25,7 +26,9 @@ def evidence(tmp_path):
                   control_server_version="fixture", client_version={"Long": "fixture"})
     (tmp_path / "environment.json").write_text(json.dumps(report))
     actions = ["action-login", "action-login", "action-denied-down", "action-down", "action-up"]
-    (tmp_path / "native-tailscale.log").write_text("".join(
+    (tmp_path / "native-tailscale.log").write_text(
+        "RAMPI_RUST_TAILSCALE_OPERATOR_BAD_PASSWORD_REJECTED\n"
+        "RAMPI_RUST_TAILSCALE_OPERATOR_EMBEDDED_PAM_OK\n" + "".join(
         "RAMPI_RUST_TAILSCALE_ACTION_OK " + action + "\n" for action in actions
     ))
     for name in ("icmp-0-1.log", "icmp-1-0.log", "icmp-reconnected.log"):
@@ -36,7 +39,8 @@ def evidence(tmp_path):
 
 
 @pytest.mark.parametrize("boundary", ["actual_kernel_tun", "reconnect_restores_traffic",
-                                     "other_user_change_denied", "unrelated_routes_preserved"])
+                                     "other_user_change_denied", "unrelated_routes_preserved",
+                                     "embedded_operator_pam"])
 def test_missing_boundary_rejected(evidence, boundary):
     path = evidence / "environment.json"
     report = json.loads(path.read_text())
@@ -60,5 +64,12 @@ def test_public_oauth_claim_rejected(evidence):
     report = json.loads(path.read_text())
     report["public_provider_oauth_tested"] = True
     path.write_text(json.dumps(report))
+    with pytest.raises(ValueError):
+        CHECK(evidence)
+
+
+def test_permission_flag_without_real_sudo_receipt_is_rejected(evidence):
+    path = evidence / "native-tailscale.log"
+    path.write_text(path.read_text().replace("RAMPI_RUST_TAILSCALE_OPERATOR_EMBEDDED_PAM_OK", ""))
     with pytest.raises(ValueError):
         CHECK(evidence)
