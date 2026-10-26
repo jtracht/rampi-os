@@ -50,6 +50,8 @@ def check(directory: Path, expected_binary: str | None = None):
         "RAMPI_GRAPHICAL_LOGIN_TWO_USERS_OK",
         "RAMPI_GRAPHICAL_LOGIN_SSH_AGENT_OK",
         "RAMPI_GRAPHICAL_LOGIN_BRANDING_OK",
+        "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK",
+        "RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK",
         "RAMPI_GRAPHICAL_LOGIN_OK",
     ]:
         if marker not in log:
@@ -74,6 +76,9 @@ def check(directory: Path, expected_binary: str | None = None):
             raise ValueError("Guest executed a different native binary")
         if account.get("ssh_agent_private") is not True:
             raise ValueError("Personal SSH agent acceptance missing")
+        for key in ["personal_bus_reused", "pam_keyring_roundtrip_private", "pam_keyring_relogin"]:
+            if account.get(key) is not True:
+                raise ValueError("Personal PAM/keyring acceptance missing: " + key)
     for name in ["greeter", "rampi-login", "rampi-other"]:
         picture = directory / "captures" / (name + ".png")
         visible_capture(picture)

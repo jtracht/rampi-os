@@ -74,7 +74,7 @@ fi
 sudo touch "$work/root/etc/rampi-acceptance-vm" "$work/root/etc/rampi-image-acceptance-vm"
 # Record the image's installed implementation before any guest test. Its config,
 # executable, assets and launchers must still match after login and logout.
-sudo chroot "$work/root" /bin/sh -ec 'find -L /opt/rampi/current /usr/local/bin/rampi /usr/local/bin/rampi-session /usr/local/bin/rampi-wayland-start /usr/local/bin/rampi-greeter /etc/systemd/user/rampi.service /etc/xdg/rampi -type f -print0 | sort -z | xargs -0 sha256sum' | tee "$work/installed-files.sha256" > /dev/null
+sudo chroot "$work/root" /bin/sh -ec 'find -L /opt/rampi/current /usr/local/bin/rampi /usr/local/bin/rampi-session /usr/local/bin/rampi-wayland-start /usr/local/bin/rampi-greeter /etc/systemd/user/rampi.service /etc/xdg/rampi /etc/skel -type f -print0 | sort -z | xargs -0 sha256sum' | tee "$work/installed-files.sha256" > /dev/null
 sudo cp "$work/installed-files.sha256" "$work/root/opt/rampi-source/installed-files.sha256"
 sudo tee "$work/root/usr/local/bin/rampi-image-login-test" > /dev/null <<'SH'
 #!/bin/bash

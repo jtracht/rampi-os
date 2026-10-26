@@ -49,7 +49,7 @@ def main():
     parser.add_argument(
         "--resume-development",
         action="store_true",
-        help="Debug only: reuse the existing login guest, never release evidence",
+        help="Debug only: reuse guest and reset fixture keyrings; never acceptance evidence",
     )
     options = parser.parse_args()
     if options.resume_development and not options.native_session_binary:
@@ -181,14 +181,18 @@ def main():
             "libgtk-4-media-gstreamer",
             "librsvg2-common",
             "gnome-keyring",
+            "libpam-gnome-keyring",
+            "libsecret-tools",
+            "libglib2.0-bin",
             "fonts-dejavu-core",
         ]
         config["runcmd"][0][2] = (
             "mkdir -p /opt/rampi-source /opt/rampi-captures; "
             "mount -t 9p -o trans=virtio,version=9p2000.L,ro rampisource /opt/rampi-source && "
             "mount -t 9p -o trans=virtio,version=9p2000.L rampicaptures /opt/rampi-captures && "
-            "python3 /opt/rampi-source/scripts/virtual/test-login-guest.py; "
-            "result=$?; echo RAMPI_GUEST_EXIT=$result; exit $result"
+            "python3 /opt/rampi-source/scripts/virtual/test-login-guest.py"
+            + (" --debug-keyring-reset; " if options.resume_development else "; ")
+            + "result=$?; echo RAMPI_GUEST_EXIT=$result; exit $result"
         )
     (output / "user-data").write_text("#cloud-config\n" + yaml.safe_dump(config), encoding="utf-8")
     (output / "meta-data").write_text(f"instance-id: rampi-{time.time_ns()}\n", encoding="utf-8")

@@ -87,11 +87,115 @@ def login(user, password):
     as_user("_greetd", "wtype", "-", "-k", "Return", data=password.encode())
 
 
+def keyring_lookup(user, attribute):
+    return as_user(
+        user,
+        "timeout",
+        "15",
+        "secret-tool",
+        "lookup",
+        "rampi-pam-acceptance",
+        attribute,
+        check=False,
+    )
+
+
+def native_keyring(user, mode, attribute, secret):
+    request = {"mode": mode, "profile": "pam-acceptance-" + attribute, "token": secret}
+    result = as_user(
+        user,
+        "/usr/local/bin/rampi",
+        "--pam-keyring-check",
+        data=json.dumps(request).encode(),
+    )
+    if b"RAMPI_NATIVE_PAM_KEYRING_OK" not in result.stdout:
+        raise RuntimeError("Native Secret Service acceptance result missing")
+
+
+def keyring_state(user):
+    # Collection identity/lock state is diagnostic metadata, never a secret.
+    for alias in ["default", "login"]:
+        result = as_user(
+            user,
+            "gdbus",
+            "call",
+            "--session",
+            "--dest",
+            "org.freedesktop.secrets",
+            "--object-path",
+            "/org/freedesktop/secrets",
+            "--method",
+            "org.freedesktop.Secret.Service.ReadAlias",
+            alias,
+            check=False,
+        )
+        print(
+            f"RAMPI_PAM_KEYRING_ALIAS {user} {alias}: status={result.returncode} "
+            + result.stdout.decode().strip()
+            + " "
+            + result.stderr.decode().strip(),
+            flush=True,
+        )
+    result = as_user(
+        user,
+        "gdbus",
+        "call",
+        "--session",
+        "--dest",
+        "org.freedesktop.secrets",
+        "--object-path",
+        "/org/freedesktop/secrets/aliases/default",
+        "--method",
+        "org.freedesktop.DBus.Properties.Get",
+        "org.freedesktop.Secret.Collection",
+        "Locked",
+        check=False,
+    )
+    print(
+        f"RAMPI_PAM_KEYRING_LOCKED {user}: status={result.returncode} "
+        + result.stdout.decode().strip()
+        + " "
+        + result.stderr.decode().strip(),
+        flush=True,
+    )
+
+
+def keyring_store(user, attribute, secret):
+    # Exercise the real Secret Service. Never feed a keyring password or invoke
+    # its unlock method: only the preceding greetd/PAM login may unlock it.
+    # The production adapter must work before libsecret can create or select a
+    # collection on its behalf. This prevents a generic CLI masking a Rampi bug.
+    keyring_state(user)
+    native_keyring(user, "store", attribute, secret)
+    as_user(
+        user,
+        "timeout",
+        "15",
+        "secret-tool",
+        "store",
+        "--label=Rampi PAM acceptance",
+        "rampi-pam-acceptance",
+        attribute,
+        data=secret.encode(),
+    )
+    result = keyring_lookup(user, attribute)
+    if result.returncode or result.stdout.rstrip(b"\n") != secret.encode():
+        raise RuntimeError("Personal Secret Service round trip failed after PAM login")
+    keyrings = Path("/home", user, ".local/share/keyrings")
+    encrypted = [item for item in keyrings.glob("*.keyring") if item.is_file()]
+    if not encrypted or any(secret.encode() in item.read_bytes() for item in encrypted):
+        raise RuntimeError("Encrypted personal keyring evidence missing")
+    return keyrings
+
+
 def install():
+    run("bash", str(SOURCE / "installer/raspberrypi/keyring-profile.sh"), "--install")
     target = Path("/opt/rampi/login-test")
     target.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(SOURCE / "rampi-native", target / "rampi-native")
-    (target / "rampi-native").chmod(0o755)
+    next_binary = target / "rampi-native.next"
+    shutil.copy2(SOURCE / "rampi-native", next_binary)
+    next_binary.chmod(0o755)
+    next_binary.replace(target / "rampi-native")
     assets = target / "assets"
     for name in ["branding", "icons", "sounds"]:
         shutil.copytree(SOURCE / "client/rampi" / name, assets / name, dirs_exist_ok=True)
@@ -185,8 +289,9 @@ def main():
     ):
         raise SystemExit("Only inside the designated isolated QEMU guest")
     os.umask(0o077)
-    if shutil.which("wlrctl") is None:
-        run("apt-get", "install", "-y", "--no-install-recommends", "wlrctl")
+    for executable, package in [("wlrctl", "wlrctl"), ("gdbus", "libglib2.0-bin")]:
+        if shutil.which(executable) is None:
+            run("apt-get", "install", "-y", "--no-install-recommends", package)
     if image_test:
         # The image's actual installed program, assets, launchers and greeter
         # profile stay in place. Only fixture accounts and headless test input
@@ -195,12 +300,42 @@ def main():
     else:
         install()
     users = ["rampi-login", "rampi-other"]
+    reset_keyrings = "--debug-keyring-reset" in sys.argv
+    if reset_keyrings and (
+        image_test or Path("/etc/rampi-acceptance-vm").read_text().strip() != "isolated-qemu"
+    ):
+        raise RuntimeError("Fixture keyrings may only be reset in the resumed development guest")
     passwords = {}
     for user in users:
         try:
             pwd.getpwnam(user)
         except KeyError:
             run("useradd", "--create-home", "--shell", "/bin/bash", user)
+        if reset_keyrings:
+            home = Path("/home", user)
+            keyrings = home / ".local/share/keyrings"
+            if (
+                home.is_symlink()
+                or keyrings.is_symlink()
+                or not keyrings.resolve().is_relative_to(home)
+            ):
+                raise RuntimeError("Unsafe fixture keyring path")
+            if keyrings.exists():
+                keyrings.rename(keyrings.with_name(f"keyrings-before-debug-{time.time_ns()}"))
+            # Diagnostic proposal only: let PAM create/unlock the login keyring
+            # before the session initializes Secret Service's exported objects.
+            dropin = home / ".config/systemd/user/gnome-keyring-daemon.service.d"
+            as_user(user, "mkdir", "-p", str(dropin))
+            as_user(
+                user,
+                "tee",
+                str(dropin / "50-rampi-debug-ordering.conf"),
+                data=(
+                    b"[Service]\nExecStart=\nExecStart=/usr/bin/gnome-keyring-daemon --foreground "
+                    b"--components=pkcs11 --control-directory=%t/keyring\n"
+                ),
+            )
+            as_user(user, "systemctl", "--user", "daemon-reload", check=False)
         Path("/home", user, ".rampi-login-uid").unlink(missing_ok=True)
         passwords[user] = secrets.token_urlsafe(24)
         run("chpasswd", data=f"{user}:{passwords[user]}\n".encode())
@@ -270,6 +405,8 @@ def main():
     run("systemctl", "restart", "greetd")
     greeter_ready()
     evidence = []
+    keyring_attribute = secrets.token_hex(16)
+    keyring_values = {user: secrets.token_urlsafe(32) for user in users}
     for user in users:
         login(user, passwords[user])
         proof = Path("/home", user, ".rampi-login-uid")
@@ -344,6 +481,18 @@ def main():
             for item in Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
             if b"=" in item
         )
+        if (
+            process_env.get(b"DBUS_SESSION_BUS_ADDRESS")
+            != f"unix:path=/run/user/{uid}/bus".encode()
+        ):
+            raise RuntimeError("Native application did not reuse the existing personal session bus")
+        absent = keyring_lookup(user, keyring_attribute)
+        if absent.returncode != 1 or absent.stdout:
+            raise RuntimeError("Another user's personal secret appeared in this session")
+        keyrings = keyring_store(user, keyring_attribute, keyring_values[user])
+        for item in keyrings.glob("*.keyring"):
+            if as_user(other, "cat", str(item), check=False).returncode == 0:
+                raise RuntimeError("Another account read an encrypted keyring file")
         agent_socket = process_env.get(b"SSH_AUTH_SOCK", b"").decode()
         if not agent_socket:
             raise RuntimeError("Native systemd service did not inherit its SSH agent")
@@ -369,6 +518,8 @@ def main():
                 "config_mode": oct(personal.stat().st_mode & 0o777),
                 "config_uid": personal.stat().st_uid,
                 "ssh_agent_private": True,
+                "pam_keyring_roundtrip_private": True,
+                "personal_bus_reused": True,
             }
         )
         as_user(user, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
@@ -384,6 +535,37 @@ def main():
             "session-owned SSH agent termination",
             seconds=20,
         )
+    # Both accounts must recover their own persisted encrypted secret through
+    # another real PAM login and a new daemon, without a manual unlock.
+    for account in evidence:
+        user, uid = account["user"], account["uid"]
+        wait(
+            lambda uid=uid: (
+                run(
+                    "pgrep", "-u", str(uid), "-f", "(^|/)gnome-keyring-daemon( |$)", check=False
+                ).returncode
+                != 0
+            ),
+            "personal keyring daemon termination after logout",
+            seconds=30,
+        )
+        login(user, passwords[user])
+        wait(
+            lambda user=user: (
+                b"org.rampi.Workstation"
+                in as_user(user, "wlrctl", "toplevel", "list", check=False).stdout
+            ),
+            "mapped native session after keyring relogin",
+        )
+        recovered = keyring_lookup(user, keyring_attribute)
+        if recovered.returncode or recovered.stdout.rstrip(b"\n") != keyring_values[user].encode():
+            raise RuntimeError("PAM relogin did not unlock the persisted personal keyring")
+        native_keyring(user, "check", keyring_attribute, keyring_values[user])
+        as_user(user, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
+        greeter_ready()
+        account["pam_keyring_relogin"] = True
+    print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK", flush=True)
+    print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK", flush=True)
     if (
         run("pgrep", "-x", "Xorg", check=False).returncode == 0
         or run("pgrep", "-x", "Xwayland", check=False).returncode == 0
