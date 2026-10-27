@@ -3,8 +3,10 @@
 Ein Entwicklungsrelease veröffentlicht den vorhandenen geprüften Rust-Stand,
 ohne vollständige Produktreife vorzutäuschen. `regular_release` bleibt `false`;
 die automatische Freigabe regulärer Releases wird dadurch nicht aktiviert.
-Die vorhandene Versionsnummer `0.6.0-dev.1` bezeichnet das erste native
-Entwicklungsrelease und ist bislang noch nicht als öffentlicher Git-Tag erschienen.
+`0.6.0-dev.1` und `0.6.0-dev.2` sind bereits veröffentlichte Vorabversionen und
+bleiben unverändert. Der nächste vorgesehene Stand ist `0.6.0-dev.3`; die
+Veröffentlichung ist vom Nutzer freigegeben. Ein aktualisierter Versionswert
+oder erfolgreicher Komponentenlauf bestätigt noch keine Veröffentlichung.
 
 Der manuell gestartete GitHub-Workflow **Native development release** arbeitet
 ausschließlich auf `main`. Er verlangt eine ausdrückliche SemVer-Vorabversion,
@@ -18,6 +20,12 @@ Profile, sichtbare Oberfläche, falsches Kennwort und unveränderte Programmdate
 Image, Paketprogramm, Quellarchiv und CI müssen dieselbe Revision belegen.
 Der explizit verwendete QEMU-Modus wird auch im Image-Nachweis dokumentiert.
 Physische Hardwaretests bleiben wie vereinbart ausgeschlossen.
+
+Für dev3 muss zusätzlich das tatsächliche erste Konto auf zwei getrennten frischen
+Imagekopien entstehen: einmal mit dem originalen interaktiven Assistenten, einmal
+über die unterstützte `userconf.txt`-Bootdatei. Beide Konten müssen nach einem zweiten
+normalen Kernel-Boot erneut über PAM anmelden und den gespeicherten Schlüsselbundwert
+lesen. Ein neu erstelltes Testkonto ersetzt diese Erststartprüfung nicht.
 
 Veröffentlicht werden mindestens:
 

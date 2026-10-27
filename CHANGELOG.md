@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.6.0-dev.3 — native development changes
+
+- Restore the stock first-account setup before graphical login; reuse the existing
+  PAM/keyring profile installer after the original account is renamed.
+- Require first-account login, persisted keyrings and normal reboot for both the
+  interactive wizard and the supported stock boot-file account configuration.
+- Add personal German/English pages, inline choices and integrated browser
+  microphone/camera decisions without additional windows.
+- Extend Gitea to repository, organization and individual projects; retain
+  read-only access and private offline caches.
+- Add NLA-only software authentication checks with existing FreeRDP/WinPR and
+  signed manual Tailscale installation through the existing vendor service.
+- Assemble full native releases before creating a new tag, and independently
+  verify the actual published files with the accepted source's validators.
+
+This remains a prerelease. Physical hardware, Windows testhosts and model calls
+are excluded; full Bluetooth HID acceptance remains open. Publication requires
+the final source-bound CI, fresh image and complete artifact checks.
+
 ## 0.6.0-dev.2 — native development changes
 
 Native Rust/GTK/Wayland now has three main modules. Direct AI integrations are removed.

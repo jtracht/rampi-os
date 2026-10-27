@@ -77,6 +77,7 @@ jobs:
           set -euo pipefail
           # gh creates the tag at the verified source revision. Existing releases
           # fail closed; neither published assets nor tags are overwritten.
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$RELEASE_SHA"
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
             -f "ref=refs/tags/$RELEASE_TAG" -f "sha=$RELEASE_SHA"
           gh release create "$RELEASE_TAG" artifacts/release/* \
