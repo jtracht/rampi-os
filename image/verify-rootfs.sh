@@ -11,6 +11,11 @@ test -e "$root/boot/firmware/cmdline.txt"
 test -e "$root/boot/firmware/kernel8.img"
 test -e "$root/boot/firmware/bcm2710-rpi-3-b-plus.dtb"
 test -x "$root/usr/local/libexec/rampi-first-user-complete"
+test -x "$root/usr/local/libexec/rampi-tailscale-install"
+test -f "$root/usr/share/rampi/tailscale-archive-keyring.gpg"
+test -x "$root/usr/local/libexec/rampi-image-bootstrap/installer/raspberrypi/keyring-profile.sh"
+test -f "$root/usr/local/libexec/rampi-image-bootstrap/installer/raspberrypi/keyring-profile-user.sh"
+test -f "$root/usr/local/libexec/rampi-image-bootstrap/system/rampi-keyring-ordering.conf"
 test -e "$root/etc/systemd/system/rampi-first-user.service"
 test "$(systemctl get-default)" = multi-user.target
 systemctl is-enabled --quiet userconfig.service

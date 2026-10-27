@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       ready: ${{ steps.check.outputs.ready }}
+      sha: ${{ steps.check.outputs.sha }}
+      tag: ${{ steps.check.outputs.tag }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -26,44 +28,24 @@ jobs:
           TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           if python3 scripts/check-release-ci.py --sha "$TESTED_SHA" && python3 scripts/check-release.py; then
+            python3 scripts/prepare-development-release.py --regular --tag-only --check-remote-tag >> "$GITHUB_OUTPUT"
+            echo "sha=$TESTED_SHA" >> "$GITHUB_OUTPUT"
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
             echo 'Regular release withheld: matching general/native main CI or product readiness is incomplete.' >> "$GITHUB_STEP_SUMMARY"
           fi
-  version:
+  image:
     needs: readiness
     if: needs.readiness.outputs.ready == 'true'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      created: ${{ steps.release.outputs.release_created }}
-      tag: ${{ steps.release.outputs.tag_name }}
-      sha: ${{ steps.release.outputs.sha }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Require the tested commit to still be main
-        env:
-          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: test "$(git rev-parse HEAD)" = "$TESTED_SHA"
-      - id: release
-        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071
-        with:
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-  image:
-    needs: version
-    if: needs.version.outputs.created == 'true'
     permissions:
       contents: read
       actions: read
     uses: ./.github/workflows/image.yml
     with:
-      ref: ${{ needs.version.outputs.sha }}
+      ref: ${{ needs.readiness.outputs.sha }}
   publish:
-    needs: [version, image]
+    needs: [readiness, image]
     runs-on: ubuntu-24.04
     environment: release
     permissions:
@@ -72,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ needs.version.outputs.sha }}
+          ref: ${{ needs.readiness.outputs.sha }}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: image
@@ -81,21 +63,33 @@ jobs:
         with:
           name: image-validation
           path: artifacts/image
-      - run: python3 scripts/package.py
-      - name: Publish only the complete verified artifact set
+      - name: Install the graphical validator dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-pil
+      - name: Assemble the complete native artifact set
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.version.outputs.tag }}
-          RELEASE_SHA: ${{ needs.version.outputs.sha }}
+          RELEASE_SHA: ${{ needs.readiness.outputs.sha }}
         run: |
+          set -euo pipefail
           python3 scripts/check-release.py
           python3 scripts/check-release-ci.py --sha "$RELEASE_SHA" --output artifacts/release/release-ci.json
-          cp artifacts/image/* artifacts/release/
-          cd artifacts/release
-          rm -f SHA256SUMS
-          sha256sum -- * > SHA256SUMS.tmp
-          mv SHA256SUMS.tmp SHA256SUMS
-          test -n "$(find . -name '*.img.xz' -print -quit)"
-          python3 ../../scripts/check-artifacts.py . --image
-          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" ./* --clobber
-          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$RELEASE_SHA" --draft=false
+          python3 scripts/package.py
+          python3 scripts/prepare-development-release.py --regular --image-dir artifacts/image
+          python3 scripts/check-artifacts.py artifacts/release --image
+      - name: Publish a new stable tag only after fresh image acceptance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.readiness.outputs.tag }}
+          RELEASE_SHA: ${{ needs.readiness.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$RELEASE_SHA"
+          python3 scripts/prepare-development-release.py --regular --tag-only --check-remote-tag
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/$RELEASE_TAG" -f "sha=$RELEASE_SHA"
+          gh release create "$RELEASE_TAG" artifacts/release/* \
+            --verify-tag --draft --title "Rampi OS $RELEASE_TAG · Rust/Wayland" \
+            --notes-file artifacts/native-release-notes.md
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease=false

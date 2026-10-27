@@ -78,8 +78,8 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, conf: &Shared, feedback: 
             let disconnect = button("stream-disconnect")?;
             pair.emit_clicked();
             until(|| status.text().contains("Diesen PIN")).await?;
-            let pin = status
-                .text()
+            let displayed = crate::checks::readable_text(&status.text());
+            let pin = displayed
                 .split_whitespace()
                 .last()
                 .context("No displayed PIN")?

@@ -14,6 +14,20 @@ def test_explicit_native_prerelease_tag():
     assert MODULE["development_tag"]("0.6.0-dev.1") == "v0.6.0-dev.1"
 
 
+def test_explicit_regular_tag_requires_stable_semver():
+    assert MODULE["regular_tag"]("0.6.0") == "v0.6.0"
+    for value in ["0.6.0-dev.2", "v0.6.0", "00.6.0", "0.6.0\n", "0.6.0/path"]:
+        with pytest.raises(ValueError):
+            MODULE["regular_tag"](value)
+
+
+def test_unfinished_product_cannot_enter_regular_assembly(tmp_path):
+    (tmp_path / "packaging").mkdir()
+    (tmp_path / "packaging/readiness.json").write_text(json.dumps({"regular_release": False}))
+    with pytest.raises(ValueError, match="completed product readiness"):
+        MODULE["assemble"](tmp_path, tmp_path / "missing-image", "0.6.0", "a" * 40, regular=True)
+
+
 @pytest.mark.parametrize(
     "version",
     ["0.6.0", "v0.6.0-dev.1", "0.6.0-dev.01", "0.6.0-dev.1/other", "0.6.0-dev.1\n", "01.6.0-dev.1"],

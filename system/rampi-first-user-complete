@@ -22,6 +22,9 @@ if [[ "$checked_account" != "$account" || "$password_state" != P ]]; then
     echo 'Für das erste Konto wurde noch kein eigenes Passwort gesetzt.' >&2
     exit 1
 fi
+# /etc/skel alone does not cover the already-existing first account. Apply
+# the existing checked, per-UID installer before starting any graphical login.
+bash /usr/local/libexec/rampi-image-bootstrap/installer/raspberrypi/keyring-profile.sh --install
 systemctl enable greetd.service
 systemctl set-default graphical.target
 systemctl disable rampi-first-user.service

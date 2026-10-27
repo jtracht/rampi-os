@@ -14,6 +14,8 @@ pub fn inline_choices(values: &[&str], feedback: &Feedback) -> gtk::ListBox {
     list.set_selection_mode(gtk::SelectionMode::Single);
     list.add_css_class("inline-choices");
     replace_choices(&list, values);
+    let click = feedback.clone();
+    list.connect_row_activated(move |_, _| click.play(true));
     let feedback = feedback.clone();
     list.connect_row_selected(move |_, row| {
         if row.is_some() {

@@ -124,4 +124,28 @@ with tempfile.TemporaryDirectory(prefix="rampi-private-installer-") as directory
     metadata.rename(metadata.with_name("fixture-hidden-md5sums"))
     run("bash", str(dispatcher), "--install")
     assert not target(Path("/etc/skel")).exists()
+    metadata.with_name("fixture-hidden-md5sums").rename(metadata)
+
+# The image's original first account exists before /etc/skel is configured and
+# can still have nologin. Stock userconf later renames it and enables its shell.
+# Exercise those real distribution tools and the same existing dispatcher.
+with tempfile.TemporaryDirectory(prefix="rampi-first-profile-") as directory:
+    initial, renamed = "rampi-bootstrap-initial", "rampi-bootstrap-ready"
+    run("useradd", "--create-home", "--user-group", "--shell", "/usr/sbin/nologin",
+        "--key", "UMASK=077", initial)
+    home = Path(pwd.getpwnam(initial).pw_dir)
+    assert not target(home).exists()
+    run("bash", str(ROOT / "installer/raspberrypi/keyring-profile.sh"), "--install")
+    assert not target(home).exists(), "A disabled account was unexpectedly modified"
+    new_home = Path("/home") / renamed
+    run("usermod", "--login", renamed, "--move-home", "--home", str(new_home),
+        "--shell", "/bin/bash", initial)
+    run("bash", str(ROOT / "installer/raspberrypi/keyring-profile.sh"), "--install")
+    profile = target(new_home)
+    assert profile.read_bytes() == template.read_bytes()
+    assert profile.stat().st_uid == pwd.getpwnam(renamed).pw_uid
+    before = (profile.stat().st_ino, profile.stat().st_mtime_ns)
+    run("bash", str(ROOT / "installer/raspberrypi/keyring-profile.sh"), "--install")
+    assert (profile.stat().st_ino, profile.stat().st_mtime_ns) == before
+    print("RAMPI_FIRST_ACCOUNT_KEYRING_PROFILE_OK")
 print("RAMPI_KEYRING_PROFILE_PRESERVATION_OK")

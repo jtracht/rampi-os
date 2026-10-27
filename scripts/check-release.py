@@ -25,6 +25,13 @@ if readiness["schema"] != 1 or len(readiness["evidence"]) < 10:
 if json.loads((ROOT / "release-please-config.json").read_text())["draft"] is not True:
     raise SystemExit("Releases must initially be drafts")
 if not args.configuration_only:
+    native_version = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))[
+        "workspace"
+    ]["package"]["version"]
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", native_version) or native_version != versions[
+        "manifest"
+    ]:
+        raise SystemExit("Release version mismatch: native Rust version must match the stable tag")
     failures = [
         name
         for name, evidence in readiness["evidence"].items()

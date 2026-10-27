@@ -248,15 +248,15 @@ weiterhin gesondert auf vollständige Übersetzung zu prüfen.
 
 1. Den unveränderten Erststart im frisch gebauten Image und den folgenden
    normalen Neustart sowie den offiziell vorab eingerichteten Kontoablauf prüfen.
-2. Die vollständige deutsch-/englische Oberfläche fertigstellen. Fluent,
-   persönliche Sprachauswahl, Sitzungs-Locale, Dashboardnavigation und
-   Einrichtungsbeschreibungen sind integriert; weitere Seiten und Fehlermeldungen
-   sind noch nicht vollständig übersetzt.
+2. Die erweiterte deutsch-/englische Oberfläche auf der endgültigen Quelle
+   beider Architekturen prüfen. Lokale Sprach- und Einzelseitentests bestehen;
+   daraus folgt noch keine vollständige Image-Abnahme.
 3. Echte virtuelle Bluetooth-Tastatur und -Maus einschließlich Wiederverbindung
    abnehmen. Die lokale private Tailscale-Tunnel-/PAM-Abnahme muss auf der
-   endgültigen Quelle beider Architekturen bestehen. Ein integrierter manueller
-   Installationspfad für eine fehlende offizielle Tailscale-Installation ist
-   ebenfalls noch nötig; das aktuelle native Image enthält diesen Dienst nicht.
+   endgültigen Quelle beider Architekturen bestehen. Der integrierte manuelle
+   Tailscale-Installationspfad ist implementiert; signierte Paketinstallation
+   und Konfigurationserhalt sind lokal geprüft. Dienststart und Tunnel dieses
+   Installationspfads müssen noch im vollständigen System abgenommen werden.
 4. Die übrigen Decoder-, Eingabe-, Isolations- und Bedienungsgrenzen der
    unveränderten Fortschrittsskala schließen und dokumentieren.
 5. Auf der endgültigen Quelle sämtliche AMD64-/ARM64-Prüfungen, grafischen
@@ -268,3 +268,27 @@ weiterhin gesondert auf vollständige Übersetzung zu prüfen.
 Direkte KI-Integrationen bleiben entfernt. Hardwaretests, Modellanfragen und
 Windows-Testhosts bleiben ausgeschlossen. Es werden keine zusätzlichen Chats,
 Aufgaben oder Fortsetzungsautomationen angelegt.
+
+### Gebündelte Korrekturen am 27. Oktober
+
+Der echte Image-Test erreichte nach der unveränderten Raspberry-Pi-Kontoeinrichtung
+die grafische PAM-Anmeldung des ersten Kontos, scheiterte aber anschließend am
+persönlichen Schlüsselbund. Die Image-Einrichtung wendet deshalb den vorhandenen,
+konfigurationserhaltenden Schlüsselbund-Helfer nach dem Umbenennen/Freigeben des
+bereits vorhandenen ersten Kontos erneut an. Eine echte lokale Benutzer-/Datei-
+Prüfung besteht; erst ein neuer frischer Image-Bau kann diese Produktkorrektur
+einschließlich PAM bestätigen. Das alte Image darf dafür nicht wiederverwendet werden.
+
+Der übersetzte Streaming-PIN enthält absichtlich Fluent-Richtungsmarkierungen.
+Nur der Prüfleser normalisiert diese Anzeigezeichen vor der weiterhin strengen
+Vier-Ziffern-Prüfung. Der anschließende echte lokale Sunshine-/GTK-Test besteht:
+Pairing, abgelehntes falsches TLS-Zertifikat, zwei wechselnde Videoverbindungen
+und empfangenes 997-Hz-Audio. Kein Windows-Testhost wurde verwendet.
+
+316 Python-Tests bestehen, 11 sind übersprungen; Rust-Formatierung, Clippy,
+Build und Ruff bestehen. Der reguläre Veröffentlichungsweg verwendet jetzt die
+gleichen vollständigen Image-/Quell-/Lizenzprüfungen wie der Entwicklungsweg,
+erfordert zusätzlich eine stabile passende Produktversion und vollständige
+Bereitschaft und erzeugt erst danach einen neuen Tag. Bestehende Tags/Dateien
+werden nicht überschrieben. Aktuelle Entwicklungsversion und unvollständige
+Bereitschaft sperren weiterhin eine Veröffentlichung. Gesamtstand bleibt 85/95.

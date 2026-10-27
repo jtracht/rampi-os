@@ -15,6 +15,8 @@ button.tile { background: transparent; padding: 0; border: none; outline: none; 
 .status { color: #9eb6c8; font-size: 13px; }
 entry, passwordentry { background: #152532; color: #edf3fa; padding: 12px; border-radius: 10px; }
 list, row { background: #101e28; color: #edf3fa; }
+list row { padding: 8px 12px; border: none; outline: none; box-shadow: none; border-radius: 8px; }
+list row:hover { background: #203746; }
 list row:selected { background: #12538a; }
 .board-lane { border-radius: 12px; padding: 12px; }
 .lane-0 { background: #20313e; }

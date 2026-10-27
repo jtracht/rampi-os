@@ -23,6 +23,9 @@ source = f"rampi-source-{version}.tar.gz"
 host = f"rampi-windows-host-{version}.zip"
 required.update([source, host])
 if args.image:
+    regular = re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is not None
+    manifest_name = "native-release.json" if regular else "development-release.json"
+    required.add(manifest_name)
     images = list(directory.glob("*.img.xz"))
     if len(images) != 1:
         raise SystemExit("Exactly one flashable image required")
@@ -125,6 +128,21 @@ if args.image or (directory / f"rampi-linux-arm64-{version}.tar.xz").is_file():
         read_native("rust-licenses/packages.json")
         read_native("rust-licenses/Rust-standard-library-COPYRIGHT.html")
 if args.image:
+    manifest = json.loads((directory / manifest_name).read_text(encoding="utf-8"))
+    expected_manifest = {
+        "schema": 1,
+        "kind": "release" if regular else "prerelease",
+        "tag": "v" + version,
+        "version": version,
+        "revision": revision,
+        "regular_release": regular,
+        "image": images[0].name,
+        "image_sha256": checksums[images[0].name],
+        "native_binary_sha256": hashlib.sha256(binary).hexdigest(),
+        "physical_hardware_tests": False,
+    }
+    if manifest != expected_manifest:
+        raise SystemExit("Native release manifest does not match the verified source and artifacts")
     runpy.run_path(str(Path(__file__).with_name("check-graphical-archive.py")))["check"](
         directory / "graphical-login-evidence.tar.xz", revision,
         checksums[images[0].name], hashlib.sha256(binary).hexdigest(),
