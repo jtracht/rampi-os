@@ -12,6 +12,20 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
+def test_kernel_input_receipt_requires_press_and_release():
+    down = "Event: time 1, type 1 (EV_KEY), code 28 (KEY_ENTER), value 1\n"
+    up = "Event: time 2, type 1 (EV_KEY), code 28 (KEY_ENTER), value 0\n"
+    MODULE.check_kernel_keys(down + up)
+    with pytest.raises(ValueError):
+        MODULE.check_kernel_keys(down)
+    with pytest.raises(ValueError):
+        MODULE.check_kernel_keys("Event code 28 (KEY_ENTER)\n")
+    with pytest.raises(ValueError):
+        MODULE.check_kernel_keys(
+            down + up + "Event: time 3, type 1 (EV_KEY), code 30 (KEY_A), value 1\n"
+        )
+
+
 def metadata():
     return dict(
         installed_pi_image=True,
@@ -66,7 +80,10 @@ def first_user():
         "stock_wizard_disabled": True,
         "completion_service_disabled": True,
         "default_target": "graphical.target",
-        "input": "qemu-qmp-usb-keyboard",
+        "input": "linux-kernel-uinput-ydotool",
+        "kernel_enter_press_release_observed": True,
+        "usb_keyboard_transport_tested": False,
+        "input_tool_package_version": "1.0.4-2~bpo13+1",
         "binary_sha256": "d" * 64,
     }
 
@@ -84,6 +101,8 @@ def test_first_user_proof_matches_installed_binary():
         ("graphical_login_after_userconf", False),
         ("wizard_password_authenticated_by_pam", False),
         ("pam_keyring_relogin", False),
+        ("kernel_enter_press_release_observed", False),
+        ("usb_keyboard_transport_tested", True),
         ("native_surface_visible", False),
         ("uid", 1001),
         ("session_uid", 0),

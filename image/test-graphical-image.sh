@@ -12,14 +12,11 @@ printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 work="$(mktemp -d)"
 loop=''
 qemu_pid=''
-input_pid=''
 cleanup() {
-    for pid in "$input_pid" "$qemu_pid"; do
-        if [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null; then
-            kill "$pid" 2>/dev/null || true
-            wait "$pid" 2>/dev/null || true
-        fi
-    done
+    if [[ "$qemu_pid" =~ ^[0-9]+$ ]] && kill -0 "$qemu_pid" 2>/dev/null; then
+        kill "$qemu_pid" 2>/dev/null || true
+        wait "$qemu_pid" 2>/dev/null || true
+    fi
     for point in dev proc root boot; do
         directory="$work/$point"
         [[ "$point" == dev || "$point" == proc ]] && directory="$work/root/$point"
@@ -62,7 +59,17 @@ sudo chmod 755 "$work/root/usr/sbin/policy-rc.d"
 sudo rm -f "$work/root/etc/resolv.conf"
 sudo cp -L /etc/resolv.conf "$work/root/etc/resolv.conf"
 sudo chroot "$work/root" dpkg-query -W | tee "$work/packages-before.tsv" > /dev/null
+test_input_repo=0
+if ! sudo chroot "$work/root" /bin/sh -ec 'command -v ydotool >/dev/null; command -v ydotoold >/dev/null'; then
+    test ! -e "$work/root/etc/apt/sources.list.d/rampi-image-test-backports.list"
+    printf '%s\n' 'deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://deb.debian.org/debian trixie-backports main' | sudo tee "$work/root/etc/apt/sources.list.d/rampi-image-test-backports.list" > /dev/null
+    test_input_repo=1
+fi
 sudo chroot "$work/root" /bin/sh -ec 'apt-get update -qq; DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends wtype grim wlrctl python3-pil evtest; apt-get clean' 2>&1 | tee "$output/test-support-install.log"
+if [[ "$test_input_repo" == 1 ]]; then
+    sudo chroot "$work/root" /bin/sh -ec 'DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ydotool/trixie-backports; systemctl --global disable ydotool.service; apt-get clean' 2>&1 | tee -a "$output/test-support-install.log"
+    sudo rm -- "$work/root/etc/apt/sources.list.d/rampi-image-test-backports.list"
+fi
 sudo chroot "$work/root" dpkg-query -W | tee "$work/packages-after.tsv" > /dev/null
 python3 - "$work/packages-before.tsv" "$work/packages-after.tsv" <<'PY'
 import sys
@@ -78,8 +85,8 @@ sudo install -m 644 "$source_root/scripts/virtual/test-login-guest.py" "$work/ro
 sudo install -m 644 "$source_root/scripts/virtual/test-first-user-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
 sudo install -m 644 "$source_root/scripts/check-login-evidence.py" "$work/root/opt/rampi-source/scripts/"
 # Ephemeral test input, not a configured Linux account or release credential.
-# The original image remains account/password-free; only QMP types these into
-# its stock interactive wizard in this disposable copy.
+# The original image remains account/password-free. The existing kernel input
+# tool types this only into the stock interactive wizard in the disposable copy.
 python3 - "$work/first-user-credentials.json" <<'PY'
 import json
 import os
@@ -141,16 +148,12 @@ while ((power < size)); do power=$((power * 2)); done
 truncate -s "$power" "$work/disk.img"
 set +e
 timeout 2400 qemu-system-aarch64 -M raspi3b -accel tcg,thread=multi -m 1G -smp 4 -nographic -monitor none -nic none \
-    -qmp "unix:$work/qmp.sock,server=on,wait=off" \
     -no-reboot -kernel "$work/kernel8.img" -dtb "$work/pi3.dtb" "${initrd[@]}" \
     -device usb-kbd -device usb-tablet \
     -drive "file=$work/disk.img,format=raw,if=sd" \
     -append 'root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait console=ttyAMA1,115200 plymouth.enable=0 systemd.unit=multi-user.target systemd.wants=rampi-image-login-test.service rampi.image_acceptance=1' \
     > "$output/serial.log" 2>&1 &
 qemu_pid=$!
-python3 "$source_root/scripts/virtual/drive-first-user-qmp.py" --qmp "$work/qmp.sock" \
-    --serial "$output/serial.log" --credentials "$work/first-user-credentials.json" > "$output/first-user-input.log" 2>&1 &
-input_pid=$!
 guest_result=''
 for ((attempt=0; attempt<1200; attempt++)); do
     guest_result="$(sed -n 's/.*RAMPI_GUEST_EXIT=\([0-9][0-9]*\).*/\1/p' "$output/serial.log" | tail -1)"
@@ -164,9 +167,6 @@ if kill -0 "$qemu_pid" 2>/dev/null; then kill "$qemu_pid"; fi
 wait "$qemu_pid"
 qemu_result=$?
 qemu_pid=''
-wait "$input_pid"
-input_result=$?
-input_pid=''
 set -e
 loop="$(sudo losetup --partscan --find --show "$work/disk.img")"
 sudo udevadm settle
@@ -197,11 +197,10 @@ data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=Fals
             guest_exit_code=int(sys.argv[6]) if sys.argv[6] else None,
             stopped_after_synced_guest_result=bool(sys.argv[6]),
             temporary_dtb_watchdog_disabled=True,
-            test_support_packages=["wtype", "grim", "wlrctl", "python3-pil", "evtest"])
+            test_support_packages=["wtype", "grim", "wlrctl", "python3-pil", "evtest", "ydotool"])
 (directory / "environment.json").write_text(json.dumps(data, indent=2) + "\n")
 PY
 [[ "$guest_result" == 0 ]]
-[[ "$input_result" == 0 ]]
 python3 "$source_root/scripts/check-image-login-evidence.py" "$output" --expected-source "$revision" --expected-image-sha256 "$expected"
 printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 echo 'RAMPI_INSTALLED_IMAGE_GRAPHICAL_OK: original image unchanged; actual installed GUI, PAM and two accounts tested in disposable QEMU copy.'

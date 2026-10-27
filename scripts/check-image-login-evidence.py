@@ -38,6 +38,7 @@ def check_first_user(first, binary_sha256):
         "graphical_login_after_userconf",
         "wizard_password_authenticated_by_pam",
         "pam_keyring_relogin",
+        "kernel_enter_press_release_observed",
         "native_surface_visible",
         "stock_wizard_disabled",
         "completion_service_disabled",
@@ -49,10 +50,19 @@ def check_first_user(first, binary_sha256):
         or first.get("uid") != 1000
         or first.get("session_uid") != 1000
         or first.get("default_target") != "graphical.target"
-        or first.get("input") != "qemu-qmp-usb-keyboard"
+        or first.get("input") != "linux-kernel-uinput-ydotool"
+        or first.get("usb_keyboard_transport_tested") is not False
         or first.get("binary_sha256") != binary_sha256
     ):
         raise ValueError("First-user evidence does not match the installed workstation")
+    if not first.get("input_tool_package_version", "").startswith("1.0."):
+        raise ValueError("Actual existing kernel input tool version is missing")
+
+
+def check_kernel_keys(log):
+    keys = re.findall(r"type 1 \(EV_KEY\), code ([0-9]+) \([^)]*\), value ([012])", log)
+    if {("28", "0"), ("28", "1")} - set(keys) or any(code != "28" for code, _ in keys):
+        raise ValueError("Require actual Enter press/release without any credential key recording")
 
 
 def check(directory, expected_source=None, expected_image=None):
@@ -68,6 +78,9 @@ def check(directory, expected_source=None, expected_image=None):
         raise ValueError("Actual stock first-user wizard and PAM login were not verified")
     first = json.loads((directory / "captures/first-user-proof.json").read_text(encoding="utf-8"))
     check_first_user(first, environment["native_binary_sha256"])
+    check_kernel_keys((directory / "captures/first-user-precredential-input.log").read_text(
+        encoding="utf-8", errors="replace"
+    ))
     runpy.run_path(str(Path(__file__).with_name("check-login-evidence.py")))["visible_capture"](
         directory / "captures/first-user.png"
     )

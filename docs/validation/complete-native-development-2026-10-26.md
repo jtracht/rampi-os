@@ -129,11 +129,33 @@ Erstkontoabnahme ist noch offen. Der Eingabeprüfer wartet nun außerdem auf die
 tatsächliche Bereitschaft von evtest, bevor er den ersten Tastendruck anfordert.
 
 Die Release-Verpackung übernimmt jetzt ausdrücklich Erstkonto-JSON und sichtbares
-Erstkonto-PNG in das Belegarchiv. Ein gemeinsamer Prüfer verlangt genau die acht
+Erstkonto-PNG in das Belegarchiv. Ein gemeinsamer Prüfer verlangt genau die neun
 freigegebenen regulären Dateien, begrenzte Größen, keine zusätzlichen privaten
 Dateien oder Verweise und prüft die entpackten Nachweise erneut gegen Quelle,
 Image und Programm. Die sieben zusätzlichen Archivtests verwenden synthetische
 Dateien ausschließlich als Format-/Ablehnungsfälle und zählen nicht als Anmeldung.
+
+Die vollständige native CI `40419411752` der Quelle
+`22a0b266feab4611f86d962c9618bee9f0eba5dc` besteht auf AMD64 und ARM64.
+Heruntergeladene native, grafische Login-, Funkgeräte- und Paketnachweise wurden
+mit den Prüfern genau dieser Quelle unabhängig kontrolliert, einschließlich aller
+sieben Paketprüfsummen. Lokaler Nachweis:
+`artifacts/complete-native-22a/accepted.json`. Das ist keine frische Image-Abnahme
+und keine Freigabe der Komplettversion.
+
+Auch der direkte QMP-Eingabelauf `40419408169` hat die Ersteinrichtung nicht
+bestanden. Der nächste Test verwendet deshalb das bestehende Debian-Werkzeug
+ydotool und das vorhandene Linux-uinput-Modul ausschließlich in der wegwerfbaren
+Gastkopie. Der originale Benutzerassistent, PAM und die installierten Rampi-
+Programme bleiben erhalten. Das Werkzeug wird aus dem signierten Debian-
+Backports-Repository ergänzt; vorhandene Paketversionen dürfen sich nicht ändern.
+Es ist weder eine Produktinstallation noch ein Nachweis des USB-Tastaturwegs.
+Der Nachweis bezeichnet den Eingabeweg ausdrücklich als Kernel-uinput und USB
+als ungeprüft. evtest muss echte Enter-Drück-/Loslassereignisse empfangen und
+vor jeder Zugangsdaten-Eingabe beendet werden. Nur dieses öffentliche,
+zugangsdatenfreie Eingabeprotokoll ergänzt das Belegarchiv als neunte Datei.
+Die Erstkonto-Anmeldung und dessen persönlicher Schlüsselbund nach erneuter
+PAM-Anmeldung bleiben verpflichtend und sind weiterhin offen.
 
 ## Noch vor der Komplettversion
 

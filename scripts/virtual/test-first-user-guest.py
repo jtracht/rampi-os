@@ -1,7 +1,7 @@
 """Observe stock userconf and authenticate its first account in the disposable image.
 
 No account creation, password reset, replacement wizard or PAM bypass is allowed
-here. Keyboard input comes from the host through QEMU's existing QMP API.
+here. The existing ydotool supplies actual kernel input in this disposable guest.
 """
 
 import atexit
@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import pwd
+import re
 import runpy
 import secrets
 import subprocess
@@ -17,6 +18,7 @@ from pathlib import Path
 
 CAPTURES = Path("/opt/rampi-captures")
 CREDENTIALS = Path("/opt/rampi-source/first-user-credentials.json")
+INPUT_SOCKET = "/run/rampi-first-user-input.sock"
 
 
 def command(*args):
@@ -31,14 +33,67 @@ def enabled(unit):
     return command("systemctl", "is-enabled", "--quiet", unit).returncode == 0
 
 
+def kernel_keyboard():
+    if command("modprobe", "uinput").returncode:
+        raise RuntimeError("The guest's existing kernel uinput module is unavailable")
+    if Path(INPUT_SOCKET).exists():
+        raise RuntimeError("A fixture input socket already exists")
+    process = subprocess.Popen(
+        ["/usr/bin/ydotoold", "--socket-path=" + INPUT_SOCKET,
+         "--socket-perm=0600", "--mouse-off"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
+    def stop():
+        if process.poll() is None:
+            process.terminate()
+            process.wait(timeout=10)
+
+    atexit.register(stop)
+    deadline = time.monotonic() + 20
+    while not Path(INPUT_SOCKET).is_socket() or not any(
+        "ydotoold" in item.read_text()
+        for item in Path("/sys/class/input").glob("event*/device/name")
+    ):
+        if process.poll() is not None or time.monotonic() >= deadline:
+            raise RuntimeError("The existing kernel input tool did not become ready")
+        time.sleep(0.1)
+    os.environ["YDOTOOL_SOCKET"] = INPUT_SOCKET
+    if command("udevadm", "settle", "--timeout=10").returncode:
+        raise RuntimeError("The guest's kernel input device did not settle")
+    return stop
+
+
+def type_fixture(value=""):
+    if value:
+        result = subprocess.run(
+            ["/usr/bin/ydotool", "type", "--key-delay", "20", "--file", "-"],
+            input=value.encode(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15,
+        )
+        if result.returncode:
+            raise RuntimeError("Kernel fixture text input failed")
+    result = subprocess.run(
+        ["/usr/bin/ydotool", "key", "--key-delay", "40", "28:1", "28:0"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15,
+    )
+    if result.returncode:
+        raise RuntimeError("Kernel fixture Enter input failed")
+
+
+def kernel_enter_observed():
+    output = (CAPTURES / "first-user-precredential-input.log").read_text(errors="replace")
+    values = re.findall(r"type 1 \(EV_KEY\), code 28 \(KEY_ENTER\), value ([01])", output)
+    return {"0", "1"}.issubset(values)
+
+
 def monitor_precredential_keyboard():
-    """Existing evtest observes only the designated emulated keyboard, without grab."""
+    """Existing evtest observes the designated kernel virtual keyboard, without grab."""
     devices = [
         item for item in Path("/sys/class/input").glob("event*/device/name")
-        if item.read_text().strip() == "QEMU QEMU USB Keyboard"
+        if "ydotoold" in item.read_text()
     ]
     if len(devices) != 1:
-        raise RuntimeError("Exactly one emulated USB keyboard is required")
+        raise RuntimeError("Exactly one designated kernel virtual keyboard is required")
     destination = CAPTURES / "first-user-precredential-input.log"
     stream = destination.open("wb")
     device = "/dev/input/" + devices[0].parents[1].name
@@ -67,6 +122,8 @@ def monitor_precredential_keyboard():
 def main():
     if os.geteuid() or not Path("/etc/rampi-image-acceptance-vm").is_file():
         raise RuntimeError("Only in the disposable installed-image guest")
+    if "rampi.image_acceptance=1" not in Path("/proc/cmdline").read_text().split():
+        raise RuntimeError("The designated image test boot flag is required")
     os.umask(0o077)
     if command("systemctl", "get-default").stdout.strip() != b"multi-user.target":
         raise RuntimeError("Pristine image did not boot into stock first-user setup")
@@ -77,11 +134,15 @@ def main():
     if len(state) < 2 or state[1] != b"L" or active("greetd.service"):
         raise RuntimeError("Fixture accounts or a premature graphical login invalidate this test")
     credentials = json.loads(CREDENTIALS.read_text())
+    if any(not credentials[key] or any(c not in "abcdef" for c in credentials[key])
+           for key in ("user", "password")):
+        raise RuntimeError("Fixture input must be layout independent lowercase letters")
     api = runpy.run_path("/opt/rampi-source/scripts/virtual/test-login-guest.py")
     # Use the same headless rendering/test-input adaptation as the image's
     # existing graphical test. Do not start greetd or alter stock userconf.
     api["configure_test_session"]()
     Path("/run/rampi-image-test-session-configured").touch()
+    stop_kernel_keyboard = kernel_keyboard()
     stop_keyboard_monitor = monitor_precredential_keyboard()
     started = time.monotonic()
     seen = set()
@@ -106,11 +167,18 @@ def main():
                 phase = candidate
                 break
         if phase and phase not in seen:
-            # Finish the non-grabbing diagnostic before the host is allowed to
-            # send any username/password. No credential key event is recorded.
+            # Observe a real kernel Enter press/release, then finish evtest before
+            # permitting any username/password. Never record credential keys.
+            if not seen:
+                deadline = time.monotonic() + 2
+                while not kernel_enter_observed() and time.monotonic() < deadline:
+                    time.sleep(0.1)
+                if not kernel_enter_observed():
+                    raise RuntimeError("No actual kernel Enter press and release was observed")
             stop_keyboard_monitor()
             seen.add(phase)
             print("RAMPI_FIRST_USER_INPUT=" + phase, flush=True)
+            type_fixture(credentials["user"] if phase == "username" else credentials["password"])
         elif phase is None:
             keyboard_marker = next(
                 (
@@ -139,6 +207,7 @@ def main():
                     raise RuntimeError("Unexpected stock keyboard configuration loop")
                 print(f"RAMPI_FIRST_USER_INPUT=keyboard-{keyboard_questions}", flush=True)
                 keyboard_sent_at = time.monotonic()
+                type_fixture()
                 time.sleep(1)
         # This snapshot is permitted only before the host has received any
         # username/password input request. Never export later console contents.
@@ -167,6 +236,7 @@ def main():
         time.sleep(0.3)
     else:
         raise RuntimeError("Stock first-user setup did not reach graphical login")
+    stop_kernel_keyboard()
     account = pwd.getpwuid(1000)
     state = command("passwd", "-S", account.pw_name).stdout.split()
     if (
@@ -243,7 +313,12 @@ def main():
         "stock_wizard_disabled": True,
         "completion_service_disabled": True,
         "default_target": "graphical.target",
-        "input": "qemu-qmp-usb-keyboard",
+        "input": "linux-kernel-uinput-ydotool",
+        "kernel_enter_press_release_observed": True,
+        "usb_keyboard_transport_tested": False,
+        "input_tool_package_version": command(
+            "dpkg-query", "-W", "-f=${Version}", "ydotool"
+        ).stdout.decode().strip(),
         "binary_sha256": hashlib.sha256(
             Path("/opt/rampi/current/rampi-native").read_bytes()
         ).hexdigest(),
