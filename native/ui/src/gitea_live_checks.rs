@@ -99,7 +99,10 @@ pub fn ui(
                 .downcast::<gtk::Label>()
                 .unwrap();
             wait_for(
-                || summary.text().starts_with("2 von 2") && summary.text().contains(title),
+                || {
+                    crate::checks::readable_text(&summary.text()).starts_with("2 von 2")
+                        && summary.text().contains(title)
+                },
                 "Actual Gitea board not loaded",
             )
             .await?;
@@ -159,7 +162,7 @@ pub fn ui(
                 .unwrap();
             query.set_text("updated");
             wait_for(
-                || summary.text().starts_with("1 von 2"),
+                || crate::checks::readable_text(&summary.text()).starts_with("1 von 2"),
                 "Actual remote update not displayed",
             )
             .await?;
@@ -179,7 +182,7 @@ pub fn ui(
                 .emit_clicked();
             wait_for(
                 || {
-                    summary.text().starts_with("2 von 2")
+                    crate::checks::readable_text(&summary.text()).starts_with("2 von 2")
                         && summary.text().contains("Offline-Cache")
                 },
                 "Actual offline board not retained",
