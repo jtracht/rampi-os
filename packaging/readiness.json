@@ -3,16 +3,17 @@
   "regular_release": false,
   "validation_policy": "Software-only acceptance per explicit user instruction. Physical hardware tests are excluded; software results do not imply physical validation. Every release must pass a fresh image build, QEMU boot and complete artifact verification.",
   "evidence": {
-    "native_qml_and_keyboard": "docs/validation/software-acceptance-2026-10-20.md",
-    "docker_networkmanager_import": "docs/validation/software-acceptance-2026-10-20.md",
-    "configuration_and_secret_isolation": "docs/validation/software-acceptance-2026-10-20.md",
-    "kanban_contracts_and_cache": "docs/validation/software-acceptance-2026-10-20.md",
-    "installer_script_validation": "docs/validation/software-acceptance-2026-10-20.md",
-    "ci_security_and_packages": "docs/validation/software-acceptance-2026-10-20.md",
-    "image_partitions_and_filesystems": "docs/validation/software-acceptance-2026-10-20.md",
-    "qemu_software_boot": "docs/validation/software-acceptance-2026-10-20.md",
-    "release_artifact_completeness": "docs/validation/software-acceptance-2026-10-20.md",
-    "native_embedded_rdp": "docs/validation/embedded-rdp-2026-10-23.md"
+    "native_gtk_and_keyboard": "docs/validation/native-streaming-ui-2026-10-26.md",
+    "native_networkmanager_radios": "docs/validation/native-radio-modes-2026-10-24.md",
+    "configuration_and_personal_keyring_isolation": "docs/validation/pam-keyring-ordering-2026-10-25.md",
+    "kanban_contracts_and_cache": "docs/validation/complete-native-development-2026-10-26.md",
+    "native_installer_and_bootstrap": "docs/validation/rust-native-81-2026-10-24.md",
+    "ci_security_and_packages": "docs/validation/native-release-ci-gate-2026-10-23.md",
+    "image_partitions_and_filesystems": "docs/validation/rust-image-2026-10-23.md",
+    "qemu_first_account_and_reboot": "docs/validation/complete-native-development-2026-10-26.md",
+    "previous_development_release_artifacts": "docs/validation/native-streaming-dev2-release.md",
+    "native_rdp_input_and_clipboard": "docs/validation/rdp-input-clipboard-2026-10-24.md",
+    "native_nla_gitea_tailscale_and_languages": "docs/validation/complete-native-development-2026-10-26.md"
   },
-  "migration": "Rust/GTK4/Wayland. Native development release v0.6.0-dev.1 was published and independently checked. Direct provider modules and their Windows session adapter are removed from the current scope. Physical hardware and Windows-testhost acceptance are excluded. Regular-release parity remains open."
+  "migration": "Rust/GTK4/Wayland; three modules, no direct AI-provider or Windows session-broker integration. Published dev2 remains immutable and has a known pristine first-account defect. The complete-release branch fixes that defect and has a successful fresh first-account/PAM/keyring image component; normal reboot and final source-bound architecture acceptance remain pending. User authorized publication on 2026-10-27. This authorization does not replace technical evidence: regular_release remains false until complete software acceptance. Physical hardware and Windows-testhost acceptance are excluded."
 }

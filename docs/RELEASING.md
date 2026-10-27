@@ -23,22 +23,45 @@ Quellarchiv und ARM64-Paket. Der frische Image-/QEMU-Job bleibt zusätzlich Pfli
 [Prüfung des nativen CI-Gates](validation/native-release-ci-gate-2026-10-23.md).
 
 Nach Abschluss der vereinbarten Softwareabnahme konkrete Nachweisdateien in
-`packaging/readiness.json` eintragen. Release Please erstellt einen Versions-PR,
-aktualisiert Changelog/Version und erzeugt nach Merge ein vMAJOR.MINOR.PATCH-Tag
-mit einem zunächst unveröffentlichten Draft.
-Die Option `force-tag-creation` setzt das Tag bereits beim Anlegen des Drafts,
-damit weitere Versions-PRs während des Imagebuilds den richtigen Ausgangspunkt haben.
-Der Imagejob und die Paketierung müssen vollständig erfolgreich sein. Erst dann lädt der Publishjob Quellpaket,
-Windows-Host-ZIP, setup.sh, setup.ps1, Lizenzinformationen, Image und SHA256SUMS
-hoch und veröffentlicht den Draft. Das GitHub-Environment `release` kann im
-Repository zusätzlich mit menschlicher Freigabe geschützt werden.
+`packaging/readiness.json` eintragen. Cargo-, Python-/Client- und Manifest-Version
+müssen dieselbe stabile MAJOR.MINOR.PATCH-Version tragen. Der aktuelle reguläre
+Workflow erstellt keine Versions-PRs. Die Freigabe des Nutzers zur Veröffentlichung
+liegt seit dem 27.10.2026 vor; sie ersetzt keine noch fehlende Softwareabnahme.
 
-Ein fehlgeschlagener Build lässt den Draft unveröffentlicht. Es wird kein
-zweites Versions-Tag erfunden. Vor Wiederholung Tag, Commit und Artefaktversionen
-abgleichen. Installierte Endgeräte erhalten keine automatischen Updates.
+Der Imagejob baut genau den geprüften Commit frisch und prüft das tatsächliche
+installierte Image mit Erstkonto, PAM, persönlichen Schlüsselbünden, normalem
+Neustart und unveränderten Programmdateien. Erst danach stellt der gemeinsame
+native Artefaktprüfer Image, ARM64-Paket, Windows-Setup-ZIP, beide Setupskripte,
+vollständige Rampi-/Distributions-/Cargo-Quellen, Lizenzen und SHA256SUMS zusammen.
+Die öffentliche grafische Belegsammlung enthält ausschließlich die ausdrücklich
+erlaubten Dateien, keine temporären Kennwörter oder persönlichen Schlüsselbünde.
+
+Unmittelbar vor Veröffentlichung müssen `main` und die akzeptierte Revision
+weiterhin identisch und das neue Tag noch unbenutzt sein. Erst dann wird das
+vMAJOR.MINOR.PATCH-Tag erzeugt und ein Draft mit allen geprüften Dateien angelegt.
+Nach erfolgreichem Upload wird dieser Draft veröffentlicht. Es gibt keinen
+`--clobber`-Pfad. Das GitHub-Environment `release` kann zusätzlich geschützt sein.
+
+Ein fehlgeschlagener Imagebau erzeugt kein Tag. Scheitert ein späterer Upload,
+werden Tag oder vorhandene Dateien nicht überschrieben. Vor Wiederaufnahme
+Quellrevision, Tag, Draft und vollständige Artefaktversionen abgleichen.
+Installierte Endgeräte erhalten keine automatischen Updates.
 Die Softwareabnahme vom 20.10.2026 gehört zum historischen Python-/QML-Prototyp
 und ersetzt keine Rust-Abnahme. Native Pakete verwenden die Workspace-Version
-aus Cargo.toml. Die bestehende Release-Please-Versionspflege und der ältere
-Versionsprüfer verwenden noch Python-/Client-/Manifest-Versionen; diese Migration
-muss vor einem regulären nativen Release abgeschlossen werden. `regular_release`
-bleibt bis zu allen erforderlichen Produkt- und Release-Nachweisen false.
+aus Cargo.toml. `regular_release` bleibt bis zu allen erforderlichen Produkt-
+und Release-Nachweisen false.
+
+Nach Veröffentlichung in einem sauberen Checkout der akzeptierten Quellrevision
+und mit einem neuen leeren Downloadverzeichnis prüfen:
+
+```sh
+python3 scripts/verify-published-native-release.py \
+  --tag vMAJOR.MINOR.PATCH --revision ACCEPTED_FULL_COMMIT \
+  --destination /absolute/path/to/new-empty-release-download
+```
+
+Der Prüfer kontrolliert die wirklichen GitHub-Dateien, Tagrevision, Stabilitätsstatus,
+Dateigrößen, vorhandene GitHub-SHA256-Digests, jede ausgelieferte Prüfsumme sowie
+Image-, Programm-, Quellen- und grafische Anmeldenachweise. Nur sein erfolgreicher
+Bericht bestätigt die unabhängig geprüfte öffentliche Veröffentlichung. Ein
+Workflow-Erfolg allein ersetzt diese Download-Prüfung nicht.

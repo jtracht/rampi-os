@@ -56,11 +56,11 @@ Physische Raspberry-Pi-Tests sind auf Nutzerwunsch ausgeschlossen.
 | Windows-Terminal | psmux 3.4.0 (MIT) | Get-Command, --version | ConPTY, persönliche Serverinstanz | feste Anbieter-Allowlist |
 | SSH | offizielles OpenSSH | Get-Command/Get-Service | SSH-Keys, bekannte Hostschlüssel | geprüfte Argumente, Keepalive |
 | RDP | Microsoft RDP/FreeRDP 3 aus Trixie | TermService/xfreerdp3 | interaktive Credentials, Zertifikatsprüfung | persönlicher Host-Aufruf |
-| Streaming | Sunshine/Moonlight Embedded 2.7.1 | Get-Command/moonlight | existierendes Protokoll, SDL/FFmpeg, Pairing | Startadapter im vorhandenen X11 |
-| Browser | vorhandenes Chromium, sonst Firefox | PATH | eigenes Profil im Benutzerverzeichnis | bedarfsgerechter Start |
+| Streaming | Sunshine, Moonlight-common aus Embedded 2.7.1, GStreamer | vorhandene Bibliotheken und Decoder | bestehendes Protokoll, persönliches Pairing | eingebettete GTK-/Wayland-Seite |
+| Browser | vorhandenes WebKitGTK | Paket-/Bibliotheksprüfung | eigenes Profil im Benutzerverzeichnis, WebKit-Sandbox | eingebettete GTK-Seite |
 | Secrets | GNOME Keyring/Secret Service | secret-tool | freigeschalteter persönlicher Keyring | Profilname statt Token in JSON |
 | CI | GitHub Actions | Repository-Workflows | minimale Job-Berechtigungen | projektspezifische Checks |
-| Releases | Release Please v4 | Workflow-Konfiguration | zunächst Drafts | Software-/Artefaktfreigabe |
+| Releases | GitHub Actions und GitHub Releases | vorhandene Tags und genaue Quellrevision | Tag erst nach Image-Abnahme, zunächst Draft | native Artefakt-/Downloadprüfung |
 | Images | offizielles pi-gen, Commit in image/pi-gen-revision | Git-Commit | bestehende Image-Pipeline | einzelne zusätzliche Stage |
 | Bootscreen | Plymouth aus Trixie | dpkg/theme-Prüfung | vorhandenes Bootsystem | Logo-Theme, nur im eigenen Image aktiviert |
 

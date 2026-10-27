@@ -4,19 +4,26 @@ Dies ist der Rust-/Wayland-Entwicklungsstand. v0.5.0 enthält den früheren
 Python-/QML-Prototyp. Das native Entwicklungsimage hat eine eigene dokumentierte
 Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 
+Die folgende Tabelle beschreibt den aktuellen Entwicklungszweig. Die Arbeiten an
+der Komplettversion sind noch nicht als Release veröffentlicht. Insbesondere hat
+das veröffentlichte dev2-Image einen Fehler vor der ersten Kontoeinrichtung;
+es gibt dafür kein Standardpasswort. Der korrigierte frische Image-Bau hat die
+tatsächliche erste Konto-/PAM-/Schlüsselbundanmeldung bestanden. Neustart und
+abschließende CI der vollständigen Quellrevision stehen noch aus.
+
 | Bereich | Vorhanden | Wesentliche offene Arbeit |
 |---|---|---|
 | Sitzung/Dashboard | Rust/GTK/labwc, drei abgenommene native Module, Live-Status, Offline-Bedienung | Gesamtprodukt bleibt eine Vorabversion |
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
-| Einrichtung | Fortsetzbare 12 Stationen und gemeinsame Einstellungen | Sprach-/Localewechsel und weitere Einrichtungsrandfälle |
+| Einrichtung | Fortsetzbare 12 Stationen, gemeinsame Einstellungsseiten, persönliche DE-/EN-Sprache und Sitzungs-Locale | Abschließende Image-Abnahme einschließlich normalem Neustart und vorab eingerichtetem Konto |
 | Linux-Konto | Grafischer greetd-/PAM-Login mit Original-Branding, eigenes passwd, Abmeldung, private SSH-Agenten und persönliche Schlüsselbünde | Softwareabnahme einschließlich Streaming-Geheimnissen und erneuter Anmeldung im neuen Image bestanden |
 | WLAN | Eigene integrierte Seite; sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private Profile; WPA2, sichtbares/verstecktes WPA3, DHCP und Kontentrennung in frischen AMD64-/ARM64-QEMU-Gästen abgenommen | Unternehmensnetze benötigen vorhandenes NM-Profil; physische Funkqualität ausgeschlossen |
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart; Mehradapteroberfläche und tatsächliche virtuelle BlueZ-Bindungen auf AMD64/ARM64 abgenommen | Durchgängige HID-/Remote-Eingabeabnahmen; physischer Funk ausgeschlossen |
-| WireGuard/Tailscale | Persönlicher libnm-Import und echte WG-Tunnel; offizieller TS-Status, eigene Aktionen und eingebettete Anmeldung | Persönliche TS-Anmeldung, TS-Tunnel und weitere Routing-Szenarien |
-| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; kein zusätzlicher Sitzungsadapter erforderlich | Windows-NLA und Konten-/Sitzungszuordnung softwareseitig absichern; Windows-Testhosts sind ausgeschlossen |
-| Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache | Persönliche Anbieterzugänge; weitere Gitea-Projekttypen |
-| Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten | Weitere moderne Seiten-/Geräteberechtigungsabnahmen |
-| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettetes Moonlight-/GStreamer-Streaming mit privater Kopplung und Dauerlastprüfung | Windows-NLA und Pi-Decoderpfad offen; Sunshine gibt über die Kopplung seine Host-Sitzung frei |
+| WireGuard/Tailscale | Persönlicher libnm-Import, echte WG-Tunnel; offizieller TS-Dienst, persönliche Anmeldung, privater Kernel-Tunnel mit Rechten/Wiederverbindung softwaregeprüft; manuelle signierte Paketinstallation integriert | Neuer Installationspfad benötigt noch Dienst-/Tunnelabnahme im vollständigen System; physische Netze ausgeschlossen |
+| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; NLA-only gegen vorhandenen FreeRDP-/WinPR-Server mit richtigen/falschen Konten, Domain und Kennwörtern softwaregeprüft | Finale Quellenabnahme steht aus; Windows-Testhosts sind ausgeschlossen, daher keine tatsächliche Windows-Host-Zertifizierung |
+| Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache; private Repository-, Organisations- und Benutzerprojekte mit echten Gitea-HTTPS-Prüfungen | Finale Quellenabnahme; persönliche Anbieterzugänge werden vom jeweiligen Benutzer eingerichtet |
+| Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten; Mikrofon-/Kamerafreigabe mit realem WebKit und synthetischer Aufnahmequelle geprüft | Finale Quellenabnahme; synthetische Quelle bestätigt keine physische Kamera oder Mikrofonhardware |
+| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettetes Moonlight-/GStreamer-Streaming mit privater Kopplung und Dauerlastprüfung; NLA-only-Komponentenprüfung vorhanden | Finale Quellen-/Eingabeabnahme läuft; Pi-Hardwaredecoder softwareseitig angebunden, aber auf Nutzerwunsch nicht physisch geprüft; Sunshine gibt über die Kopplung seine Host-Sitzung frei |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
 | Image/Release | Veröffentlichtes v0.6.0-dev.2, vollständige Quellen/Lizenzen, QEMU-Boot, grafische PAM-Anmeldung mit zwei Konten und unabhängig geprüfte öffentliche Downloads | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
 

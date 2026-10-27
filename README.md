@@ -127,8 +127,9 @@ python scripts/package.py
 GitHub Actions prüft Linux/Windows, Skripte, Sicherheit und die Paketierung.
 Der Image-Workflow verwendet einen festgelegten Commit des offiziellen pi-gen.
 Die dokumentierte Softwareabnahme erlaubt die Releasevorbereitung;
-Release Please erstellt Versionen, Tags und zunächst unveröffentlichte
-Releases. Veröffentlichung erfolgt erst nach vollständigem Image-Build.
+der native Release-Workflow verlangt eine abgestimmte stabile Version und erzeugt
+das Tag erst nach erfolgreichem frischem Image-Build und vollständiger Abnahme.
+Die veröffentlichten Dateien werden anschließend separat heruntergeladen und geprüft.
 
 Die [Dashboard-Vorlage](assets/references/1000141105.png) und das
 [gelieferte Logo](assets/references/1000141106.png) sind die Designgrundlage.
