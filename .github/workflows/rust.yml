@@ -180,6 +180,7 @@ jobs:
           docker run --rm --memory=3g --memory-swap=3g --cpus=4 -v "$PWD:/app" -v rampi-rust-build:/build:ro rampi-virtual-tools python3 scripts/test-virtual-linux.py --native-session-binary /build/target/debug/rampi-native --timeout 1800
           expected=$(docker run --rm -v rampi-rust-build:/build:ro rampi-rust-dev sha256sum /build/target/debug/rampi-native | cut -d ' ' -f 1)
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev python3 scripts/check-login-evidence.py artifacts/virtual-login --expected-binary "$expected"
+          python3 scripts/check-tailscale-install-evidence.py artifacts/virtual-login
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

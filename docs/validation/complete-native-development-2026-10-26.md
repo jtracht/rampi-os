@@ -338,3 +338,22 @@ Das öffentliche Archiv umfasst jetzt exakt 17 erlaubte Dateien. Die erste
 expandierte Kopie wird vor der zweiten entfernt, um den Plattenbedarf zu begrenzen.
 Die Workflow-Gesamtzeit berücksichtigt beide Kopien; einzelne Gastzeitgrenzen
 bleiben unverändert. Die neue Kontovariante ist noch nicht im Image abgenommen.
+
+Der Zweiboot-Lauf `40493918238` hat die interaktive Variante inzwischen bestanden.
+Die heruntergeladenen Belege bestehen mit den eingefrorenen Prüfern von `abacb74`;
+ausgeführt wurde weiterhin das unveränderte Programm des frischen `5932cfd`-Images.
+Das ist eine Komponentenabnahme, keine finale Quell-/Image-Releasezuordnung.
+
+Die nächste native CI enthält außerdem eine echte manuelle Tailscale-Installation
+im frischen systemd-/QEMU-Gast. Der unveränderte Produkthilfer installiert über
+signiertes APT; der Prüfer verlangt den paketgehörigen Vendor-Dienst, seinen
+tatsächlichen Prozess, die erreichbare CLI und unveränderte Dateien/Prozess-ID
+nach wiederholtem Aufruf. Anmeldung oder Tunnelverkehr werden dabei ausdrücklich
+nicht behauptet; dafür bestehen getrennte echte Tunnelprüfungen. Die neue
+Dienst-Installationsprüfung ist implementiert, aber noch nicht im Gast bestanden.
+
+Der echte lokale Gitea-Test besteht nach Normalisierung der Fluent-Anzeigezeichen
+auch wieder mit den strengen Rechte-, Projekt-, Aktualisierungs- und Cacheprüfungen.
+Die produktive Übersetzung bleibt unverändert. Die vorherigen fehlgeschlagenen
+CI-Belege bleiben erhalten. Neue lokale Basis: 341 Python-Tests bestanden,
+12 übersprungen; Ruff und YAML-Prüfung bestanden. Kein zusätzlicher Prozentpunkt.

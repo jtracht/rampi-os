@@ -539,6 +539,9 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+        if "--installed-image" not in sys.argv:
+            script = SOURCE / "scripts/virtual/test-tailscale-install-guest.py"
+            runpy.run_path(str(script))["main"]()
     except Exception:
         uid = pwd.getpwnam("_greetd").pw_uid
         log = Path(f"/run/user/{uid}/rampi-greeter.log")
