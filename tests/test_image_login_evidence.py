@@ -66,6 +66,24 @@ def test_reject_different_producer():
         MODULE.check_metadata(metadata(), "c" * 40)
 
 
+@pytest.mark.parametrize("omitted", [
+    "normal_default_target_boot", "different_kernel_boot_id", "same_first_account",
+    "pam_authenticated", "persisted_keyring_recovered", "native_surface_visible",
+    "stock_wizard_remained_disabled", "uid", "binary_sha256",
+])
+def test_reboot_requires_real_account_and_persistence_evidence(omitted):
+    proof = dict.fromkeys([
+        "normal_default_target_boot", "different_kernel_boot_id", "same_first_account",
+        "pam_authenticated", "persisted_keyring_recovered", "native_surface_visible",
+        "stock_wizard_remained_disabled",
+    ], True)
+    proof.update(uid=1000, binary_sha256="d" * 64)
+    MODULE.check_reboot(proof, "d" * 64)
+    del proof[omitted]
+    with pytest.raises(ValueError):
+        MODULE.check_reboot(proof, "d" * 64)
+
+
 def first_user():
     return {
         "pristine_locked_account": True,

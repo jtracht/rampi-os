@@ -306,6 +306,12 @@ def main():
     api["native_keyring"](account.pw_name, "check", attribute, secret)
     api["as_user"](account.pw_name, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
     api["greeter_ready"]()
+    # Private disposable-guest state only, never part of the public captures.
+    # The next boot must authenticate the same account and recover this value.
+    reboot_state = Path("/opt/rampi-source/first-user-reboot-private.json")
+    with reboot_state.open("x") as stream:
+        json.dump({**credentials, "attribute": attribute, "secret": secret,
+                   "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip()}, stream)
     CREDENTIALS.unlink()
     evidence = {
         "pristine_locked_account": True,

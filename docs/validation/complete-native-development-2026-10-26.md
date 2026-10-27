@@ -292,3 +292,15 @@ erfordert zusätzlich eine stabile passende Produktversion und vollständige
 Bereitschaft und erzeugt erst danach einen neuen Tag. Bestehende Tags/Dateien
 werden nicht überschrieben. Aktuelle Entwicklungsversion und unvollständige
 Bereitschaft sperren weiterhin eine Veröffentlichung. Gesamtstand bleibt 85/95.
+
+Die Image-Abnahme wird zusätzlich auf einen zweiten Kernel-Boot derselben
+Wegwerfkopie erweitert. Dieser Boot darf keinen `systemd.unit`-Override verwenden:
+Das installierte grafische Standardziel muss selbst den Login starten. Derselbe
+erste Benutzer muss erneut über PAM anmelden, eine sichtbar gemalte Oberfläche
+erreichen und den vor dem Neustart gespeicherten Wert über den echten Rust-
+Schlüsselbundadapter lesen. Ein neuer UID-Beleg ersetzt ausdrücklich den alten
+Sitzungsbeleg. Temporäre Anmeldedaten bleiben ausschließlich in einer rootprivaten
+Datei im Gast und werden nach Erfolg entfernt; das öffentliche Archiv enthält nur
+den sachlichen Neustartbeleg und einen Screenshot. Die Archivprüfung verlangt
+diese beiden zusätzlichen Dateien. Das ist implementierte Prüfunterstützung,
+noch kein bestandener Neustart-Nachweis und kein zusätzlicher Prozentpunkt.

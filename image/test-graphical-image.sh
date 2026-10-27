@@ -83,6 +83,7 @@ sudo umount "$work/root/proc" "$work/root/dev"
 sudo install -d -m 755 "$work/root/opt/rampi-source/scripts/virtual" "$work/root/opt/rampi-captures"
 sudo install -m 644 "$source_root/scripts/virtual/test-login-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
 sudo install -m 644 "$source_root/scripts/virtual/test-first-user-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
+sudo install -m 644 "$source_root/scripts/virtual/test-first-user-reboot-guest.py" "$work/root/opt/rampi-source/scripts/virtual/"
 sudo install -m 644 "$source_root/scripts/check-login-evidence.py" "$work/root/opt/rampi-source/scripts/"
 # Ephemeral test input, not a configured Linux account or release credential.
 # The original image remains account/password-free. The existing kernel input
@@ -110,11 +111,16 @@ set -uo pipefail
 mkdir -p /opt/rampi-captures
 extra=()
 if [[ -f /etc/rampi-greeter-diagnostic ]]; then extra=(--greeter-diagnostic); fi
-python3 /opt/rampi-source/scripts/virtual/test-first-user-guest.py --installed-image 2>&1 | tee /opt/rampi-captures/first-user.log
-result=$?
-if [[ "$result" == 0 ]]; then
-    python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image "${extra[@]}" > /opt/rampi-captures/guest.log 2>&1
+if [[ -f /opt/rampi-captures/first-user-proof.json ]]; then
+    python3 /opt/rampi-source/scripts/virtual/test-first-user-reboot-guest.py --installed-image 2>&1 | tee /opt/rampi-captures/first-user-reboot.log
     result=$?
+else
+    python3 /opt/rampi-source/scripts/virtual/test-first-user-guest.py --installed-image 2>&1 | tee /opt/rampi-captures/first-user.log
+    result=$?
+    if [[ "$result" == 0 ]]; then
+        python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image "${extra[@]}" > /opt/rampi-captures/guest.log 2>&1
+        result=$?
+    fi
 fi
 if sha256sum --check --status /opt/rampi-source/installed-files.sha256; then
     echo RAMPI_INSTALLED_FILES_UNCHANGED_OK
@@ -146,17 +152,19 @@ size="$(stat -c %s "$work/disk.img")"
 power=1
 while ((power < size)); do power=$((power * 2)); done
 truncate -s "$power" "$work/disk.img"
-set +e
-timeout 2400 qemu-system-aarch64 -M raspi3b -accel tcg,thread=multi -m 1G -smp 4 -nographic -monitor none -nic none \
+boot_guest() {
+    local boot="$1" target="$2"
+    set +e
+    timeout 2400 qemu-system-aarch64 -M raspi3b -accel tcg,thread=multi -m 1G -smp 4 -nographic -monitor none -nic none \
     -no-reboot -kernel "$work/kernel8.img" -dtb "$work/pi3.dtb" "${initrd[@]}" \
     -device usb-kbd -device usb-tablet \
     -drive "file=$work/disk.img,format=raw,if=sd" \
-    -append 'root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait console=ttyAMA1,115200 plymouth.enable=0 systemd.unit=multi-user.target systemd.wants=rampi-image-login-test.service rampi.image_acceptance=1' \
-    > "$output/serial.log" 2>&1 &
+    -append "root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait console=ttyAMA1,115200 plymouth.enable=0 $target systemd.wants=rampi-image-login-test.service rampi.image_acceptance=1" \
+    > "$work/serial-$boot.log" 2>&1 &
 qemu_pid=$!
 guest_result=''
 for ((attempt=0; attempt<1200; attempt++)); do
-    guest_result="$(sed -n 's/.*RAMPI_GUEST_EXIT=\([0-9][0-9]*\).*/\1/p' "$output/serial.log" | tail -1)"
+    guest_result="$(sed -n 's/.*RAMPI_GUEST_EXIT=\([0-9][0-9]*\).*/\1/p' "$work/serial-$boot.log" | tail -1)"
     if [[ -n "$guest_result" ]] || ! kill -0 "$qemu_pid" 2>/dev/null; then break; fi
     sleep 2
 done
@@ -168,6 +176,17 @@ wait "$qemu_pid"
 qemu_result=$?
 qemu_pid=''
 set -e
+    cat "$work/serial-$boot.log" >> "$output/serial.log"
+}
+: > "$output/serial.log"
+boot_guest first 'systemd.unit=multi-user.target'
+boots=1
+if [[ "$guest_result" == 0 ]]; then
+    # Reboot the same synced disk without a systemd.unit override. It must
+    # select the installed graphical default and authenticate the same account.
+    boot_guest second ''
+    boots=2
+fi
 loop="$(sudo losetup --partscan --find --show "$work/disk.img")"
 sudo udevadm settle
 # The emulator is stopped after sync, while ext4 may still be mounted in the
@@ -183,7 +202,7 @@ sudo chown -R "$(id -u):$(id -g)" "$output/captures"
 sudo umount "$work/root"
 sudo losetup -d "$loop"
 loop=''
-python3 - "$output" "$binary_sha" "$revision" "$expected" "$qemu_result" "$guest_result" <<'PY'
+python3 - "$output" "$binary_sha" "$revision" "$expected" "$qemu_result" "$guest_result" "$boots" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -196,6 +215,7 @@ data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=Fals
             original_compressed_image_sha256=sys.argv[4], qemu_observed_exit_code=int(sys.argv[5]),
             guest_exit_code=int(sys.argv[6]) if sys.argv[6] else None,
             stopped_after_synced_guest_result=bool(sys.argv[6]),
+            kernel_boots=int(sys.argv[7]),
             temporary_dtb_watchdog_disabled=True,
             test_support_packages=["wtype", "grim", "wlrctl", "python3-pil", "evtest", "ydotool"])
 (directory / "environment.json").write_text(json.dumps(data, indent=2) + "\n")

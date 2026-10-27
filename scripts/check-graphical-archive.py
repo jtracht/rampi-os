@@ -11,6 +11,7 @@ FILES = (
     "captures/greeter.png", "captures/rampi-login.png", "captures/rampi-other.png",
     "captures/first-user-proof.json", "captures/first-user.png",
     "captures/first-user-precredential-input.log",
+    "captures/first-user-reboot-proof.json", "captures/first-user-reboot.png",
 )
 PREFIX = "graphical-login/"
 

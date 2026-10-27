@@ -27,7 +27,10 @@ def archive(tmp_path, names, symlink=None):
     return path
 
 
-@pytest.mark.parametrize("missing", ["first-user-proof.json", "first-user.png"])
+@pytest.mark.parametrize("missing", [
+    "first-user-proof.json", "first-user.png",
+    "first-user-reboot-proof.json", "first-user-reboot.png",
+])
 def test_pristine_first_user_files_cannot_be_omitted(tmp_path, missing):
     path = archive(tmp_path, [name for name in NAMES if not name.endswith(missing)])
     with pytest.raises(ValueError):

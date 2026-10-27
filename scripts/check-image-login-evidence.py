@@ -65,6 +65,18 @@ def check_kernel_keys(log):
         raise ValueError("Require actual Enter press/release without any credential key recording")
 
 
+def check_reboot(proof, binary_sha256):
+    for key in (
+        "normal_default_target_boot", "different_kernel_boot_id", "same_first_account",
+        "pam_authenticated", "persisted_keyring_recovered", "native_surface_visible",
+        "stock_wizard_remained_disabled",
+    ):
+        if proof.get(key) is not True:
+            raise ValueError("Missing normal first-account reboot acceptance: " + key)
+    if proof.get("uid") != 1000 or proof.get("binary_sha256") != binary_sha256:
+        raise ValueError("Reboot evidence used another account or native program")
+
+
 def check(directory, expected_source=None, expected_image=None):
     environment = json.loads((directory / "environment.json").read_text(encoding="utf-8"))
     check_metadata(environment, expected_source, expected_image)
@@ -78,11 +90,21 @@ def check(directory, expected_source=None, expected_image=None):
         raise ValueError("Actual stock first-user wizard and PAM login were not verified")
     first = json.loads((directory / "captures/first-user-proof.json").read_text(encoding="utf-8"))
     check_first_user(first, environment["native_binary_sha256"])
+    if (environment.get("kernel_boots") != 2
+            or "RAMPI_FIRST_USER_NORMAL_REBOOT_PAM_OK" not in log):
+        raise ValueError("Two actual kernel boots and a normal first-account login are required")
+    reboot = json.loads((directory / "captures/first-user-reboot-proof.json").read_text(
+        encoding="utf-8",
+    ))
+    check_reboot(reboot, environment["native_binary_sha256"])
     check_kernel_keys((directory / "captures/first-user-precredential-input.log").read_text(
         encoding="utf-8", errors="replace"
     ))
     runpy.run_path(str(Path(__file__).with_name("check-login-evidence.py")))["visible_capture"](
         directory / "captures/first-user.png"
+    )
+    runpy.run_path(str(Path(__file__).with_name("check-login-evidence.py")))["visible_capture"](
+        directory / "captures/first-user-reboot.png"
     )
     return environment
 
