@@ -43,6 +43,12 @@ def test_old_six_file_bundle_cannot_pass(tmp_path):
         MODULE["read_members"](path)
 
 
+def test_boot_file_account_bundle_cannot_be_omitted(tmp_path):
+    path = archive(tmp_path, [name for name in NAMES if "/preconfigured/" not in name])
+    with pytest.raises(ValueError):
+        MODULE["read_members"](path)
+
+
 @pytest.mark.parametrize("extra", ["graphical-login/private-key", NAMES[0]])
 def test_private_or_duplicate_file_rejected(tmp_path, extra):
     with pytest.raises(ValueError):

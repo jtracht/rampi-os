@@ -110,6 +110,22 @@ def test_first_user_proof_matches_installed_binary():
     MODULE.check_first_user(first_user(), "d" * 64)
 
 
+def test_boot_file_evidence_cannot_replace_interactive_wizard():
+    proof = first_user()
+    proof.update(
+        credentials_preconfigured=True, pristine_locked_account=False,
+        stock_interactive_userconf=False, wizard_password_authenticated_by_pam=False,
+        configured_password_authenticated_by_pam=True, kernel_enter_press_release_observed=False,
+        input="official-userconf-boot-file", boot_configuration_consumed=True,
+    )
+    MODULE.check_first_user(proof, "d" * 64, preconfigured=True)
+    with pytest.raises(ValueError):
+        MODULE.check_first_user(proof, "d" * 64)
+    proof["boot_configuration_consumed"] = False
+    with pytest.raises(ValueError):
+        MODULE.check_first_user(proof, "d" * 64, preconfigured=True)
+
+
 @pytest.mark.parametrize(
     ("key", "value"),
     [

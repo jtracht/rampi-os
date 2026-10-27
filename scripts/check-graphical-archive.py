@@ -13,6 +13,11 @@ FILES = (
     "captures/first-user-precredential-input.log",
     "captures/first-user-reboot-proof.json", "captures/first-user-reboot.png",
 )
+FILES += tuple("preconfigured/" + name for name in (
+    "environment.json", "serial.log", "captures/first-user-proof.json",
+    "captures/first-user.png", "captures/first-user-reboot-proof.json",
+    "captures/first-user-reboot.png",
+))
 PREFIX = "graphical-login/"
 
 

@@ -4,6 +4,8 @@ set -euo pipefail
 image="$(realpath "${1:?Image path required}")"
 output="$(realpath -m "${2:?Output directory required}")"
 source_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+account_mode="${RAMPI_IMAGE_ACCOUNT_MODE:-interactive}"
+[[ "$account_mode" == interactive || "$account_mode" == preconfigured ]]
 [[ "$(uname -m)" == aarch64 ]]
 mkdir -p "$output/captures"
 expected="$(awk -v wanted="$(basename "$image")" '{name=$2;sub(/^.*\//,"",name);if(name==wanted)print $1}' "$(dirname "$image")/SHA256SUMS")"
@@ -50,6 +52,7 @@ sudo chroot "$work/root" /bin/sh -ec 'ldd /opt/rampi/current/rampi-native; /usr/
 grep -q RAMPI_BOOT_OK "$output/installed-health.log"
 if grep -q 'not found' "$output/installed-health.log"; then exit 1; fi
 printf '%s  /opt/rampi/current/rampi-native\n' "$binary_sha" | sudo chroot "$work/root" sha256sum --check --status
+sudo chroot "$work/root" /bin/sh -ec 'account=$(getent passwd 1000 | cut -d: -f1); test "$(passwd -S "$account" | cut -d" " -f2)" = L'
 # Only test support is installed; no workstation package, profile or launcher is
 # replaced. Deny service startup while preparing this offline disposable copy.
 sudo mount --bind /dev "$work/root/dev"
@@ -97,10 +100,22 @@ with open(sys.argv[1], 'x', opener=lambda path, flags: os.open(path, flags, 0o60
     json.dump({"user": "abcdef", "password": ''.join(secrets.choice('abcdef') for _ in range(48))}, file)
 PY
 sudo install -m 600 "$work/first-user-credentials.json" "$work/root/opt/rampi-source/first-user-credentials.json"
+if [[ "$account_mode" == preconfigured ]]; then
+    # Only the disposable FAT copy is changed; stock userconfig consumes this
+    # supported file. No useradd/chpasswd or replacement account wizard.
+    sudo mount -o remount,rw "$work/boot"
+    sudo python3 "$source_root/scripts/virtual/prepare-first-user-boot.py" "$work/boot" "$work/first-user-credentials.json"
+    sudo touch "$work/root/etc/rampi-image-test-preconfigured"
+fi
 if [[ "${RAMPI_IMAGE_GREETER_DIAGNOSTIC:-0}" == 1 ]]; then
     sudo touch "$work/root/etc/rampi-greeter-diagnostic"
 fi
 sudo touch "$work/root/etc/rampi-acceptance-vm" "$work/root/etc/rampi-image-acceptance-vm"
+# Configure only the existing headless/input fixture offline, before the stock
+# account service can finish. This prevents a fast preconfigured boot racing
+# graphical test preparation. Product programs and stock account service remain.
+sudo chroot "$work/root" python3 -c 'import runpy,sys; sys.argv=["fixture","--installed-image"]; runpy.run_path("/opt/rampi-source/scripts/virtual/test-login-guest.py")["configure_test_session"](reload=False)'
+sudo touch "$work/root/etc/rampi-image-test-session-prepared"
 # Record the image's installed implementation before any guest test. Its config,
 # executable, assets and launchers must still match after login and logout.
 sudo chroot "$work/root" /bin/sh -ec 'find -L /opt/rampi/current /usr/local/lib/libmoonlight-common.so.2.7.1 /usr/local/bin/rampi /usr/local/bin/rampi-session /usr/local/bin/rampi-wayland-start /usr/local/bin/rampi-greeter /usr/local/libexec/rampi-first-user-complete /usr/local/libexec/rampi-tailscale-install /usr/share/rampi/tailscale-archive-keyring.gpg /usr/local/libexec/rampi-image-bootstrap /etc/systemd/system/rampi-first-user.service /etc/systemd/user/rampi.service /etc/xdg/rampi /etc/skel -type f -print0 | sort -z | xargs -0 sha256sum' | tee "$work/installed-files.sha256" > /dev/null
@@ -111,13 +126,15 @@ set -uo pipefail
 mkdir -p /opt/rampi-captures
 extra=()
 if [[ -f /etc/rampi-greeter-diagnostic ]]; then extra=(--greeter-diagnostic); fi
+account=()
+if [[ -f /etc/rampi-image-test-preconfigured ]]; then account=(--preconfigured); fi
 if [[ -f /opt/rampi-captures/first-user-proof.json ]]; then
     python3 /opt/rampi-source/scripts/virtual/test-first-user-reboot-guest.py --installed-image 2>&1 | tee /opt/rampi-captures/first-user-reboot.log
     result=$?
 else
-    python3 /opt/rampi-source/scripts/virtual/test-first-user-guest.py --installed-image 2>&1 | tee /opt/rampi-captures/first-user.log
+    python3 /opt/rampi-source/scripts/virtual/test-first-user-guest.py --installed-image "${account[@]}" 2>&1 | tee /opt/rampi-captures/first-user.log
     result=$?
-    if [[ "$result" == 0 ]]; then
+    if [[ "$result" == 0 && ${#account[@]} == 0 ]]; then
         python3 /opt/rampi-source/scripts/virtual/test-login-guest.py --installed-image "${extra[@]}" > /opt/rampi-captures/guest.log 2>&1
         result=$?
     fi
@@ -202,7 +219,7 @@ sudo chown -R "$(id -u):$(id -g)" "$output/captures"
 sudo umount "$work/root"
 sudo losetup -d "$loop"
 loop=''
-python3 - "$output" "$binary_sha" "$revision" "$expected" "$qemu_result" "$guest_result" "$boots" <<'PY'
+python3 - "$output" "$binary_sha" "$revision" "$expected" "$qemu_result" "$guest_result" "$boots" "$account_mode" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -216,11 +233,19 @@ data = dict(architecture="arm64", memory_mib=1024, cpus=4, physical_devices=Fals
             guest_exit_code=int(sys.argv[6]) if sys.argv[6] else None,
             stopped_after_synced_guest_result=bool(sys.argv[6]),
             kernel_boots=int(sys.argv[7]),
+            account_mode=sys.argv[8], pristine_image_account_locked=True,
             temporary_dtb_watchdog_disabled=True,
             test_support_packages=["wtype", "grim", "wlrctl", "python3-pil", "evtest", "ydotool"])
 (directory / "environment.json").write_text(json.dumps(data, indent=2) + "\n")
 PY
 [[ "$guest_result" == 0 ]]
-python3 "$source_root/scripts/check-image-login-evidence.py" "$output" --expected-source "$revision" --expected-image-sha256 "$expected"
+if [[ "$account_mode" == interactive ]]; then
+    # The first copy is no longer needed; avoid retaining two expanded disks.
+    rm -f -- "$work/disk.img"
+    RAMPI_IMAGE_ACCOUNT_MODE=preconfigured bash "$source_root/image/test-graphical-image.sh" "$image" "$output/preconfigured"
+    python3 "$source_root/scripts/check-image-login-evidence.py" "$output" --expected-source "$revision" --expected-image-sha256 "$expected"
+else
+    python3 "$source_root/scripts/check-image-login-evidence.py" "$output" --expected-source "$revision" --expected-image-sha256 "$expected" --preconfigured
+fi
 printf '%s  %s\n' "$expected" "$image" | sha256sum --check --status
 echo 'RAMPI_INSTALLED_IMAGE_GRAPHICAL_OK: original image unchanged; actual installed GUI, PAM and two accounts tested in disposable QEMU copy.'

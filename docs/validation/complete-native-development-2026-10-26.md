@@ -321,3 +321,20 @@ beider Verbindungen, einschließlich R, Enter, Maus und reservierter Tastenkombi
 Dieser Lauf ist ausdrücklich eine lokale Entwicklungs-Komponentenprüfung, kein
 Ersatz der neuen CI oder des abschließenden Dauerlaufs. Produkt-Eingabe und
 Anforderungen des Belegprüfers wurden nicht geändert.
+
+Die Image-Prüfung enthält nun zusätzlich eine zweite frische Wegwerfkopie für
+das vom originalen Raspberry-Pi-`userconfig` unterstützte `userconf.txt`-Verfahren.
+Die bestehende OpenSSL-Software erzeugt den unterstützten crypt-Hash; der
+originale Dienst übernimmt das Konto. Es gibt weder `useradd`/`chpasswd` im
+Prüfablauf noch einen Ersatzassistenten. Bereits vorhandene Bootvorgaben werden
+abgewiesen und erhalten. Eine lokale echte OpenSSL-Rundlaufprüfung besteht.
+
+Beide Wege müssen dasselbe installierte Programm benutzen und jeweils nach
+einem zweiten normalen Kernel-Boot wieder über PAM anmelden und ihren zuvor
+gespeicherten Schlüsselbundwert lesen. Die vorab eingerichtete Kontovariante
+ersetzt nicht die Tastatur-/Assistentenprüfung. Der Prüfer verlangt getrennte
+Modi, Dateiverbrauch durch den originalen Dienst und zusätzliche eigene Belege.
+Das öffentliche Archiv umfasst jetzt exakt 17 erlaubte Dateien. Die erste
+expandierte Kopie wird vor der zweiten entfernt, um den Plattenbedarf zu begrenzen.
+Die Workflow-Gesamtzeit berücksichtigt beide Kopien; einzelne Gastzeitgrenzen
+bleiben unverändert. Die neue Kontovariante ist noch nicht im Image abgenommen.

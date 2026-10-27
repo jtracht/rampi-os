@@ -181,7 +181,7 @@ def install():
     configure_test_session()
 
 
-def configure_test_session():
+def configure_test_session(*, reload=True):
     image_test = "--installed-image" in sys.argv
     backends = "headless" if image_test else "headless,libinput"
     wrapper = Path("/usr/local/bin/rampi-login-test-session")
@@ -226,8 +226,9 @@ def configure_test_session():
     uid = pwd.getpwnam("_greetd").pw_uid
     production = production.replace("'\"", f"' >> /run/user/{uid}/rampi-greeter.log 2>&1\"")
     Path("/etc/greetd/config.toml").write_text(production)
-    run("systemctl", "daemon-reload")
-    run("systemctl", "reset-failed", "greetd")
+    if reload:
+        run("systemctl", "daemon-reload")
+        run("systemctl", "reset-failed", "greetd")
 
 
 def main():

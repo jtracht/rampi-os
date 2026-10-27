@@ -13,6 +13,7 @@ import re
 import runpy
 import secrets
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -132,6 +133,21 @@ def main():
     if "rampi.image_acceptance=1" not in Path("/proc/cmdline").read_text().split():
         raise RuntimeError("The designated image test boot flag is required")
     os.umask(0o077)
+    if "--preconfigured" in sys.argv:
+        credentials = json.loads(CREDENTIALS.read_text())
+        if not Path("/etc/rampi-image-test-session-prepared").is_file():
+            raise RuntimeError("Offline headless test support was not prepared")
+        api = runpy.run_path("/opt/rampi-source/scripts/virtual/test-login-guest.py")
+        Path("/run/rampi-image-test-session-configured").touch()
+        api["wait"](lambda: active("greetd.service"),
+                    "stock boot-file account provisioning and graphical login", seconds=480)
+        firmware = command("/usr/lib/raspberrypi-sys-mods/get_fw_loc")
+        if firmware.returncode or Path(
+            firmware.stdout.decode().strip(), "userconf.txt"
+        ).exists():
+            raise RuntimeError("Stock userconf did not consume the supported boot file")
+        authenticate_first(credentials, api, preconfigured=True)
+        return
     if command("systemctl", "get-default").stdout.strip() != b"multi-user.target":
         raise RuntimeError("Pristine image did not boot into stock first-user setup")
     if not enabled("userconfig.service") or not enabled("rampi-first-user.service"):
@@ -147,7 +163,8 @@ def main():
     api = runpy.run_path("/opt/rampi-source/scripts/virtual/test-login-guest.py")
     # Use the same headless rendering/test-input adaptation as the image's
     # existing graphical test. Do not start greetd or alter stock userconf.
-    api["configure_test_session"]()
+    if not Path("/etc/rampi-image-test-session-prepared").is_file():
+        api["configure_test_session"]()
     Path("/run/rampi-image-test-session-configured").touch()
     stop_kernel_keyboard = kernel_keyboard()
     stop_keyboard_monitor = monitor_precredential_keyboard()
@@ -244,6 +261,10 @@ def main():
     else:
         raise RuntimeError("Stock first-user setup did not reach graphical login")
     stop_kernel_keyboard()
+    authenticate_first(credentials, api, preconfigured=False)
+
+
+def authenticate_first(credentials, api, *, preconfigured):
     account = pwd.getpwuid(1000)
     state = command("passwd", "-S", account.pw_name).stdout.split()
     if (
@@ -314,11 +335,12 @@ def main():
                    "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip()}, stream)
     CREDENTIALS.unlink()
     evidence = {
-        "pristine_locked_account": True,
-        "stock_interactive_userconf": True,
-        "credentials_preconfigured": False,
+        "pristine_locked_account": not preconfigured,
+        "stock_interactive_userconf": not preconfigured,
+        "credentials_preconfigured": preconfigured,
         "graphical_login_after_userconf": True,
-        "wizard_password_authenticated_by_pam": True,
+        "wizard_password_authenticated_by_pam": not preconfigured,
+        "configured_password_authenticated_by_pam": True,
         "pam_keyring_relogin": True,
         "native_surface_visible": True,
         "uid": 1000,
@@ -326,8 +348,9 @@ def main():
         "stock_wizard_disabled": True,
         "completion_service_disabled": True,
         "default_target": "graphical.target",
-        "input": "linux-kernel-uinput-ydotool",
-        "kernel_enter_press_release_observed": True,
+        "input": "official-userconf-boot-file" if preconfigured else "linux-kernel-uinput-ydotool",
+        "boot_configuration_consumed": preconfigured,
+        "kernel_enter_press_release_observed": not preconfigured,
         "usb_keyboard_transport_tested": False,
         "input_tool_package_version": command(
             "dpkg-query", "-W", "-f=${Version}", "ydotool"
@@ -338,7 +361,8 @@ def main():
     }
     (CAPTURES / "first-user-proof.json").write_text(json.dumps(evidence, indent=2) + "\n")
     (CAPTURES / "first-user-proof.json").chmod(0o644)
-    print("RAMPI_PRISTINE_FIRST_USER_PAM_OK", flush=True)
+    print("RAMPI_PRECONFIGURED_FIRST_USER_PAM_OK" if preconfigured else
+          "RAMPI_PRISTINE_FIRST_USER_PAM_OK", flush=True)
 
 
 if __name__ == "__main__":
