@@ -147,3 +147,35 @@ tailscale-addresses = VPN-Adressen: { $address }
 tailscale-health = Hinweis: { $error }
 action-cancel = Abbrechen
 action-confirm = Bewusst bestätigen
+
+# Personal WireGuard profiles and safe import errors
+vpn-description = VPN · Tailscale und WireGuard
+    VPN-Verbindungen ändern systemweite Routen. NetworkManager und die vorhandenen Dienste prüfen deine Rechte.
+wireguard-heading = WireGuard · persönliche Profile
+vpn-refresh = VPN-Profile aktualisieren
+vpn-connecting = Verbindung wird aufgebaut
+vpn-connected = Verbunden
+vpn-disconnecting = Wird getrennt
+vpn-disconnected = Getrennt
+wireguard-empty = Noch keine persönlichen WireGuard-Profile vorhanden.
+wireguard-connect = WireGuard verbinden
+wireguard-disconnect = WireGuard trennen
+wireguard-select = Bitte ein persönliches Profil auswählen.
+wireguard-path = Pfad zur persönlichen WireGuard-Datei (.conf)
+wireguard-import = WireGuard-Profil importieren
+wireguard-imported = Persönliches Profil importiert. Autostart ist aus; zum Verbinden das Profil auswählen.
+wireguard-private = Gemeinsame Profile und Profile anderer Benutzer werden hier nicht angeboten. Ein Import verbindet den Tunnel nicht automatisch.
+tailscale-heading = Tailscale · vorhandene offizielle Software
+wireguard-extension = Eine WireGuard-Datei mit Endung .conf auswählen.
+wireguard-unreadable = Die WireGuard-Datei ist nicht lesbar.
+wireguard-regular-file = WireGuard-Datei muss regulär und höchstens 64 KiB groß sein.
+wireguard-too-large = WireGuard-Datei ist zu groß.
+wireguard-filename = Dateiname fehlt
+wireguard-import-error = WireGuard-Datei konnte nicht sicher importiert werden.
+wireguard-profile-unreadable = NetworkManager konnte das Profil nicht lesen.
+wireguard-profile-invalid = Ungültiges NetworkManager-Profil.
+wireguard-connection-missing = Verbindungsdaten fehlen.
+wireguard-wrong-type = Kein WireGuard-Profil.
+wireguard-list-missing = Profilübersicht fehlt.
+wireguard-import-cancelled = Der Profilimport wurde abgebrochen.
+wireguard-no-longer-available = Persönliches Profil nicht mehr verfügbar.

@@ -147,3 +147,35 @@ tailscale-addresses = VPN addresses: { $address }
 tailscale-health = Notice: { $error }
 action-cancel = Cancel
 action-confirm = Confirm change
+
+# Personal WireGuard profiles and safe import errors
+vpn-description = VPN · Tailscale and WireGuard
+    VPN connections change system-wide routes. NetworkManager and the existing services check your permissions.
+wireguard-heading = WireGuard · personal profiles
+vpn-refresh = Refresh VPN profiles
+vpn-connecting = Connecting
+vpn-connected = Connected
+vpn-disconnecting = Disconnecting
+vpn-disconnected = Disconnected
+wireguard-empty = No personal WireGuard profiles yet.
+wireguard-connect = Connect WireGuard
+wireguard-disconnect = Disconnect WireGuard
+wireguard-select = Select a personal profile.
+wireguard-path = Path to your personal WireGuard file (.conf)
+wireguard-import = Import WireGuard profile
+wireguard-imported = Personal profile imported. Automatic connection is off; select the profile to connect.
+wireguard-private = Shared profiles and other users’ profiles are not listed here. Importing does not connect the tunnel automatically.
+tailscale-heading = Tailscale · existing official software
+wireguard-extension = Select a WireGuard file ending in .conf.
+wireguard-unreadable = The WireGuard file cannot be read.
+wireguard-regular-file = The WireGuard file must be a regular file no larger than 64 KiB.
+wireguard-too-large = The WireGuard file is too large.
+wireguard-filename = Missing filename
+wireguard-import-error = The WireGuard file could not be imported safely.
+wireguard-profile-unreadable = NetworkManager could not read the profile.
+wireguard-profile-invalid = Invalid NetworkManager profile.
+wireguard-connection-missing = Missing connection settings.
+wireguard-wrong-type = This is not a WireGuard profile.
+wireguard-list-missing = Missing profile list.
+wireguard-import-cancelled = Profile import was cancelled.
+wireguard-no-longer-available = The personal profile is no longer available.

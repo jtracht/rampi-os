@@ -30,6 +30,15 @@ pub fn run(
             ensure!(keyboard.is::<gtk::ListBox>(), "Keyboard choices opened a popup");
             ensure!(find_button(&system, "Apply keyboard layout").is_some());
             let vpn = pages.child_by_name("vpn").context("No VPN page")?;
+            ensure!(find_button(&vpn, "Refresh VPN profiles").is_some());
+            ensure!(find_button(&vpn, "Connect WireGuard").is_some());
+            ensure!(find_button(&vpn, "Disconnect WireGuard").is_some());
+            ensure!(find_button(&vpn, "Import WireGuard profile").is_some());
+            let path = named(&vpn, "vpn-import-path").context("No inline WireGuard path")?
+                .downcast::<gtk::Entry>().ok().context("WireGuard path type")?;
+            ensure!(path.placeholder_text().as_deref() == Some("Path to your personal WireGuard file (.conf)"));
+            let rejected = crate::wireguard::prepare(std::path::Path::new("invalid.txt"));
+            ensure!(rejected.is_err_and(|error| error.to_string() == "Select a WireGuard file ending in .conf."));
             ensure!(find_button(&vpn, "Refresh Tailscale status").is_some());
             ensure!(find_button(&vpn, "Connect Tailscale").is_some());
             ensure!(find_button(&vpn, "Open Tailscale sign-in").is_some());

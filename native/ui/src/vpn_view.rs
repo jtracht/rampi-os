@@ -1,5 +1,6 @@
 use crate::{widgets::*, wireguard};
 use gtk::{glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -7,12 +8,12 @@ use std::{
 
 pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
     let page = column();
-    page.append(&label("VPN · Tailscale und WireGuard\nVPN-Verbindungen ändern systemweite Routen. NetworkManager und die vorhandenen Dienste prüfen deine Rechte."));
-    page.append(&label("WireGuard · persönliche Profile"));
+    page.append(&label(&tr("vpn-description", &[])));
+    page.append(&label(&tr("wireguard-heading", &[])));
     let status = label("");
     status.set_widget_name("vpn-status");
     page.append(&status);
-    let refresh = button("VPN-Profile aktualisieren", feedback);
+    let refresh = button(&tr("vpn-refresh", &[]), feedback);
     page.append(&refresh);
     let list = gtk::ListBox::new();
     list.set_widget_name("vpn-profiles");
@@ -39,10 +40,10 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
                         }
                         for profile in &rows {
                             let state = match profile.state {
-                                1 => "Verbindung wird aufgebaut",
-                                2 => "Verbunden",
-                                3 => "Wird getrennt",
-                                _ => "Getrennt",
+                                1 => tr("vpn-connecting", &[]),
+                                2 => tr("vpn-connected", &[]),
+                                3 => tr("vpn-disconnecting", &[]),
+                                _ => tr("vpn-disconnected", &[]),
                             };
                             l.append(&label(&format!("{} · {state}", profile.name)));
                         }
@@ -53,7 +54,7 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
                         *p.borrow_mut() = rows;
                     }
                     if p.borrow().is_empty() {
-                        s.set_text("Noch keine persönlichen WireGuard-Profile vorhanden.");
+                        s.set_text(&tr("wireguard-empty", &[]));
                     }
                 }
                 Err(error) => s.set_text(&error.to_string()),
@@ -62,7 +63,10 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
         });
     });
     let actions = row();
-    for (title, connect) in [("WireGuard verbinden", true), ("WireGuard trennen", false)] {
+    for (title, connect) in [
+        (&tr("wireguard-connect", &[]), true),
+        (&tr("wireguard-disconnect", &[]), false),
+    ] {
         let action = button(title, feedback);
         let (p, l, s, busy, refresh) = (
             profiles.clone(),
@@ -79,7 +83,7 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
                 .selected_row()
                 .and_then(|r| p.borrow().get(r.index() as usize).cloned());
             let Some(selected) = selected else {
-                s.set_text("Bitte ein persönliches Profil auswählen.");
+                s.set_text(&tr("wireguard-select", &[]));
                 return;
             };
             busy.set(true);
@@ -96,33 +100,40 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
     }
     page.append(&actions);
     let filename = gtk::Entry::builder()
-        .placeholder_text("Pfad zur persönlichen WireGuard-Datei (.conf)")
+        .placeholder_text(tr("wireguard-path", &[]))
         .hexpand(true)
         .build();
     filename.set_widget_name("vpn-import-path");
     page.append(&filename);
-    let import = button("WireGuard-Profil importieren", feedback);
+    let import = button(&tr("wireguard-import", &[]), feedback);
     let (s, busy, refresh_import) = (status.clone(), busy.clone(), refresh.clone());
     import.connect_clicked(move |_| {
-        if busy.get() { return; }
+        if busy.get() {
+            return;
+        }
         let path = match rampi_core::config::expand_home(&filename.text()) {
             Ok(path) => path,
-            Err(error) => { s.set_text(&error.to_string()); return; },
+            Err(error) => {
+                s.set_text(&error.to_string());
+                return;
+            }
         };
         busy.set(true);
         let (s, busy, refresh) = (s.clone(), busy.clone(), refresh_import.clone());
         glib::MainContext::default().spawn_local(async move {
             match wireguard::import(path).await {
-                Ok(()) => s.set_text("Persönliches Profil importiert. Autostart ist aus; zum Verbinden das Profil auswählen."),
+                Ok(()) => s.set_text(&tr("wireguard-imported", &[])),
                 Err(error) => s.set_text(&error.to_string()),
             }
             busy.set(false);
-            if refresh.is_sensitive() { refresh.emit_clicked(); }
+            if refresh.is_sensitive() {
+                refresh.emit_clicked();
+            }
         });
     });
     page.append(&import);
-    page.append(&label("Gemeinsame Profile und Profile anderer Benutzer werden hier nicht angeboten. Ein Import verbindet den Tunnel nicht automatisch."));
-    page.append(&label("Tailscale · vorhandene offizielle Software"));
+    page.append(&label(&tr("wireguard-private", &[])));
+    page.append(&label(&tr("tailscale-heading", &[])));
     page.append(&crate::tailscale::view(feedback));
     page.append(&crate::tailscale::actions(stack, &status, feedback));
     let refresh_on_map = refresh.downgrade();

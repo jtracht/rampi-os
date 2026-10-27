@@ -157,6 +157,18 @@ zugangsdatenfreie Eingabeprotokoll ergänzt das Belegarchiv als neunte Datei.
 Die Erstkonto-Anmeldung und dessen persönlicher Schlüsselbund nach erneuter
 PAM-Anmeldung bleiben verpflichtend und sind weiterhin offen.
 
+Auch die vollständige WireGuard-Seite und ihre sicheren Importfehler verwenden
+jetzt beide Fluent-Kataloge. Ein echter GTK-Lauf als normaler Linux-Benutzer
+prüft die englischen Aktionen, das Eingabefeld und eine tatsächlich abgewiesene
+falsche Dateiendung. Derselbe Lauf prüft die persönliche Sprachspeicherung,
+den Rückweg von der Berechtigungsseite und die bisherige deutsche WireGuard-
+Bedienung mit echter libnm-Importfunktion und isoliertem NetworkManager-D-Bus-
+Vertrag. Das ist keine neue Tunnelabnahme. Nachweis:
+`artifacts/complete-wireguard-language-user-ui.log`.
+Zwei vorherige lokale Aufrufe als root scheiterten zu Recht an der verweigerten
+Operatorzuweisung für reservierte Systemkonten; sie zählen nicht als Erfolg.
+Clippy/Build und 311 Python-Tests bestehen, elf Tests bleiben übersprungen.
+
 ## Noch vor der Komplettversion
 
 1. Den unveränderten Erststart im frisch gebauten Image und den folgenden

@@ -7,6 +7,7 @@ use glib::{
     variant::{ObjectPath, ToVariant},
 };
 use gtk::{gio, glib};
+use rampi_core::i18n::text as tr;
 use std::{
     ffi::{CString, c_char, c_void},
     fs::{File, OpenOptions},
@@ -34,21 +35,25 @@ unsafe extern "C" {
 pub fn prepare(filename: &Path) -> Result<Settings> {
     ensure!(
         filename.extension().is_some_and(|s| s == "conf"),
-        "Eine WireGuard-Datei mit Endung .conf auswählen."
+        "{}",
+        tr("wireguard-extension", &[])
     );
-    let file = File::open(filename).context("Die WireGuard-Datei ist nicht lesbar.")?;
+    let file = File::open(filename).context(tr("wireguard-unreadable", &[]))?;
     let metadata = file.metadata()?;
     ensure!(
         metadata.is_file() && metadata.len() <= 65_536,
-        "WireGuard-Datei muss regulär und höchstens 64 KiB groß sein."
+        "{}",
+        tr("wireguard-regular-file", &[])
     );
     let mut data = Vec::new();
     file.take(65_537).read_to_end(&mut data)?;
-    ensure!(data.len() <= 65_536, "WireGuard-Datei ist zu groß.");
+    ensure!(data.len() <= 65_536, "{}", tr("wireguard-too-large", &[]));
     let directory = tempfile::tempdir()?;
-    let snapshot = directory
-        .path()
-        .join(filename.file_name().context("Dateiname fehlt")?);
+    let snapshot = directory.path().join(
+        filename
+            .file_name()
+            .context(tr("wireguard-filename", &[]))?,
+    );
     let mut copy = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -65,26 +70,27 @@ pub fn prepare(filename: &Path) -> Result<Settings> {
         // Importer diagnostics can contain key material; free without displaying.
         unsafe { glib::ffi::g_error_free(error) };
     }
-    ensure!(
-        !raw.is_null(),
-        "WireGuard-Datei konnte nicht sicher importiert werden."
-    );
+    ensure!(!raw.is_null(), "{}", tr("wireguard-import-error", &[]));
     let connection: glib::Object = unsafe { from_glib_full(raw) };
     // NM_CONNECTION_SERIALIZE_ALL = 0. The returned GVariant has transfer-full
     // ownership; glib::Variant frees it once the parsed settings are extracted.
     let raw = unsafe { nm_connection_to_dbus(connection.as_ptr().cast(), 0) };
     ensure!(
         !raw.is_null(),
-        "NetworkManager konnte das Profil nicht lesen."
+        "{}",
+        tr("wireguard-profile-unreadable", &[])
     );
     let variant: glib::Variant = unsafe { from_glib_full(raw) };
-    let mut settings: Settings = variant.get().context("Ungültiges NetworkManager-Profil.")?;
+    let mut settings: Settings = variant
+        .get()
+        .context(tr("wireguard-profile-invalid", &[]))?;
     let general = settings
         .get_mut("connection")
-        .context("Verbindungsdaten fehlen.")?;
+        .context(tr("wireguard-connection-missing", &[]))?;
     ensure!(
         bus::text(general, "type") == "wireguard",
-        "Kein WireGuard-Profil."
+        "{}",
+        tr("wireguard-wrong-type", &[])
     );
     general.insert(
         "permissions".into(),
@@ -131,7 +137,7 @@ pub async fn profiles() -> Result<Vec<Profile>> {
     .await?
     .child_value(0)
     .get()
-    .context("Profilübersicht fehlt.")?;
+    .context(tr("wireguard-list-missing", &[]))?;
     let own = vec![format!("user:{}:", glib::user_name().to_string_lossy())];
     let mut rows = vec![];
     for path in paths {
@@ -181,7 +187,7 @@ pub async fn profiles() -> Result<Vec<Profile>> {
 pub async fn import(filename: std::path::PathBuf) -> Result<()> {
     let settings = gio::spawn_blocking(move || prepare(&filename))
         .await
-        .map_err(|_| anyhow::anyhow!("Der Profilimport wurde abgebrochen."))??;
+        .map_err(|_| anyhow::anyhow!(tr("wireguard-import-cancelled", &[])))??;
     let connection = bus::system().await?;
     bus::call(
         &connection,
@@ -202,7 +208,7 @@ pub async fn change(uuid: &str, connect: bool) -> Result<()> {
         .await?
         .into_iter()
         .find(|p| p.uuid == uuid)
-        .context("Persönliches Profil nicht mehr verfügbar.")?;
+        .context(tr("wireguard-no-longer-available", &[]))?;
     let connection = bus::system().await?;
     if connect {
         if !profile.active.is_empty() {
