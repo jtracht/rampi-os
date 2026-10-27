@@ -2,6 +2,7 @@
 use anyhow::{Context, Result, ensure};
 use gtk::gio;
 use rampi_core::config::{self, Host};
+use rampi_core::i18n::text as tr;
 use std::{
     ffi::OsString,
     fs::{self, OpenOptions},
@@ -20,7 +21,8 @@ pub fn directory() -> Result<PathBuf> {
         metadata.is_dir()
             && !metadata.file_type().is_symlink()
             && metadata.uid() == gio::Credentials::new().unix_user()?,
-        "SSH-Verzeichnis muss deinem Linux-Konto gehören und ein echtes Verzeichnis sein"
+        "{}",
+        tr("ssh-directory-private", &[])
     );
     fs::set_permissions(&directory, fs::Permissions::from_mode(0o700))?;
     Ok(directory)
@@ -36,7 +38,8 @@ fn known_hosts() -> Result<PathBuf> {
                 && !metadata.file_type().is_symlink()
                 && metadata.uid() == gio::Credentials::new().unix_user()?
                 && metadata.len() < 8_388_608,
-            "Ungültige oder zu große persönliche Hostschlüsseldatei"
+            "{}",
+            tr("ssh-known-invalid", &[])
         );
     }
     Ok(path)
@@ -76,7 +79,8 @@ pub async fn scan(host: Host) -> Result<Scanned> {
     let file = known_hosts()?;
     ensure!(
         !existing(&host, &file).await?,
-        "Für diesen Host ist bereits ein Schlüssel bekannt. Er wird nicht automatisch ersetzt; bestehende OpenSSH-Konfiguration prüfen."
+        "{}",
+        tr("ssh-known-exists", &[])
     );
     let (success, lines) = crate::process::output(
         "ssh-keyscan",
@@ -96,7 +100,8 @@ pub async fn scan(host: Host) -> Result<Scanned> {
     .await?;
     ensure!(
         success && !lines.is_empty(),
-        "Kein Ed25519-Hostschlüssel erreichbar"
+        "{}",
+        tr("ssh-no-ed25519", &[])
     );
     let mut snapshot = tempfile::NamedTempFile::new()?;
     snapshot.write_all(&lines)?;
@@ -113,10 +118,7 @@ pub async fn scan(host: Host) -> Result<Scanned> {
         65_536,
     )
     .await?;
-    ensure!(
-        success,
-        "OpenSSH konnte den empfangenen Hostschlüssel nicht prüfen"
-    );
+    ensure!(success, "{}", tr("ssh-fingerprint-error", &[]));
     let output = String::from_utf8(fingerprints)?;
     let mut values = output
         .lines()
@@ -126,7 +128,8 @@ pub async fn scan(host: Host) -> Result<Scanned> {
     values.dedup();
     ensure!(
         values.len() == 1 && values[0].starts_with("SHA256:"),
-        "Mehrere unterschiedliche oder ungültige Hostschlüssel empfangen; eindeutige Hostadresse verwenden"
+        "{}",
+        tr("ssh-ambiguous", &[])
     );
     Ok(Scanned {
         host,
@@ -137,7 +140,8 @@ pub async fn scan(host: Host) -> Result<Scanned> {
 pub async fn accept(scanned: &Scanned, independently_verified: &str) -> Result<()> {
     ensure!(
         independently_verified.trim() == scanned.fingerprint,
-        "Fingerabdruck stimmt nicht überein. Nichts gespeichert."
+        "{}",
+        tr("ssh-mismatch", &[])
     );
     let file = known_hosts()?;
     let mut target = OpenOptions::new()
@@ -146,12 +150,11 @@ pub async fn accept(scanned: &Scanned, independently_verified: &str) -> Result<(
         .read(true)
         .mode(0o600)
         .open(&file)?;
-    target
-        .try_lock()
-        .context("Die Hostschlüsseldatei wird gerade verwendet")?;
+    target.try_lock().context(tr("ssh-known-busy", &[]))?;
     ensure!(
         !existing(&scanned.host, &file).await?,
-        "Hostschlüssel wurde zwischenzeitlich hinterlegt. Nichts ersetzt."
+        "{}",
+        tr("ssh-known-changed", &[])
     );
     target.set_permissions(fs::Permissions::from_mode(0o600))?;
     // A leading newline preserves a pre-existing final line without a newline.
@@ -164,7 +167,8 @@ pub fn generate_arguments() -> Result<Vec<OsString>> {
     let key = key_path()?;
     ensure!(
         !key.exists() && !key.with_extension("pub").exists(),
-        "Ein Rampi-Schlüssel ist bereits vorhanden. Er wird nicht überschrieben."
+        "{}",
+        tr("ssh-key-exists", &[])
     );
     Ok(vec![
         "ssh-keygen".into(),
@@ -180,13 +184,11 @@ pub fn generate_arguments() -> Result<Vec<OsString>> {
 }
 
 pub fn unlock_arguments(identity: &str) -> Result<Vec<OsString>> {
-    ensure!(
-        !identity.is_empty(),
-        "Zuerst einen persönlichen SSH-Schlüssel im Hostprofil auswählen und speichern"
-    );
+    ensure!(!identity.is_empty(), "{}", tr("ssh-select-identity", &[]));
     ensure!(
         std::env::var_os("SSH_AUTH_SOCK").is_some(),
-        "Kein OpenSSH-Agent verfügbar. Rampi-Sitzung neu anmelden."
+        "{}",
+        tr("ssh-agent-missing", &[])
     );
     let path = config::expand_home(identity)?;
     let metadata = fs::symlink_metadata(&path)?;
@@ -195,7 +197,8 @@ pub fn unlock_arguments(identity: &str) -> Result<Vec<OsString>> {
             && !metadata.file_type().is_symlink()
             && metadata.uid() == gio::Credentials::new().unix_user()?
             && metadata.mode() & 0o077 == 0,
-        "Der private Schlüssel muss dir gehören und darf nur für dein Konto lesbar sein"
+        "{}",
+        tr("ssh-key-private", &[])
     );
     // Keep the official passphrase prompt inside VTE, even if a parent desktop
     // supplied an external askpass application.

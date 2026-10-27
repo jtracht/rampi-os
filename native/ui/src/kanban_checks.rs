@@ -280,11 +280,13 @@ pub fn ui(
             stack.set_visible_child_name("settings");
             tabs.set_visible_child_name("board");
             let page = tabs.child_by_name("board").unwrap();
-            named(&page, "board-kind")
-                .unwrap()
-                .downcast::<gtk::DropDown>()
-                .unwrap()
-                .set_selected(1);
+            {
+                let choices = named(&page, "board-kind")
+                    .unwrap()
+                    .downcast::<gtk::ListBox>()
+                    .unwrap();
+                choices.select_row(choices.row_at_index(1).as_ref());
+            }
             for (id, value) in [
                 ("board-source", "organization/fixture/1"),
                 ("board-token-profile", "native-ui"),
@@ -330,13 +332,13 @@ pub fn ui(
                 .downcast::<gtk::Label>()
                 .unwrap();
             for _ in 0..400 {
-                if summary.text().starts_with("2 von 2") {
+                if crate::checks::readable_text(&summary.text()).starts_with("2 von 2") {
                     break;
                 }
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             ensure!(
-                summary.text().starts_with("2 von 2"),
+                crate::checks::readable_text(&summary.text()).starts_with("2 von 2"),
                 "Actual GTK cloud board did not load: {}",
                 summary.text()
             );
@@ -347,11 +349,13 @@ pub fn ui(
             // The requested Gitea path uses the same real page and keyring.
             stack.set_visible_child_name("settings");
             tabs.set_visible_child_name("board");
-            named(&page, "board-kind")
-                .unwrap()
-                .downcast::<gtk::DropDown>()
-                .unwrap()
-                .set_selected(6);
+            {
+                let choices = named(&page, "board-kind")
+                    .unwrap()
+                    .downcast::<gtk::ListBox>()
+                    .unwrap();
+                choices.select_row(choices.row_at_index(6).as_ref());
+            }
             let hint = named(&page, "board-source-hint")
                 .unwrap()
                 .downcast::<gtk::Label>()
@@ -397,7 +401,8 @@ pub fn ui(
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             ensure!(
-                summary.text().starts_with("2 von 2") && summary.text().contains("Gitea fixture"),
+                crate::checks::readable_text(&summary.text()).starts_with("2 von 2")
+                    && summary.text().contains("Gitea fixture"),
                 "Actual Gitea board page did not load"
             );
             ensure!(app.windows().len() == 1, "Gitea opened another window");

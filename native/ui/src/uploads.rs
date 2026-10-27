@@ -1,6 +1,7 @@
 //! Upload consent page backed by GTK's asynchronous directory/selection models.
 use crate::widgets::*;
 use gtk::{gio, prelude::*};
+use rampi_core::i18n::text as tr;
 use std::{cell::RefCell, rc::Rc};
 use webkit6::prelude::*;
 
@@ -14,20 +15,20 @@ fn folder(directory: &gtk::DirectoryList, path: &gtk::Entry, file: &gio::File) {
 pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
     let pending: Rc<RefCell<Option<webkit6::FileChooserRequest>>> = Rc::new(RefCell::new(None));
     let page = column();
-    let title = label("Dateien für die Webseite auswählen");
+    let title = label(&tr("upload-heading", &[]));
     title.add_css_class("heading");
     page.append(&title);
     let site = label("");
     page.append(&site);
     let location = row();
-    let up = button("↑ Übergeordneter Ordner", f);
-    let home = button("Persönlicher Ordner", f);
+    let up = button(&tr("upload-up", &[]), f);
+    let home = button(&tr("upload-home", &[]), f);
     location.append(&up);
     location.append(&home);
     page.append(&location);
-    page.append(&label("Ordner · Pfad eingeben und mit Enter öffnen"));
+    page.append(&label(&tr("upload-location", &[])));
     let path = gtk::Entry::builder()
-        .placeholder_text("Vollständiger Ordnerpfad · Enter zum Öffnen")
+        .placeholder_text(tr("upload-path", &[]))
         .hexpand(true)
         .build();
     path.set_widget_name("browser-upload-folder");
@@ -41,7 +42,7 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
         None::<&gio::File>,
     );
     let mime: Rc<RefCell<Option<gtk::FileFilter>>> = Rc::new(RefCell::new(None));
-    let all = gtk::CheckButton::with_label("Alle Dateitypen anzeigen");
+    let all = gtk::CheckButton::with_label(&tr("upload-all-types", &[]));
     page.append(&all);
     let (types, show_all) = (mime.clone(), all.clone());
     let filter = gtk::CustomFilter::new(move |object| {
@@ -131,21 +132,21 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
         if std::path::Path::new(text.as_str()).is_absolute() {
             folder(&dir, entry, &gio::File::for_path(text.as_str()));
         } else {
-            stat.set_text("Bitte einen vollständigen lokalen Ordnerpfad eingeben.");
+            stat.set_text(&tr("upload-absolute", &[]));
         }
     });
     let stat = state.clone();
     directory.connect_error_notify(move |dir| {
         if dir.error().is_some() {
-            stat.set_text("Dieser Ordner ist nicht erreichbar oder nicht lesbar.");
+            stat.set_text(&tr("upload-unreadable", &[]));
         }
     });
     let changed = filter.clone();
     all.connect_toggled(move |_| changed.changed(gtk::FilterChange::Different));
     let actions = row();
-    let cancel = button("Abbrechen", f);
+    let cancel = button(&tr("action-cancel", &[]), f);
     cancel.set_widget_name("rampi-back");
-    let accept = button("Auswählen", f);
+    let accept = button(&tr("upload-select", &[]), f);
     actions.append(&cancel);
     actions.append(&accept);
     page.append(&actions);
@@ -166,7 +167,7 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
     );
     accept.connect_clicked(move |_| {
         if dir.is_loading() || dir.error().is_some() {
-            stat.set_text("Bitte warten, bis ein lesbarer Ordner vollständig geladen ist.");
+            stat.set_text(&tr("upload-wait", &[]));
             return;
         }
         let multiple = match active.borrow().as_ref() {
@@ -181,7 +182,7 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
             .take(129)
             .collect();
         if positions.is_empty() || positions.len() > 128 || (!multiple && positions.len() != 1) {
-            stat.set_text("Bitte Dateien auswählen (höchstens 128).");
+            stat.set_text(&tr("upload-count", &[]));
             return;
         }
         let Some(current) = dir.file() else {
@@ -205,9 +206,7 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
                     || file.to_str().is_none()
             })
         {
-            stat.set_text(
-                "Bitte vorhandene, lesbare lokale Dateien auswählen. Ordner mit Enter öffnen.",
-            );
+            stat.set_text(&tr("upload-files", &[]));
             return;
         }
         let paths: Vec<_> = selected.iter().map(|file| file.to_str().unwrap()).collect();
@@ -263,13 +262,11 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
             &path,
             &gio::File::for_path(gtk::glib::home_dir()),
         );
-        site.set_text(&format!(
-            "{} · Erst mit Auswählen erhält die Webseite Zugriff auf die gewählten Dateien.",
-            web.uri().as_deref().unwrap_or("Aktuelle Webseite")
+        site.set_text(&tr(
+            "upload-origin",
+            &[("site", web.uri().as_deref().unwrap_or("—"))],
         ));
-        state.set_text(
-            "Ordner mit Enter öffnen. Dateien markieren und anschließend Auswählen bestätigen.",
-        );
+        state.set_text(&tr("upload-instructions", &[]));
         *pending.borrow_mut() = Some(request.clone());
         route.set_visible_child_name("browser-upload");
         cancel.grab_focus();

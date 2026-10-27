@@ -2,6 +2,7 @@
 use crate::widgets::*;
 use anyhow::{Result, ensure};
 use gtk::{gdk, gio, glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use rampi_stream::{
     client::{PairRequest, PairedHost, SavedIdentity, StreamOptions},
     runtime::{MoonlightRuntime, Phase, RemoteControl},
@@ -28,7 +29,7 @@ fn target(conf: &Shared) -> Result<(String, String, String)> {
     rampi_core::config::validate_https(&source)?;
     let key = serde_json::to_string(&(&source, &host.username.to_ascii_lowercase()))?;
     let profile = glib::compute_checksum_for_string(glib::ChecksumType::Sha256, &key)
-        .ok_or_else(|| anyhow::anyhow!("Persönliche Streaming-Kennung fehlt"))?
+        .ok_or_else(|| anyhow::anyhow!(tr("stream-profile-missing", &[])))?
         .to_string();
     Ok((host.address.clone(), source, profile))
 }
@@ -51,32 +52,37 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
     let route = stack.clone();
     back.connect_clicked(move |_| route.set_visible_child_name("remote"));
     toolbar.append(&back);
-    let disconnect = button("Stream trennen", f);
+    let disconnect = button(&tr("stream-disconnect", &[]), f);
     disconnect.set_widget_name("stream-disconnect");
     toolbar.append(&disconnect);
     page.append(&toolbar);
     let settings_panel = column();
     page.append(&settings_panel);
-    settings_panel.append(&label("Desktop-Streaming · Sunshine\nKopplungen liegen ausschließlich in deinem persönlichen Schlüsselbund. Ctrl+Alt+Home führt zurück zum Dashboard."));
+    settings_panel.append(&label(&tr("stream-description", &[])));
     let host_label = label("");
     host_label.set_widget_name("stream-host");
     settings_panel.append(&host_label);
     let current = conf.clone();
     page.connect_map(move |_| {
         if let Ok(host) = current.borrow().host() {
-            host_label.set_text(&format!(
-                "{} · {} · Windows-Profil {} · {}",
-                host.name, host.address, host.username, host.resolution
+            host_label.set_text(&tr(
+                "stream-host-description",
+                &[
+                    ("name", &host.name),
+                    ("address", &host.address),
+                    ("user", &host.username),
+                    ("resolution", &host.resolution),
+                ],
             ));
         }
     });
-    let state = label("Aktiven Host koppeln oder vorhandene Kopplung laden.");
+    let state = label(&tr("stream-initial", &[]));
     state.set_widget_name("stream-status");
     page.append(&state);
     let controls = row();
-    let pair = button("Host neu koppeln", f);
+    let pair = button(&tr("stream-pair", &[]), f);
     pair.set_widget_name("stream-pair");
-    let load = button("Kopplung laden / Anwendungen aktualisieren", f);
+    let load = button(&tr("stream-load", &[]), f);
     load.set_widget_name("stream-load");
     controls.append(&pair);
     controls.append(&load);
@@ -103,7 +109,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
         .hexpand(true)
         .build();
     settings_panel.append(&app_scroll);
-    let start = button("Ausgewählte Anwendung streamen", f);
+    let start = button(&tr("stream-start", &[]), f);
     start.set_widget_name("stream-connect");
     start.set_sensitive(false);
     settings_panel.append(&start);
@@ -151,11 +157,14 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
             };
             *key.borrow_mut() = profile.clone();
             controls.set_sensitive(false);
-            state.set_text(if pairing {
-                "Kopplung wird vorbereitet …"
-            } else {
-                "Persönliche Kopplung wird geladen …"
-            });
+            state.set_text(&tr(
+                if pairing {
+                    "stream-pair-preparing"
+                } else {
+                    "stream-pair-loading"
+                },
+                &[],
+            ));
             let selected = selection.clone();
             let (state, serial, controls, start, apps, ids, conf) = (
                 state.clone(),
@@ -172,17 +181,16 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                         let request =
                             gio::spawn_blocking(move || PairRequest::new(&address, PORT, "Rampi"))
                                 .await
-                                .map_err(|_| {
-                                    anyhow::anyhow!("Kopplung konnte nicht vorbereitet werden")
-                                })??;
-                        ensure!(serial.get() == ticket, "Kopplung verworfen");
-                        state.set_text(&format!(
-                            "Diesen PIN in Sunshine bestätigen: {}",
-                            request.pin()
-                        ));
+                                .map_err(|_| anyhow::anyhow!(tr("stream-pair-error", &[])))??;
+                        ensure!(
+                            serial.get() == ticket,
+                            "{}",
+                            tr("stream-pair-discarded", &[])
+                        );
+                        state.set_text(&tr("stream-pin", &[("pin", &request.pin())]));
                         let (_, saved) = gio::spawn_blocking(move || request.finish())
                             .await
-                            .map_err(|_| anyhow::anyhow!("Kopplung unterbrochen"))??;
+                            .map_err(|_| anyhow::anyhow!(tr("stream-pair-interrupted", &[])))??;
                         ensure!(
                             serial.get() == ticket && target(&conf)?.2 == profile,
                             "Hostauswahl wurde geändert"
@@ -197,7 +205,8 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                         let saved = SavedIdentity::from_secret(&encoded)?;
                         ensure!(
                             saved.matches_target(&address, PORT)?,
-                            "Kopplung gehört zu einem anderen Host"
+                            "{}",
+                            tr("stream-wrong-host", &[])
                         );
                         saved
                     };
@@ -226,9 +235,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                         }
                         selected.select_row(selected.row_at_index(0).as_ref());
                         start.set_sensitive(!ids.borrow().is_empty());
-                        state.set_text(
-                            "Kopplung bestätigt. Anwendung auswählen und Stream starten.",
-                        );
+                        state.set_text(&tr("stream-pair-ready", &[]));
                     }
                     Err(error) => state.set_text(&error.to_string()),
                 }
@@ -266,7 +273,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                         .map(|r| r.index() as usize)
                         .unwrap_or(usize::MAX),
                 )
-                .ok_or_else(|| anyhow::anyhow!("Anwendung auswählen"))?;
+                .ok_or_else(|| anyhow::anyhow!(tr("stream-select-app", &[])))?;
             let options = StreamOptions::for_resolution(&conf.borrow().host()?.resolution)?;
             Ok((target, id, options))
         });
@@ -282,7 +289,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
         serial.set(serial.get().wrapping_add(1));
         let ticket = serial.get();
         screen.set_paintable(None::<&gdk::Paintable>);
-        state.set_text("Stream wird verbunden …");
+        state.set_text(&tr("stream-connecting", &[]));
         let (state, active, serial, form, controls, screen, conf) = (
             state.clone(),
             active_start.clone(),
@@ -299,13 +306,14 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                 let saved = SavedIdentity::from_secret(&encoded)?;
                 ensure!(
                     saved.matches_target(&address, PORT)?,
-                    "Kopplung gehört zu einem anderen Host"
+                    "{}",
+                    tr("stream-wrong-host", &[])
                 );
                 gio::spawn_blocking(move || {
                     PairedHost::restore(&saved)?.prepare(&MoonlightRuntime::load()?, app, options)
                 })
                 .await
-                .map_err(|_| anyhow::anyhow!("Streamvorbereitung fehlgeschlagen"))?
+                .map_err(|_| anyhow::anyhow!(tr("stream-prepare-error", &[])))?
             }
             .await;
             if serial.get() != ticket {
@@ -323,7 +331,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                     });
                 }
                 Ok(_) => {
-                    state.set_text("Hostauswahl wurde geändert. Stream nicht gestartet.");
+                    state.set_text(&tr("stream-host-changed", &[]));
                     form.set_sensitive(true);
                     controls.set_sensitive(true);
                 }
@@ -350,7 +358,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
         stop(&a);
         stop_screen.set_paintable(None::<&gdk::Paintable>);
         stop_panel.set_visible(true);
-        state_stop.set_text("Stream wird getrennt …");
+        state_stop.set_text(&tr("stream-disconnecting", &[]));
         let finished = a.borrow().is_none();
         form.set_sensitive(finished);
         controls_stop.set_sensitive(finished);
@@ -394,15 +402,19 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                             frame.stride,
                         );
                         picture.set_paintable(Some(&texture));
-                        state.set_text(&format!(
-                            "Stream verbunden · {}×{} · Ziel 30 Bilder/s · Decoder: {}",
-                            frame.width, frame.height, frame.decoder
+                        state.set_text(&tr(
+                            "stream-connected",
+                            &[
+                                ("width", &frame.width.to_string()),
+                                ("height", &frame.height.to_string()),
+                                ("decoder", &frame.decoder),
+                            ],
                         ));
                     }
                     Ok(None) => (),
                     Err(_) => {
                         control.stop();
-                        state.set_text("Bildverarbeitung fehlgeschlagen. Stream erneut verbinden.");
+                        state.set_text(&tr("stream-decode-error", &[]));
                     }
                 },
                 Phase::Connecting { .. } => (),
@@ -410,7 +422,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
                     active.borrow_mut().take();
                     settings_panel.set_visible(true);
                     picture.set_paintable(None::<&gdk::Paintable>);
-                    state.set_text("Stream beendet oder unterbrochen. Erneut laden und verbinden.");
+                    state.set_text(&tr("stream-ended", &[]));
                     start.set_sensitive(true);
                     polling_controls.set_sensitive(true);
                 }

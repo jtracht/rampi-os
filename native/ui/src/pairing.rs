@@ -2,6 +2,7 @@
 use crate::{bus, widgets::*};
 use glib::variant::ToVariant;
 use gtk::{gio, glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -106,7 +107,7 @@ async fn register_owner(
         glib::timeout_future(std::time::Duration::from_millis(100 * (1 << attempt))).await;
     }
     if *owner.borrow() == target {
-        status.set_text("Bluetooth-Agent nicht verfügbar. Bluetooth-Dienst prüfen.");
+        status.set_text(&tr("pairing-agent-error", &[]));
     }
 }
 pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> anyhow::Result<Agent> {
@@ -191,48 +192,50 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
                 previous,
             });
             let page = column();
-            let title = label("Bluetooth-Kopplung");
+            let title = label(&tr("pairing-heading", &[]));
             title.add_css_class("heading");
             page.append(&title);
             page.append(&label(&device));
-            page.append(&label(if display {
-                "Diesen Code auf dem anderen Gerät eingeben und dort bestätigen:"
-            } else if kind == "RequestConfirmation" {
-                "Stimmen die Codes auf beiden Geräten überein?"
-            } else {
-                "Kopplungsanfrage bewusst prüfen:"
-            }));
+            page.append(&label(&tr(
+                if display {
+                    "pairing-type-code"
+                } else if kind == "RequestConfirmation" {
+                    "pairing-compare"
+                } else {
+                    "pairing-review"
+                },
+                &[],
+            )));
             let digits = label(&code);
             digits.set_widget_name("pairing-code");
             digits.add_css_class("brand");
             page.append(&digits);
             if method == "DisplayPasskey" {
                 let entered = parameters.child_value(2).get::<u16>().unwrap_or(0).min(6);
-                let progress = label(&format!("{entered} / 6 Zeichen eingegeben"));
+                let progress = label(&tr("pairing-entered", &[("count", &entered.to_string())]));
                 progress.set_widget_name("pairing-entered");
                 page.append(&progress);
             }
             if method == "AuthorizeService" {
-                page.append(&label(&format!(
-                    "Angefragter Dienst: {}",
-                    parameters.child_value(1).str().unwrap_or("unbekannt")
+                page.append(&label(&tr(
+                    "pairing-service",
+                    &[("service", parameters.child_value(1).str().unwrap_or("?"))],
                 )));
             }
             let input = gtk::PasswordEntry::builder()
-                .placeholder_text("PIN oder Passkey")
+                .placeholder_text(tr("pairing-pin", &[]))
                 .build();
             let needs_input = kind == "RequestPinCode" || kind == "RequestPasskey";
             input.set_widget_name("pairing-input");
             input.set_visible(needs_input);
             page.append(&input);
-            let reviewed =
-                gtk::CheckButton::with_label("Codes bewusst verglichen / dieses Gerät zulassen");
+            let reviewed = gtk::CheckButton::with_label(&tr("pairing-reviewed", &[]));
             reviewed.set_visible(!display && !needs_input);
             reviewed.set_widget_name("pairing-reviewed");
             page.append(&reviewed);
-            let reject = button("Abbrechen", &feed);
+            let reject = button(&tr("action-cancel", &[]), &feed);
             reject.set_widget_name("rampi-back");
-            let accept = button("Bestätigen", &feed);
+            let accept = button(&tr("action-accept", &[]), &feed);
             accept.set_visible(!display);
             page.append(&reject);
             page.append(&accept);
@@ -267,7 +270,7 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
                     input.set_text("");
                     finish(&p1, &s1, id, answer, false);
                 } else {
-                    stat.set_text("PIN/Passkey eingeben oder die Anfrage bewusst bestätigen.");
+                    stat.set_text(&tr("pairing-input-needed", &[]));
                 }
             });
             s.add_named(&page, Some("pairing"));

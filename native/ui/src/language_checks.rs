@@ -29,6 +29,19 @@ pub fn run(
             let keyboard = named(&system, "keyboard-layout").context("No inline layouts")?;
             ensure!(keyboard.is::<gtk::ListBox>(), "Keyboard choices opened a popup");
             ensure!(find_button(&system, "Apply keyboard layout").is_some());
+            let wifi = pages.child_by_name("wifi").context("No Wi-Fi page")?;
+            pages.set_visible_child_name("wifi");
+            named(&wifi, "hidden-network-form").context("No hidden-network section")?
+                .downcast::<gtk::Expander>().ok().context("Hidden-network section type")?.set_expanded(true);
+            glib::timeout_future(std::time::Duration::from_millis(50)).await;
+            ensure!(named(&wifi, "hidden-adapter").is_some_and(|item| item.is::<gtk::ListBox>()));
+            ensure!(named(&wifi, "hidden-security").is_some_and(|item| item.is::<gtk::ListBox>()));
+            let board = pages.child_by_name("board").context("No board setup page")?;
+            let providers = named(&board, "board-kind").context("No provider choices")?
+                .downcast::<gtk::ListBox>().ok().context("Provider choices must stay inline")?;
+            providers.select_row(providers.row_at_index(6).as_ref());
+            ensure!(find_button(&board, "Check saved board").is_some());
+            ensure!(named(&board, "board-source-hint").unwrap().downcast::<gtk::Label>().unwrap().text().contains("Gitea"));
             let vpn = pages.child_by_name("vpn").context("No VPN page")?;
             ensure!(find_button(&vpn, "Refresh VPN profiles").is_some());
             ensure!(find_button(&vpn, "Connect WireGuard").is_some());

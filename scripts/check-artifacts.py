@@ -82,6 +82,8 @@ with tarfile.open(directory / source) as archive:
         "installer/raspberrypi/keyring-profile.sh",
         "installer/raspberrypi/keyring-profile-user.sh",
         "system/rampi-keyring-ordering.conf",
+        "system/rampi-tailscale-install",
+        "installer/raspberrypi/tailscale-archive-keyring.gpg",
         "docs/INSTALL-RASPBERRYPI.md",
         "setup.sh",
         "source-revision.txt",

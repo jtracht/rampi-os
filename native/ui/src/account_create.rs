@@ -2,6 +2,7 @@
 use crate::widgets::*;
 use gtk::{glib, prelude::*};
 use rampi_core::accounts;
+use rampi_core::i18n::text as tr;
 use std::{
     cell::{Cell, RefCell},
     ffi::OsString,
@@ -19,23 +20,29 @@ async fn verify(name: &str) -> anyhow::Result<CreatedAccount> {
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
     let (ok, bytes) =
         crate::process::output("/usr/bin/getent", &["passwd".into(), name.into()], 5, 8192).await?;
-    anyhow::ensure!(ok, "Neues Systemkonto konnte nicht geprüft werden");
+    anyhow::ensure!(ok, "{}", tr("account-unverified", &[]));
     let value = String::from_utf8(bytes)?;
     let fields: Vec<_> = value.trim_end().split(':').collect();
     anyhow::ensure!(
         fields.len() == 7 && fields[0] == name && fields[6] == "/bin/bash",
-        "Unerwartetes Systemkonto"
+        "{}",
+        tr("account-unexpected", &[])
     );
     let uid: u32 = fields[2].parse()?;
     let home = std::path::PathBuf::from(fields[5]);
-    anyhow::ensure!(uid > 0 && home.is_absolute(), "Unsicheres Systemkonto");
+    anyhow::ensure!(
+        uid > 0 && home.is_absolute(),
+        "{}",
+        tr("account-unsafe", &[])
+    );
     let meta = std::fs::symlink_metadata(&home)?;
     anyhow::ensure!(
         meta.is_dir()
             && !meta.file_type().is_symlink()
             && meta.uid() == uid
             && meta.permissions().mode() & 0o777 == 0o700,
-        "Home-Verzeichnis ist nicht privat oder gehört nicht dem neuen Konto. Ein Administrator muss das gesperrte Konto prüfen; Rampi verändert keine vorhandenen Verzeichnisse."
+        "{}",
+        tr("account-home-unsafe", &[])
     );
     Ok(CreatedAccount {
         name: name.into(),
@@ -52,12 +59,22 @@ fn spawn(term: &vte::Terminal, argv: &[OsString], state: &gtk::Label, finish: Rc
         .collect();
     let argv: Vec<&str> = strings.iter().map(String::as_str).collect();
     let state = state.clone();
-    term.spawn_async(vte::PtyFlags::DEFAULT, None, &argv, &[], glib::SpawnFlags::DEFAULT, || {}, -1, None::<&gtk::gio::Cancellable>, move |result| {
-        if let Err(error) = result {
-            finish(-1);
-            state.set_text(&format!("Systemwerkzeug konnte nicht starten: {error}. Erneut versuchen; bestehende Konten bleiben erhalten."));
-        }
-    });
+    term.spawn_async(
+        vte::PtyFlags::DEFAULT,
+        None,
+        &argv,
+        &[],
+        glib::SpawnFlags::DEFAULT,
+        || {},
+        -1,
+        None::<&gtk::gio::Cancellable>,
+        move |result| {
+            if let Err(error) = result {
+                finish(-1);
+                state.set_text(&tr("account-tool-error", &[("error", &error.to_string())]));
+            }
+        },
+    );
     term.grab_focus();
 }
 
@@ -67,31 +84,29 @@ pub fn open(stack: &gtk::Stack, f: &Feedback) {
         return;
     }
     let page = column();
-    let back = button("← System", f);
+    let back = button(&tr("account-back", &[]), f);
     back.set_widget_name("rampi-back");
     let s = stack.clone();
     back.connect_clicked(move |_| s.set_visible_child_name("settings"));
     page.append(&back);
-    page.append(&label(
-        "Weiteres Linux-Konto · 1 Anlegen → 2 Kennwort setzen → 3 Neu anmelden",
-    ));
-    page.append(&label("Benötigt vorhandene sudo-Berechtigung. Systemwerkzeuge fragen im Terminal nach Kennwörtern; Rampi speichert sie nicht. Das neue Konto erhält ein privates Home-Verzeichnis und keine Administratorrechte. Bestehende Konten werden nicht überschrieben."));
+    page.append(&label(&tr("account-steps", &[])));
+    page.append(&label(&tr("account-create-policy", &[])));
     let name = gtk::Entry::builder()
-        .placeholder_text("Neuer Linux-Benutzername")
+        .placeholder_text(tr("account-new-name", &[]))
         .build();
     name.set_widget_name("account-new-name");
     page.append(&name);
-    let create = button("Neues Konto anlegen …", f);
+    let create = button(&tr("account-start", &[]), f);
     create.set_widget_name("account-create-start");
-    let password = button("Kennwort für das neue Konto setzen", f);
+    let password = button(&tr("account-new-credential-action", &[]), f);
     password.set_widget_name("account-create-password");
     password.set_sensitive(false);
-    let next = button("Weiteres Konto vorbereiten", f);
+    let next = button(&tr("account-more", &[]), f);
     next.set_sensitive(false);
     for b in [&create, &password, &next] {
         page.append(b);
     }
-    let state = label("Noch kein Konto angelegt. Vorhandene sudo-Regeln bleiben unverändert.");
+    let state = label(&tr("account-empty", &[]));
     state.set_widget_name("account-create-status");
     page.append(&state);
     let term = vte::Terminal::new();
@@ -145,26 +160,33 @@ pub fn open(stack: &gtk::Stack, f: &Feedback) {
                         more.clone(),
                         entry.text().to_string(),
                     );
-                    state.set_text("Systemkonto und private Home-Rechte werden geprüft …");
+                    state.set_text(&tr("account-verify", &[]));
                     glib::MainContext::default().spawn_local(async move {
                         match verify(&name).await {
-                            Ok(account) => { *user.borrow_mut() = Some(account); pass.set_sensitive(true); state.set_text("Konto angelegt, Kennwort noch gesperrt. Jetzt ein Kennwort setzen; anschließend über die reguläre Anmeldung wechseln."); }
-                            Err(error) => { more.set_sensitive(true); state.set_text(&error.to_string()); }
+                            Ok(account) => {
+                                *user.borrow_mut() = Some(account);
+                                pass.set_sensitive(true);
+                                state.set_text(&tr("account-created-locked", &[]));
+                            }
+                            Err(error) => {
+                                more.set_sensitive(true);
+                                state.set_text(&error.to_string());
+                            }
                         }
                     });
                 }
                 (1, false) => {
                     entry.set_sensitive(true);
                     start.set_sensitive(true);
-                    state.set_text("Anlegen nicht erfolgreich. Systemmeldung prüfen; vorhandene Konten werden nicht übernommen. Ein möglicherweise teilweise angelegtes gesperrtes Konto muss ein Administrator über die Systemkonsole prüfen.");
+                    state.set_text(&tr("account-create-failed", &[]));
                 }
                 (2, true) => {
                     more.set_sensitive(true);
-                    state.set_text("Kennwort gesetzt. Das Konto kann sich über die reguläre PAM-Anmeldung anmelden. Persönliche Rampi-Daten entstehen beim ersten Start.");
+                    state.set_text(&tr("account-password-set", &[]));
                 }
                 (2, false) => {
                     pass.set_sensitive(true);
-                    state.set_text("Kennwort nicht gesetzt. Systemmeldung prüfen und erneut versuchen. Ohne erfolgreiche Kennwortänderung bleibt das neue Konto gesperrt.");
+                    state.set_text(&tr("account-password-failed", &[]));
                 }
                 _ => {}
             }
@@ -184,14 +206,37 @@ pub fn open(stack: &gtk::Stack, f: &Feedback) {
     );
     create.connect_clicked(move |_| {
         let username = entry.text().to_string();
-        let args = match accounts::create(&username) { Ok(args) => args, Err(error) => { status.set_text(&error.to_string()); return; } };
-        let (entry, state, terminal, start, step, finished) = (entry.clone(), status.clone(), terminal.clone(), start.clone(), step.clone(), finished.clone());
-        crate::views::confirm(&s, "Neues Linux-Konto anlegen?", &format!("Konto {username} mit privatem Home-Verzeichnis anlegen. Das Kennwort bleibt zunächst gesperrt. Danach hier ein Kennwort setzen."), &feedback, move || {
-            if !start.is_sensitive() { return; }
-            start.set_sensitive(false); entry.set_sensitive(false); step.set(1);
-            state.set_text("sudo prüft deine vorhandenen Rechte. Eingaben ausschließlich im eingebetteten Systemterminal.");
-            spawn(&terminal, &args, &state, finished.clone());
-        });
+        let args = match accounts::create(&username) {
+            Ok(args) => args,
+            Err(error) => {
+                status.set_text(&error.to_string());
+                return;
+            }
+        };
+        let (entry, state, terminal, start, step, finished) = (
+            entry.clone(),
+            status.clone(),
+            terminal.clone(),
+            start.clone(),
+            step.clone(),
+            finished.clone(),
+        );
+        crate::views::confirm(
+            &s,
+            &tr("account-create-confirm", &[]),
+            &tr("account-create-detail", &[("user", &username)]),
+            &feedback,
+            move || {
+                if !start.is_sensitive() {
+                    return;
+                }
+                start.set_sensitive(false);
+                entry.set_sensitive(false);
+                step.set(1);
+                state.set_text(&tr("account-sudo", &[]));
+                spawn(&terminal, &args, &state, finished.clone());
+            },
+        );
     });
     let (terminal, status, step, pass, user, finished) = (
         term,
@@ -204,14 +249,29 @@ pub fn open(stack: &gtk::Stack, f: &Feedback) {
     password.connect_clicked(move |_| {
         if let Some(account) = user.borrow().clone() {
             pass.set_sensitive(false);
-            let (pass, step, status, terminal, finished) = (pass.clone(), step.clone(), status.clone(), terminal.clone(), finished.clone());
+            let (pass, step, status, terminal, finished) = (
+                pass.clone(),
+                step.clone(),
+                status.clone(),
+                terminal.clone(),
+                finished.clone(),
+            );
             glib::MainContext::default().spawn_local(async move {
                 match verify(&account.name).await {
                     Ok(current) if current == account => {
-                        step.set(2); status.set_text("passwd fragt nach dem neuen Kennwort und dessen Bestätigung.");
-                        spawn(&terminal, &accounts::password(&account.name).expect("Validated account name"), &status, finished);
+                        step.set(2);
+                        status.set_text(&tr("account-credential-prompt", &[]));
+                        spawn(
+                            &terminal,
+                            &accounts::password(&account.name).expect("Validated account name"),
+                            &status,
+                            finished,
+                        );
                     }
-                    _ => { pass.set_sensitive(true); status.set_text("Konto oder Home-Rechte haben sich verändert. Kennwortänderung abgewiesen; ein Administrator muss das Konto prüfen."); }
+                    _ => {
+                        pass.set_sensitive(true);
+                        status.set_text(&tr("account-changed", &[]));
+                    }
                 }
             });
         }
@@ -225,7 +285,7 @@ pub fn open(stack: &gtk::Stack, f: &Feedback) {
         start.set_sensitive(true);
         pass.set_sensitive(false);
         more.set_sensitive(false);
-        status.set_text("Nächstes Konto vorbereiten. Zuvor angelegte Konten bleiben erhalten.");
+        status.set_text(&tr("account-next", &[]));
         entry.grab_focus();
     });
     stack.add_named(&page, Some("account-create"));

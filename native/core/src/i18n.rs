@@ -107,6 +107,22 @@ mod tests {
                     ("output", "HDMI-A-1"),
                     ("mode", "1280x720"),
                     ("seconds", "15"),
+                    ("user", "fixture"),
+                    ("uid", "1000"),
+                    ("service", "HID"),
+                    ("host", "host.example"),
+                    ("port", "22"),
+                    ("code", "1"),
+                    ("description", "Personal source"),
+                    ("example", "~/tasks.json"),
+                    ("state", "Loaded"),
+                    ("cache", ""),
+                    ("pin", "1234"),
+                    ("width", "1280"),
+                    ("height", "720"),
+                    ("decoder", "avdec_h264"),
+                    ("resolution", "1280x720"),
+                    ("site", "https://example.invalid"),
                 ] {
                     args.set(name, value);
                 }

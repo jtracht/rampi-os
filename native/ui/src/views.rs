@@ -245,11 +245,11 @@ pub fn settings(
 }
 fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
-    page.append(&label("WLAN · NetworkManager"));
+    page.append(&label(&tr("wifi-heading", &[])));
     let controls = row();
-    let scan = button("WLANs suchen", f);
+    let scan = button(&tr("wifi-scan", &[]), f);
     let radio = gtk::Switch::new();
-    let state = label("Status noch nicht geprüft");
+    let state = label(&tr("network-unchecked", &[]));
     controls.append(&scan);
     controls.append(&radio);
     controls.append(&state);
@@ -263,12 +263,12 @@ fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
         .build();
     page.append(&password);
     let buttons = row();
-    let connect = button("Verbinden", f);
-    let disconnect = button("Trennen", f);
+    let connect = button(&tr("network-connect", &[]), f);
+    let disconnect = button(&tr("network-disconnect", &[]), f);
     buttons.append(&connect);
     buttons.append(&disconnect);
     page.append(&buttons);
-    page.append(&label("Suche, Auswahl und Kennworteingabe bleiben auf dieser Seite. Neue Profile gehören ausschließlich deinem Linux-Konto. Unternehmensnetze benötigen ein vorhandenes NetworkManager-Profil."));
+    page.append(&label(&tr("wifi-page-description", &[])));
     crate::wifi_hidden::append(&page, status, f);
     let (l, n, r, st, stat) = (
         list.clone(),
@@ -301,11 +301,7 @@ fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
                     }
                     *n.borrow_mut() = rows;
                     r.set_active(enabled);
-                    st.set_text(if enabled {
-                        "WLAN eingeschaltet"
-                    } else {
-                        "WLAN ausgeschaltet"
-                    });
+                    st.set_text(&tr(if enabled { "wifi-on" } else { "wifi-off" }, &[]));
                 }
                 Err(e) => stat.set_text(&e.to_string()),
             }
@@ -365,7 +361,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         owned.borrow_mut().take();
     });
     page.append(&label("Bluetooth · BlueZ"));
-    let refresh = button("Adapter und Geräte aktualisieren", f);
+    let refresh = button(&tr("bluetooth-refresh", &[]), f);
     page.append(&refresh);
     page.append(&label("Adapter"));
     let picker = gtk::ListBox::new();
@@ -476,7 +472,14 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
                             p.append(&label(&format!(
                                 "{} · {}",
                                 adapter.label,
-                                if adapter.powered { "Ein" } else { "Aus" }
+                                tr(
+                                    if adapter.powered {
+                                        "power-on"
+                                    } else {
+                                        "power-off"
+                                    },
+                                    &[]
+                                )
                             )));
                         }
                         let index = aa
@@ -501,13 +504,14 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     for (title, op, value) in [
         ("Einschalten", "power", true),
         ("Ausschalten", "power", false),
-        ("Koppeln", "pair", false),
-        ("Verbinden", "connect", false),
-        ("Trennen", "disconnect", false),
-        ("Dauerhaft vertrauen", "trust", true),
-        ("Kopplung entfernen", "remove", false),
+        (&tr("bluetooth-pair", &[]), "pair", false),
+        (&tr("network-connect", &[]), "connect", false),
+        (&tr("network-disconnect", &[]), "disconnect", false),
+        (&tr("bluetooth-trust", &[]), "trust", true),
+        (&tr("bluetooth-unpair", &[]), "remove", false),
     ] {
-        let b = button(title, f);
+        let title = title.to_string();
+        let b = button(&title, f);
         controls.insert(&b, -1);
         let (a, l, p, d, stat, s, f) = (
             adapters.clone(),
@@ -525,7 +529,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             if let Some(device) = &selected
                 && ((op == "pair" && device.paired) || (op == "connect" && device.connected))
             {
-                stat.set_text("Das Gerät ist bereits gekoppelt beziehungsweise verbunden.");
+                stat.set_text(&tr("bluetooth-connected", &[]));
                 return;
             }
             let value = if op == "trust" {
@@ -550,21 +554,15 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
                     });
                 };
                 if op == "trust" || op == "remove" || (op == "power" && !value) {
-                    confirm(
-                        &s,
-                        title,
-                        "Diese Änderung gilt systemweit für alle Benutzer.",
-                        &f,
-                        execute,
-                    );
+                    confirm(&s, &title, &tr("network-systemwide", &[]), &f, execute);
                 } else {
                     execute();
                 }
             }
         });
     }
-    let search = button("Geräte suchen", f);
-    let stop = button("Suche beenden", f);
+    let search = button(&tr("bluetooth-search", &[]), f);
+    let stop = button(&tr("bluetooth-stop", &[]), f);
     controls.insert(&search, -1);
     controls.insert(&stop, -1);
     let (owned, epoch, p, a, stat, weak_page) = (
@@ -584,7 +582,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             .get(p.selected_row().map_or(usize::MAX, |r| r.index() as usize))
             .cloned()
         else {
-            stat.set_text("Bitte zuerst einen Bluetooth-Adapter auswählen.");
+            stat.set_text(&tr("bluetooth-select", &[]));
             return;
         };
         epoch.set(epoch.get().wrapping_add(1));
@@ -603,9 +601,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
                     if epoch.get() == ticket && page.upgrade().is_some_and(|p| p.is_mapped()) =>
                 {
                     *owned.borrow_mut() = Some(session);
-                    stat.set_text(
-                        "Bluetooth-Suche läuft. Gefundene Geräte erscheinen in dieser Seite.",
-                    );
+                    stat.set_text(&tr("bluetooth-searching", &[]));
                 }
                 Ok(_) => {} // Closing this client releases a late discovery reply.
                 Err(e) if epoch.get() == ticket => stat.set_text(&e.to_string()),
@@ -641,7 +637,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         }
         glib::ControlFlow::Continue
     });
-    page.append(&label("Kopplungen und Vertrauen gelten für das ganze Gerät. Neue Geräte erhalten nicht automatisch dauerhaftes Vertrauen."));
+    page.append(&label(&tr("bluetooth-policy", &[])));
     page
 }
 pub fn confirm(
@@ -685,6 +681,26 @@ pub fn terminal(
     args: Vec<std::ffi::OsString>,
     status: &gtk::Label,
 ) {
+    terminal_operation(stack, name, args, status, None);
+}
+
+pub fn terminal_review(
+    stack: &gtk::Stack,
+    name: &str,
+    args: Vec<std::ffi::OsString>,
+    status: &gtk::Label,
+    feedback: &Feedback,
+) {
+    terminal_operation(stack, name, args, status, Some(feedback));
+}
+
+fn terminal_operation(
+    stack: &gtk::Stack,
+    name: &str,
+    args: Vec<std::ffi::OsString>,
+    status: &gtk::Label,
+    feedback: Option<&Feedback>,
+) {
     let key = format!("terminal-{name}");
     if stack.child_by_name(&key).is_some() {
         stack.set_visible_child_name(&key);
@@ -699,7 +715,37 @@ pub fn terminal(
     term.set_vexpand(true);
     term.set_scrollback_lines(5000);
     let name = key.clone();
-    stack.add_named(&term, Some(&key));
+    let completed = Rc::new(Cell::new(false));
+    let review = feedback.is_some();
+    if let Some(feedback) = feedback {
+        let page = column();
+        let back = button(&tr("terminal-back", &[]), feedback);
+        back.set_widget_name("rampi-back");
+        page.append(&back);
+        page.append(&label(&tr("terminal-operation-description", &[])));
+        page.append(&term);
+        let (route, destination, back_key, completed) = (
+            stack.clone(),
+            previous.clone(),
+            key.clone(),
+            completed.clone(),
+        );
+        back.connect_clicked(move |_| {
+            route.set_visible_child_name(if route.child_by_name(&destination).is_some() {
+                &destination
+            } else {
+                "dashboard"
+            });
+            if completed.get()
+                && let Some(page) = route.child_by_name(&back_key)
+            {
+                route.remove(&page);
+            }
+        });
+        stack.add_named(&page, Some(&key));
+    } else {
+        stack.add_named(&term, Some(&key));
+    }
     stack.set_visible_child_name(&key);
     let strings: Vec<String> = args
         .iter()
@@ -707,6 +753,7 @@ pub fn terminal(
         .collect();
     let argv: Vec<&str> = strings.iter().map(String::as_str).collect();
     let stat = status.clone();
+    let done = completed.clone();
     term.spawn_async(
         vte::PtyFlags::DEFAULT,
         None,
@@ -718,19 +765,24 @@ pub fn terminal(
         None::<&gio::Cancellable>,
         move |result| {
             if let Err(e) = result {
-                stat.set_text(&format!("Terminal konnte nicht gestartet werden: {e}"));
+                done.set(true);
+                stat.set_text(&tr("terminal-start-error", &[("error", &e.to_string())]));
             }
         },
     );
     let s = stack.downgrade();
     let exit_status = status.clone();
-    term.connect_child_exited(move |_, code| {
+    term.connect_child_exited(move |term, code| {
+        completed.set(true);
+        term.set_input_enabled(false);
         if let Some(s) = s.upgrade() {
             let was_visible = s.visible_child_name().is_some_and(|key| key == name);
-            if let Some(child) = s.child_by_name(&name) {
+            if (!review || !was_visible)
+                && let Some(child) = s.child_by_name(&name)
+            {
                 s.remove(&child);
             }
-            if was_visible {
+            if was_visible && !review {
                 s.set_visible_child_name(if s.child_by_name(&previous).is_some() {
                     &previous
                 } else {
@@ -743,7 +795,10 @@ pub fn terminal(
             if code == 0 {
                 Ok(())
             } else {
-                Err(anyhow::anyhow!("Systembefehl mit Status {code} beendet."))
+                Err(anyhow::anyhow!(tr(
+                    "terminal-exit-error",
+                    &[("code", &code.to_string())]
+                )))
             },
         );
         println!("RAMPI_TERMINAL_EXIT={code}");
@@ -756,7 +811,7 @@ pub fn board_preview(conf: &Shared) -> gtk::Box {
     let title = label("Kanban Board");
     title.add_css_class("heading");
     panel.append(&title);
-    panel.append(&label("Projektübersicht · Nur lesen"));
+    panel.append(&label(&tr("board-preview", &[])));
     let columns = row();
     columns.set_homogeneous(true);
     columns.set_vexpand(true);
@@ -785,9 +840,7 @@ pub fn board_preview(conf: &Shared) -> gtk::Box {
                         {
                             return;
                         }
-                        cols.append(&label(
-                            "Keine Vorschau verfügbar. Kanban öffnen oder Datenquelle prüfen.",
-                        ));
+                        cols.append(&label(&tr("board-no-preview", &[])));
                         return;
                     }
                 }
@@ -825,7 +878,7 @@ pub fn board_preview(conf: &Shared) -> gtk::Box {
 }
 pub fn remote(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
-    let back = button("← Zurück", f);
+    let back = button(&tr("navigation-back", &[]), f);
     back.set_widget_name("rampi-back");
     let s = stack.clone();
     back.connect_clicked(move |_| {
@@ -840,14 +893,14 @@ pub fn remote(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedb
         )
     });
     page.append(&back);
-    page.append(&label("Deine Windows-Workstation\nRDP meldet dich mit deinem Windows-Konto an. Sunshine teilt die aktive Windows-Konsole."));
-    let b = button("RDP · integrierter Windows-Desktop", f);
+    page.append(&label(&tr("remote-description", &[])));
+    let b = button(&tr("remote-rdp", &[]), f);
     let (host_settings, s, feedback) = (conf.clone(), stack.clone(), f.clone());
     b.connect_clicked(move |_| {
         crate::rdp_view::open(&s, &host_settings, &feedback);
     });
     page.append(&b);
-    let streaming = button("Desktop-Streaming · integriert", f);
+    let streaming = button(&tr("remote-streaming", &[]), f);
     let (settings, route, feedback) = (conf.clone(), stack.clone(), f.clone());
     streaming.connect_clicked(move |_| crate::stream_view::open(&route, &settings, &feedback));
     page.append(&streaming);
@@ -869,9 +922,9 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
         .hexpand(true)
         .build();
     address.set_widget_name("browser-address");
-    back.set_tooltip_text(Some("Zurück"));
-    forward.set_tooltip_text(Some("Vorwärts"));
-    reload.set_tooltip_text(Some("Neu laden · F5"));
+    back.set_tooltip_text(Some(&tr("browser-back-tooltip", &[])));
+    forward.set_tooltip_text(Some(&tr("browser-forward-tooltip", &[])));
+    reload.set_tooltip_text(Some(&tr("browser-reload-tooltip", &[])));
     bar.append(&back);
     bar.append(&forward);
     bar.append(&reload);
@@ -897,7 +950,7 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
         webkit6::NetworkSession::new(directory.to_str(), directory.join("cache").to_str());
     session.set_tls_errors_policy(webkit6::TLSErrorsPolicy::Fail);
     let Some(cookies) = session.cookie_manager() else {
-        status.set_text("Das persönliche Browserprofil konnte nicht geöffnet werden.");
+        status.set_text(&tr("browser-profile-error", &[]));
         return;
     };
     cookies.set_persistent_storage(
@@ -912,7 +965,7 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
         .build();
     crate::browser_prompts::install(&web, stack, status, f);
     web.set_widget_name("browser-webview");
-    let fullscreen = button("Vollbild · F11", f);
+    let fullscreen = button(&tr("browser-fullscreen", &[]), f);
     let (chrome, message) = (bar.clone(), status.clone());
     fullscreen.connect_clicked(move |_| {
         chrome.set_visible(false);
@@ -986,9 +1039,7 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
     bar.append(&downloads);
     let stat = status.clone();
     web.connect_load_failed_with_tls_errors(move |_, _, _, _| {
-        stat.set_text(
-            "HTTPS-Zertifikat konnte nicht überprüft werden. Die Verbindung wurde abgewiesen.",
-        );
+        stat.set_text(&tr("browser-tls-error", &[]));
         true
     });
     let stat = status.clone();
@@ -1005,7 +1056,7 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
             && rampi_core::config::validate_https(&uri).is_err()
         {
             decision.ignore();
-            stat.set_text("Diese Navigation wurde abgewiesen. Bitte eine HTTPS-Adresse verwenden.");
+            stat.set_text(&tr("browser-navigation-error", &[]));
             return true;
         }
         false

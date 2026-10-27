@@ -1,6 +1,7 @@
 use crate::widgets::*;
 use gtk::{glib, prelude::*};
 use rampi_core::config;
+use rampi_core::i18n::text as tr;
 const KINDS: [&str; 7] = [
     "json", "github", "trello", "jira", "asana", "notion", "gitea",
 ];
@@ -8,35 +9,37 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
     let page = column();
     let status = label("");
     status.set_widget_name("board-setup-status");
-    let title = label("Dein Aufgabenboard verbinden");
+    let title = label(&tr("board-connect-heading", &[]));
     title.add_css_class("heading");
     page.append(&title);
-    page.append(&label(
-        "1 · Quelle wählen  →  2 · Zugang speichern  →  3 · Prüfen und Board öffnen",
-    ));
-    page.append(&label(
-        "Rampi zeigt Aufgaben ausschließlich an. Änderungen bleiben beim Anbieter.",
-    ));
-    page.append(&label("1 · Wo liegen deine Aufgaben?"));
-    let kind = gtk::DropDown::from_strings(&[
-        "Lokale JSON-Datei",
-        "GitHub Projects",
-        "Trello",
-        "Jira Cloud",
-        "Asana",
-        "Notion Data Source",
-        "Gitea Projekt",
-    ]);
+    page.append(&label(&tr("board-connect-steps", &[])));
+    page.append(&label(&tr("board-readonly-description", &[])));
+    page.append(&label(&tr("board-source-step", &[])));
+    let kind = inline_choices(
+        &[
+            &tr("board-json", &[]),
+            "GitHub Projects",
+            "Trello",
+            "Jira Cloud",
+            "Asana",
+            "Notion Data Source",
+            &tr("board-gitea", &[]),
+        ],
+        f,
+    );
     kind.set_widget_name("board-kind");
-    kind.set_selected(
-        KINDS
-            .iter()
-            .position(|k| *k == conf.borrow().board_kind)
-            .unwrap_or(0) as u32,
+    kind.select_row(
+        kind.row_at_index(
+            KINDS
+                .iter()
+                .position(|k| *k == conf.borrow().board_kind)
+                .unwrap_or(0) as i32,
+        )
+        .as_ref(),
     );
     page.append(&kind);
     let source = gtk::Entry::builder()
-        .placeholder_text("Dateipfad oder Anbieter-Projektkennung")
+        .placeholder_text(tr("board-source-input", &[]))
         .text(&conf.borrow().board_source)
         .build();
     source.set_widget_name("board-source");
@@ -45,33 +48,29 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
     hint.set_widget_name("board-source-hint");
     page.append(&hint);
     let credentials = column();
-    credentials.append(&label("2 · Persönlichen Zugang hinterlegen"));
-    credentials.append(&label(
-        "Ein Token mit Lesezugriff genügt. Er bleibt in deinem Linux-Schlüsselbund.",
-    ));
+    credentials.append(&label(&tr("board-access-step", &[])));
+    credentials.append(&label(&tr("board-token-description", &[])));
 
     let profile = gtk::Entry::builder()
-        .placeholder_text("Persönliches Schlüsselbund-Profil")
+        .placeholder_text(tr("board-profile-input", &[]))
         .text(&conf.borrow().board_token_key)
         .build();
     profile.set_widget_name("board-token-profile");
-    credentials.append(&label("Name dieses Zugangsprofils"));
+    credentials.append(&label(&tr("board-profile-label", &[])));
     credentials.append(&profile);
     let columns = gtk::Entry::builder()
-        .placeholder_text("Spalten in Reihenfolge, durch Komma getrennt")
+        .placeholder_text(tr("board-columns-input", &[]))
         .text(conf.borrow().board_columns.join(", "))
         .build();
-    page.append(&label(
-        "Spaltenreihenfolge · optional, leer übernimmt die Quelle",
-    ));
+    page.append(&label(&tr("board-columns-label", &[])));
     page.append(&columns);
     let url = gtk::Entry::builder()
-        .placeholder_text("Browser-Startseite · HTTPS")
+        .placeholder_text(tr("browser-home-input", &[]))
         .text(&conf.borrow().browser_url)
         .build();
-    page.append(&label("Browser-Startseite"));
+    page.append(&label(&tr("browser-home-label", &[])));
     page.append(&url);
-    let save = button("Datenquelle und Startseite speichern", f);
+    let save = button(&tr("board-save", &[]), f);
     page.append(&save);
     let (c, stat, k, p) = (conf.clone(), status.clone(), kind.clone(), profile.clone());
     let source_for_save = source.clone();
@@ -79,8 +78,8 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
         let result = (|| -> anyhow::Result<()> {
             let mut candidate = c.borrow().clone();
             candidate.board_kind = KINDS
-                .get(k.selected() as usize)
-                .ok_or_else(|| anyhow::anyhow!("Anbieter auswählen"))?
+                .get(choice_index(&k) as usize)
+                .ok_or_else(|| anyhow::anyhow!(tr("board-select-provider", &[])))?
                 .to_string();
             candidate.board_source = source_for_save.text().trim().to_string();
             candidate.board_token_key = p.text().trim().to_string();
@@ -109,17 +108,17 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
     });
 
     let account = gtk::PasswordEntry::builder()
-        .placeholder_text("Jira: E-Mail · Trello: API-Key · sonst leer")
+        .placeholder_text(tr("board-account-input", &[]))
         .show_peek_icon(true)
         .build();
     credentials.append(&account);
     let token = gtk::PasswordEntry::builder()
-        .placeholder_text("API-/OAuth-Token mit möglichst eingeschränktem Lesezugriff")
+        .placeholder_text(tr("board-token-input", &[]))
         .show_peek_icon(true)
         .build();
     token.set_widget_name("board-token-input");
     credentials.append(&token);
-    let store = button("Zugangsdaten im Schlüsselbund speichern", f);
+    let store = button(&tr("board-store", &[]), f);
     credentials.append(&store);
     page.insert_child_after(&credentials, Some(&hint));
     let update = {
@@ -130,49 +129,40 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
             token.clone(),
         );
         move |selected: u32| {
-            let (message, placeholder) = match selected {
+            let (message, placeholder): (String, &str) = match selected {
                 1 => (
-                    "GitHub: Eigentümerart, Name und Projektnummer aus der Projektadresse.",
-                    "organization/NAME/NUMMER oder user/NAME/NUMMER",
+                    tr("board-hint-github", &[]),
+                    "organization/OWNER/NUMBER | user/OWNER/NUMBER",
                 ),
-                2 => (
-                    "Trello: Board-ID verwenden; API-Key und Token werden gemeinsam gespeichert.",
-                    "Board-ID",
-                ),
+                2 => (tr("board-hint-trello", &[]), "Board-ID"),
                 3 => (
-                    "Jira Cloud: Site und Projektschlüssel. Bei API-Token zusätzlich E-Mail angeben; OAuth benötigt die offizielle Cloud-ID-Adresse.",
+                    tr("board-hint-jira", &[]),
                     "https://SITE.atlassian.net#PROJEKT",
                 ),
-                4 => (
-                    "Asana: Numerische Projekt-ID aus der Projektadresse kopieren.",
-                    "Projekt-ID",
-                ),
-                5 => (
-                    "Notion: Data Source für deine Integration freigeben und deren ID verwenden.",
-                    "Data-Source-ID",
-                ),
+                4 => (tr("board-hint-asana", &[]), "Projekt-ID"),
+                5 => (tr("board-hint-notion", &[]), "Data-Source-ID"),
                 6 => (
-                    "Gitea: Repository-Projektadresse oder vollständige HTTPS-API-Projektadresse einfügen. Alternativ: https://SERVER#repos/EIGENTÜMER/REPOSITORY/ID, https://SERVER#orgs/ORGANISATION/ID oder https://SERVER#user/ID. Persönliche Projekte verwenden den Eigentümer des Tokens. Spalten und Aufgaben bleiben schreibgeschützt.",
+                    tr("board-hint-gitea", &[]),
                     "https://git.example.org/team/app/projects/7",
                 ),
-                _ => (
-                    "Lokale JSON-Datei: Pfad angeben. Dafür werden keine Zugangsdaten benötigt.",
-                    "~/aufgaben.json",
-                ),
+                _ => (tr("board-hint-json", &[]), "~/aufgaben.json"),
             };
-            hint.set_text(&format!("{message}\nBeispiel: {placeholder}"));
+            hint.set_text(&tr(
+                "board-source-example",
+                &[("description", &message), ("example", placeholder)],
+            ));
             account.set_text("");
             token.set_text("");
             credentials.set_visible(selected != 0);
             account.set_visible(selected == 2 || selected == 3);
         }
     };
-    update(kind.selected());
-    kind.connect_selected_notify(move |k| update(k.selected()));
+    update(choice_index(&kind));
+    kind.connect_row_selected(move |k, _| update(choice_index(k)));
 
     let stat = status.clone();
     store.connect_clicked(move |b| {
-        let Some(kind) = KINDS.get(kind.selected() as usize) else {
+        let Some(kind) = KINDS.get(choice_index(&kind) as usize) else {
             return;
         };
         let source = source.text().trim().to_string();
@@ -193,37 +183,43 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
             b.set_sensitive(true);
         });
     });
-    page.append(&label("3 · Verbindung prüfen und Aufgaben anzeigen"));
-    let check = button("Gespeichertes Board prüfen", f);
+    page.append(&label(&tr("board-check-step", &[])));
+    let check = button(&tr("board-check", &[]), f);
     let (c, stat) = (conf.clone(), status.clone());
     check.connect_clicked(move |b| {
         b.set_sensitive(false);
-        stat.set_text("Board wird geprüft …");
+        stat.set_text(&tr("board-checking", &[]));
         let (b, stat, settings) = (b.clone(), stat.clone(), c.borrow().clone());
         glib::MainContext::default().spawn_local(async move {
             match crate::board_data::load(settings).await {
-                Ok(data) => stat.set_text(&format!(
-                    "{} Aufgaben · {}. Weiter mit ›Board öffnen‹.",
-                    data.board.cards.len(),
-                    if data.cached {
-                        "Offline-Daten; Verbindung fehlgeschlagen"
-                    } else {
-                        "Quelle erfolgreich geladen"
-                    }
+                Ok(data) => stat.set_text(&tr(
+                    "board-checked",
+                    &[
+                        ("count", &data.board.cards.len().to_string()),
+                        (
+                            "state",
+                            &tr(
+                                if data.cached {
+                                    "board-cached"
+                                } else {
+                                    "board-loaded"
+                                },
+                                &[],
+                            ),
+                        ),
+                    ],
                 )),
-                Err(e) => stat.set_text(&format!(
-                    "Noch nicht verbunden: {e}. Prüfe Quelle und Zugang in Schritt 1 und 2."
-                )),
+                Err(e) => stat.set_text(&tr("board-not-connected", &[("error", &e.to_string())])),
             }
             b.set_sensitive(true);
         });
     });
     page.append(&check);
     page.append(&status);
-    let open = button("Board öffnen →", f);
+    let open = button(&tr("board-open", &[]), f);
     let s = stack.clone();
     open.connect_clicked(move |_| s.set_visible_child_name("kanban"));
     page.append(&open);
-    page.append(&label("Token stehen weder in settings.json noch in Prozessargumenten oder Cache-Dateinamen. Bei gesperrtem Schlüsselbund zuerst die normale PAM-Sitzung entsperren. Rampi öffnet keinen externen Dialog. Ein Quellenwechsel zeigt ausschließlich Daten des gewählten Profils; Offline-Daten bleiben privat im persönlichen Cache."));
+    page.append(&label(&tr("board-privacy", &[])));
     page
 }

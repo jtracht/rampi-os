@@ -54,11 +54,13 @@ pub fn ui(
             let page = pages
                 .child_by_name("board")
                 .context("Board settings missing")?;
-            named(&page, "board-kind")
-                .unwrap()
-                .downcast::<gtk::DropDown>()
-                .unwrap()
-                .set_selected(6);
+            {
+                let choices = named(&page, "board-kind")
+                    .unwrap()
+                    .downcast::<gtk::ListBox>()
+                    .unwrap();
+                choices.select_row(choices.row_at_index(6).as_ref());
+            }
             for (name, value) in [
                 ("board-source", source),
                 ("board-token-profile", "live-gitea"),

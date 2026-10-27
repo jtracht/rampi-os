@@ -26,7 +26,14 @@ def command(*args):
 
 
 def active(unit):
-    return command("systemctl", "is-active", "--quiet", unit).returncode == 0
+    try:
+        return command("systemctl", "is-active", "--quiet", unit).returncode == 0
+    except subprocess.TimeoutExpired:
+        # Cold stock userconf can temporarily delay the manager's bus reply.
+        # A missing reply is never readiness: retry under the unchanged outer
+        # deadline, and still require every account/PAM/graphical assertion.
+        print("RAMPI_FIRST_USER_STATUS_PENDING", flush=True)
+        return False
 
 
 def enabled(unit):

@@ -1,16 +1,17 @@
 //! WebKit performs all transfers; Rampi supplies one inline destination/queue page.
 use crate::widgets::*;
 use gtk::{glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use std::{cell::Cell, rc::Rc};
 pub fn install(session: &webkit6::NetworkSession, stack: &gtk::Stack, f: &Feedback) {
     let page = column();
-    page.append(&label("Browser · Downloads"));
-    let back = button("← Zum Browser", f);
+    page.append(&label(&tr("downloads-heading", &[])));
+    let back = button(&tr("browser-back", &[]), f);
     back.set_widget_name("rampi-back");
     let s = stack.clone();
     back.connect_clicked(move |_| s.set_visible_child_name("browser"));
     page.append(&back);
-    let clear = button("Abgeschlossene Liste leeren", f);
+    let clear = button(&tr("downloads-clear", &[]), f);
     page.append(&clear);
     let rows = column();
     page.append(&scroll(&rows));
@@ -39,17 +40,17 @@ pub fn install(session: &webkit6::NetworkSession, stack: &gtk::Stack, f: &Feedba
         download.set_allow_overwrite(false);
         let section = column();
         rows.append(&section);
-        let progress = label("Warte auf Dateiname und Zielauswahl …");
+        let progress = label(&tr("downloads-wait", &[]));
         section.append(&progress);
         let path = gtk::Entry::builder()
-            .placeholder_text("Vollständiger Zieldateipfad")
+            .placeholder_text(tr("downloads-path", &[]))
             .build();
         path.set_widget_name("download-path");
         section.append(&path);
-        let save = button("Download speichern", &feedback);
+        let save = button(&tr("downloads-save", &[]), &feedback);
         save.set_sensitive(false);
         section.append(&save);
-        let cancel = button("Download abbrechen", &feedback);
+        let cancel = button(&tr("downloads-cancel", &[]), &feedback);
         section.append(&cancel);
         let started = Rc::new(Cell::new(false));
         let failed = Rc::new(Cell::new(false));
@@ -64,9 +65,7 @@ pub fn install(session: &webkit6::NetworkSession, stack: &gtk::Stack, f: &Feedba
             let directory = glib::user_special_dir(glib::UserDirectory::Downloads)
                 .unwrap_or_else(|| glib::home_dir().join("Downloads"));
             p.set_text(&directory.join(basename).to_string_lossy());
-            stat.set_text(
-                "Ziel prüfen und Speichern wählen. Vorhandene Dateien werden nicht überschrieben.",
-            );
+            stat.set_text(&tr("downloads-destination", &[]));
             save1.set_sensitive(true);
             s1.set_visible_child_name("browser-downloads");
             true
@@ -83,25 +82,27 @@ pub fn install(session: &webkit6::NetworkSession, stack: &gtk::Stack, f: &Feedba
                     destination.is_absolute()
                         && destination.file_name().is_some()
                         && !text.chars().any(char::is_control),
-                    "Vollständigen Zieldateipfad eingeben"
+                    "{}",
+                    tr("downloads-full-path", &[])
                 );
                 anyhow::ensure!(
                     !destination.try_exists()? && std::fs::symlink_metadata(destination).is_err(),
-                    "Zieldatei ist bereits vorhanden"
+                    "{}",
+                    tr("downloads-exists", &[])
                 );
                 let parent = destination
                     .parent()
-                    .ok_or_else(|| anyhow::anyhow!("Zielordner fehlt"))?;
+                    .ok_or_else(|| anyhow::anyhow!(tr("downloads-no-parent", &[])))?;
                 if !parent.exists() && parent == glib::home_dir().join("Downloads") {
                     use std::os::unix::fs::DirBuilderExt;
                     std::fs::DirBuilder::new().mode(0o700).create(parent)?;
                 }
-                anyhow::ensure!(parent.is_dir(), "Zielordner existiert nicht");
+                anyhow::ensure!(parent.is_dir(), "{}", tr("downloads-no-directory", &[]));
                 start.set(true);
                 path.set_sensitive(false);
                 b.set_sensitive(false);
                 d.set_destination(&text);
-                stat.set_text("Download läuft …");
+                stat.set_text(&tr("downloads-running", &[]));
                 Ok(())
             })();
             if let Err(e) = result {
@@ -121,7 +122,7 @@ pub fn install(session: &webkit6::NetworkSession, stack: &gtk::Stack, f: &Feedba
         let (stat, bad) = (progress.clone(), failed.clone());
         download.connect_failed(move |_, _| {
             bad.set(true);
-            stat.set_text("Download abgebrochen oder fehlgeschlagen.");
+            stat.set_text(&tr("downloads-failed", &[]));
         });
         let (a, done, clear1, bad, stat, save1) = (
             active.clone(),
@@ -140,7 +141,7 @@ pub fn install(session: &webkit6::NetworkSession, stack: &gtk::Stack, f: &Feedba
             save1.set_sensitive(false);
             cancel.set_sensitive(false);
             if !bad.get() {
-                stat.set_text("Download abgeschlossen. Die Datei wird nicht automatisch geöffnet.");
+                stat.set_text(&tr("downloads-complete", &[]));
             }
         });
         let (d, start, done) = (download.downgrade(), started, finished);

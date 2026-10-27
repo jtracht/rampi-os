@@ -100,6 +100,8 @@ else
 fi
 install -d -m 755 /usr/local/bin /usr/share/wayland-sessions /etc/xdg/rampi/labwc /etc/systemd/user
 for name in rampi rampi-session rampi-wayland-start rampi-health rampi-greeter; do install -m 755 "$source_root/system/$name" "/usr/local/bin/$name"; done
+install -D -m 755 "$source_root/system/rampi-tailscale-install" /usr/local/libexec/rampi-tailscale-install
+install -D -m 644 "$source_root/installer/raspberrypi/tailscale-archive-keyring.gpg" /usr/share/rampi/tailscale-archive-keyring.gpg
 install -m 644 "$source_root/system/rampi.desktop" /usr/share/wayland-sessions/rampi.desktop
 install -m 644 "$source_root/system/rampi.service" /etc/systemd/user/rampi.service
 bash "$source_root/installer/raspberrypi/keyring-profile.sh" --install

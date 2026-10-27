@@ -7,6 +7,36 @@ use std::{
     time::Instant,
 };
 pub type Shared = Rc<RefCell<Settings>>;
+
+/// Existing GTK focus/selection with all choices in the current page, no popover.
+pub fn inline_choices(values: &[&str], feedback: &Feedback) -> gtk::ListBox {
+    let list = gtk::ListBox::new();
+    list.set_selection_mode(gtk::SelectionMode::Single);
+    list.add_css_class("inline-choices");
+    replace_choices(&list, values);
+    let feedback = feedback.clone();
+    list.connect_row_selected(move |_, row| {
+        if row.is_some() {
+            feedback.play(false);
+        }
+    });
+    list
+}
+
+pub fn replace_choices(list: &gtk::ListBox, values: &[&str]) {
+    while let Some(child) = list.first_child() {
+        list.remove(&child);
+    }
+    for value in values {
+        list.append(&label(value));
+    }
+    list.select_row(list.row_at_index(0).as_ref());
+}
+
+pub fn choice_index(list: &gtk::ListBox) -> u32 {
+    list.selected_row()
+        .map_or(u32::MAX, |row| row.index() as u32)
+}
 #[derive(Clone)]
 pub struct Feedback {
     settings: Shared,

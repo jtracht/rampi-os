@@ -3,6 +3,10 @@ set -euo pipefail
 if [[ $EUID -ne 0 ]]; then echo 'Mit sudo ausführen.' >&2; exit 1; fi
 bash "$(dirname -- "${BASH_SOURCE[0]}")/keyring-profile.sh" --remove
 systemctl disable rampi-health.service 2>/dev/null || true
+# Optional vendor software, repositories and personal VPN state are retained.
+if [[ -f /usr/local/libexec/rampi-tailscale-install ]] && cmp -s -- "$(dirname -- "${BASH_SOURCE[0]}")/../../system/rampi-tailscale-install" /usr/local/libexec/rampi-tailscale-install; then
+    rm -- /usr/local/libexec/rampi-tailscale-install
+fi
 if [[ -f /opt/rampi/managed-greetd.sha256 && -f /etc/greetd/config.toml ]]; then
     expected="$(cat /opt/rampi/managed-greetd.sha256)"
     actual="$(sha256sum /etc/greetd/config.toml | cut -d ' ' -f 1)"

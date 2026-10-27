@@ -100,6 +100,40 @@ pub fn actions(
     use crate::widgets::*;
     let page = column();
     page.append(&label(&tr("tailscale-steps", &[])));
+    let install = button(&tr("tailscale-install", &[]), feedback);
+    install.set_widget_name("tailscale-install");
+    let available = || {
+        glib::find_program_in_path("tailscale").is_none()
+            && std::path::Path::new("/usr/local/libexec/rampi-tailscale-install").is_file()
+            && glib::find_program_in_path("sudo").is_some()
+    };
+    install.set_sensitive(available());
+    install.connect_map(move |button| button.set_sensitive(available()));
+    let (route, output, f) = (stack.clone(), status.clone(), feedback.clone());
+    install.connect_clicked(move |_| {
+        let (destination, output, feedback) = (route.clone(), output.clone(), f.clone());
+        crate::views::confirm(
+            &route,
+            &tr("tailscale-install", &[]),
+            &tr("tailscale-install-confirm", &[]),
+            &f,
+            move || {
+                crate::views::terminal_review(
+                    &destination,
+                    "tailscale-install",
+                    vec![
+                        "/usr/bin/sudo".into(),
+                        "--".into(),
+                        "/usr/local/libexec/rampi-tailscale-install".into(),
+                        "--install".into(),
+                    ],
+                    &output,
+                    &feedback,
+                );
+            },
+        );
+    });
+    page.append(&install);
     let operator = button(&tr("tailscale-operator", &[]), feedback);
     operator.set_widget_name("tailscale-operator");
     operator.set_sensitive(
@@ -107,6 +141,12 @@ pub fn actions(
             && glib::find_program_in_path("sudo").is_some(),
     );
     let (route, stat, f) = (stack.clone(), status.clone(), feedback.clone());
+    operator.connect_map(|button| {
+        button.set_sensitive(
+            glib::find_program_in_path("tailscale").is_some()
+                && glib::find_program_in_path("sudo").is_some(),
+        )
+    });
     operator.connect_clicked(move |_| {
         let account = glib::user_name();
         let args = match rampi_core::accounts::tailscale_operator(&account.to_string_lossy()) {

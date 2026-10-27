@@ -5,6 +5,13 @@ use std::rc::Rc;
 use vte::prelude::*;
 use webkit6::prelude::*;
 
+pub(crate) fn readable_text(value: &str) -> String {
+    value
+        .chars()
+        .filter(|c| !matches!(c, '\u{2068}' | '\u{2069}'))
+        .collect()
+}
+
 pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) {
     if std::env::var("RAMPI_TEST_CONTAINER").as_deref() != Ok("1")
         || std::env::var("DBUS_SYSTEM_BUS_ADDRESS").is_err()
@@ -197,32 +204,35 @@ pub fn board(app: &gtk::Application, stack: &gtk::Stack, conf: &crate::widgets::
             }
             stack.set_visible_child_name("kanban");
             for _ in 0..100 {
-                if result.text().starts_with("3 von 3") {
+                if readable_text(&result.text()).starts_with("3 von 3") {
                     break;
                 }
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             ensure!(
-                result.text().starts_with("3 von 3"),
+                readable_text(&result.text()).starts_with("3 von 3"),
                 "Board did not load on opening: {}",
                 result.text()
             );
             entries[0].set_text("VPN");
-            ensure!(result.text().starts_with("2 von 3"), "Search failed");
+            ensure!(
+                readable_text(&result.text()).starts_with("2 von 3"),
+                "Search failed"
+            );
             entries[1].set_text("Infra");
             entries[2].set_text("high");
             ensure!(
-                result.text().starts_with("1 von 3"),
+                readable_text(&result.text()).starts_with("1 von 3"),
                 "Combined priority/project failed"
             );
             entries[3].set_text("Offen");
             ensure!(
-                result.text().starts_with("0 von 3"),
+                readable_text(&result.text()).starts_with("0 von 3"),
                 "Status did not combine with other filters"
             );
             entries[2].set_text("");
             ensure!(
-                result.text().starts_with("1 von 3"),
+                readable_text(&result.text()).starts_with("1 von 3"),
                 "Clearing a filter failed"
             );
             for entry in &entries {
@@ -242,13 +252,13 @@ pub fn board(app: &gtk::Application, stack: &gtk::Stack, conf: &crate::widgets::
             let reload = find_button(&page, "Aufgaben neu laden").context("No inline reload")?;
             reload.emit_clicked();
             for _ in 0..100 {
-                if result.text().starts_with("4 von 4") {
+                if readable_text(&result.text()).starts_with("4 von 4") {
                     break;
                 }
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             ensure!(
-                result.text().starts_with("4 von 4"),
+                readable_text(&result.text()).starts_with("4 von 4"),
                 "Updated source was not reloaded"
             );
             std::fs::write(&source, b"invalid JSON")?;
@@ -265,7 +275,7 @@ pub fn board(app: &gtk::Application, stack: &gtk::Stack, conf: &crate::widgets::
             );
             entries[0].set_text("Delta");
             ensure!(
-                result.text().starts_with("1 von 4"),
+                readable_text(&result.text()).starts_with("1 von 4"),
                 "Source failure discarded loaded tasks"
             );
             ensure!(app.windows().len() == 1, "Kanban opened an external window");

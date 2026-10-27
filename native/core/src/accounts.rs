@@ -1,4 +1,5 @@
 //! Arguments for existing distribution tools; no Rampi account database.
+use crate::i18n::text as tr;
 use anyhow::{Result, ensure};
 use std::ffi::OsString;
 
@@ -11,11 +12,13 @@ pub fn validate_name(name: &str) -> Result<()> {
             && bytes
                 .iter()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || b"_-".contains(c)),
-        "Benutzername: 1–32 Kleinbuchstaben, Ziffern, _ oder -; mit Buchstabe oder _ beginnen."
+        "{}",
+        tr("account-invalid-name", &[])
     );
     ensure!(
         !["root", "nobody"].contains(&name),
-        "Reservierter Systemname"
+        "{}",
+        tr("account-reserved", &[])
     );
     Ok(())
 }

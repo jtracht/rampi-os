@@ -14,6 +14,66 @@ pub(crate) async fn wait_title(web: &webkit6::WebView, title: &str) -> anyhow::R
     }
     anyhow::bail!("Trusted HTTPS page did not load: {title}")
 }
+
+async fn device_permissions(
+    app: &gtk::Application,
+    stack: &gtk::Stack,
+    web: &webkit6::WebView,
+) -> anyhow::Result<()> {
+    use crate::checks::find_button;
+    ensure!(std::path::Path::new("/.dockerenv").is_file());
+    // Official WebKit synthetic capture source; validates the real HTTPS/JS/
+    // consent path, never claims a physical camera or microphone was tested.
+    webkit6::prelude::WebViewExt::settings(web)
+        .context("No WebKit settings")?
+        .set_enable_mock_capture_devices(true);
+    for allow in [false, true] {
+        web.load_uri("https://localhost:22225/start");
+        wait_title(web, "Rampi HTTPS start").await?;
+        web.evaluate_javascript_future("window.rampiCaptureResult='pending'; navigator.mediaDevices.getUserMedia({video:true}).then(s=>{s.getTracks().forEach(t=>t.stop());window.rampiCaptureResult='allowed';}).catch(()=>{window.rampiCaptureResult='denied';}); null", None, None).await?;
+        for _ in 0..250 {
+            if stack.visible_child_name().as_deref() == Some("browser-permission") {
+                break;
+            }
+            glib::timeout_future(std::time::Duration::from_millis(20)).await;
+        }
+        ensure!(
+            stack.visible_child_name().as_deref() == Some("browser-permission"),
+            "Actual WebKit media request did not reach the consent page"
+        );
+        let page = stack.visible_child().unwrap();
+        let action = if allow {
+            "Zugriff für diese Anfrage erlauben"
+        } else {
+            "Abbrechen"
+        };
+        find_button(&page, action)
+            .context("No inline device-consent action")?
+            .emit_clicked();
+        let expected = if allow { "allowed" } else { "denied" };
+        let mut actual = String::new();
+        for _ in 0..250 {
+            actual = web
+                .evaluate_javascript_future("window.rampiCaptureResult", None, None)
+                .await?
+                .to_str()
+                .to_string();
+            if actual == expected {
+                break;
+            }
+            glib::timeout_future(std::time::Duration::from_millis(20)).await;
+        }
+        ensure!(
+            actual == expected && app.windows().len() == 1,
+            "Device consent did not control actual WebKit capture"
+        );
+    }
+    webkit6::prelude::WebViewExt::settings(web)
+        .unwrap()
+        .set_enable_mock_capture_devices(false);
+    println!("RAMPI_RUST_BROWSER_DEVICE_CONSENT_MOCK_CAPTURE_OK");
+    Ok(())
+}
 async fn uploads(
     app: &gtk::Application,
     stack: &gtk::Stack,
@@ -365,6 +425,7 @@ pub fn run(
                 stack.set_visible_child_name("browser");
             }
             uploads(&app, &stack, &web).await?;
+            device_permissions(&app, &stack, &web).await?;
             status.set_text("");
             web.load_uri("https://127.0.0.1:22225/start");
             for _ in 0..300 {

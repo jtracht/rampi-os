@@ -170,6 +170,7 @@ with tempfile.TemporaryDirectory(prefix="rampi-browser-") as directory:
             raise RuntimeError(result.stdout + result.stderr)
         assert "RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK" in result.stdout
         assert "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK" in result.stdout
+        assert "RAMPI_RUST_BROWSER_DEVICE_CONSENT_MOCK_CAPTURE_OK" in result.stdout
         assert "RAMPI_RUST_BROWSER_MODERN_INPUT_FULLSCREEN_OK" in result.stdout
         assert "RAMPI_RUST_BROWSER_PROFILE_RESTART_OK" in result.stdout
         profile = next(

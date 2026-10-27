@@ -245,6 +245,11 @@ def acceptance(options):
                 raise RuntimeError("Source changed during actual streaming acceptance")
             stages = [
                 (
+                    "tailscale-installer.log",
+                    base + guarded + budget
+                    + [options.image, "python3", "tests/rust/test-tailscale-installer.py"],
+                ),
+                (
                     "keyring-profile.log",
                     base
                     + guarded
@@ -451,6 +456,7 @@ def acceptance(options):
                         "system/rampi-wayland-start",
                         "system/rampi-health",
                         "system/rampi-greeter",
+                        "system/rampi-tailscale-install",
                         "installer/raspberrypi/greeter-profile.sh",
                         "tests/rust/run-wayland.sh",
                     ]

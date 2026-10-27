@@ -46,12 +46,13 @@ pub async fn extended(bus: &gio::DBusConnection, stack: &gtk::Stack) -> anyhow::
                 == "000042"
         );
         ensure!(
-            named(&page, "pairing-entered")
-                .unwrap()
-                .downcast::<gtk::Label>()
-                .unwrap()
-                .text()
-                == format!("{entered} / 6 Zeichen eingegeben")
+            crate::checks::readable_text(
+                &named(&page, "pairing-entered")
+                    .unwrap()
+                    .downcast::<gtk::Label>()
+                    .unwrap()
+                    .text()
+            ) == format!("{entered} / 6 Zeichen eingegeben")
         );
         ensure!(!find_button(&page, "Bestätigen").unwrap().is_visible());
     }

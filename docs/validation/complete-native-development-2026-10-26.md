@@ -7,6 +7,70 @@ veröffentlichten Entwicklungsreleases werden nicht überschrieben.
 
 ## Implementiert und lokal als Komponente geprüft
 
+### Zusammenhängende Implementierung und anschließende Prüfung, 27.10.
+
+Auf Nutzerwunsch wurde der zusätzliche Funktionscode zuerst zusammenhängend
+ergänzt; danach begann die gebündelte Prüfung mit Korrekturen. Es wurde kein
+weiteres Entwicklungsrelease veröffentlicht.
+
+- Tailscale lässt sich aus der VPN-Seite nach eigener Bestätigung mit dem
+  vorhandenen sudo/PAM und signiertem APT installieren. Vorhandene CLI-Dateien,
+  Paketquellen, angepasste Dateien und Symlinks werden erhalten. Die offizielle
+  Quelle wird bei Bedarf ergänzt; die Paketliste für unbeaufsichtigte Updates
+  schließt Tailscale aus. Anbieterbedingungen werden vor der Installation genannt.
+  Grundlage ist die [offizielle Linux-Installation](https://tailscale.com/docs/install/linux).
+- Der Installationsvorgang und sein Ergebnis bleiben auf einer Rampi-Seite
+  sichtbar. Ein Zurückwechsel öffnet kein externes Terminal und beendet einen
+  noch laufenden Paketvorgang nicht.
+- Die verbliebenen Dropdowns für Kanban-Anbieter, WLAN-Adapter und
+  WLAN-Sicherheit wurden durch die vorhandene GTK-Listenauswahl innerhalb der
+  Seite ersetzt. Die Navigations- und Auswahlverwaltung bleibt bei GTK.
+- Linux-Konten, SSH-Einrichtung, Kopplungsseiten, Netzwerkseiten, Kanban,
+  Streaming, Downloads und Dateiauswahl nutzen nun zusätzlich die gemeinsamen
+  deutschen/englischen Fluent-Texte. Technische Meldungen fremder Programme
+  bleiben Meldungen dieser Programme; dies ist noch keine vollständige
+  Abnahme jedes Sprach- und Fehlerfalls.
+- WebKit-Kamera-/Mikrofonanfragen erhalten eine eigene Zustimmungsseite mit
+  Seitenkontext und angefragten Geräten. Standard ist Ablehnen, ohne dauerhafte
+  Rampi-Freigabe. Navigation, Verlassen und Ablauf der offenen Anfrage lehnen ab.
+  Andere nicht unterstützte Berechtigungsklassen werden weiterhin abgewiesen.
+
+Lokale Prüfergebnisse dieses noch nicht veröffentlichten Entwicklungsstands:
+
+- Rust-Build, Clippy, 21 Kerntests, ShellCheck und 311 Python-Tests bestehen;
+  elf Python-Tests sind übersprungen. Übersetzungsbedingte Rust-Lebensdauern und
+  Vergleichsfälle mit Fluent-Isolationszeichen wurden korrigiert, ohne die
+  Isolationszeichen aus der eigentlichen Oberfläche zu entfernen.
+- Der tatsächliche Wayland-Lauf besteht einschließlich englischer
+  Navigation, seiteneigener Auswahlen, OpenSSH, BlueZ-/NetworkManager-Verträgen,
+  libnm-Import, Kopplungsagent, Kanban und PCM-Klickausgabe. Der anschließende
+  bestehende Dauervergleich schaltet 600-mal und bleibt bei rund 227 MiB
+  Prozessspeicher, p95 rund 21,4 ms bis zum beobachteten Zeichnen. Das sind
+  Softwaremessungen unter 1 GiB/vier CPUs, keine Pi-GPU-Messungen.
+  Beleg: `artifacts/complete-phase2-wayland-pairing-ready.log`.
+- Echtes lokales HTTPS und WebKit bestehen einschließlich Download/Upload,
+  Profiltrennung und Geräte-Zustimmung/Ablehnung. Die Kameraquelle ist die
+  ausdrücklich aktivierte offizielle WebKit-Testquelle; kein physisches Gerät
+  wird behauptet. Beleg: `artifacts/complete-phase2-browser-sandbox-ready.log`.
+- Der neue Installer verweigert unprivilegierte Ausführung und erhält die
+  echte vorhandene offizielle CLI sowie angepasste Dateien und Symlinks im
+  wegwerfbaren Container. Diese Erhaltungsprüfung wird in der nativen CI Pflicht.
+  Beleg: `artifacts/complete-phase2-tailscale-preservation.log`.
+- Die tatsächliche signierte APT-Installation von Tailscale 1.104.2 samt
+  Paketdateien, manueller Update-Richtlinie und aktivierter Unit besteht als
+  Komponente. Der Container hat keinen systemd als PID 1: dessen fehlgeschlagener
+  Dienststart wird ausdrücklich nicht als Erfolg ausgegeben. Dieser Beleg
+  ersetzt keine gestartete VPN-Verbindung oder Image-Abnahme.
+  Beleg: `artifacts/complete-phase2-tailscale-package-accepted.log`.
+
+Der bisherige Erstkonto-Lauf `40452541633` ist fehlgeschlagen. Er belegt jetzt
+echte Kernel-Enter-Ereignisse sowie das Durchlaufen der originalen Namens- und
+Kennwortdialoge, aber noch keine PAM-Anmeldung. Eine einmalige ausgebliebene
+systemd-Statusantwort hatte den Beobachter beendet. Dieser wiederholt nun nur
+die lesende Statusabfrage unter derselben Gesamtfrist; eine fehlende Antwort
+gilt niemals als Bereitschaft. Alle Konten-, Schlüsselbund- und Bildprüfungen
+bleiben zwingend. Eine erneute frische Prüfung steht noch aus.
+
 - RDP übernimmt die persönliche Auflösung und XKB-Tastaturbelegung. Ein
   `DOMÄNE\Benutzer` wird an die bestehenden IronRDP-/SSPI-Schnittstellen übergeben.
   TLS, geprüfter Zertifikatsfingerabdruck und CredSSP bleiben verpflichtend.

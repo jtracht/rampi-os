@@ -1,0 +1,67 @@
+#!/bin/bash
+# Explicit installation via existing signed APT, never during image construction.
+set -euo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin LC_ALL=C
+[[ $EUID == 0 && $# == 1 && "$1" == --install ]] || {
+    echo 'Use sudo rampi-tailscale-install --install from the VPN page.' >&2; exit 2;
+}
+if [[ -e /usr/bin/tailscale || -e /usr/local/bin/tailscale ]]; then
+    echo 'Existing Tailscale installation retained; nothing changed.'; exit 0
+fi
+# shellcheck disable=SC1091
+source /etc/os-release
+[[ "${VERSION_CODENAME:-}" == trixie && ( "${ID:-}" == debian || "${ID:-}" == raspbian ) ]] || {
+    echo 'Requires Debian/Raspberry Pi OS Trixie.' >&2; exit 1;
+}
+case "$(dpkg --print-architecture)" in arm64|amd64) ;; *) exit 1 ;; esac
+install -d -m 700 /run/rampi-install
+exec 9>/run/rampi-install/tailscale.lock
+flock -x 9
+if [[ -e /usr/bin/tailscale || -e /usr/local/bin/tailscale ]]; then exit 0; fi
+if systemctl cat tailscaled.service >/dev/null 2>&1; then
+    echo 'Existing service without CLI needs administrator repair; nothing replaced.' >&2; exit 1
+fi
+repo=/etc/apt/sources.list.d/rampi-tailscale.list
+key=/usr/share/keyrings/rampi-tailscale.gpg
+updates=/etc/apt/apt.conf.d/52rampi-tailscale-manual
+declare -A destinations=([key]="$key" [repo]="$repo" [updates]="$updates")
+bundled=/usr/share/rampi/tailscale-archive-keyring.gpg
+[[ -f "$bundled" && ! -L "$bundled" ]] || { echo 'Packaged signing key missing.' >&2; exit 1; }
+reuse_repository=0
+while IFS= read -r -d '' file; do
+    [[ "$file" == "$repo" ]] && continue
+    if grep -q 'pkgs\.tailscale\.com' "$file"; then
+        reuse_repository=1
+    fi
+done < <(find -L /etc/apt -maxdepth 2 \( -name '*.list' -o -name '*.sources' \) -type f -print0)
+temporary="$(mktemp -d /run/rampi-install/tailscale.XXXXXX)"
+trap 'rm -rf -- "$temporary"' EXIT
+cp -- "$bundled" "$temporary/key"
+printf '%s\n' "deb [signed-by=$key] https://pkgs.tailscale.com/stable/debian trixie main" > "$temporary/repo"
+printf '%s\n' 'Unattended-Upgrade::Package-Blacklist { "^tailscale$"; };' > "$temporary/updates"
+items=(updates)
+if [[ "$reuse_repository" == 0 ]]; then items+=(key repo); fi
+for item in "${items[@]}"; do
+    destination="${destinations[$item]}"
+    if [[ -e "$destination" || -L "$destination" ]]; then
+        if [[ ! -f "$destination" || -L "$destination" ]] || ! cmp -s -- "$temporary/$item" "$destination"; then
+            echo "Existing configuration retained: $destination. Administrator review required." >&2; exit 1;
+        fi
+    fi
+done
+install -d -m 755 /usr/share/keyrings /etc/apt/sources.list.d /etc/apt/apt.conf.d
+for item in "${items[@]}"; do
+    destination="${destinations[$item]}"
+    if [[ ! -e "$destination" ]]; then
+        # Stage on the destination filesystem for atomic no-clobber publication.
+        staged="$(mktemp "$(dirname -- "$destination")/.rampi-tailscale.XXXXXX")"
+        install -m 644 "$temporary/$item" "$staged"
+        if ! ln -- "$staged" "$destination"; then rm -f -- "$staged"; exit 1; fi
+        rm -- "$staged"
+    fi
+done
+apt-get update
+apt-get install -y --no-install-recommends --no-remove --no-upgrade tailscale
+[[ -x /usr/bin/tailscale ]] || { echo 'Official CLI not installed.' >&2; exit 1; }
+systemctl enable --now tailscaled.service
+echo 'Installed. Return to VPN, refresh status, set your permissions and sign in. Updates remain manual.'

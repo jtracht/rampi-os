@@ -1,5 +1,6 @@
 use crate::widgets::*;
 use gtk::{glib, prelude::*};
+use rampi_core::i18n::text as tr;
 use std::{cell::RefCell, rc::Rc};
 use vte::prelude::*;
 
@@ -11,19 +12,19 @@ pub fn build(
     f: &Feedback,
 ) -> gtk::Box {
     let page = column();
-    page.append(&label("Persönlicher SSH-Zugang · OpenSSH"));
-    let generate = button("Persönlichen SSH-Schlüssel erstellen", f);
-    let adopt = button("Rampi-Schlüssel in Formular übernehmen", f);
-    let public = button("Öffentlichen Rampi-Schlüssel anzeigen", f);
-    let scan = button("Hostschlüssel des aktiven Profils prüfen", f);
-    let unlock = button("Aktiven SSH-Schlüssel entsperren", f);
+    page.append(&label(&tr("ssh-heading", &[])));
+    let generate = button(&tr("ssh-generate", &[]), f);
+    let adopt = button(&tr("ssh-adopt", &[]), f);
+    let public = button(&tr("ssh-public", &[]), f);
+    let scan = button(&tr("ssh-scan", &[]), f);
+    let unlock = button(&tr("ssh-unlock", &[]), f);
     let output = label("");
     output.set_selectable(true);
     for b in [&generate, &adopt, &public, &unlock, &scan] {
         page.append(b);
     }
     page.append(&output);
-    page.append(&label("Nach dem Speichern des Hostprofils den aktiven Schlüssel einmal entsperren. Die Passphrase bleibt im offiziellen OpenSSH-Terminal; der persönliche Agent hält den Schlüssel für diese Anmeldung bereit."));
+    page.append(&label(&tr("ssh-unlock-description", &[])));
     let (s, c, stat) = (stack.clone(), conf.clone(), status.clone());
     let unlocking = Rc::new(RefCell::new(None::<String>));
     unlock.connect_clicked(move |button| {
@@ -38,21 +39,34 @@ pub fn build(
                 let name = format!("ssh-unlock-{}", glib::monotonic_time());
                 crate::views::terminal(&s, &name, args, &stat);
                 let key = format!("terminal-{name}");
-                if let Some(term) = s.child_by_name(&key).and_then(|w| w.downcast::<vte::Terminal>().ok()) {
+                if let Some(term) = s
+                    .child_by_name(&key)
+                    .and_then(|w| w.downcast::<vte::Terminal>().ok())
+                {
                     *unlocking.borrow_mut() = Some(key);
-                    button.set_label("SSH-Entsperren fortsetzen");
-                    let (state, button, stat) = (unlocking.clone(), button.downgrade(), stat.clone());
+                    button.set_label(&tr("ssh-unlock-resume", &[]));
+                    let (state, button, stat) =
+                        (unlocking.clone(), button.downgrade(), stat.clone());
                     term.connect_child_exited(move |_, code| {
                         state.borrow_mut().take();
-                        if let Some(button) = button.upgrade() { button.set_label("Aktiven SSH-Schlüssel entsperren"); }
-                        stat.set_text(if code == 0 { "SSH-Schlüssel im persönlichen OpenSSH-Agent entsperrt." } else { "SSH-Schlüssel konnte nicht entsperrt werden. Ergebnis im Terminal prüfen." });
+                        if let Some(button) = button.upgrade() {
+                            button.set_label(&tr("ssh-unlock", &[]));
+                        }
+                        stat.set_text(&tr(
+                            if code == 0 {
+                                "ssh-unlock-done"
+                            } else {
+                                "ssh-unlock-failed"
+                            },
+                            &[],
+                        ));
                     });
                 }
             }
             Err(e) => stat.set_text(&e.to_string()),
         }
     });
-    page.append(&label("Die Schlüsselerstellung läuft innerhalb von Rampi im offiziellen OpenSSH-Terminal. Wähle dort eine Passphrase. Vorhandene Schlüssel werden nicht überschrieben. Übertrage ausschließlich den öffentlichen Schlüssel in dein persönliches Windows-Konto."));
+    page.append(&label(&tr("ssh-generate-description", &[])));
     let (s, stat) = (stack.clone(), status.clone());
     let running = Rc::new(RefCell::new(None::<String>));
     generate.connect_clicked(move |button| {
@@ -70,11 +84,11 @@ pub fn build(
                     .and_then(|w| w.downcast::<vte::Terminal>().ok())
                 {
                     *running.borrow_mut() = Some(key);
-                    button.set_label("Schlüsselerstellung fortsetzen");
+                    button.set_label(&tr("ssh-generate-resume", &[]));
                     let (state, button) = (running.clone(), button.clone());
                     term.connect_child_exited(move |_, _| {
                         state.borrow_mut().take();
-                        button.set_label("Persönlichen SSH-Schlüssel erstellen");
+                        button.set_label(&tr("ssh-generate", &[]));
                     });
                 }
             }
@@ -84,7 +98,7 @@ pub fn build(
     let (field, stat) = (field.clone(), status.clone());
     adopt.connect_clicked(move |_| {
         let result = crate::ssh_setup::key_path().and_then(|path| {
-            anyhow::ensure!(path.is_file(), "Zuerst einen Schlüssel erstellen");
+            anyhow::ensure!(path.is_file(), "{}", tr("ssh-create-first", &[]));
             field.set_text(&path.to_string_lossy());
             Ok(())
         });
@@ -100,7 +114,8 @@ pub fn build(
                 .read_to_string(&mut value)?;
             anyhow::ensure!(
                 value.len() <= 16384 && value.starts_with("ssh-ed25519 "),
-                "Ungültige öffentliche Schlüsseldatei"
+                "{}",
+                tr("ssh-public-invalid", &[])
             );
             output.set_text(value.trim());
             Ok(())
@@ -156,23 +171,26 @@ fn confirmation(
         stack.remove(&previous);
     }
     let page = column();
-    page.append(&label(&format!(
-        "Hostidentität prüfen · {}:{}",
-        scanned.host.address, scanned.host.port
+    page.append(&label(&tr(
+        "ssh-host-heading",
+        &[
+            ("host", &scanned.host.address),
+            ("port", &scanned.host.port.to_string()),
+        ],
     )));
     let fingerprint = label(&scanned.fingerprint);
     fingerprint.set_selectable(true);
     fingerprint.set_widget_name("ssh-fingerprint");
     page.append(&fingerprint);
-    page.append(&label("Ein empfangener Schlüssel ist noch kein Identitätsnachweis. Lies den SHA256-Fingerabdruck direkt am Windows-Host oder aus einem anderen vertrauenswürdigen Kanal ab. Auf Windows zeigt ssh-keygen -l -E sha256 -f C:\\ProgramData\\ssh\\ssh_host_ed25519_key.pub den Hostfingerabdruck. Gib genau diesen unabhängig geprüften Wert ein."));
+    page.append(&label(&tr("ssh-fingerprint-description", &[])));
     let expected = gtk::Entry::builder()
-        .placeholder_text("Unabhängig geprüfter SHA256-Fingerabdruck")
+        .placeholder_text(tr("ssh-fingerprint-input", &[]))
         .build();
     expected.set_widget_name("ssh-expected");
     page.append(&expected);
-    let no = button("Abbrechen", f);
+    let no = button(&tr("action-cancel", &[]), f);
     no.set_widget_name("rampi-back");
-    let yes = button("Geprüften Hostschlüssel übernehmen", f);
+    let yes = button(&tr("ssh-trust", &[]), f);
     page.append(&no);
     page.append(&yes);
     let pending = Rc::new(RefCell::new(Some(scanned)));
@@ -197,9 +215,7 @@ fn confirmation(
         glib::MainContext::default().spawn_local(async move {
             match crate::ssh_setup::accept(&scan, &value).await {
                 Ok(()) => {
-                    stat.set_text(
-                        "Geprüfter Hostschlüssel in der persönlichen OpenSSH-Datei gespeichert.",
-                    );
+                    stat.set_text(&tr("ssh-trusted", &[]));
                     if s.visible_child_name().as_deref() == Some("ssh-trust") {
                         s.set_visible_child_name("settings");
                     }

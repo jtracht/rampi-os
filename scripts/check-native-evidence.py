@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+installer_log = (directory / "tailscale-installer.log").read_text(encoding="utf-8")
+if "RAMPI_TAILSCALE_INSTALLER_PRESERVATION_OK" not in installer_log:
+    raise SystemExit("Tailscale installer privilege/preservation acceptance missing")
 if "RAMPI_STREAM_GSTREAMER_MEDIA_OK" not in (directory / "stream-media.log").read_text(
     encoding="utf-8"
 ):
@@ -135,6 +138,7 @@ browser_log = (directory / "browser-https.log").read_text(encoding="utf-8")
 for required in [
     "RAMPI_RUST_BROWSER_HTTPS_DOWNLOADS_OK",
     "RAMPI_RUST_BROWSER_UPLOAD_CONSENT_OK",
+    "RAMPI_RUST_BROWSER_DEVICE_CONSENT_MOCK_CAPTURE_OK",
     "RAMPI_RUST_BROWSER_MODERN_INPUT_FULLSCREEN_OK",
     "RAMPI_RUST_BROWSER_PROFILE_RESTART_OK",
     "RAMPI_RUST_BROWSER_OTHER_ACCOUNT_EMPTY_OK",

@@ -2,6 +2,7 @@
 use crate::widgets::*;
 use gtk::{glib, prelude::*};
 use rampi_core::board::Board;
+use rampi_core::i18n::text as tr;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -10,11 +11,11 @@ use std::{
 pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box {
     let page = column();
     let toolbar = row();
-    let back = button("← Dashboard", feedback);
+    let back = button(&tr("back-dashboard", &[]), feedback);
     let route = stack.clone();
     back.connect_clicked(move |_| route.set_visible_child_name("dashboard"));
-    let reload = button("Aufgaben neu laden", feedback);
-    let title = label("Kanban · Nur lesen");
+    let reload = button(&tr("board-reload", &[]), feedback);
+    let title = label(&tr("board-title", &[]));
     title.add_css_class("heading");
     toolbar.append(&back);
     toolbar.append(&title);
@@ -23,18 +24,18 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
 
     let filters = row();
     let entries: Vec<gtk::Entry> = [
-        ("board-query", "Suche", "Titel oder Beschreibung"),
-        ("board-project", "Projekt", "Alle Projekte"),
-        ("board-priority", "Priorität", "Alle Prioritäten"),
-        ("board-status", "Status", "Alle Status"),
+        ("board-query", "board-search", "board-search-hint"),
+        ("board-project", "board-project", "board-project-hint"),
+        ("board-priority", "board-priority", "board-priority-hint"),
+        ("board-status", "board-status-label", "board-status-hint"),
     ]
     .into_iter()
     .map(|(name, title, hint)| {
         let group = column();
         group.set_hexpand(true);
-        group.append(&label(title));
+        group.append(&label(&tr(title, &[])));
         let entry = gtk::Entry::builder()
-            .placeholder_text(hint)
+            .placeholder_text(tr(hint, &[]))
             .hexpand(true)
             .width_chars(12)
             .build();
@@ -45,7 +46,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
     })
     .collect();
     page.append(&filters);
-    page.append(&label("Projekt, Priorität und Status filtern nach dem vollständigen Wert. Leere Felder zeigen alle Werte."));
+    page.append(&label(&tr("board-filter-description", &[])));
     let message = label("");
     message.set_widget_name("board-result");
     page.append(&message);
@@ -79,16 +80,21 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
             return;
         }
         let cards = board.filtered(&values[0], &values[1], &values[2], &values[3]);
-        summary.set_text(&format!(
-            "{} von {} Aufgaben · {}{}",
-            cards.len(),
-            board.cards.len(),
-            board.title,
-            if render_cached.get() {
-                " · Offline-Cache (Aktualisierung fehlgeschlagen)"
-            } else {
-                ""
-            }
+        summary.set_text(&tr(
+            "board-summary",
+            &[
+                ("count", &cards.len().to_string()),
+                ("total", &board.cards.len().to_string()),
+                ("title", &board.title),
+                (
+                    "cache",
+                    &if render_cached.get() {
+                        tr("board-cache-suffix", &[])
+                    } else {
+                        String::new()
+                    },
+                ),
+            ],
         ));
         for (index, name) in board
             .columns(&c.borrow().board_columns)
@@ -115,7 +121,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
             lane.append(&body);
             append_batch(&body, &matching, &shown);
             if matching.len() > shown.get() {
-                let more = button("Weitere Aufgaben anzeigen", &feedback);
+                let more = button(&tr("board-more", &[]), &feedback);
                 let (body, shown) = (body.clone(), shown.clone());
                 more.connect_clicked(move |button| {
                     append_batch(&body, &matching, &shown);
@@ -152,7 +158,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
         let current = c.clone();
         let cache_state = cached.clone();
         let (b, serial, render, msg) = (board.clone(), serial.clone(), render.clone(), msg.clone());
-        msg.set_text("Aufgaben werden geladen …");
+        msg.set_text(&tr("board-loading", &[]));
         glib::MainContext::default().spawn_local(async move {
             let loaded = crate::board_data::load(settings).await;
             if serial.get() != ticket || crate::board_data::key(&current.borrow()) != key {
@@ -164,9 +170,9 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
                     *b.borrow_mut() = loaded.board;
                     render();
                 }
-                Err(error) => msg.set_text(&format!(
-                    "{error} · Bereits geladene Aufgaben bleiben sichtbar."
-                )),
+                Err(error) => {
+                    msg.set_text(&tr("board-load-error", &[("error", &error.to_string())]))
+                }
             }
         });
     });
