@@ -14,6 +14,9 @@ pub(crate) async fn type_remote(text: &str) -> anyhow::Result<()> {
         .split_whitespace()
         .flat_map(|key| ["-p".into(), key.into()])
         .collect();
+    // The new virtual keyboard/keymap must reach GTK before its first press.
+    // Sleeping before launching wtype cannot settle a keyboard not yet created.
+    keys.extend(["-s".into(), "100".into()]);
     for key in text.chars() {
         keys.extend(["-k".into(), key.to_string().into()]);
     }

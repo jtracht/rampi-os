@@ -304,3 +304,20 @@ Datei im Gast und werden nach Erfolg entfernt; das öffentliche Archiv enthält 
 den sachlichen Neustartbeleg und einen Screenshot. Die Archivprüfung verlangt
 diese beiden zusätzlichen Dateien. Das ist implementierte Prüfunterstützung,
 noch kein bestandener Neustart-Nachweis und kein zusätzlicher Prozentpunkt.
+
+Der frische Image-Lauf `40483411851` auf `5932cfd` besteht inzwischen einschließlich
+des ersten eigenen Kontos, PAM, Schlüsselbundspeicherung und erneuter Anmeldung.
+Die heruntergeladenen Belege wurden mit den unveränderten Prüfern genau dieser
+Quellrevision nochmals geprüft. Das ist noch keine Neustart- oder finale Release-
+Abnahme. Der zusätzliche Zweiboot-Prüflauf `40493918238` verwendet dieses Image.
+
+Native CI `40483448283` scheiterte auf beiden Architekturen nach erfolgreichem
+zehnminütigem Video-/Audiolauf an fehlenden tatsächlichen R-Tastendrücken; Enter
+war empfangen worden. Die virtuelle Prüf-Tastatur wartet jetzt nach ihrer neuen
+Tastenbelegung, bevor sie den ersten Tastendruck sendet. Eine Pause vor dem Start
+des Eingabewerkzeugs konnte diese noch nicht erzeugte Tastatur nicht vorbereiten.
+Lokal bestehen nun auch die vollständigen empfangenen Sunshine-Paketprüfungen
+beider Verbindungen, einschließlich R, Enter, Maus und reservierter Tastenkombination.
+Dieser Lauf ist ausdrücklich eine lokale Entwicklungs-Komponentenprüfung, kein
+Ersatz der neuen CI oder des abschließenden Dauerlaufs. Produkt-Eingabe und
+Anforderungen des Belegprüfers wurden nicht geändert.
