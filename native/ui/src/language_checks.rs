@@ -52,6 +52,25 @@ pub fn run(
             ensure!(rampi_core::tailscale::Status::parse(
                 br#"{"BackendState":"NeedsLogin"}"#
             )?.description() == "Tailscale · Sign-in required");
+            pages.set_visible_child_name("host");
+            let host = pages.child_by_name("host").context("No host page")?;
+            find_button(&host, "New host profile").context("No English new-profile action")?.emit_clicked();
+            for (id, value) in [("name", "English fixture"), ("address", "host.example"),
+                ("username", "fixture"), ("port", "2222"), ("resolution", "1280x720")] {
+                named(&host, &format!("host-{id}")).context("Missing host field")?
+                    .downcast::<gtk::Entry>().ok().context("Host field type")?.set_text(value);
+            }
+            find_button(&host, "Save host profile").unwrap().emit_clicked();
+            let saved = rampi_core::config::Settings::load(&rampi_core::config::config_dir()?.join("settings.json"))?;
+            ensure!(saved.hosts.len() == 1 && saved.hosts[0].port == 2222
+                && saved.hosts[0].address == "host.example", "English editor did not save the actual profile");
+            find_button(&host, "Use selected host").unwrap().emit_clicked();
+            find_button(&host, "Prepare removal").unwrap().emit_clicked();
+            find_button(&host, "Cancel removal").unwrap().emit_clicked();
+            ensure!(rampi_core::config::Settings::load(&rampi_core::config::config_dir()?.join("settings.json"))?.hosts.len() == 1);
+            find_button(&host, "Prepare removal").unwrap().emit_clicked();
+            find_button(&host, "Remove host profile permanently").unwrap().emit_clicked();
+            ensure!(rampi_core::config::Settings::load(&rampi_core::config::config_dir()?.join("settings.json"))?.hosts.is_empty());
             pages.set_visible_child_name("system");
             let languages = named(&system, "language-choices").unwrap()
                 .downcast::<gtk::ListBox>().unwrap();

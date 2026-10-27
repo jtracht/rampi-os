@@ -2,6 +2,7 @@
 use crate::widgets::*;
 use gtk::prelude::*;
 use rampi_core::config::{self, Host};
+use rampi_core::i18n::text as tr;
 use std::{cell::Cell, rc::Rc};
 
 fn persist(conf: &Shared, candidate: rampi_core::config::Settings) -> anyhow::Result<()> {
@@ -12,19 +13,19 @@ fn persist(conf: &Shared, candidate: rampi_core::config::Settings) -> anyhow::Re
 
 pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let page = column();
-    page.append(&label("Windows 11 Pro · persönliche Hostprofile"));
+    page.append(&label(&tr("host-heading", &[])));
     let profiles = gtk::ListBox::new();
     profiles.set_widget_name("host-profiles");
     page.append(&profiles);
     let editing: Rc<Cell<Option<usize>>> = Rc::new(Cell::new(None));
     let mut fields = vec![];
     for (name, id) in [
-        ("Profilname", "name"),
-        ("Hostname / VPN-IP", "address"),
-        ("Windows-Benutzername", "username"),
-        ("SSH-Port", "port"),
-        ("Privater SSH-Schlüssel · Dateipfad", "identity"),
-        ("Streaming-Auflösung · z. B. 1280x720", "resolution"),
+        (&tr("host-name", &[]), "name"),
+        (&tr("host-address", &[]), "address"),
+        (&tr("host-username", &[]), "username"),
+        (&tr("host-port", &[]), "port"),
+        (&tr("host-identity", &[]), "identity"),
+        (&tr("host-resolution", &[]), "resolution"),
     ] {
         page.append(&label(name));
         let field = gtk::Entry::new();
@@ -88,20 +89,20 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
             .as_ref(),
     );
     let actions = column();
-    let new = button("Neues Hostprofil", f);
-    let save = button("Hostprofil speichern", f);
-    let activate = button("Ausgewählten Host verwenden", f);
-    let remove = button("Entfernen vorbereiten", f);
-    let confirm = button("Hostprofil endgültig entfernen", f);
-    let cancel = button("Entfernen abbrechen", f);
+    let new = button(&tr("host-new", &[]), f);
+    let save = button(&tr("host-save", &[]), f);
+    let activate = button(&tr("host-activate", &[]), f);
+    let remove = button(&tr("host-remove", &[]), f);
+    let confirm = button(&tr("host-remove-confirm", &[]), f);
+    let cancel = button(&tr("host-remove-cancel", &[]), f);
     confirm.set_visible(false);
     cancel.set_visible(false);
     for b in [&new, &save, &activate, &remove, &confirm, &cancel] {
         actions.append(b);
     }
     page.append(&actions);
-    page.append(&label("Entfernen löscht nur das Rampi-Profil. SSH-Schlüssel und Hostdaten bleiben erhalten. Ein Profilwechsel verwirft ungespeicherte Formularänderungen; bestehende Terminals behalten ihren bisherigen Host."));
-    page.append(&label("OpenSSH prüft bekannte Hostschlüssel. Unbekannte Schlüssel werden nicht automatisch akzeptiert. Verwende einen bestehenden persönlichen Schlüssel; Kennwörter gehören nicht in diese Datei."));
+    page.append(&label(&tr("host-remove-description", &[])));
+    page.append(&label(&tr("host-ssh-description", &[])));
     let (e, l, p, yes, no) = (
         editing.clone(),
         load,
@@ -165,7 +166,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         let result = (|| -> anyhow::Result<()> {
             let index = e
                 .get()
-                .ok_or_else(|| anyhow::anyhow!("Zuerst ein gespeichertes Profil auswählen"))?;
+                .ok_or_else(|| anyhow::anyhow!(tr("host-select-saved", &[])))?;
             let mut candidate = c.borrow().clone();
             candidate.active_host = index;
             persist(&c, candidate)?;
@@ -187,7 +188,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         q.set(e.get());
         yes.set_visible(q.get().is_some());
         no.set_visible(q.get().is_some());
-        stat.set_text("Profilentfernung bestätigen oder abbrechen.");
+        stat.set_text(&tr("host-remove-prompt", &[]));
     });
     let (yes, no, q) = (confirm.clone(), cancel.clone(), pending.clone());
     cancel.connect_clicked(move |_| {
@@ -208,10 +209,11 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         let result = (|| -> anyhow::Result<()> {
             let index = q
                 .take()
-                .ok_or_else(|| anyhow::anyhow!("Keine bestätigte Auswahl"))?;
+                .ok_or_else(|| anyhow::anyhow!(tr("host-no-confirmed-selection", &[])))?;
             anyhow::ensure!(
                 e.get() == Some(index),
-                "Auswahl geändert; Entfernen erneut vorbereiten"
+                "{}",
+                tr("host-selection-changed", &[])
             );
             let mut candidate = c.borrow().clone();
             candidate.hosts.remove(index);

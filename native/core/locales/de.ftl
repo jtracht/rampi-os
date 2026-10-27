@@ -179,3 +179,24 @@ wireguard-wrong-type = Kein WireGuard-Profil.
 wireguard-list-missing = Profilübersicht fehlt.
 wireguard-import-cancelled = Der Profilimport wurde abgebrochen.
 wireguard-no-longer-available = Persönliches Profil nicht mehr verfügbar.
+
+# Personal host profile editor
+host-heading = Windows 11 Pro · persönliche Hostprofile
+host-name = Profilname
+host-address = Hostname / VPN-IP
+host-username = Windows-Benutzername
+host-port = SSH-Port
+host-identity = Privater SSH-Schlüssel · Dateipfad
+host-resolution = Streaming-Auflösung · z. B. 1280x720
+host-new = Neues Hostprofil
+host-save = Hostprofil speichern
+host-activate = Ausgewählten Host verwenden
+host-remove = Entfernen vorbereiten
+host-remove-confirm = Hostprofil endgültig entfernen
+host-remove-cancel = Entfernen abbrechen
+host-remove-description = Entfernen löscht nur das Rampi-Profil. SSH-Schlüssel und Hostdaten bleiben erhalten. Ein Profilwechsel verwirft ungespeicherte Formularänderungen; bestehende Terminals behalten ihren bisherigen Host.
+host-ssh-description = OpenSSH prüft bekannte Hostschlüssel. Unbekannte Schlüssel werden nicht automatisch akzeptiert. Verwende einen bestehenden persönlichen Schlüssel; Kennwörter gehören nicht in diese Datei.
+host-select-saved = Zuerst ein gespeichertes Profil auswählen
+host-remove-prompt = Profilentfernung bestätigen oder abbrechen.
+host-no-confirmed-selection = Keine bestätigte Auswahl
+host-selection-changed = Auswahl geändert; Entfernen erneut vorbereiten

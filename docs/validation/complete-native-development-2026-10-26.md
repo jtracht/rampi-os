@@ -169,6 +169,17 @@ Zwei vorherige lokale Aufrufe als root scheiterten zu Recht an der verweigerten
 Operatorzuweisung für reservierte Systemkonten; sie zählen nicht als Erfolg.
 Clippy/Build und 311 Python-Tests bestehen, elf Tests bleiben übersprungen.
 
+Die Hostprofilverwaltung bietet ihre Felder, Aktionen, Entfernungshinweise und
+Auswahlfehler ebenfalls auf Deutsch und Englisch. Der tatsächliche englische
+GTK-Test legt ein Profil an, prüft die gespeicherte Adresse und Portnummer,
+aktiviert es, bricht eine Entfernung ab und bestätigt anschließend die erneute
+Entfernung. Es bleibt bei einem Fenster und dem persönlichen Konfigurationspfad.
+Nachweis: `artifacts/complete-host-language-user-ui.log`; Clippy, Build, die
+21 Kerntests und alle 311 Python-Tests bestehen. Diese Profilprüfung verbindet
+sich mit keinem Windows-Rechner und ersetzt keinen SSH- oder RDP-Nachweis.
+Die zusätzlichen SSH-Einrichtungsaktionen und andere verbleibende Seiten sind
+weiterhin gesondert auf vollständige Übersetzung zu prüfen.
+
 ## Noch vor der Komplettversion
 
 1. Den unveränderten Erststart im frisch gebauten Image und den folgenden
