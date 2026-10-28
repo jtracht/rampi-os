@@ -6,7 +6,7 @@ Die neue Sitzung verwendet labwc und benötigt kein `startx`. Terminals und Brow
 werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
 weiterhin vorhandene Systemdienste. Eigenentwickelter Code: Apache-2.0.
 
-**Aktuell: 90,5 % (86/95 Punkte im Drei-Modul-Umfang); native Vorabversion.**
+**Aktuell: 95,8 % (91/95 Punkte im Drei-Modul-Umfang); native Vorabversion.**
 Bewertung, Abnahmen und offene Arbeiten stehen in [PROGRESS.md](docs/PROGRESS.md).
 Die [Migrationsübersicht](docs/RUST-MIGRATION.md) nennt Quellcode, Start,
 softwareseitige Nachweise und verbleibende Funktionen. Der frühere Stand von
@@ -18,17 +18,16 @@ Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Rust wird mit
 Docker/Wayland, nativer ARM64-CI und anschließend neuen Image-/QEMU-Tests geprüft.
 
 Rampi umfasst drei Hauptmodule: **Kanban**, **Remote Desktop** und **Browser**.
-[v0.6.0-dev.3](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.3)
-enthält das frisch gebaute native ARM64-Image mit Streaming, RDP und persönlichen
-PAM-Schlüsselbünden. Beide Erstkonto-Wege und jeweils ein normaler Neustart
-bestehen. Alle 28 öffentlichen Dateien wurden unabhängig heruntergeladen und
-geprüft: [Release-Abnahme](docs/validation/native-first-account-dev3-release.md).
+[v0.6.0-dev.4](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.4) enthält das frisch gebaute native ARM64-Image
+mit Streaming, RDP, persönlichen PAM-Schlüsselbünden und DE-/EN-Sitzungssprache.
+Beide Erstkonto-Wege und jeweils ein normaler Neustart bestehen; alle
+28 öffentlichen Dateien wurden unabhängig heruntergeladen und geprüft:
+[Release-Abnahme](docs/validation/native-dev4-software-acceptance.md).
 
 Beim ersten Start wird ein eigener Benutzer mit eigenem Kennwort eingerichtet;
-es gibt kein Standardpasswort. Das ältere dev2-Image hat einen bekannten Fehler
-vor dieser Einrichtung und bleibt unverändert. Der Folgestand dev4 korrigiert
-außerdem den gemessenen kalten Sprachabruf; seine vollständige Abnahme steht
-noch aus. Das aktuelle Release bleibt eine unvollständige Vorabversion.
+es gibt kein Standardpasswort. Ältere Releases werden nicht überschrieben.
+Die verbleibenden Abnahmegrenzen stehen im Fortschrittsbericht; das Release
+bleibt ausdrücklich eine Vorabversion.
 
 ## Rust-Entwicklung unter Linux
 

@@ -4,29 +4,28 @@ Dies ist der Rust-/Wayland-Entwicklungsstand. v0.5.0 enthält den früheren
 Python-/QML-Prototyp. Das native Entwicklungsimage hat eine eigene dokumentierte
 Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 
-Die folgende Tabelle beschreibt den aktuellen Entwicklungszweig. Das veröffentlichte
-[dev3-Image](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.3) besteht
-einschließlich beider Erstkonto-Wege, normaler Neustarts und 28 unabhängig geprüfter
-öffentlicher Dateien. Das ältere dev2 hat einen bekannten Erststartfehler; es gibt
-kein Standardpasswort. Der Folgestand dev4 korrigiert den gemessenen kalten
-Sprachabruf und erweitert die Sprachprüfung. Seine eigene vollständige Quellen-
-und Image-Abnahme steht noch aus.
+Die folgende Tabelle beschreibt den aktuellen Entwicklungsstand. Das veröffentlichte
+[dev4-Image](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.4) besteht
+einschließlich beider Erstkonto-Wege, normaler Neustarts, persönlicher DE-/EN-Locale
+und unabhängig geprüfter öffentlicher Dateien. Es gibt kein Standardpasswort.
+[Quellen und Abnahmen](validation/native-dev4-software-acceptance.md).
+Die noch nicht vollständig abgenommenen Bereiche bleiben ausdrücklich benannt.
 
-| Bereich | Vorhanden | Wesentliche offene Arbeit |
+| Bereich | Vorhanden | Abnahmegrenzen und offene Arbeit |
 |---|---|---|
 | Sitzung/Dashboard | Rust/GTK/labwc, drei abgenommene native Module, Live-Status, Offline-Bedienung | Gesamtprodukt bleibt eine Vorabversion |
 | Eingabe/Design | Tastatur, Maus, Cursorwechsel, unabhängige Wellen, Klänge, reduzierte Bewegung | Windows-Remote-Eingabe im neuen Gesamtaufbau |
-| Einrichtung | Fortsetzbare 12 Stationen, gemeinsame Einstellungsseiten, persönliche DE-/EN-Sprache und Sitzungs-Locale | Abschließende Image-Abnahme einschließlich normalem Neustart und vorab eingerichtetem Konto |
+| Einrichtung | Fortsetzbare 12 Stationen, gemeinsame Einstellungsseiten, persönliche DE-/EN-Sprache und Sitzungs-Locale | Beide Erstkonto-Wege, normale Neustarts und persönliche DE-/EN-Anmeldung im frischen Image bestanden |
 | Linux-Konto | Grafischer greetd-/PAM-Login mit Original-Branding, eigenes passwd, Abmeldung, private SSH-Agenten und persönliche Schlüsselbünde | Softwareabnahme einschließlich Streaming-Geheimnissen und erneuter Anmeldung im neuen Image bestanden |
 | WLAN | Eigene integrierte Seite; sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private Profile; WPA2, sichtbares/verstecktes WPA3, DHCP und Kontentrennung in frischen AMD64-/ARM64-QEMU-Gästen abgenommen | Unternehmensnetze benötigen vorhandenes NM-Profil; physische Funkqualität ausgeschlossen |
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart; Mehradapteroberfläche und tatsächliche virtuelle BlueZ-Bindungen auf AMD64/ARM64 abgenommen | Durchgängige HID-/Remote-Eingabeabnahmen; physischer Funk ausgeschlossen |
-| WireGuard/Tailscale | Persönlicher libnm-Import, echte WG-Tunnel; offizieller TS-Dienst, persönliche Anmeldung, privater Kernel-Tunnel mit Rechten/Wiederverbindung softwaregeprüft; manuelle signierte Paketinstallation integriert | Neuer Installationspfad benötigt noch Dienst-/Tunnelabnahme im vollständigen System; physische Netze ausgeschlossen |
-| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; NLA-only gegen vorhandenen FreeRDP-/WinPR-Server mit richtigen/falschen Konten, Domain und Kennwörtern softwaregeprüft | Finale Quellenabnahme steht aus; Windows-Testhosts sind ausgeschlossen, daher keine tatsächliche Windows-Host-Zertifizierung |
-| Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache; private Repository-, Organisations- und Benutzerprojekte mit echten Gitea-HTTPS-Prüfungen | Finale Quellenabnahme; persönliche Anbieterzugänge werden vom jeweiligen Benutzer eingerichtet |
-| Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten; Mikrofon-/Kamerafreigabe mit realem WebKit und synthetischer Aufnahmequelle geprüft | Finale Quellenabnahme; synthetische Quelle bestätigt keine physische Kamera oder Mikrofonhardware |
-| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettetes Moonlight-/GStreamer-Streaming mit privater Kopplung und Dauerlastprüfung; NLA-only-Komponentenprüfung vorhanden | Finale Quellen-/Eingabeabnahme läuft; Pi-Hardwaredecoder softwareseitig angebunden, aber auf Nutzerwunsch nicht physisch geprüft; Sunshine gibt über die Kopplung seine Host-Sitzung frei |
+| WireGuard/Tailscale | Persönlicher libnm-Import, echte WG-Tunnel; offizieller TS-Dienst, persönliche Anmeldung, privater Kernel-Tunnel mit Rechten/Wiederverbindung softwaregeprüft; manuelle signierte Paketinstallation integriert | Signierte Dienstinstallation und Erhaltung im frischen systemd-Gast sowie getrennte reale Tunnelabnahme bestanden; physische Netze ausgeschlossen |
+| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; NLA-only gegen vorhandenen FreeRDP-/WinPR-Server mit richtigen/falschen Konten, Domain und Kennwörtern softwaregeprüft | Finale Quellenabnahme bestanden; Windows-Testhosts sind ausgeschlossen, daher keine tatsächliche Windows-Host-Zertifizierung |
+| Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache; private Repository-, Organisations- und Benutzerprojekte mit echten Gitea-HTTPS-Prüfungen | Finale Quellenabnahme bestanden; persönliche Anbieterzugänge werden vom jeweiligen Benutzer eingerichtet |
+| Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten; Mikrofon-/Kamerafreigabe mit realem WebKit und synthetischer Aufnahmequelle geprüft | Finale Quellenabnahme bestanden; synthetische Quelle bestätigt keine physische Kamera oder Mikrofonhardware |
+| RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettetes Moonlight-/GStreamer-Streaming mit privater Kopplung und Dauerlastprüfung; NLA-only-Komponentenprüfung vorhanden | Finale Quellen-/Protokolleingabeabnahme bestanden; physische HID-/Windows-Eingabe nicht behauptet; Pi-Hardwaredecoder softwareseitig angebunden, aber nicht physisch geprüft; Sunshine gibt über die Kopplung seine Host-Sitzung frei |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
-| Image/Release | Veröffentlichtes v0.6.0-dev.3, vollständige Quellen/Lizenzen, zwei Erstkonto-Verfahren mit normalen Neustarts, grafische PAM-Anmeldung und 28 unabhängig geprüfte öffentliche Dateien | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
+| Image/Release | Veröffentlichtes v0.6.0-dev.4, vollständige Quellen/Lizenzen, zwei Erstkonto-Verfahren mit normalen Neustarts, grafische PAM-Anmeldung und 28 unabhängig geprüfte öffentliche Dateien | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
 
 ## Fehler eingrenzen
 

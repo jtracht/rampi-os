@@ -9,36 +9,35 @@ Prozentwert vergleichbar. Nach Abzug der früheren drei Anbieter-CLI-Punkte
 beträgt die vergleichbare Basis **78/95 = 82,1 %**. Die entfernten fünf möglichen
 Punkte werden nicht auf andere Bereiche verteilt.
 
-Der belegte Stand beträgt jetzt **86/95 = 90,5 %**. Das veröffentlichte
-[v0.6.0-dev.3](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.3)
-besteht einschließlich tatsächlicher erster Kontoeinrichtung, normalen Neustarts,
-grafischer PAM-Anmeldung, privaten Schlüsselbünden und unabhängiger Kontrolle
-aller 28 öffentlichen Dateien. Nur der zurückgenommene Image-Punkt wird
-wiederhergestellt: [Erststart-Abnahme](validation/native-first-account-dev3-release.md).
-Das fehlerhafte ältere dev2 bleibt unverändert; es gibt kein Standardpasswort.
+Der belegte Stand beträgt jetzt **91/95 = 95,8 %**.
+Das veröffentlichte [v0.6.0-dev.4](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.4)
+besteht die endgültige native Abnahme beider Architekturen, den frischen Imagebau,
+beide Erstkonto-Verfahren mit normalen Neustarts und die unabhängige Kontrolle
+der wirklich veröffentlichten Dateien. Die fünf zusätzlichen Softwareabschlüsse
+sind einzeln [begründet und zugeordnet](validation/native-dev4-software-acceptance.md).
 
 | Bereich | Basis / 5 | Aktuell abgenommen / 5 |
 |---|---:|---:|
 | Grafische Sitzung und Dashboard | 4 | 5 |
 | Tastatur und Maus | 4 | 4 |
-| Setup-Assistent | 4 | 4 |
+| Setup-Assistent | 4 | 5 |
 | Linux-Konten und Login | 4 | 5 |
 | WLAN | 5 | 5 |
 | Bluetooth | 4 | 4 |
-| VPN | 4 | 4 |
+| VPN | 4 | 5 |
 | Windows-Host | 4 | 4 |
-| Remote Desktop und Streaming | 3 | 4 |
-| Kanban | 4 | 4 |
+| Remote Desktop und Streaming | 3 | 5 |
+| Kanban | 4 | 5 |
 | Browser | 5 | 5 |
 | Installer und Reparatur | 4 | 5 |
-| Sicherheit und Isolation | 4 | 4 |
+| Sicherheit und Isolation | 4 | 5 |
 | Design und Branding | 4 | 4 |
 | GitHub und CI/CD | 4 | 5 |
 | Systemimage | 4 | 5 |
 | Manuelle Updates | 5 | 5 |
 | Dokumentation | 4 | 5 |
 | Performance | 4 | 5 |
-| **Summe** | **78 / 95** | **86 / 95** |
+| **Summe** | **78 / 95** | **91 / 95** |
 
 Die Bewertungsstufen bleiben unverändert: 0 fehlt, 1 Grundlage, 2 teilweise,
 3 wesentliche Funktionen, 4 weitgehend umgesetzt und softwaregeprüft,
@@ -55,28 +54,21 @@ GitHub/CI/CD ergänzt den erfolgreich veröffentlichten nativen Entwicklungsrele
 mit frischem Image und vollständig unabhängig geprüften öffentlichen Downloads.
 Die genauen Grenzen und Artefaktzuordnungen stehen im verlinkten Nachweis.
 
-Das dev3-Release bleibt ausdrücklich unvollständig. Direkte KI-Integrationen
-bleiben entfernt. Hardwaretests, Windows-Testhosts und Modellanfragen sind
-ausgeschlossen. Nenner und bisherige Bewertungsstufen bleiben unverändert.
+Das dev4-Release bleibt ausdrücklich eine Vorabversion. Der ältere Imagefehler
+ist bereits in dev3 behoben; beide Veröffentlichungen bleiben unverändert.
+Es gibt kein Standardpasswort. Die kalte persönliche Sprache und ihre erneute
+PAM-Anmeldung sind nun zusätzlich an die endgültige dev4-Quelle gebunden.
 
-## Weiterarbeit bis mindestens 95 Prozent
+## Verbleibende Arbeit
 
-Der Folgestand dev4 ergänzt Sprach- und Validierungsfehlertexte, gemeinsame
-konfigurationserhaltende Locale-Installation und echte Anmelde-/Neuanmeldeprüfungen
-für Deutsch und Englisch. Die zu kurze dreisekündige Frist des kalten Sprachabrufs
-wurde anhand einer tatsächlichen 6,7-Sekunden-Messung im emulierten Gast korrigiert.
-Die endgültige Quelle muss weiterhin auf beiden Architekturen vollständig
-bestehen. Diagnosegäste, neue Tests und Quellcode allein geben keine Punkte.
+Tastatur-/Layout-Randfälle, durchgängige Bluetooth-HID-/Remote-Eingabe,
+tatsächliche Windows-Host-Randfälle und Fokus-/Bedienungsfeinschliff behalten
+jeweils 4/5. Das vollständige 100-Prozent-Ziel ist nicht abgeschlossen.
+`regular_release` bleibt `false`. Hardwaretests, Windows-Testhosts und
+Modellanfragen sind weiterhin ausgeschlossen.
 
-Danach sind insbesondere Einrichtung, VPN, RDP/Streaming, Kanban und übergreifende
-Berechtigungs-/Sitzungsgrenzen anhand derselben Skala erneut abzunehmen. Noch
-nicht frisch abgenommene Bereiche behalten ihren Tabellenwert. Bluetooth-HID,
-Tastatur-/Layoutfälle, Windows-Host-Randfälle und Fokus-/Bedienungsfeinschliff
-bleiben offen. Das volle 100-Prozent-Ziel ist nicht abgeschlossen.
-`regular_release` bleibt `false`.
-
-[Frühere 81-Punkte-Abnahme](validation/rust-native-81-2026-10-24.md),
+[Dev4-Abnahme](validation/native-dev4-software-acceptance.md),
+[Dev3-Erststart-Abnahme](validation/native-first-account-dev3-release.md),
 [historische dev2-Abnahme](validation/native-streaming-dev2-release.md),
-[gemeinsamer Entwicklungsstand](validation/complete-native-development-2026-10-26.md),
 [Bedienung](NATIVE-USER-GUIDE.de.md), [Betrieb](NATIVE-OPERATIONS.de.md),
 [Umfang und Fehlerhilfe](NATIVE-SUPPORT.de.md).

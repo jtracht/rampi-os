@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0-dev.4 — planned native follow-up, not yet published
+## 0.6.0-dev.4 — published and independently verified prerelease
 
 - Complete German/English keyboard, display, host and board validation messages
   through the existing Fluent catalogs.
@@ -11,8 +11,13 @@
 - Keep Linux first-account boot preparation off unsupported Windows hosts and
   provide the actual OpenSSL dependency in the Linux test container.
 
-No release or new progress point is asserted by these source changes. The existing
-source, fresh-image and public-download acceptance gates remain mandatory.
+- Bound the cold personal-locale export at 30 seconds after reproducing the
+  real three-second startup timeout in an isolated guest.
+
+Final source CI on both architectures, the fresh image and both first-account
+reboot procedures passed. Actual public downloads, checksums, sources and
+licenses were independently verified. Software acceptance is now 91/95;
+this remains a prerelease, with the documented remaining limits unchanged.
 
 ## 0.6.0-dev.3 — native development changes
 
