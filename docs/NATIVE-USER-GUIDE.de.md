@@ -1,7 +1,7 @@
 # Rampi mit Rust und Wayland bedienen
 
 Diese Anleitung gilt für den Entwicklungszweig mit `rampi-native`. Das veröffentlichte native
-Entwicklungsrelease v0.6.0-dev.1 liegt diesem Zweig vorausgehend zugrunde. Neuere
+Entwicklungsrelease v0.6.0-dev.3 liegt diesem Zweig vorausgehend zugrunde. Neuere
 Änderungen sind erst nach einem weiteren Release in dessen Image enthalten. Physische Hardwaretests sind auf Wunsch ausgeschlossen.
 
 ## Erster Start und Anmeldung
@@ -19,8 +19,10 @@ im Dashboard gelangst du zurück. **Einrichtung abschließen** ist am letzten Sc
 möglich und bestätigt deinen Durchlauf; Verbindungen werden dadurch nicht als
 erfolgreich geprüft markiert.
 
-Die zwölf Stationen zeigen auch fehlende Funktionen ausdrücklich an. Insbesondere
-Sprachwechsel bleibt offen. Die Kontenverwaltung verwendet Linux-Systemkonten.
+Die zwölf Stationen zeigen auch fehlende Funktionen ausdrücklich an. Auf der
+Systemseite kannst du Deutsch oder Englisch persönlich speichern. Die Oberfläche
+übernimmt die Sprache nach erneutem Öffnen; die Sitzungs-Locale gilt ab der nächsten
+Anmeldung. Die Kontenverwaltung verwendet Linux-Systemkonten.
 
 ## Dashboard und Navigation
 

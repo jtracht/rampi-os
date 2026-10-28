@@ -8,8 +8,9 @@ die gespeicherten IDs bleiben zur Kompatibilität mit veröffentlichten Versione
 stabil. Die zwölf aktuellen Stationen verwenden 0–7 und 11–14. Alte KI-Positionen
 8–10 führen zur nächsten verbleibenden Station (Desktop-Streaming, ID 11), ohne
 beim Laden die Datei umzuschreiben. Fortsetzen speichert wieder eine stabile ID;
-`sound_effects` ist ein boolescher Wert, Standard true. `language` ist vorgesehen,
-die Oberfläche gegenwärtig deutsch. Höchstens 64 Hosts sind zulässig.
+`sound_effects` ist ein boolescher Wert, Standard true. `language` akzeptiert `de`
+und `en`; die persönliche Sitzungs-Locale gilt ab der nächsten Anmeldung.
+Höchstens 64 Hosts sind zulässig.
 Eine Konfiguration über 1 MiB wird abgewiesen. Fehlerhafte bestehende Dateien
 werden auch beim Speichern nicht durch Standardwerte überschrieben; zuerst
 privat sichern und korrigieren.
@@ -33,8 +34,9 @@ Native persönliche Pfade:
 | Expliziter Download-Zielpfad | Vom Benutzer bestätigte Datei; kein automatisches Öffnen oder Überschreiben |
 
 WLAN-/WireGuard-Geheimnisse verwaltet NetworkManager mit seinen vorhandenen
-Mechanismen. Linux-Kennwörter gehören PAM/passwd, Anbieteranmeldungen den
-offiziellen Windows-CLIs. Keine dieser Zugangsdaten gehört in `settings.json`.
+Mechanismen. Linux-Kennwörter gehören PAM/passwd; Kanban-Zugänge und persönliche
+Streaming-Schlüssel gehören in den vorhandenen Secret Service. Keine dieser
+Zugangsdaten gehört in `settings.json`. Direkte KI-Anbieterintegrationen entfallen.
 Bildschirmänderungen gelten gegenwärtig bis zur Abmeldung und werden nicht als
 dauerhafte Firmware- oder Bootkonfiguration gespeichert.
 
@@ -49,7 +51,7 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 
 | Einstellung | Typ / Standard | Zweck und Wirkung |
 |---|---|---|
-| language | string / de | Vorgesehene UI-Sprache; der erste Stand ist deutsch |
+| language | string / de | Persönliche UI-Sprache: de oder en; Sitzungs-Locale nach erneuter Anmeldung |
 | setup_complete | bool / false | Einrichtungshinweis; keine Änderung an Linux-Konten |
 | active_host | int / 0 | Index des aktiven Hosts |
 | hosts | array / [] | Persönliche Windows-Profile; grafisch unter Host & SSH verwalten und aktivieren |
@@ -62,7 +64,7 @@ werden nicht überschrieben. Unbekannte Felder stoppen das Laden.
 | hosts[].resolution | string / 1280x720 | bevorzugte Moonlight-Streamingauflösung |
 | browser_url | string / https://www.raspberrypi.com | HTTPS-Startseite ohne eingebettete Credentials |
 | board_source | string / leer | JSON-Dateipfad oder anbieterspezifische Projektkennung |
-| board_kind | enum / json | json, github, trello, jira, asana, notion |
+| board_kind | enum / json | json, github, gitea, trello, jira, asana, notion |
 | board_token_key | string / leer | persönlicher Secret-Service-Profilname; niemals der Token selbst |
 | board_columns | string[] / [] | persönliche Spaltenreihenfolge; leer übernimmt Quelle; höchstens 32 eindeutige, nicht leere Namen mit je 1–80 Zeichen |
 | reduce_motion | bool / false | schaltet die Kachelverformung aus |
