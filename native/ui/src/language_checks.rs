@@ -29,6 +29,10 @@ pub fn run(
             let keyboard = named(&system, "keyboard-layout").context("No inline layouts")?;
             ensure!(keyboard.is::<gtk::ListBox>(), "Keyboard choices opened a popup");
             ensure!(find_button(&system, "Apply keyboard layout").is_some());
+            let invalid_layout = crate::system_settings::save_keyboard("invalid\nlayout");
+            ensure!(invalid_layout.is_err_and(|error| error.to_string() == "Unknown keyboard layout"));
+            let unavailable_mode = crate::system_settings::apply("missing-output", "99999x99999").await;
+            ensure!(unavailable_mode.is_err_and(|error| error.to_string() == "This display mode is no longer available"));
             let wifi = pages.child_by_name("wifi").context("No Wi-Fi page")?;
             pages.set_visible_child_name("wifi");
             named(&wifi, "hidden-network-form").context("No hidden-network section")?

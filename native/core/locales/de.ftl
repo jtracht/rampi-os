@@ -458,3 +458,21 @@ upload-wait = Bitte warten, bis ein lesbarer Ordner vollständig geladen ist.
 upload-count = Bitte Dateien auswählen (höchstens 128).
 upload-files = Bitte vorhandene, lesbare lokale Dateien auswählen. Ordner mit Enter öffnen.
 upload-instructions = Ordner mit Enter öffnen. Dateien markieren und anschließend Auswählen bestätigen.
+
+# Keyboard and display failure messages
+keyboard-invalid-layout = Unbekannte Tastaturbelegung
+settings-directory-missing = Konfigurationsordner fehlt
+settings-directory-unsafe = Unsicherer persönlicher Konfigurationsordner
+keyboard-config-unsafe = Unsichere Tastaturkonfiguration
+display-service-unavailable = Bildschirmdienst nicht erreichbar
+display-list-invalid = Ungültige Bildschirmliste
+display-list-limit = Zu viele Bildschirme
+display-name-missing = Bildschirmname fehlt
+display-name-invalid = Ungültiger Bildschirmname
+display-modes-missing = Bildschirmmodi fehlen
+display-modes-limit = Zu viele Bildschirmmodi
+display-width-missing = Breite fehlt
+display-height-missing = Höhe fehlt
+display-mode-invalid = Ungültiger Bildschirmmodus
+display-mode-unavailable = Dieser Bildschirmmodus wird nicht mehr angeboten
+display-mode-failed = Bildschirmmodus konnte nicht angewendet werden

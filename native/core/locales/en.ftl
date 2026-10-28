@@ -458,3 +458,21 @@ upload-wait = Wait for a readable folder to finish loading.
 upload-count = Select files (at most 128).
 upload-files = Select existing, readable local files. Press Enter to open folders.
 upload-instructions = Press Enter to open folders. Select files, then confirm with Select.
+
+# Keyboard and display failure messages
+keyboard-invalid-layout = Unknown keyboard layout
+settings-directory-missing = Configuration directory is missing
+settings-directory-unsafe = The personal configuration directory is unsafe
+keyboard-config-unsafe = The keyboard configuration is unsafe
+display-service-unavailable = The display service is unavailable
+display-list-invalid = The display list is invalid
+display-list-limit = The display service returned too many displays
+display-name-missing = The display name is missing
+display-name-invalid = The display name is invalid
+display-modes-missing = Display modes are missing
+display-modes-limit = The display service returned too many modes
+display-width-missing = The display width is missing
+display-height-missing = The display height is missing
+display-mode-invalid = The display mode is invalid
+display-mode-unavailable = This display mode is no longer available
+display-mode-failed = The display mode could not be applied

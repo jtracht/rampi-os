@@ -48,17 +48,23 @@ pub fn save_keyboard(layout: &str) -> Result<()> {
     };
     ensure!(
         LAYOUTS.iter().any(|(code, _)| *code == layout),
-        "Unbekannte Tastaturbelegung"
+        tr("keyboard-invalid-layout", &[])
     );
     let path = keyboard_file()?;
-    let dir = path.parent().context("Konfigurationsordner fehlt")?;
+    let dir = path
+        .parent()
+        .context(tr("settings-directory-missing", &[]))?;
     std::fs::create_dir_all(dir)?;
     let uid = gtk::gio::Credentials::new().unix_user()?;
-    for folder in [dir, dir.parent().context("Konfigurationsordner fehlt")?] {
+    for folder in [
+        dir,
+        dir.parent()
+            .context(tr("settings-directory-missing", &[]))?,
+    ] {
         let meta = std::fs::symlink_metadata(folder)?;
         ensure!(
             meta.is_dir() && !meta.file_type().is_symlink() && meta.uid() == uid,
-            "Unsicherer persönlicher Konfigurationsordner"
+            tr("settings-directory-unsafe", &[])
         );
         std::fs::set_permissions(folder, std::fs::Permissions::from_mode(0o700))?;
     }
@@ -69,7 +75,7 @@ pub fn save_keyboard(layout: &str) -> Result<()> {
                     && !meta.file_type().is_symlink()
                     && meta.uid() == uid
                     && meta.len() <= 65536,
-                "Unsichere Tastaturkonfiguration"
+                tr("keyboard-config-unsafe", &[])
             );
             std::fs::read_to_string(&path)?
         }
@@ -100,37 +106,45 @@ pub struct Output {
 }
 pub async fn outputs() -> Result<Vec<Output>> {
     let (ok, bytes) = crate::process::output("wlr-randr", &["--json".into()], 4, 262144).await?;
-    ensure!(ok, "Bildschirmdienst nicht erreichbar");
+    ensure!(ok, tr("display-service-unavailable", &[]));
     let value: serde_json::Value = serde_json::from_slice(&bytes)?;
-    let rows = value.as_array().context("Ungültige Bildschirmliste")?;
-    ensure!(rows.len() <= 32, "Zu viele Bildschirme");
+    let rows = value.as_array().context(tr("display-list-invalid", &[]))?;
+    ensure!(rows.len() <= 32, tr("display-list-limit", &[]));
     let mut result = vec![];
     for row in rows {
         if row["enabled"].as_bool() != Some(true) {
             continue;
         }
-        let name = row["name"].as_str().context("Bildschirmname fehlt")?;
+        let name = row["name"]
+            .as_str()
+            .context(tr("display-name-missing", &[]))?;
         ensure!(
             !name.is_empty() && name.len() <= 256 && !name.chars().any(char::is_control),
-            "Ungültiger Bildschirmname"
+            tr("display-name-invalid", &[])
         );
-        let modes = row["modes"].as_array().context("Bildschirmmodi fehlen")?;
-        ensure!(modes.len() <= 512, "Zu viele Bildschirmmodi");
+        let modes = row["modes"]
+            .as_array()
+            .context(tr("display-modes-missing", &[]))?;
+        ensure!(modes.len() <= 512, tr("display-modes-limit", &[]));
         let mut output = Output {
             name: name.into(),
             modes: vec![],
             current: String::new(),
         };
         for mode in modes {
-            let width = mode["width"].as_u64().context("Breite fehlt")?;
-            let height = mode["height"].as_u64().context("Höhe fehlt")?;
+            let width = mode["width"]
+                .as_u64()
+                .context(tr("display-width-missing", &[]))?;
+            let height = mode["height"]
+                .as_u64()
+                .context(tr("display-height-missing", &[]))?;
             let rate = mode["refresh"].as_f64().unwrap_or(0.0);
             ensure!(
                 (320..=16384).contains(&width)
                     && (200..=16384).contains(&height)
                     && rate.is_finite()
                     && (0.0..=1000.0).contains(&rate),
-                "Ungültiger Bildschirmmodus"
+                tr("display-mode-invalid", &[])
             );
             let text = if rate > 0.0 {
                 format!("{width}x{height}@{rate:.6}Hz")
@@ -152,7 +166,7 @@ pub async fn apply(name: &str, mode: &str) -> Result<()> {
         current
             .iter()
             .any(|o| o.name == name && o.modes.iter().any(|m| m == mode)),
-        "Dieser Bildschirmmodus wird nicht mehr angeboten"
+        tr("display-mode-unavailable", &[])
     );
     let (ok, _) = crate::process::output(
         "wlr-randr",
@@ -161,7 +175,7 @@ pub async fn apply(name: &str, mode: &str) -> Result<()> {
         32768,
     )
     .await?;
-    ensure!(ok, "Bildschirmmodus konnte nicht angewendet werden");
+    ensure!(ok, tr("display-mode-failed", &[]));
     Ok(())
 }
 
