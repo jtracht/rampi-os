@@ -21,8 +21,8 @@ erfolgreich geprüft markiert.
 
 Die zwölf Stationen zeigen auch fehlende Funktionen ausdrücklich an. Auf der
 Systemseite kannst du Deutsch oder Englisch persönlich speichern. Die Oberfläche
-übernimmt die Sprache nach erneutem Öffnen; die Sitzungs-Locale gilt ab der nächsten
-Anmeldung. Die Kontenverwaltung verwendet Linux-Systemkonten.
+und die Sitzungs-Locale übernehmen die Sprache ab der nächsten Rampi-Anmeldung.
+Die Kontenverwaltung verwendet Linux-Systemkonten.
 
 ## Dashboard und Navigation
 
