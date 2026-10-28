@@ -63,6 +63,8 @@ def check(directory: Path, expected_binary: str | None = None):
     proof = json.loads((directory / "captures/login-proof.json").read_text(encoding="utf-8"))
     if not isinstance(proof, list) or len(proof) != 2:
         raise ValueError("Two authenticated user sessions are required")
+    if {account.get("personal_language") for account in proof} != {"de", "en"}:
+        raise ValueError("Two distinct personal session languages are required")
     identities = set()
     for account in proof:
         uid = account.get("uid")
@@ -75,6 +77,9 @@ def check(directory: Path, expected_binary: str | None = None):
             raise ValueError("Native session or private configuration missing")
         if account.get("binary_sha256") != digest:
             raise ValueError("Guest executed a different native binary")
+        if (account.get("session_locale_verified") is not True
+                or account.get("session_locale_relogin_verified") is not True):
+            raise ValueError("Personal session locale or relogin evidence missing")
         if account.get("ssh_agent_private") is not True:
             raise ValueError("Personal SSH agent acceptance missing")
         for key in ["personal_bus_reused", "pam_keyring_roundtrip_private", "pam_keyring_relogin"]:

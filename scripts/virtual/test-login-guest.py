@@ -231,6 +231,22 @@ def configure_test_session(*, reload=True):
         run("systemctl", "reset-failed", "greetd")
 
 
+def require_personal_locale(user, language):
+    """Inspect only locale keys of the actual authenticated systemd application."""
+    pid = int(as_user(user, "systemctl", "--user", "show", "rampi.service",
+                      "--property=MainPID", "--value").stdout)
+    environment = dict(item.split(b"=", 1)
+                       for item in Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+                       if b"=" in item)
+    locale = {"de": "de_DE.UTF-8", "en": "en_US.UTF-8"}[language]
+    expected = {b"LANGUAGE": language.encode(), b"LANG": locale.encode(),
+                b"LC_MESSAGES": locale.encode(), b"LC_TIME": locale.encode()}
+    if any(environment.get(key) != value for key, value in expected.items()):
+        raise RuntimeError("The authenticated application lost its personal language/locale")
+    if environment.get(b"LC_ALL"):
+        raise RuntimeError("A global locale override replaced the personal session locale")
+
+
 def main():
     image_test = (
         "--installed-image" in sys.argv
@@ -296,6 +312,17 @@ def main():
         Path("/home", user, ".rampi-login-uid").unlink(missing_ok=True)
         passwords[user] = secrets.token_urlsafe(24)
         run("chpasswd", data=f"{user}:{passwords[user]}\n".encode())
+    languages = dict(zip(users, ["de", "en"], strict=True))
+    for user, language in languages.items():
+        # Only disposable fixture accounts are configured. Product launchers,
+        # service files, environment and installed ELF remain unchanged.
+        personal = Path("/home", user, ".config/rampi")
+        as_user(user, "mkdir", "-p", str(personal))
+        settings = personal / "settings.json"
+        if settings.exists() or settings.is_symlink():
+            raise RuntimeError("Fresh locale fixture already has personal settings")
+        as_user(user, "tee", str(settings),
+                data=(json.dumps({"language": language}) + "\n").encode())
     run("systemctl", "restart", "greetd")
     greeter_ready()
     if "--greeter-diagnostic" in sys.argv:
@@ -443,6 +470,7 @@ def main():
             != f"unix:path=/run/user/{uid}/bus".encode()
         ):
             raise RuntimeError("Native application did not reuse the existing personal session bus")
+        require_personal_locale(user, languages[user])
         absent = keyring_lookup(user, keyring_attribute)
         if absent.returncode != 1 or absent.stdout:
             raise RuntimeError("Another user's personal secret appeared in this session")
@@ -477,6 +505,8 @@ def main():
                 "ssh_agent_private": True,
                 "pam_keyring_roundtrip_private": True,
                 "personal_bus_reused": True,
+                "personal_language": languages[user],
+                "session_locale_verified": True,
             }
         )
         as_user(user, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
@@ -514,6 +544,7 @@ def main():
             ),
             "mapped native session after keyring relogin",
         )
+        require_personal_locale(user, languages[user])
         recovered = keyring_lookup(user, keyring_attribute)
         if recovered.returncode or recovered.stdout.rstrip(b"\n") != keyring_values[user].encode():
             raise RuntimeError("PAM relogin did not unlock the persisted personal keyring")
@@ -521,6 +552,8 @@ def main():
         as_user(user, "wlrctl", "toplevel", "close", "app_id:org.rampi.Workstation")
         greeter_ready()
         account["pam_keyring_relogin"] = True
+        account["session_locale_relogin_verified"] = True
+    print("RAMPI_GRAPHICAL_LOGIN_PERSONAL_LOCALES_OK", flush=True)
     print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_PRIVATE_OK", flush=True)
     print("RAMPI_GRAPHICAL_LOGIN_PAM_KEYRING_RELOGIN_OK", flush=True)
     print("RAMPI_GRAPHICAL_LOGIN_PAM_STREAM_KEYRING_OK", flush=True)
