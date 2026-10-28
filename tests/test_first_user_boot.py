@@ -5,6 +5,7 @@ import runpy
 import secrets
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -37,9 +38,10 @@ def test_non_pi_directory_is_rejected(tmp_path):
         PREPARE(tmp_path, tmp_path / "unused")
 
 
-@pytest.mark.skipif(shutil.which("openssl") is None, reason="Existing OpenSSL is required")
+@pytest.mark.skipif(sys.platform != "linux", reason="Actual Linux image-builder OpenSSL required")
 def test_stock_boot_file_contains_matching_crypt_hash_only(tmp_path):
     boot, credentials = fixture(tmp_path)
+    assert shutil.which("openssl"), "Linux image builds require the installed OpenSSL"
     original = json.loads(credentials.read_text())
     PREPARE(boot, credentials)
     content = (boot / "userconf.txt").read_text()
@@ -51,3 +53,14 @@ def test_stock_boot_file_contains_matching_crypt_hash_only(tmp_path):
         input=original["password"].encode() + b"\n", capture_output=True, check=True, timeout=15,
     ).stdout.decode().strip()
     assert checked == encoded
+
+
+def test_non_linux_builder_refuses_before_starting_any_program(tmp_path, monkeypatch):
+    boot, credentials = fixture(tmp_path)
+    monkeypatch.setattr(sys, "platform", "win32")
+    def unexpected(*args, **kwargs):
+        pytest.fail("A Linux image fixture started a program on an unsupported host")
+    monkeypatch.setattr(subprocess, "run", unexpected)
+    with pytest.raises(ValueError, match="Linux image builder"):
+        PREPARE(boot, credentials)
+    assert not (boot / "userconf.txt").exists()

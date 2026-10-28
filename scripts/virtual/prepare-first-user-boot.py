@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -19,6 +20,8 @@ def prepare(boot, credentials):
         raise ValueError("Invalid first-account fixture name")
     if not values["password"] or any(c in values["password"] for c in "\r\n\0"):
         raise ValueError("Invalid first-account fixture credential")
+    if sys.platform != "linux":
+        raise ValueError("First-account image fixtures require the Linux image builder")
     result = subprocess.run(
         ["openssl", "passwd", "-6", "-stdin"], input=values["password"].encode() + b"\n",
         capture_output=True, check=True, timeout=15,
