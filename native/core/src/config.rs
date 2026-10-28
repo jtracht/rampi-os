@@ -1,3 +1,4 @@
+use crate::i18n::text as tr;
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -39,7 +40,7 @@ impl Host {
             !self.name.trim().is_empty()
                 && self.name.chars().count() <= 80
                 && !self.name.chars().any(char::is_control),
-            "Ungültiger Profilname"
+            tr("profile-name-invalid", &[])
         );
         ensure!(
             !self.address.is_empty()
@@ -53,7 +54,7 @@ impl Host {
                     .address
                     .bytes()
                     .all(|c| c.is_ascii_alphanumeric() || b".:-".contains(&c)),
-            "Ungültiger Hostname oder IP-Adresse"
+            tr("host-address-invalid", &[])
         );
         ensure!(
             !self.username.is_empty()
@@ -63,27 +64,27 @@ impl Host {
                     .username
                     .bytes()
                     .all(|c| c.is_ascii_alphanumeric() || b"_.@\\-".contains(&c)),
-            "Ungültiger Windows-Benutzername"
+            tr("windows-user-invalid", &[])
         );
-        ensure!(self.port > 0, "Ungültiger SSH-Port");
+        ensure!(self.port > 0, tr("ssh-port-invalid", &[]));
         ensure!(
             !self.project.chars().any(|c| c.is_control()),
-            "Ungültiges Projektverzeichnis"
+            tr("project-directory-invalid", &[])
         );
         if !self.identity.is_empty() {
             ensure!(
                 expand_home(&self.identity)?.is_file(),
-                "SSH-Schlüssel existiert nicht"
+                tr("ssh-key-missing", &[])
             );
         }
         let (w, h) = self
             .resolution
             .split_once('x')
-            .context("Ungültige Auflösung")?;
+            .context(tr("resolution-invalid", &[]))?;
         let (w, h) = (w.parse::<u32>()?, h.parse::<u32>()?);
         ensure!(
             (320..=7680).contains(&w) && (240..=4320).contains(&h),
-            "Ungültige Auflösung"
+            tr("resolution-invalid", &[])
         );
         Ok(())
     }
@@ -132,7 +133,7 @@ pub fn config_dir() -> Result<PathBuf> {
 pub fn home() -> Result<PathBuf> {
     env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from)
-        .context("Persönliches Benutzerverzeichnis fehlt")
+        .context(tr("home-directory-missing", &[]))
 }
 pub fn expand_home(value: &str) -> Result<PathBuf> {
     Ok(if let Some(rest) = value.strip_prefix("~/") {
@@ -144,7 +145,7 @@ pub fn expand_home(value: &str) -> Result<PathBuf> {
 pub fn validate_https(value: &str) -> Result<()> {
     let authority = value
         .strip_prefix("https://")
-        .context("Bitte eine HTTPS-Adresse verwenden")?
+        .context(tr("https-required", &[]))?
         .split('/')
         .next()
         .unwrap_or("");
@@ -154,7 +155,7 @@ pub fn validate_https(value: &str) -> Result<()> {
             && !value
                 .chars()
                 .any(|c| c.is_control() || c.is_whitespace() || c == '\\'),
-        "Ungültige HTTPS-Adresse oder eingebettete Zugangsdaten"
+        tr("https-address-invalid", &[])
     );
     Ok(())
 }
@@ -169,26 +170,29 @@ impl Settings {
         let h = self
             .hosts
             .get(self.active_host)
-            .context("Zuerst einen Windows-Host einrichten")?;
+            .context(tr("host-setup-required", &[]))?;
         h.validate()?;
         Ok(h)
     }
     pub fn validate(&self) -> Result<()> {
         ensure!(
             crate::i18n::locale(&self.language).is_some(),
-            "Unbekannte Sprache"
+            tr("language-invalid", &[])
         );
-        ensure!(self.setup_step < 15, "Ungültiger Einrichtungsschritt");
-        ensure!(self.hosts.len() <= 64, "Zu viele Hostprofile");
+        ensure!(self.setup_step < 15, tr("setup-step-invalid", &[]));
+        ensure!(self.hosts.len() <= 64, tr("host-profile-limit", &[]));
         validate_https(&self.browser_url)?;
         ensure!(
             [
                 "json", "github", "trello", "jira", "asana", "notion", "gitea"
             ]
             .contains(&self.board_kind.as_str()),
-            "Unbekannter Kanban-Anbieter"
+            tr("kanban-provider-invalid", &[])
         );
-        ensure!(self.board_columns.len() <= 32, "Zu viele Kanban-Spalten");
+        ensure!(
+            self.board_columns.len() <= 32,
+            tr("kanban-column-limit", &[])
+        );
         let mut seen = std::collections::HashSet::new();
         for column in &self.board_columns {
             ensure!(
@@ -197,7 +201,7 @@ impl Settings {
                     && column.chars().count() <= 80
                     && !column.chars().any(char::is_control)
                     && seen.insert(column),
-                "Ungültige oder doppelte Kanban-Spalte"
+                tr("kanban-column-invalid", &[])
             );
         }
         for host in &self.hosts {
@@ -214,7 +218,7 @@ impl Settings {
         }
         ensure!(
             fs::metadata(path)?.len() < 1_048_576,
-            "Konfigurationsdatei ist zu groß"
+            tr("configuration-size-limit", &[])
         );
         let settings: Self = serde_json::from_slice(&fs::read(path)?)?;
         settings.validate()?;
@@ -223,9 +227,11 @@ impl Settings {
     pub fn save(&self, path: &Path) -> Result<()> {
         self.validate()?;
         if path.try_exists()? {
-            Self::load(path).context("Vorhandene Konfiguration ist fehlerhaft. Datei zuerst sichern und korrigieren; sie wurde nicht überschrieben")?;
+            Self::load(path).context(tr("configuration-preserved", &[]))?;
         }
-        let dir = path.parent().context("Konfigurationsordner fehlt")?;
+        let dir = path
+            .parent()
+            .context(tr("settings-directory-missing", &[]))?;
         fs::create_dir_all(dir)?;
         #[cfg(unix)]
         {

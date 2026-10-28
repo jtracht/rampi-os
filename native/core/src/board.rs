@@ -1,3 +1,4 @@
+use crate::i18n::text as tr;
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, fs::File, io::Read, path::Path};
@@ -26,27 +27,27 @@ impl Board {
         let file = File::open(path)?;
         ensure!(
             file.metadata()?.len() <= MAX_BYTES,
-            "Kanban-Datei ist zu groß"
+            tr("board-file-limit", &[])
         );
         let mut data = Vec::new();
         file.take(MAX_BYTES + 1).read_to_end(&mut data)?;
-        ensure!(data.len() as u64 <= MAX_BYTES, "Kanban-Datei ist zu groß");
+        ensure!(data.len() as u64 <= MAX_BYTES, tr("board-file-limit", &[]));
         let board: Self = serde_json::from_slice(&data)?;
         board.validate()?;
         Ok(board)
     }
     pub fn validate(&self) -> Result<()> {
-        ensure!(self.cards.len() <= 10_000, "Zu viele Karten");
+        ensure!(self.cards.len() <= 10_000, tr("board-card-limit", &[]));
         ensure!(
             self.columns.len() <= 32 && self.title.len() <= 8192,
-            "Ungültige Boarddaten"
+            tr("board-data-invalid", &[])
         );
         for name in &self.columns {
             ensure!(
                 !name.trim().is_empty()
                     && name.chars().count() <= 80
                     && !name.chars().any(char::is_control),
-                "Ungültige Quellspalte"
+                tr("board-source-column-invalid", &[])
             );
         }
         for card in &self.cards {
@@ -58,12 +59,12 @@ impl Board {
                     && card.priority.len() <= 1024
                     && card.id.len() <= 1024
                     && card.url.len() <= 8192,
-                "Karte überschreitet das Größenlimit"
+                tr("board-card-size-limit", &[])
             );
         }
         ensure!(
             serde_json::to_vec(self)?.len() <= 5_242_880,
-            "Kanban-Daten sind zu groß"
+            tr("board-data-limit", &[])
         );
         Ok(())
     }

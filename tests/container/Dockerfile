@@ -2,7 +2,7 @@ FROM debian:trixie@sha256:913f6706df59a68922d1dd08f78c2476560a8d367897200a6005b0
 ENV DEBIAN_FRONTEND=noninteractive QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
     QT_QUICK_CONTROLS_STYLE=Basic PYTHONPATH=/app/client
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pytest python3-pil python3-dbusmock python3-graphql-core python3-gi gir1.2-nm-1.0 libqt6svg6 qt6-svg-plugins openssh-client \
+    python3 python3-pytest python3-pil python3-dbusmock python3-graphql-core python3-gi gir1.2-nm-1.0 libqt6svg6 qt6-svg-plugins openssh-client openssl \
     python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtqml \
     python3-pyside6.qtquick python3-pyside6.qtquickcontrols2 python3-pyside6.qtdbus qml6-module-qtmultimedia \
     python3-pyside6.qttest qml6-module-qtquick qml6-module-qtquick-controls \

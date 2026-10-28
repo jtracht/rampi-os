@@ -16,6 +16,16 @@ pub fn run(
         let result: Result<()> = async {
             use crate::checks::{find_button, named};
             ensure!(feedback.settings_language() == "en", "English fixture not loaded");
+            let invalid_host = rampi_core::config::Host {
+                address: "host.example".into(), username: "fixture".into(), port: 0,
+                ..Default::default()
+            };
+            ensure!(invalid_host.validate().is_err_and(|error| error.to_string() == "The SSH port is invalid"));
+            let invalid_board = rampi_core::board::Board {
+                columns: vec!["\n".into()], ..Default::default()
+            };
+            ensure!(invalid_board.validate().is_err_and(|error| error.to_string() == "The source column is invalid"));
+
             ensure!(rampi_core::i18n::text("settings-heading", &[]) == "Settings");
             let dashboard = stack.child_by_name("dashboard").context("No dashboard")?;
             ensure!(find_button(&dashboard, "⚙  Settings").is_some());
