@@ -4,12 +4,13 @@ Dies ist der Rust-/Wayland-Entwicklungsstand. v0.5.0 enthält den früheren
 Python-/QML-Prototyp. Das native Entwicklungsimage hat eine eigene dokumentierte
 Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 
-Die folgende Tabelle beschreibt den aktuellen Entwicklungszweig. Die Arbeiten an
-der Komplettversion sind noch nicht als Release veröffentlicht. Insbesondere hat
-das veröffentlichte dev2-Image einen Fehler vor der ersten Kontoeinrichtung;
-es gibt dafür kein Standardpasswort. Der korrigierte frische Image-Bau hat die
-tatsächliche erste Konto-/PAM-/Schlüsselbundanmeldung bestanden. Neustart und
-abschließende CI der vollständigen Quellrevision stehen noch aus.
+Die folgende Tabelle beschreibt den aktuellen Entwicklungszweig. Das veröffentlichte
+[dev3-Image](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.3) besteht
+einschließlich beider Erstkonto-Wege, normaler Neustarts und 28 unabhängig geprüfter
+öffentlicher Dateien. Das ältere dev2 hat einen bekannten Erststartfehler; es gibt
+kein Standardpasswort. Der Folgestand dev4 korrigiert den gemessenen kalten
+Sprachabruf und erweitert die Sprachprüfung. Seine eigene vollständige Quellen-
+und Image-Abnahme steht noch aus.
 
 | Bereich | Vorhanden | Wesentliche offene Arbeit |
 |---|---|---|
@@ -25,7 +26,7 @@ abschließende CI der vollständigen Quellrevision stehen noch aus.
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten; Mikrofon-/Kamerafreigabe mit realem WebKit und synthetischer Aufnahmequelle geprüft | Finale Quellenabnahme; synthetische Quelle bestätigt keine physische Kamera oder Mikrofonhardware |
 | RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettetes Moonlight-/GStreamer-Streaming mit privater Kopplung und Dauerlastprüfung; NLA-only-Komponentenprüfung vorhanden | Finale Quellen-/Eingabeabnahme läuft; Pi-Hardwaredecoder softwareseitig angebunden, aber auf Nutzerwunsch nicht physisch geprüft; Sunshine gibt über die Kopplung seine Host-Sitzung frei |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
-| Image/Release | Veröffentlichtes v0.6.0-dev.2, vollständige Quellen/Lizenzen, QEMU-Boot, grafische PAM-Anmeldung mit zwei Konten und unabhängig geprüfte öffentliche Downloads | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
+| Image/Release | Veröffentlichtes v0.6.0-dev.3, vollständige Quellen/Lizenzen, zwei Erstkonto-Verfahren mit normalen Neustarts, grafische PAM-Anmeldung und 28 unabhängig geprüfte öffentliche Dateien | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
 
 ## Fehler eingrenzen
 

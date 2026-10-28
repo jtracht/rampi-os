@@ -6,7 +6,7 @@ Die neue Sitzung verwendet labwc und benötigt kein `startx`. Terminals und Brow
 werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
 weiterhin vorhandene Systemdienste. Eigenentwickelter Code: Apache-2.0.
 
-**Aktuell: 89,5 % (85/95 Punkte im Drei-Modul-Umfang); native Vorabversion.**
+**Aktuell: 90,5 % (86/95 Punkte im Drei-Modul-Umfang); native Vorabversion.**
 Bewertung, Abnahmen und offene Arbeiten stehen in [PROGRESS.md](docs/PROGRESS.md).
 Die [Migrationsübersicht](docs/RUST-MIGRATION.md) nennt Quellcode, Start,
 softwareseitige Nachweise und verbleibende Funktionen. Der frühere Stand von
@@ -18,17 +18,17 @@ Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Rust wird mit
 Docker/Wayland, nativer ARM64-CI und anschließend neuen Image-/QEMU-Tests geprüft.
 
 Rampi umfasst drei Hauptmodule: **Kanban**, **Remote Desktop** und **Browser**.
-[v0.6.0-dev.2](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.2)
-enthält ein frisch gebautes und grafisch in QEMU geprüftes ARM64-Image mit
-eingebettetem Streaming, RDP und persönlichen PAM-Schlüsselbünden. Alle 28 öffentlichen
-Dateien wurden nach Veröffentlichung unabhängig geprüft. Alte Releases bleiben unverändert.
+[v0.6.0-dev.3](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.3)
+enthält das frisch gebaute native ARM64-Image mit Streaming, RDP und persönlichen
+PAM-Schlüsselbünden. Beide Erstkonto-Wege und jeweils ein normaler Neustart
+bestehen. Alle 28 öffentlichen Dateien wurden unabhängig heruntergeladen und
+geprüft: [Release-Abnahme](docs/validation/native-first-account-dev3-release.md).
 
-Beim unveränderten Erststart von dev.2 wurde anschließend ein Anmeldefehler gefunden:
-Das ursprüngliche Konto `pi` bleibt gesperrt, während bereits die grafische Anmeldung
-erscheint. Es gibt kein Standardpasswort. Die Korrektur und die weitergehenden
-Funktionen entstehen gemeinsam für die Komplettversion; deren frische
-[Erststart- und Gesamtabnahme](docs/validation/complete-native-development-2026-10-26.md)
-steht noch aus. Die bisherigen Image-Anmeldetests hatten Konten vorab angelegt.
+Beim ersten Start wird ein eigener Benutzer mit eigenem Kennwort eingerichtet;
+es gibt kein Standardpasswort. Das ältere dev2-Image hat einen bekannten Fehler
+vor dieser Einrichtung und bleibt unverändert. Der Folgestand dev4 korrigiert
+außerdem den gemessenen kalten Sprachabruf; seine vollständige Abnahme steht
+noch aus. Das aktuelle Release bleibt eine unvollständige Vorabversion.
 
 ## Rust-Entwicklung unter Linux
 

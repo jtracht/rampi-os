@@ -11,9 +11,9 @@
     "ci_security_and_packages": "docs/validation/native-release-ci-gate-2026-10-23.md",
     "image_partitions_and_filesystems": "docs/validation/rust-image-2026-10-23.md",
     "qemu_first_account_and_reboot": "docs/validation/complete-native-development-2026-10-26.md",
-    "previous_development_release_artifacts": "docs/validation/native-streaming-dev2-release.md",
+    "previous_development_release_artifacts": "docs/validation/native-first-account-dev3-release.md",
     "native_rdp_input_and_clipboard": "docs/validation/rdp-input-clipboard-2026-10-24.md",
     "native_nla_gitea_tailscale_and_languages": "docs/validation/complete-native-development-2026-10-26.md"
   },
-  "migration": "Rust/GTK4/Wayland; three modules, no direct AI-provider or Windows session-broker integration. Published dev2 remains immutable and has a known pristine first-account defect. The complete-release branch fixes that defect and has a successful fresh first-account/PAM/keyring image component; normal reboot and final source-bound architecture acceptance remain pending. User authorized publication on 2026-10-27. This authorization does not replace technical evidence: regular_release remains false until complete software acceptance. Physical hardware and Windows-testhost acceptance are excluded."
+  "migration": "Rust/GTK4/Wayland, three modules, no direct AI-provider integration. Published dev3 at48661b34f36ca135fc96791998cfba2276b8f4dc passes fresh image, both first-account procedures with normal reboot, private PAM/keyrings and independently downloaded public files. Older dev2 remains immutable with a pristine first-account defect. The dev4 follow-up corrects bounded cold locale startup and extends per-account locale acceptance; final source/image checks remain mandatory. User authorized intermediate releases. regular_release remains false for the incomplete product. Hardware, Windows testhosts and model calls remain excluded."
 }

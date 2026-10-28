@@ -4,7 +4,8 @@ Ein Entwicklungsrelease veröffentlicht den vorhandenen geprüften Rust-Stand,
 ohne vollständige Produktreife vorzutäuschen. `regular_release` bleibt `false`;
 die automatische Freigabe regulärer Releases wird dadurch nicht aktiviert.
 `0.6.0-dev.1` und `0.6.0-dev.2` sind bereits veröffentlichte Vorabversionen und
-bleiben unverändert. Für `0.6.0-dev.3` läuft die getrennte Image-/Release-Abnahme.
+bleiben unverändert. `0.6.0-dev.3` ist veröffentlicht und unabhängig geprüft; siehe
+[Erststart-Abnahme](validation/native-first-account-dev3-release.md).
 Der Folgestand dieses Zweigs ist `0.6.0-dev.4`. Die Zwischenveröffentlichungen
 sind vom Nutzer freigegeben; eine laufende Prüfung ist noch keine Veröffentlichung. Ein aktualisierter Versionswert
 oder erfolgreicher Komponentenlauf bestätigt noch keine Veröffentlichung.
