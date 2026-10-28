@@ -16,18 +16,8 @@ const LAYOUTS: [(&str, &str); 6] = [
 
 /// Standard Windows input-locale identifiers for the existing XKB choices.
 pub fn rdp_keyboard_layout() -> u32 {
-    let configured = keyboard_file().ok().and_then(|path| {
-        let metadata = std::fs::symlink_metadata(&path).ok()?;
-        if !metadata.is_file() || metadata.file_type().is_symlink() || metadata.len() > 16384 {
-            return None;
-        }
-        std::fs::read_to_string(path).ok()
-    });
-    let code = configured.as_deref().and_then(|text| {
-        text.lines()
-            .find_map(|line| line.strip_prefix("XKB_DEFAULT_LAYOUT="))
-    });
-    match code {
+    let configured = read_keyboard_layout().ok().flatten();
+    match configured.as_deref() {
         Some("de") => 0x0407,
         Some("us") => 0x0409,
         Some("gb") => 0x0809,
@@ -40,6 +30,28 @@ pub fn rdp_keyboard_layout() -> u32 {
 
 pub fn keyboard_file() -> Result<PathBuf> {
     Ok(rampi_core::config::config_dir()?.join("labwc/environment"))
+}
+pub fn read_keyboard_layout() -> Result<Option<String>> {
+    use std::{io::Read, os::unix::fs::MetadataExt};
+    let path = keyboard_file()?;
+    let metadata = match std::fs::symlink_metadata(&path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error.into()),
+    };
+    ensure!(
+        metadata.is_file()
+            && !metadata.file_type().is_symlink()
+            && metadata.uid() == gtk::gio::Credentials::new().unix_user()?
+            && metadata.len() <= 65536,
+        tr("keyboard-config-unsafe", &[])
+    );
+    let mut text = String::new();
+    std::fs::File::open(path)?
+        .take(65537)
+        .read_to_string(&mut text)?;
+    ensure!(text.len() <= 65536, tr("keyboard-config-unsafe", &[]));
+    Ok(rampi_core::config::configured_keyboard_layout(&text).map(str::to_owned))
 }
 pub fn save_keyboard(layout: &str) -> Result<()> {
     use std::{
@@ -87,7 +99,7 @@ pub fn save_keyboard(layout: &str) -> Result<()> {
         .set_permissions(std::fs::Permissions::from_mode(0o600))?;
     for line in original
         .lines()
-        .filter(|l| !l.trim_start().starts_with("XKB_DEFAULT_LAYOUT="))
+        .filter(|l| rampi_core::config::keyboard_assignment(l).is_none())
     {
         writeln!(temp, "{line}")?;
     }
@@ -219,14 +231,20 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
     }
     choices.set_widget_name("keyboard-layout");
     choices.select_row(choices.row_at_index(0).as_ref());
-    if let Ok(path) = keyboard_file()
-        && let Ok(text) = std::fs::read_to_string(path)
-        && let Some(index) = LAYOUTS.iter().position(|(code, _)| {
-            text.lines()
-                .any(|l| l == format!("XKB_DEFAULT_LAYOUT={code}"))
-        })
-    {
-        choices.select_row(choices.row_at_index(index as i32).as_ref());
+    match read_keyboard_layout() {
+        Ok(Some(code)) => {
+            if let Some(index) = LAYOUTS.iter().position(|item| item.0 == code) {
+                choices.select_row(choices.row_at_index(index as i32).as_ref());
+            } else {
+                choices.unselect_all();
+                status.set_text(&tr("keyboard-custom-layout", &[]));
+            }
+        }
+        Err(error) => {
+            choices.unselect_all();
+            status.set_text(&error.to_string());
+        }
+        Ok(None) => {}
     }
     page.append(&choices);
     let save = button(&tr("keyboard-apply", &[]), f);

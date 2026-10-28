@@ -25,10 +25,41 @@ pub fn run(
             tabs.set_visible_child_name("system");
             let file = crate::system_settings::keyboard_file()?;
             std::fs::create_dir_all(file.parent().unwrap())?;
-            std::fs::write(
-                &file,
-                "# personal settings\nXCURSOR_SIZE=24\nXKB_DEFAULT_LAYOUT=us\n",
-            )?;
+            let original = format!(
+                "{}XCURSOR_SIZE=24\nXKB_DEFAULT_LAYOUT=de\n  XKB_DEFAULT_LAYOUT = us  \n",
+                "# preserved personal setting\n".repeat(700)
+            );
+            std::fs::write(&file, &original)?;
+            ensure!(crate::system_settings::read_keyboard_layout()?.as_deref() == Some("us"));
+            ensure!(crate::system_settings::rdp_keyboard_layout() == 0x0409);
+            let preview = crate::widgets::column();
+            let preview_status = gtk::Label::new(None);
+            crate::system_settings::append(&preview, &stack, &preview_status, &f);
+            let preview_choices = named(preview.upcast_ref(), "keyboard-layout")
+                .unwrap()
+                .downcast::<gtk::ListBox>()
+                .unwrap();
+            ensure!(
+                preview_choices
+                    .selected_row()
+                    .is_some_and(|row| row.index() == 1)
+            );
+            let custom = format!("{original}XKB_DEFAULT_LAYOUT=custom\n");
+            std::fs::write(&file, &custom)?;
+            let custom_preview = crate::widgets::column();
+            crate::system_settings::append(&custom_preview, &stack, &preview_status, &f);
+            ensure!(
+                named(custom_preview.upcast_ref(), "keyboard-layout")
+                    .unwrap()
+                    .downcast::<gtk::ListBox>()
+                    .unwrap()
+                    .selected_row()
+                    .is_none()
+            );
+            ensure!(preview_status.text() == rampi_core::i18n::text("keyboard-custom-layout", &[]));
+            ensure!(crate::system_settings::rdp_keyboard_layout() == 0);
+            ensure!(std::fs::read_to_string(&file)? == custom);
+            std::fs::write(&file, &original)?;
             let choices = named(&page, "keyboard-layout")
                 .context("No keyboard picker")?
                 .downcast::<gtk::ListBox>()
@@ -53,6 +84,12 @@ pub fn run(
                 text.contains("XCURSOR_SIZE=24")
                     && text.contains("XKB_DEFAULT_LAYOUT=de")
                     && !text.contains("XKB_DEFAULT_LAYOUT=us")
+                    && text
+                        .lines()
+                        .filter(|line| rampi_core::config::keyboard_assignment(line).is_some())
+                        .count()
+                        == 1
+                    && text.starts_with("# preserved personal setting\n")
             );
             ensure!(std::fs::metadata(&file)?.permissions().mode() & 0o777 == 0o600);
             ensure!(crate::system_settings::save_keyboard("de\nCOMMAND=x").is_err());
@@ -62,7 +99,14 @@ pub fn run(
             std::fs::write(&unrelated, "unchanged")?;
             std::os::unix::fs::symlink(&unrelated, &file)?;
             ensure!(crate::system_settings::save_keyboard("us").is_err());
+            ensure!(crate::system_settings::read_keyboard_layout().is_err());
             ensure!(std::fs::read_to_string(&unrelated)? == "unchanged");
+            std::fs::remove_file(&file)?;
+            let oversized = "#".repeat(65537);
+            std::fs::write(&file, &oversized)?;
+            ensure!(crate::system_settings::read_keyboard_layout().is_err());
+            ensure!(crate::system_settings::save_keyboard("us").is_err());
+            ensure!(std::fs::read_to_string(&file)? == oversized);
             std::fs::remove_file(&file)?;
             let outputs = crate::system_settings::outputs().await?;
             let output = outputs.first().context("No actual headless output")?;

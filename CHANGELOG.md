@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0-dev.5 — planned keyboard follow-up, not yet published
+
+- Interpret duplicate personal keyboard-layout assignments consistently with
+  labwc: the last assignment wins, including whitespace around the key/value.
+- Use the same bounded, owner-checked configuration reader for the inline
+  keyboard choices and Windows RDP layout. Preserve custom layouts and unrelated
+  environment settings; do not silently display a different supported layout.
+- Require an actual compositor startup check and GTK/RDP-selection checks.
+
+The published dev4 image remains unchanged. This follow-up needs its own final
+source, image and public-download acceptance. Progress remains 91/95.
+
 ## 0.6.0-dev.4 — published and independently verified prerelease
 
 - Complete German/English keyboard, display, host and board validation messages

@@ -10,6 +10,18 @@ use std::{
 // Keep IDs written by published versions stable; removed steps are skipped.
 pub const SETUP_STEP_IDS: [usize; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14];
 
+/// A literal personal XKB assignment, using labwc's whitespace/key semantics.
+/// This does not evaluate variables or execute shell input.
+pub fn keyboard_assignment(line: &str) -> Option<&str> {
+    let (key, value) = line.split_once('=')?;
+    (key.trim_ascii() == "XKB_DEFAULT_LAYOUT").then(|| value.trim_ascii())
+}
+
+/// Later assignments override earlier ones, including empty/unsupported values.
+pub fn configured_keyboard_layout(text: &str) -> Option<&str> {
+    text.lines().filter_map(keyboard_assignment).next_back()
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Host {
@@ -258,6 +270,46 @@ impl Settings {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn keyboard_layout_uses_last_assignment_like_the_compositor() {
+        let text =
+            "# keyboard\nXKB_DEFAULT_LAYOUT=de\nXCURSOR_SIZE=24\n  XKB_DEFAULT_LAYOUT = us  \n";
+        assert_eq!(configured_keyboard_layout(text), Some("us"));
+        assert_eq!(
+            configured_keyboard_layout("XKB_DEFAULT_LAYOUT=de\nXKB_DEFAULT_LAYOUT=custom"),
+            Some("custom")
+        );
+        assert_eq!(
+            configured_keyboard_layout("XKB_DEFAULT_LAYOUT=de\nXKB_DEFAULT_LAYOUT= \n"),
+            Some("")
+        );
+        assert_eq!(
+            configured_keyboard_layout("# XKB_DEFAULT_LAYOUT=us\nOTHER_XKB_DEFAULT_LAYOUT=fr"),
+            None
+        );
+        assert_eq!(
+            configured_keyboard_layout("XKB_DEFAULT_LAYOUT=$MY_LAYOUT"),
+            Some("$MY_LAYOUT")
+        );
+        assert_eq!(
+            configured_keyboard_layout("\u{a0}XKB_DEFAULT_LAYOUT=us"),
+            None
+        );
+    }
+
+    #[test]
+    fn keyboard_replacement_preserves_unrelated_environment_lines() {
+        let text = "# XKB_DEFAULT_LAYOUT=comment\nXCURSOR_SIZE=24\nXKB_DEFAULT_LAYOUT=fr\n XKB_DEFAULT_LAYOUT = de\n";
+        let retained = text
+            .lines()
+            .filter(|line| keyboard_assignment(line).is_none())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            retained,
+            ["# XKB_DEFAULT_LAYOUT=comment", "XCURSOR_SIZE=24"]
+        );
+    }
+
     #[test]
     fn unsafe_host_is_rejected() {
         let h = Host {

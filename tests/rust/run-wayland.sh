@@ -15,7 +15,9 @@ cp /src/system/labwc/rc.xml "$test_home/compositor/rc.xml"
 # replaced only in the temporary config by the actual development binary.
 sed -i 's@/usr/local/bin/rampi@/build/target/debug/rampi-native@g' "$test_home/compositor/rc.xml"
 mkdir -p "$XDG_CONFIG_HOME/rampi/labwc"
-labwc -C "$XDG_CONFIG_HOME/rampi/labwc" -c "$test_home/compositor/rc.xml" > "$test_home/compositor.log" 2>&1 &
+# Observe the existing compositor's own parser, independently of the Rust adapter.
+printf 'XKB_DEFAULT_LAYOUT=de\n  XKB_DEFAULT_LAYOUT = us  \n' > "$XDG_CONFIG_HOME/rampi/labwc/environment"
+labwc -s 'printenv XKB_DEFAULT_LAYOUT' -C "$XDG_CONFIG_HOME/rampi/labwc" -c "$test_home/compositor/rc.xml" > "$test_home/compositor.log" 2>&1 &
 compositor_pid=$!
 export LABWC_PID="$compositor_pid"
 trap 'kill "$compositor_pid" 2>/dev/null || true' EXIT
@@ -24,6 +26,14 @@ for _ in $(seq 1 100); do
     sleep 0.1
 done
 if [[ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]]; then cat "$test_home/compositor.log"; exit 1; fi
+for _ in $(seq 1 100); do
+    grep -qx 'us' "$test_home/compositor.log" && break
+    sleep 0.03
+done
+if ! grep -qx 'us' "$test_home/compositor.log"; then
+    cat "$test_home/compositor.log"; echo 'Actual compositor keyboard precedence differs.' >&2; exit 1
+fi
+echo RAMPI_LABWC_DUPLICATE_LAYOUT_OK
 bash tests/rust/test-first-run.sh
 /build/target/debug/rampi-native --self-test > "$test_home/application.log" 2>&1 &
 application_pid=$!

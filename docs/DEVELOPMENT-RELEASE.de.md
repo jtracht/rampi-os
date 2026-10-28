@@ -7,7 +7,9 @@ die automatische Freigabe regulärer Releases wird dadurch nicht aktiviert.
 bleiben unverändert. `0.6.0-dev.3` ist veröffentlicht und unabhängig geprüft; siehe
 [Erststart-Abnahme](validation/native-first-account-dev3-release.md).
 `0.6.0-dev.4` ist ebenfalls veröffentlicht und unabhängig geprüft:
-[vollständige Softwarezuordnung](validation/native-dev4-software-acceptance.md). Die Zwischenveröffentlichungen
+[vollständige Softwarezuordnung](validation/native-dev4-software-acceptance.md).
+Der noch unveröffentlichte Folgestand ist `0.6.0-dev.5` und korrigiert die
+einheitliche Auswertung persönlicher Tastaturkonfigurationen. Die Zwischenveröffentlichungen
 sind vom Nutzer freigegeben; eine laufende Prüfung ist noch keine Veröffentlichung. Ein aktualisierter Versionswert
 oder erfolgreicher Komponentenlauf bestätigt noch keine Veröffentlichung.
 

@@ -464,6 +464,7 @@ keyboard-invalid-layout = Unbekannte Tastaturbelegung
 settings-directory-missing = Konfigurationsordner fehlt
 settings-directory-unsafe = Unsicherer persönlicher Konfigurationsordner
 keyboard-config-unsafe = Unsichere Tastaturkonfiguration
+keyboard-custom-layout = Deine vorhandene benutzerdefinierte Belegung bleibt erhalten. Wähle nur dann eine Belegung aus der Liste, wenn du sie ersetzen möchtest.
 display-service-unavailable = Bildschirmdienst nicht erreichbar
 display-list-invalid = Ungültige Bildschirmliste
 display-list-limit = Zu viele Bildschirme

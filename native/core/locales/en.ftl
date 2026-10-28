@@ -464,6 +464,7 @@ keyboard-invalid-layout = Unknown keyboard layout
 settings-directory-missing = Configuration directory is missing
 settings-directory-unsafe = The personal configuration directory is unsafe
 keyboard-config-unsafe = The keyboard configuration is unsafe
+keyboard-custom-layout = Your existing custom layout is preserved. Select a layout from the list only if you want to replace it.
 display-service-unavailable = The display service is unavailable
 display-list-invalid = The display list is invalid
 display-list-limit = The display service returned too many displays
