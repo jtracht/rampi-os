@@ -243,7 +243,10 @@ def require_personal_locale(user, language):
     expected = {b"LANGUAGE": language.encode(), b"LANG": locale.encode(),
                 b"LC_MESSAGES": locale.encode(), b"LC_TIME": locale.encode()}
     if any(environment.get(key) != value for key, value in expected.items()):
-        raise RuntimeError("The authenticated application lost its personal language/locale")
+        observed = {key.decode(): environment.get(key, b"<unset>").decode(errors="replace")
+                    for key in expected}
+        raise RuntimeError("The authenticated application lost its personal language/locale: "
+                           + json.dumps(observed, sort_keys=True))
     if environment.get(b"LC_ALL"):
         raise RuntimeError("A global locale override replaced the personal session locale")
     result = as_user(user, "env", "-u", "LC_ALL",
@@ -330,6 +333,11 @@ def main():
         as_user(user, "mkdir", "-p", str(personal))
         settings = personal / "settings.json"
         if settings.exists() or settings.is_symlink():
+            if (reset_keyrings and not settings.is_symlink()
+                    and settings.stat().st_uid == pwd.getpwnam(user).pw_uid
+                    and json.loads(settings.read_text()).get("language") == language):
+                # Explicit resumed diagnosis only; strict evidence rejects this mode.
+                continue
             raise RuntimeError("Fresh locale fixture already has personal settings")
         as_user(user, "tee", str(settings),
                 data=(json.dumps({"language": language}) + "\n").encode())

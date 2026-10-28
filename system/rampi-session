@@ -4,7 +4,8 @@ export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=Rampi
 export GDK_BACKEND=wayland GSK_RENDERER=cairo SDL_VIDEODRIVER=wayland
 unset DISPLAY XAUTHORITY
 # Load only validated locale identifiers; never source/evaluate user configuration.
-if locale_settings="$(timeout 3 /usr/local/bin/rampi --session-locale)"; then
+# The shared native ELF can need several seconds to load on a cold low-memory system.
+if locale_settings="$(timeout 30 /usr/local/bin/rampi --session-locale)"; then
     unset LC_ALL
     while IFS='=' read -r locale_key locale_value; do
         case "$locale_key" in
@@ -13,6 +14,8 @@ if locale_settings="$(timeout 3 /usr/local/bin/rampi --session-locale)"; then
     done <<EOF
 $locale_settings
 EOF
+else
+    echo "RAMPI_SESSION_LOCALE_UNAVAILABLE: retaining the system locale for configuration recovery." >&2
 fi
 # Reuse a reachable personal OpenSSH agent, including an empty one. Otherwise
 # let OpenSSH own its lifetime around this graphical session.
