@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 
 directory = Path(sys.argv[1])
+locale_log = (directory / "locales.log").read_text(encoding="utf-8")
+if "RAMPI_RUST_PERSONAL_LOCALES_INSTALL_OK" not in locale_log:
+    raise SystemExit("Actual locale runtime and preservation acceptance missing")
 installer_log = (directory / "tailscale-installer.log").read_text(encoding="utf-8")
 if "RAMPI_TAILSCALE_INSTALLER_PRESERVATION_OK" not in installer_log:
     raise SystemExit("Tailscale installer privilege/preservation acceptance missing")

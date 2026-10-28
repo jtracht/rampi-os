@@ -86,6 +86,7 @@ jobs:
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev shellcheck installer/raspberrypi/keyring-profile.sh installer/raspberrypi/keyring-profile-user.sh
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev python3 tests/rust/test-keyring-profile.py | tee artifacts/rust/keyring-profile.log
           docker run --rm --network none -e RAMPI_TEST_CONTAINER=1 -v "$PWD:/src:ro" rampi-rust-dev python3 tests/rust/test-tailscale-installer.py | tee artifacts/rust/tailscale-installer.log
+          docker run --rm --network none -e RAMPI_TEST_CONTAINER=1 -v "$PWD:/src:ro" rampi-rust-dev bash tests/rust/test-locales.sh | tee artifacts/rust/locales.log
       - name: Embedded Rust RDP with real TLS server, input and reconnect
         run: |
           set -euo pipefail

@@ -245,6 +245,11 @@ def acceptance(options):
                 raise RuntimeError("Source changed during actual streaming acceptance")
             stages = [
                 (
+                    "locales.log",
+                    base + frozen + guarded
+                    + ["-w", "/src", options.image, "bash", "tests/rust/test-locales.sh"],
+                ),
+                (
                     "tailscale-installer.log",
                     base + guarded + budget
                     + [options.image, "python3", "tests/rust/test-tailscale-installer.py"],

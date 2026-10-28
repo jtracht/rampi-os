@@ -59,12 +59,7 @@ if [[ "$mode" != --image ]]; then
     done
 fi
 if ((${#missing[@]})); then apt-get update; apt-get install --no-install-recommends -y "${missing[@]}"; fi
-# Add only the supported missing locale data; preserve system defaults and other locales.
-for locale_name in de_DE en_US; do
-    if ! locale -a | grep -Eqi "^${locale_name}[.]utf-?8$"; then
-        localedef -i "$locale_name" -f UTF-8 "$locale_name.UTF-8"
-    fi
-done
+bash "$source_root/installer/raspberrypi/locales.sh"
 version="$("$binary" --version | sed -n 's/^Rampi \([^ ]*\).*/\1/p')"
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]*)$ ]]; then echo 'Ungültige Binary-Version.' >&2; exit 1; fi
 # Serialize manual installs; prepare a complete version before activating it.

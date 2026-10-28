@@ -143,6 +143,7 @@ def keyring_store(user, attribute, secret):
 
 
 def install():
+    run("bash", str(SOURCE / "installer/raspberrypi/locales.sh"))
     run("bash", str(SOURCE / "installer/raspberrypi/keyring-profile.sh"), "--install")
     target = Path("/opt/rampi/login-test")
     target.mkdir(parents=True, exist_ok=True)
@@ -245,6 +246,15 @@ def require_personal_locale(user, language):
         raise RuntimeError("The authenticated application lost its personal language/locale")
     if environment.get(b"LC_ALL"):
         raise RuntimeError("A global locale override replaced the personal session locale")
+    result = as_user(user, "env", "-u", "LC_ALL",
+                     *[key.decode() + "=" + value.decode() for key, value in expected.items()],
+                     "python3", "-c",
+                     "import locale; locale.setlocale(locale.LC_MESSAGES, ''); "
+                     "locale.setlocale(locale.LC_TIME, ''); "
+                     "print('RAMPI_PERSONAL_LOCALE_RUNTIME_OK')")
+    if result.stdout.strip() != b"RAMPI_PERSONAL_LOCALE_RUNTIME_OK":
+        raise RuntimeError("The selected locale is not available in the actual system runtime")
+
 
 
 def main():

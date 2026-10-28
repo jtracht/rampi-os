@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.0-dev.4 — planned native follow-up, not yet published
+
+- Complete German/English keyboard, display, host and board validation messages
+  through the existing Fluent catalogs.
+- Require each real PAM account to retain its own language and usable libc locale
+  after logout and another login; inspect the actual systemd application process.
+- Reuse one preservation-aware installer step for supported locale data, retaining
+  other installed languages and system defaults, with real idempotence checks.
+- Keep Linux first-account boot preparation off unsupported Windows hosts and
+  provide the actual OpenSSL dependency in the Linux test container.
+
+No release or new progress point is asserted by these source changes. The existing
+source, fresh-image and public-download acceptance gates remain mandatory.
+
 ## 0.6.0-dev.3 — native development changes
 
 - Restore the stock first-account setup before graphical login; reuse the existing

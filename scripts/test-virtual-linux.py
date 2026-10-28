@@ -161,6 +161,7 @@ def main():
         config["packages"].append("libgtk-4-1")
     if options.native_session_binary:
         config["packages"] += [
+            "locales",
             "greetd",
             "wlgreet",
             "labwc",
