@@ -97,7 +97,7 @@ try {
         Write-Output "::add-mask::$password"
         $user = New-LocalUser -Name $name -Password (ConvertTo-SecureString $password -AsPlainText -Force)
         $path = [Text.StringBuilder]::new(260)
-        $accounts += [pscustomobject]@{Name=$name; Sid=$user.SID.Value; Profile=$null; Key=$null}
+        $accounts += [pscustomobject]@{Name=$name; Sid=$user.SID.Value; Profile=$null; Key=$null; Password=(ConvertTo-SecureString $password -AsPlainText -Force)}
         $result = [RampiCiProfile]::CreateProfile($user.SID.Value, $name, $path, 260)
         if ($result -ne 0) { throw "Native profile creation failed: $result" }
         $accounts[-1].Profile = $path.ToString()
@@ -146,6 +146,42 @@ try {
     if ($rejected.Code -ne 255 -or $rejected.Error -notmatch 'Permission denied') {
         throw 'The other user key was not explicitly rejected by OpenSSH.'
     }
+    # The client and server are both existing Microsoft components in this VM.
+    if ((Get-Service TermService).Status -ne 'Running') {
+        throw 'Actual Windows RDP service is not running after installation.'
+    }
+    $rdp = Get-CimInstance -Namespace root/cimv2/terminalservices -ClassName Win32_TSGeneralSetting -Filter "TerminalName='RDP-tcp'"
+    $thumbprint = $rdp.SSLCertificateSHA1Hash
+    if (-not $thumbprint) { throw 'Actual RDP listener has no bound server certificate.' }
+    $certificate = Get-ChildItem 'Cert:\LocalMachine\Remote Desktop', 'Cert:\LocalMachine\My' |
+        Where-Object Thumbprint -eq $thumbprint | Select-Object -First 1
+    if (-not $certificate) { throw 'Bound RDP server certificate not found.' }
+    $rootStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'CurrentUser')
+    $rootStore.Open('ReadWrite')
+    $alreadyTrusted = @($rootStore.Certificates | Where-Object Thumbprint -eq $thumbprint).Count -ne 0
+    $publicCertificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($certificate.RawData)
+    try {
+        if (-not $alreadyTrusted) { $rootStore.Add($publicCertificate) }
+        Add-LocalGroupMember -SID ([Security.Principal.SecurityIdentifier]'S-1-5-32-555') -Member $accounts[0].Name
+        $env:RAMPI_CI_RDP_USER = $accounts[0].Name
+        $env:RAMPI_CI_RDP_PASSWORD = ([pscredential]::new($accounts[0].Name, $accounts[0].Password)).GetNetworkCredential().Password
+        $clientScript = Join-Path $PSScriptRoot 'rdp-client-ci.ps1'
+        $login = & "$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -NonInteractive -STA -File $clientScript
+        if ($LASTEXITCODE -ne 0 -or $login -notcontains 'login-complete') {
+            throw "Actual Microsoft RDP login failed: $login"
+        }
+        $env:RAMPI_CI_RDP_PASSWORD = 'Wrong!' + [guid]::NewGuid().ToString('N')
+        Write-Output "::add-mask::$env:RAMPI_CI_RDP_PASSWORD"
+        $rejection = & "$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -NonInteractive -STA -File $clientScript
+        if ($LASTEXITCODE -ne 0 -or ($rejection -join '') -notmatch '^disconnected:\d+$') {
+            throw "Actual RDP negative authentication did not complete: $rejection"
+        }
+    } finally {
+        Remove-Item Env:RAMPI_CI_RDP_PASSWORD -ErrorAction SilentlyContinue
+        Remove-Item Env:RAMPI_CI_RDP_USER -ErrorAction SilentlyContinue
+        if (-not $alreadyTrusted) { $rootStore.Remove($publicCertificate) }
+        $rootStore.Close()
+    }
 } finally {
     Stop-Service sshd -ErrorAction SilentlyContinue
     [IO.File]::WriteAllBytes($configuration, $originalConfiguration)
@@ -164,6 +200,7 @@ New-Item -ItemType Directory -Force $output | Out-Null
     revision = $env:GITHUB_SHA
     installer_sha256 = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
     test_sha256 = (Get-FileHash $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    rdp_test_sha256 = (Get-FileHash (Join-Path $PSScriptRoot 'rdp-client-ci.ps1') -Algorithm SHA256).Hash.ToLowerInvariant()
     runner = $env:ImageOS
     unsupported_edition_rejected_by_default = $true
     what_if_preserved = $true
@@ -176,6 +213,8 @@ New-Item -ItemType Directory -Force $output | Out-Null
     two_real_standard_user_ssh_logins = $true
     wrong_user_key_rejected = $true
     two_real_private_profile_checks = $true
+    microsoft_rdp_login_complete = $true
+    microsoft_rdp_wrong_password_disconnected = $true
     authentication_acceptance = $false
     complete_product_acceptance = $false
 } | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $output 'components.json')

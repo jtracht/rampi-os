@@ -18,6 +18,7 @@ def verify(path: Path, revision: str) -> None:
     for field, source in {
         "installer_sha256": "installer/windows/setup.ps1",
         "test_sha256": "tests/windows/host-components-ci.ps1",
+        "rdp_test_sha256": "tests/windows/rdp-client-ci.ps1",
     }.items():
         digest = hashlib.sha256((ROOT / source).read_bytes()).hexdigest()
         if proof.get(field) != digest:
@@ -30,6 +31,7 @@ def verify(path: Path, revision: str) -> None:
         "official_sshd_configuration_valid", "rdp_enabled", "nla_required",
         "private_firewall_only", "two_real_standard_user_ssh_logins",
         "wrong_user_key_rejected", "two_real_private_profile_checks",
+        "microsoft_rdp_login_complete", "microsoft_rdp_wrong_password_disconnected",
     ]:
         if proof.get(field) is not True:
             raise ValueError(f"Actual Windows component check missing: {field}")
