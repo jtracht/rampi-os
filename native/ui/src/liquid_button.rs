@@ -21,8 +21,7 @@ mod imp {
             let state = self.state.borrow();
             if let Some((settings, start, pulse)) = state.as_ref() {
                 let flags = object.state_flags();
-                let selected =
-                    flags.intersects(gtk::StateFlags::PRELIGHT | gtk::StateFlags::FOCUSED);
+                let selected = object.surface_selected();
                 let category = object.has_css_class("settings-category");
                 if !category || selected {
                     let reduced = crate::widgets::motion_reduced(settings);
@@ -74,6 +73,15 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 impl LiquidButton {
+    fn surface_selected(&self) -> bool {
+        let flags = self.state_flags();
+        if self.has_css_class("settings-category") {
+            // Category navigation has one selection across mouse and keyboard.
+            flags.contains(gtk::StateFlags::FOCUSED)
+        } else {
+            flags.intersects(gtk::StateFlags::PRELIGHT | gtk::StateFlags::FOCUSED)
+        }
+    }
     fn pad_child(&self) {
         if let Some(child) = self.child() {
             // Keep spacing in GTK's layout, outside the surface snapshot coordinates.
@@ -107,9 +115,7 @@ impl LiquidButton {
         let previous_reduced = std::cell::Cell::new(false);
         object.add_tick_callback(move |object, _| {
             if let Some((settings, _, pulse)) = object.imp().state.borrow().as_ref() {
-                let selected = object
-                    .state_flags()
-                    .intersects(gtk::StateFlags::PRELIGHT | gtk::StateFlags::FOCUSED);
+                let selected = object.surface_selected();
                 let reduced = crate::widgets::motion_reduced(settings);
                 if previous_reduced.replace(reduced) != reduced {
                     object.queue_draw();

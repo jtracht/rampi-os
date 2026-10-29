@@ -14,6 +14,17 @@ async fn tool(program: &str, args: &[&str]) -> anyhow::Result<()> {
 async fn delay(ms: u64) {
     glib::timeout_future(std::time::Duration::from_millis(ms)).await;
 }
+async fn settled(stack: &gtk::Stack) -> anyhow::Result<()> {
+    // Wait for the framework's real transition, rather than capturing two pages mid-slide.
+    for _ in 0..100 {
+        if !stack.is_transition_running() {
+            delay(35).await;
+            return Ok(());
+        }
+        delay(20).await;
+    }
+    anyhow::bail!("Page transition did not finish")
+}
 pub fn run(
     app: &gtk::Application,
     window: &gtk::ApplicationWindow,
@@ -92,6 +103,19 @@ pub fn run(
             tool("wtype", &["-k", "Down"]).await?;
             delay(180).await;
             capture("settings-categories").await?;
+            let bluetooth_category = named(&settings, "settings-category-bluetooth").context("No Bluetooth category")?;
+            let hover_bounds = bluetooth_category.compute_bounds(&window).context("No category bounds")?;
+            let hover_x = (hover_bounds.x() + hover_bounds.width() / 2.0) as i32 - window.width() + 1;
+            let hover_y = (hover_bounds.y() + hover_bounds.height() / 2.0) as i32 - window.height() + 1;
+            tool("wlrctl", &["pointer", "move", "10000", "10000"]).await?;
+            tool("wlrctl", &["pointer", "move", &hover_x.to_string(), &hover_y.to_string()]).await?;
+            delay(100).await;
+            ensure!(gtk::prelude::RootExt::focus(&window).is_some_and(|focus| focus == bluetooth_category), "Pointer motion must move the single category selection");
+            tool("wtype", &["-k", "Up", "-k", "Up"]).await?;
+            delay(180).await;
+            ensure!(gtk::prelude::RootExt::focus(&window).is_some_and(|focus| focus == category));
+            capture("category-pointer-keyboard").await?;
+            records.borrow_mut().get_mut("category-pointer-keyboard").unwrap()["control"] = serde_json::json!({"x":hover_bounds.x(),"y":hover_bounds.y(),"width":hover_bounds.width(),"height":hover_bounds.height()});
             tool("wtype", &["-k", "Up", "-k", "Down"]).await?;
             for (name, pause) in [("control-a", 35), ("control-b", 70), ("control-c", 100), ("control-d", 100)] {
                 delay(pause).await;
@@ -140,7 +164,7 @@ pub fn run(
                 tool("wtype", &["-k", "Return"]).await?; delay(100).await;
                 ensure!(tabs.visible_child_name().as_deref() == Some(category), "Keyboard did not open {category}");
             }
-            tabs.set_visible_child_name("host"); delay(170).await;
+            tabs.set_visible_child_name("host"); settled(&tabs).await?;
             capture("settings-host").await?;
             tool("wtype", &["-k", "Escape"]).await?; delay(150).await;
             ensure!(tabs.visible_child_name().as_deref() == Some("categories"));
@@ -164,10 +188,26 @@ pub fn run(
             delay(400).await; capture("dashboard-1600").await?;
             ensure!(window.width() == 1600 && window.height() == 900);
             for tab in ["wifi", "bluetooth", "system", "board"] {
-                stack.set_visible_child_name("settings"); tabs.set_visible_child_name(tab); delay(170).await;
+                stack.set_visible_child_name("settings"); tabs.set_visible_child_name(tab); settled(&stack).await?; settled(&tabs).await?;
+                if tab == "wifi" {
+                    let page = tabs.child_by_name("wifi").context("Missing Wi-Fi page")?;
+                    for title in ["Verbinden", "Trennen"] {
+                        ensure!(!find_button(&page, title).context("Missing Wi-Fi action")?.is_sensitive(), "Wi-Fi action without a selected network: {title}");
+                    }
+                }
+                if tab == "bluetooth" {
+                    let page = tabs.child_by_name("bluetooth").context("Missing Bluetooth page")?;
+                    for title in ["Einschalten", "Ausschalten", "Koppeln", "Verbinden", "Trennen", "Geräte suchen"] {
+                        ensure!(!find_button(&page, title).context("Missing Bluetooth action")?.is_sensitive(), "Bluetooth action without a selected adapter/device: {title}");
+                    }
+                }
                 let path = directory.join(format!("interaction-settings-{tab}.png")); tool("grim", &[path.to_str().unwrap()]).await?;
                 std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644))?;
             }
+            stack.set_visible_child_name("dashboard");
+            tool("wlr-randr", &["--output","HEADLESS-1","--custom-mode","1920x1080"]).await?;
+            delay(400).await; capture("dashboard-1920").await?;
+            ensure!(window.width() == 1920 && window.height() == 1080);
             ensure!(app.windows().len() == 1);
             std::fs::write(directory.join("interaction-geometry.json"), serde_json::to_vec_pretty(&*records.borrow())?)?;
             std::fs::set_permissions(directory.join("interaction-geometry.json"), std::fs::Permissions::from_mode(0o644))?;

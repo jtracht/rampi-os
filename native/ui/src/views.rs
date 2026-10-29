@@ -125,6 +125,16 @@ pub fn settings(
         content.append(&text);
         content.append(&label("›"));
         choice.set_child(Some(&content));
+        let pointer = gtk::EventControllerMotion::new();
+        let weak_choice = choice.downgrade();
+        pointer.connect_motion(move |_, _, _| {
+            if let Some(choice) = weak_choice.upgrade()
+                && !choice.has_focus()
+            {
+                choice.grab_focus();
+            }
+        });
+        choice.add_controller(pointer);
         let target = tabs.clone();
         let (last, index) = (last_category.clone(), choices.len());
         choice.connect_clicked(move |_| {
@@ -258,13 +268,29 @@ fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
     page.append(&list);
     let networks: Rc<RefCell<Vec<bus::Wifi>>> = Rc::new(RefCell::new(vec![]));
     let password = gtk::PasswordEntry::builder()
-        .placeholder_text("WLAN-Kennwort")
+        .placeholder_text(tr("wifi-credential-placeholder", &[]))
         .show_peek_icon(true)
         .build();
     page.append(&password);
     let buttons = row();
     let connect = button(&tr("network-connect", &[]), f);
     let disconnect = button(&tr("network-disconnect", &[]), f);
+    connect.set_sensitive(false);
+    disconnect.set_sensitive(false);
+    password.set_sensitive(false);
+    let (join, leave, secret) = (
+        connect.downgrade(),
+        disconnect.downgrade(),
+        password.downgrade(),
+    );
+    list.connect_row_selected(move |_, selected| {
+        for control in [join.upgrade(), leave.upgrade()].into_iter().flatten() {
+            control.set_sensitive(selected.is_some());
+        }
+        if let Some(secret) = secret.upgrade() {
+            secret.set_sensitive(selected.is_some());
+        }
+    });
     buttons.append(&connect);
     buttons.append(&disconnect);
     page.append(&buttons);
@@ -513,6 +539,14 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         let title = title.to_string();
         let b = button(&title, f);
         controls.insert(&b, -1);
+        b.set_sensitive(false);
+        let selection = if op == "power" { &picker } else { &list };
+        let action = b.downgrade();
+        selection.connect_row_selected(move |_, selected| {
+            if let Some(action) = action.upgrade() {
+                action.set_sensitive(selected.is_some());
+            }
+        });
         let (a, l, p, d, stat, s, f) = (
             adapters.clone(),
             list.clone(),
@@ -565,6 +599,13 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     let stop = button(&tr("bluetooth-stop", &[]), f);
     controls.insert(&search, -1);
     controls.insert(&stop, -1);
+    search.set_sensitive(false);
+    let action = search.downgrade();
+    picker.connect_row_selected(move |_, selected| {
+        if let Some(action) = action.upgrade() {
+            action.set_sensitive(selected.is_some());
+        }
+    });
     let (owned, epoch, p, a, stat, weak_page) = (
         discovery.clone(),
         generation.clone(),

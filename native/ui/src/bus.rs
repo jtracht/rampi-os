@@ -9,7 +9,9 @@ pub const ROOT: &str = "/org/freedesktop/NetworkManager";
 pub type Values = HashMap<String, glib::Variant>;
 pub type Settings = HashMap<String, Values>;
 pub async fn system() -> Result<gio::DBusConnection> {
-    Ok(gio::bus_get_future(gio::BusType::System).await?)
+    gio::bus_get_future(gio::BusType::System)
+        .await
+        .with_context(|| rampi_core::i18n::text("system-services-unavailable", &[]))
 }
 pub async fn call(
     bus: &gio::DBusConnection,

@@ -179,7 +179,10 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         dark,
         delay,
     } = spec;
-    let b = button("", feedback);
+    // Dashboard tiles already paint their own liquid surface below. Keep a
+    // native button here rather than adding a second skin and its child margins.
+    let b = gtk::Button::new();
+    wire_button(&b, feedback);
     b.add_css_class("tile");
     b.set_hexpand(true);
     b.set_vexpand(true);

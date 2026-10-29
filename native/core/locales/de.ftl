@@ -14,6 +14,7 @@ local-browser-preview = { $url } · Lokaler Browser
 open-settings = ⚙  Einstellungen
 open-console = Konsole
 open-diagnostics = Diagnose
+system-services-unavailable = Eine Systemfunktion ist nicht erreichbar. Öffne Diagnose, um ihren Status zu prüfen.
 setup-resume = Einrichtung fortsetzen
 back-dashboard = ← Dashboard
 back-setup = ← Einrichtung

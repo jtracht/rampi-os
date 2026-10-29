@@ -58,6 +58,13 @@ for phase in ["startup", "hover", "focus"]:
     evidence[phase] = changes
 
 assert mask("reduced-a") == mask("reduced-b"), "Reduced motion still moves the rendered contour"
+tile = geometry["reduced-a"]["tile"]
+image = Image.open(root / "interaction-reduced-a.png").convert("RGB")
+x, y, width, height = (round(tile[key]) for key in ["x", "y", "width", "height"])
+for dx, dy in [(8, 8), (width - 9, 8), (8, height - 9), (width - 9, height - 9)]:
+    assert image.getpixel((x + dx, y + dy)) == (8, 15, 22), (
+        "Dashboard tile acquired an extra button skin/focus frame"
+    )
 first = mask("control-a", "control")
 samples = [mask("control-" + suffix, "control") for suffix in "bcd"]
 height, width = len(first), len(first[0])
@@ -76,7 +83,12 @@ assert len(set(changes.values())) > 1, ("native-control", changes)
 assert mask("control-reduced-a", "control") == mask("control-reduced-b", "control")
 assert mask("control-system-reduced-a", "control") == mask("control-system-reduced-b", "control")
 evidence["native-control"] = changes
+assert not any(any(row) for row in mask("category-pointer-keyboard", "control")), (
+    "Stationary hidden pointer left a second active category after keyboard navigation"
+)
 assert geometry["dashboard-1600"]["width"] == 1600
+assert geometry["dashboard-1920"]["width"] == 1920
+assert geometry["dashboard-1920"]["height"] == 1080
 for name in ["host", "wifi", "bluetooth", "system", "board"]:
     image = Image.open(root / f"interaction-settings-{name}.png")
     assert image.width >= 1280 and image.height >= 720
