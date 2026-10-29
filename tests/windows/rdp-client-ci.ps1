@@ -57,7 +57,6 @@ public static class RampiRdpClientProbe {
             client.AdvancedSettings9.ClearTextPassword = password;
             var credentials = (MSTSCLib.IMsRdpClientNonScriptable3)control.Client;
             credentials.PromptForCredentials = false;
-            credentials.AllowPromptingForCredentials = false;
             ((MSTSCLib.IMsRdpClientNonScriptable4)control.Client).PromptForCredsOnClient = false;
             Action login = () => { loggedIn = true; };
             Action<int> disconnect = value => { reason = value; disconnected = true; };
