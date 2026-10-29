@@ -14,7 +14,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 public sealed class RampiRdpControl : AxHost {
-    public RampiRdpControl() : base(Type.GetTypeFromProgID("MsRdpClient9NotSafeForScripting", true).GUID.ToString()) {}
+    // Microsoft's documented CLSID; the class's display name is not a ProgID.
+    public RampiRdpControl() : base("8B918B82-7985-4C24-89DF-C33AD2BBFBCD") {}
     public object Client { get { return GetOcx(); } }
 }
 public static class RampiRdpClientProbe {
