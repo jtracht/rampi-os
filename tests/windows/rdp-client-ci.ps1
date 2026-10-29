@@ -6,7 +6,19 @@ if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hoste
     throw 'Disposable GitHub Windows runner required.'
 }
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') { throw 'STA required.' }
-Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing, Microsoft.CSharp, System.Core -TypeDefinition @'
+# Reuse the installed Microsoft SDK to import the actual system type library.
+# This avoids guessed COM dispatch members or a handwritten interface vtable.
+$sdkRoot = Join-Path ${env:ProgramFiles(x86)} 'Microsoft SDKs/Windows'
+$importers = @(Get-ChildItem -LiteralPath $sdkRoot -Filter TlbImp.exe -File -Recurse |
+    Sort-Object @{Expression={ $_.FullName -match '\\x64\\' }; Descending=$true}, FullName)
+if (-not $importers.Count) { throw 'Installed Microsoft SDK type-library importer missing.' }
+$interopDirectory = Join-Path $env:RUNNER_TEMP ('rampi-rdp-interop-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory $interopDirectory | Out-Null
+$interopAssembly = Join-Path $interopDirectory 'MSTSCLib.dll'
+& $importers[0].FullName "$env:WINDIR/System32/mstscax.dll" "/out:$interopAssembly" /namespace:MSTSCLib /machine:X64 /silent /nologo | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Actual Microsoft RDP type-library import failed.' }
+[Reflection.Assembly]::LoadFrom($interopAssembly) | Out-Null
+Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing, System.Core, $interopAssembly -TypeDefinition @'
 using System;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -35,7 +47,7 @@ public static class RampiRdpClientProbe {
             ((ISupportInitialize)control).EndInit();
             form.Show();
             Application.DoEvents();
-            dynamic client = control.Client;
+            var client = (MSTSCLib.IMsRdpClient9)control.Client;
             client.Server = server;
             client.UserName = user;
             client.Domain = Environment.MachineName;
@@ -43,7 +55,10 @@ public static class RampiRdpClientProbe {
             // 1 requires successful server authentication; never ignore certificates.
             client.AdvancedSettings9.AuthenticationLevel = 1u;
             client.AdvancedSettings9.ClearTextPassword = password;
-            client.AdvancedSettings9.PromptForCredentials = false;
+            var credentials = (MSTSCLib.IMsRdpClientNonScriptable3)control.Client;
+            credentials.PromptForCredentials = false;
+            credentials.AllowPromptingForCredentials = false;
+            ((MSTSCLib.IMsRdpClientNonScriptable4)control.Client).PromptForCredsOnClient = false;
             Action login = () => { loggedIn = true; };
             Action<int> disconnect = value => { reason = value; disconnected = true; };
             ComEventsHelper.Combine((object)client, events, 3, login);
