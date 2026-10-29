@@ -43,7 +43,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 public static class RampiCiProfile {
     [DllImport("userenv.dll", CharSet=CharSet.Unicode)]
-    public static extern int CreateProfile(string sid, string name, StringBuilder path, uint length);
+    public static extern int CreateProfile(string sid, string name, [Out] StringBuilder path, uint length);
 }
 '@
 $fixtureRoot = Join-Path $env:RUNNER_TEMP ('rampi-ssh-' + [guid]::NewGuid().ToString('N'))
@@ -88,9 +88,9 @@ try {
         $password = 'R!a9' + [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
         Write-Output "::add-mask::$password"
         $user = New-LocalUser -Name $name -Password (ConvertTo-SecureString $password -AsPlainText -Force)
-        $path = [Text.StringBuilder]::new(1024)
+        $path = [Text.StringBuilder]::new(260)
         $accounts += [pscustomobject]@{Name=$name; Sid=$user.SID.Value; Profile=$null; Key=$null}
-        $result = [RampiCiProfile]::CreateProfile($user.SID.Value, $name, $path, 1024)
+        $result = [RampiCiProfile]::CreateProfile($user.SID.Value, $name, $path, 260)
         if ($result -ne 0) { throw "Native profile creation failed: $result" }
         $accounts[-1].Profile = $path.ToString()
         $key = Join-Path $fixtureRoot "identity-$index"

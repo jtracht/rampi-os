@@ -17,8 +17,9 @@ pub fn inline_choices(values: &[&str], feedback: &Feedback) -> gtk::ListBox {
     let click = feedback.clone();
     list.connect_row_activated(move |_, _| click.play(true));
     let feedback = feedback.clone();
-    list.connect_row_selected(move |_, row| {
-        if row.is_some() {
+    list.connect_row_selected(move |list, row| {
+        // Populating a hidden settings page is not a user navigation action.
+        if list.is_mapped() && row.is_some() {
             feedback.play(false);
         }
     });
