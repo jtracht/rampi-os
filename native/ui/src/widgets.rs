@@ -8,6 +8,11 @@ use std::{
 };
 pub type Shared = Rc<RefCell<Settings>>;
 
+pub(crate) fn motion_reduced(settings: &Shared) -> bool {
+    settings.borrow().reduce_motion
+        || gtk::Settings::default().is_some_and(|s| !s.is_gtk_enable_animations())
+}
+
 /// Existing GTK focus/selection with all choices in the current page, no popover.
 pub fn inline_choices(values: &[&str], feedback: &Feedback) -> gtk::ListBox {
     let list = gtk::ListBox::new();
@@ -236,7 +241,7 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         } else {
             Some(t - p.get())
         };
-        let [a, b, c, d] = motion::shape(t, s.get(), impulse, conf.borrow().reduce_motion);
+        let [a, b, c, d] = motion::shape(t, s.get(), impulse, motion_reduced(&conf));
         let (w, h, r) = (width as f64 - 20.0, height as f64 - 20.0, 26.0);
         cr.translate(10.0, 10.0);
         wave_path(cr, w, h, r, [a, b, c, d]);
@@ -272,10 +277,10 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         }
     });
     b.add_controller(hover);
-    let previous_reduced = Cell::new(settings.borrow().reduce_motion);
+    let previous_reduced = Cell::new(motion_reduced(&settings));
     area.add_tick_callback(move |area, _| {
         let t = start.get().elapsed().as_secs_f64();
-        let reduced = settings.borrow().reduce_motion;
+        let reduced = motion_reduced(&settings);
         if previous_reduced.replace(reduced) != reduced {
             area.queue_draw();
         }

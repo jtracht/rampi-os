@@ -100,6 +100,9 @@ jobs:
       - name: Real Windows components (disposable hosted runner only)
         shell: pwsh
         run: ./tests/windows/host-components-ci.ps1
+      - name: Verify component evidence against checked-out sources
+        shell: pwsh
+        run: python scripts/check-windows-components.py artifacts/windows-components/components.json --revision $env:GITHUB_SHA
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: windows-host-components

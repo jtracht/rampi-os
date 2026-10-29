@@ -25,8 +25,7 @@ mod imp {
                     flags.intersects(gtk::StateFlags::PRELIGHT | gtk::StateFlags::FOCUSED);
                 let category = object.has_css_class("settings-category");
                 if !category || selected {
-                    let reduced = settings.borrow().reduce_motion
-                        || gtk::Settings::default().is_some_and(|s| !s.is_gtk_enable_animations());
+                    let reduced = crate::widgets::motion_reduced(settings);
                     let mut edges = rampi_core::motion::shape(
                         start.elapsed().as_secs_f64(),
                         selected,
@@ -111,8 +110,7 @@ impl LiquidButton {
                 let selected = object
                     .state_flags()
                     .intersects(gtk::StateFlags::PRELIGHT | gtk::StateFlags::FOCUSED);
-                let reduced = settings.borrow().reduce_motion
-                    || gtk::Settings::default().is_some_and(|s| !s.is_gtk_enable_animations());
+                let reduced = crate::widgets::motion_reduced(settings);
                 if previous_reduced.replace(reduced) != reduced {
                     object.queue_draw();
                 }

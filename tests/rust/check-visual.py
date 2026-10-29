@@ -74,6 +74,7 @@ changes = {
 assert all(count >= 1 for count in changes.values()), ("native-control", changes)
 assert len(set(changes.values())) > 1, ("native-control", changes)
 assert mask("control-reduced-a", "control") == mask("control-reduced-b", "control")
+assert mask("control-system-reduced-a", "control") == mask("control-system-reduced-b", "control")
 evidence["native-control"] = changes
 assert geometry["dashboard-1600"]["width"] == 1600
 for name in ["host", "wifi", "bluetooth", "system", "board"]:
