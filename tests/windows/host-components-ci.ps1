@@ -174,13 +174,18 @@ try {
         Where-Object Thumbprint -eq $thumbprint | Select-Object -First 1
     if (-not $certificate) { throw 'Bound RDP server certificate not found.' }
     Write-Output 'RAMPI_WINDOWS_BOUND_RDP_CERTIFICATE_FOUND'
-    $rootStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'CurrentUser')
+    # CurrentUser\Root invokes Windows' interactive protected-root confirmation.
+    # This elevated, disposable VM can temporarily trust its own existing listener
+    # certificate in LocalMachine\Root without a dialog. Restore only our addition.
+    $rootStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'LocalMachine')
     $rootStore.Open('ReadWrite')
     $alreadyTrusted = @($rootStore.Certificates | Where-Object Thumbprint -eq $thumbprint).Count -ne 0
     $publicCertificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($certificate.RawData)
     try {
         if (-not $alreadyTrusted) { $rootStore.Add($publicCertificate) }
+        Write-Output 'RAMPI_WINDOWS_OWN_LISTENER_CERTIFICATE_TRUST_READY'
         Add-LocalGroupMember -SID ([Security.Principal.SecurityIdentifier]'S-1-5-32-555') -Member $accounts[0].Name
+        Write-Output 'RAMPI_WINDOWS_OWN_RDP_FIXTURE_ACCOUNT_AUTHORIZED'
         $env:RAMPI_CI_RDP_USER = $accounts[0].Name
         $env:RAMPI_CI_RDP_PASSWORD = ([pscredential]::new($accounts[0].Name, $accounts[0].Password)).GetNetworkCredential().Password
         $login = Invoke-FixtureRdp
