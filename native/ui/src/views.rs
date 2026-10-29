@@ -560,8 +560,11 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             let selected = l
                 .selected_row()
                 .and_then(|r| d.borrow().get(r.index() as usize).cloned());
+            // BlueZ Connected can mean only the ACL link; Connect must still
+            // reach BlueZ so it can establish missing profiles such as HID.
             if let Some(device) = &selected
-                && ((op == "pair" && device.paired) || (op == "connect" && device.connected))
+                && op == "pair"
+                && device.paired
             {
                 stat.set_text(&tr("bluetooth-connected", &[]));
                 return;

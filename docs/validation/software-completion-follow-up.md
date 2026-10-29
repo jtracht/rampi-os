@@ -2,7 +2,11 @@
 
 This is development evidence, not a complete release or Raspberry Pi hardware
 certification. The accepted score remains **91/95 (95.8%)**. The published,
-independently verified image remains **v0.6.0-dev.5**; dev.6 is not published.
+independently verified image is now **v0.6.0-dev.6** (release run
+`40892544298`, source `3ae8c2db84eb2f7b96fc87bf9bd75b17bb466d79`).
+All 28 public assets, server digests, complete source archives and actual
+graphical image evidence passed independent verification. This does not close
+the remaining complete-area acceptance below.
 
 ## Explicit Windows test boundary
 
@@ -81,8 +85,13 @@ separate captures proving that both the personal and system-wide GTK reduced
 motion preferences freeze the contour. Hidden choice-list setup no
 longer triggers selection sounds.
 
-These are component proofs. Current source must still pass final native CI on
-both architectures and a fresh release image before publication.
+These component proofs are now followed by successful final main CI
+`40880569312` / `40880569440` and fresh release-image run `40892544298` for
+source `3ae8c2db84eb2f7b96fc87bf9bd75b17bb466d79`. The independently downloaded
+Windows package contains the exact tested installer SHA256
+`a9190468edcbed8a47ce68a6ccc977d4389a74b2cf4b65899a30b2dfb77d39ca`.
+This closes the source/package association, while the remaining complete-area
+review below remains explicit.
 
 ## Remaining complete-area acceptance
 
@@ -95,3 +104,40 @@ both architectures and a fresh release image before publication.
 
 No AI integrations, model calls, physical tests, external Windows host or new
 recurring task is introduced by this work. No additional score is claimed.
+
+## Configurable virtual HID peer follow-up
+
+`scripts/virtual/bluetooth-hid-peer.py` promotes the existing pinned Bumble
+application fixture into a reproducible source file. It accepts bounded HID key
+usages and modifier bytes, always sends a release report, and refuses execution
+outside the designated root QEMU fixture. It reuses the SDK's report map, SDP
+objects and protocol implementation. Its extended fixture lifetime accommodates
+actual GUI navigation without changing product timeouts. The new peer still
+requires real GUI/input integration and fresh source-bound acceptance; no new
+score or complete-area acceptance is claimed.
+
+The configurable peer has passed actual kernel keyboard/mouse press/release,
+reconnect and bond removal in a development guest. Raw libinput traces and
+source hashes were independently rechecked under
+`artifacts/hid-peer-configurable-20261029/component-verified.json`. The guest
+was reused, so this is component evidence only. The joined GUI/HID trial first
+failed because its test coordinates assumed two visible BlueZ adapters; the
+SDK owns the second controller and only one adapter is visible. Failed original
+files remain retained; correcting the driver does not establish product success.
+
+## Explicit profile connection after pairing
+
+The joined real SDK/GUI trial exposed a production shortcut: the UI returned
+without calling BlueZ Connect whenever Device1.Connected was already true.
+Pairing can establish the ACL link while HID control/interrupt channels still
+need connecting. The shortcut has been removed for Connect; repeated pairing
+retains its existing paired-device guard. BlueZ remains responsible for profiles,
+authorization and protocol handling.
+
+The existing executable GTK/BlueZ contract now starts with Connected=true,
+selects the real page's device and invokes its Verbinden action. The test
+requires one actual Connect method call at the fixture service, while existing
+adapter selection and discovery-lifetime assertions remain intact. The new
+regression check passes, as do the local Rust build and Clippy. The subsequent
+real HID/GTK trial remains separate from this contract result. No completed
+Bluetooth area, fresh-image acceptance or additional percentage is claimed.

@@ -74,6 +74,42 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
                 shown().contains("Rust test keyboard") && device_list.row_at_index(1).is_none(),
                 "Devices from another adapter appeared"
             );
+            let connected_device = crate::bus::bluetooth_snapshot()
+                .await?
+                .1
+                .into_iter()
+                .find(|d| d.label.contains("Rust test keyboard"))
+                .context("No connected ACL fixture")?;
+            ensure!(
+                connected_device.connected,
+                "ACL fixture must already be connected"
+            );
+            device_list.select_row(device_list.row_at_index(0).as_ref());
+            find_button(&page, "Verbinden")
+                .context("No profile connection action")?
+                .emit_clicked();
+            let mut profile_requested = false;
+            for _ in 0..100 {
+                let calls = crate::bus::call(
+                    &connection,
+                    "org.bluez",
+                    &connected_device.path,
+                    "org.freedesktop.DBus.Mock",
+                    "GetMethodCalls",
+                    Some(&("Connect",).to_variant()),
+                )
+                .await?;
+                if calls.child_value(0).n_children() == 1 {
+                    profile_requested = true;
+                    break;
+                }
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            ensure!(
+                profile_requested,
+                "GUI skipped profile connection on an existing ACL"
+            );
+            println!("RAMPI_RUST_BLUEZ_CONNECTED_PROFILE_REQUEST_OK");
             let before = names().await?;
             search.emit_clicked();
             let mut client = None;

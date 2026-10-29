@@ -46,6 +46,12 @@ try:
             f"self.connected = {connected}; "
             f"self.Set('org.bluez.Device1', 'Connected', dbus.Boolean({connected}))",
         )
+    if ui:
+        # Pairing may leave an ACL connection before HID profiles are connected.
+        # The explicit GUI action must still reach BlueZ's profile connection API.
+        dbus.Interface(bus.get_object("org.bluez", device), dbus.PROPERTIES_IFACE).Set(
+            "org.bluez.Device1", "Connected", dbus.Boolean(True)
+        )
     result = subprocess.run(
         ["/build/target/debug/rampi-native", "--bluetooth-ui-check" if ui else "--bluetooth-check"],
         capture_output=True,
@@ -55,6 +61,8 @@ try:
     )
     if result.returncode:
         raise RuntimeError(result.stdout + result.stderr)
+    if ui:
+        assert len(device_mock.GetMethodCalls("Connect")) == 1
     methods = dbus.Interface(bus.get_object("org.bluez", adapter), dbusmock.MOCK_IFACE)
     assert len(methods.GetMethodCalls("StartDiscovery")) == 2
     assert len(methods.GetMethodCalls("StopDiscovery")) == (0 if ui else 1)
