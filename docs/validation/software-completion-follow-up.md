@@ -29,11 +29,36 @@ source `12e70937c03677740256cccb4305b5713d541f83`:
   captured user SIDs. Secret profiles/keys remain private in the disposable VM;
   they are not uploaded.
 
+The subsequent actual Windows run
+[40834696904](https://github.com/jtracht/rampi-os/actions/runs/40834696904), source
+`596c149f9a1120707507ae5ef43726f0ba214dff`, additionally passed the complete general
+CI and these real authentication checks:
+
+- Microsoft's installed RDP ActiveX client imports the actual system type library
+  through the installed Microsoft SDK. It requires server authentication and
+  CredSSP; certificate validation is not bypassed.
+- The existing listener's public certificate is temporarily trusted only inside
+  the elevated disposable VM. Only the fixture's own addition is removed.
+- OnLoginComplete is followed by a server-side remote-interactive logon with the
+  expected actual Windows SID.
+- A generated incorrect password produces a real Security event 4625 for the
+  fixture account, status `0xc000006d`, substatus `0xc000006a`, logon type 3.
+  The client is explicitly cancelled **after that observed server denial**.
+  A client deadline alone remains a failure. Original audit policy is restored.
+
+The downloaded result was independently checked using frozen copies of the
+checker and both test scripts from that exact commit. The checked-out installer
+and test hashes match the actual downloaded JSON and successful GitHub job.
+The independent result is retained locally under
+`artifacts/windows-final-ci-596c149/accepted.json`.
+
 `scripts/check-windows-components.py` verifies the exact source revision and
 installer/test SHA256 hashes in the downloaded JSON. A deliberately mismatched
-revision is rejected. The evidence explicitly sets complete acceptance to false:
-**successful/failed RDP authentication is still open**. Windows Server component
-tests do not certify an actual Windows 11 Pro host.
+revision is rejected. These are Windows **component** results; complete Rampi
+acceptance remains false. Windows Server component tests do not certify an
+actual Windows 11 Pro host. The earlier conservative aggregate authentication
+flag is corrected in the follow-up producer; named authentication assertions and
+the actual Windows failure record already passed in the independently frozen run.
 
 ## Native input and interaction work
 
@@ -64,8 +89,8 @@ both architectures and a fresh release image before publication.
 1. Real virtual Bluetooth HID keyboard/mouse reports through the kernel input
    path, including reconnect/forget and isolation.
 2. Complete input/layout edge cases through that same actual input path.
-3. Native Windows RDP authentication, including negative authentication evidence,
-   in disposable GitHub-CI only.
+3. Integrate the now verified native Windows component evidence after final
+   source-bound CI; personal and external Windows hosts remain excluded.
 4. Complete interaction/accessibility/performance review across supported sizes.
 
 No AI integrations, model calls, physical tests, external Windows host or new

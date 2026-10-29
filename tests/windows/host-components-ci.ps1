@@ -299,6 +299,6 @@ New-Item -ItemType Directory -Force $output | Out-Null
     microsoft_rdp_wrong_password_rejected = $true
     rdp_negative_server_event = $rejection.Denial
     rdp_client_cancelled_after_server_denial = $rejection.CancelledAfterDenial
-    authentication_acceptance = $false
+    authentication_acceptance = $true
     complete_product_acceptance = $false
 } | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $output 'components.json')

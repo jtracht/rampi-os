@@ -36,10 +36,10 @@ def verify(path: Path, revision: str) -> None:
     ]:
         if proof.get(field) is not True:
             raise ValueError(f"Actual Windows component check missing: {field}")
-    # These checks do not yet include successful/failed RDP authentication.
-    for field in ["authentication_acceptance", "complete_product_acceptance"]:
-        if proof.get(field) is not False:
-            raise ValueError("Component evidence must not claim complete Windows acceptance")
+    if proof.get("authentication_acceptance") is not True:
+        raise ValueError("Actual SSH/RDP authentication evidence missing")
+    if proof.get("complete_product_acceptance") is not False:
+        raise ValueError("Windows component evidence must not claim complete Rampi acceptance")
     denial = proof.get("rdp_negative_server_event", {})
     if (denial.get("EventId") != 4625 or type(denial.get("RecordId")) is not int
             or denial["RecordId"] <= 0 or denial.get("Status", "").lower() != "0xc000006d"
@@ -54,4 +54,4 @@ if __name__ == "__main__":
     parser.add_argument("--revision", required=True)
     args = parser.parse_args()
     verify(args.proof, args.revision)
-    print("Actual hosted Windows SSH/component evidence verified; RDP authentication remains open.")
+    print("Actual hosted Windows SSH/RDP authentication verified; complete product acceptance remains open.")

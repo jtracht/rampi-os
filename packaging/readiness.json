@@ -15,7 +15,8 @@
     "native_rdp_input_and_clipboard": "docs/validation/rdp-input-clipboard-2026-10-24.md",
     "native_nla_gitea_tailscale_and_languages": "docs/validation/complete-native-development-2026-10-26.md",
     "native_dev4_software_acceptance": "docs/validation/native-dev4-software-acceptance.md",
-    "native_keyboard_environment_consistency": "docs/validation/native-dev5-keyboard-release.md"
+    "native_keyboard_environment_consistency": "docs/validation/native-dev5-keyboard-release.md",
+    "hosted_windows_ssh_rdp_and_native_interaction": "docs/validation/software-completion-follow-up.md"
   },
-  "migration": "Rust/GTK4/Wayland, three modules, no direct AI-provider integration. Published dev4 at f0490436d5cadd630f1b5f1487fb470312837d4b passes final native AMD64/ARM64 CI, fresh image, both first-account procedures with normal reboot, private PAM/keyrings, personal DE/EN locales and independent verification of actual public files. Software acceptance is 91/95; remaining input/layout, Bluetooth HID, Windows host and interaction-polish limits remain explicit. regular_release stays false; no full product completion or physical/Windows-host certification is claimed. Hardware, Windows testhosts and model calls remain excluded."
+  "migration": "Rust/GTK4/Wayland, three modules, no direct AI-provider integration. Published dev4 at f0490436d5cadd630f1b5f1487fb470312837d4b passes final native AMD64/ARM64 CI, fresh image, both first-account procedures with normal reboot, private PAM/keyrings, personal DE/EN locales and independent verification of actual public files. Software acceptance is 91/95; remaining input/layout, Bluetooth HID, Windows component integration and interaction-polish limits remain explicit. regular_release stays false; no full product completion or physical/Windows-11-Pro-host certification is claimed. Physical hardware, personal/external Windows hosts and model calls remain excluded. Isolated GitHub-CI Windows component checks are explicitly authorized and their new SSH/RDP evidence awaits final integration."
 }
