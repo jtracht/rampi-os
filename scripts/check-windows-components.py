@@ -54,4 +54,4 @@ if __name__ == "__main__":
     parser.add_argument("--revision", required=True)
     args = parser.parse_args()
     verify(args.proof, args.revision)
-    print("Actual hosted Windows SSH/RDP authentication verified; complete product acceptance remains open.")
+    print("Hosted Windows SSH/RDP authentication verified; full product acceptance remains open.")
