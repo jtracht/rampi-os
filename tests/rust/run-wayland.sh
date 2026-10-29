@@ -16,7 +16,7 @@ cp /src/system/labwc/rc.xml "$test_home/compositor/rc.xml"
 sed -i 's@/usr/local/bin/rampi@/build/target/debug/rampi-native@g' "$test_home/compositor/rc.xml"
 mkdir -p "$XDG_CONFIG_HOME/rampi/labwc"
 # Observe the existing compositor's own parser, independently of the Rust adapter.
-printf 'XKB_DEFAULT_LAYOUT=de\n  XKB_DEFAULT_LAYOUT = us  \n' > "$XDG_CONFIG_HOME/rampi/labwc/environment"
+printf 'XKB_DEFAULT_LAYOUT=de\n \t\vXKB_DEFAULT_LAYOUT = \vus \t\v\n' > "$XDG_CONFIG_HOME/rampi/labwc/environment"
 labwc -s 'printenv XKB_DEFAULT_LAYOUT' -C "$XDG_CONFIG_HOME/rampi/labwc" -c "$test_home/compositor/rc.xml" > "$test_home/compositor.log" 2>&1 &
 compositor_pid=$!
 export LABWC_PID="$compositor_pid"

@@ -26,7 +26,7 @@ pub fn run(
             let file = crate::system_settings::keyboard_file()?;
             std::fs::create_dir_all(file.parent().unwrap())?;
             let original = format!(
-                "{}XCURSOR_SIZE=24\nXKB_DEFAULT_LAYOUT=de\n  XKB_DEFAULT_LAYOUT = us  \n",
+                "{}XCURSOR_SIZE=24\nXKB_DEFAULT_LAYOUT=de\n \t\u{b}XKB_DEFAULT_LAYOUT = \u{b}us \t\u{b}\n",
                 "# preserved personal setting\n".repeat(700)
             );
             std::fs::write(&file, &original)?;

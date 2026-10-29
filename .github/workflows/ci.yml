@@ -84,7 +84,7 @@ jobs:
           docker run --rm -v "$PWD:/src:ro" -w /src -e PYTHONPATH=client -e DEBIAN_FRONTEND=noninteractive debian:trixie bash -c 'apt-get update -qq && apt-get install -y --no-install-recommends python3-gi gir1.2-nm-1.0 python3-pyside6.qtcore >/dev/null && python3 scripts/test-libnm.py'
   windows-host:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: PowerShell static analysis
@@ -97,6 +97,14 @@ jobs:
           }
           $issues = Invoke-ScriptAnalyzer -Path installer/windows -Recurse -Severity Error
           if ($issues) { $issues | Format-List; exit 1 }
+      - name: Real Windows components (disposable hosted runner only)
+        shell: pwsh
+        run: ./tests/windows/host-components-ci.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-host-components
+          path: artifacts/windows-components/
+          if-no-files-found: error
   security:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

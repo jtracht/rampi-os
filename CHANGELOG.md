@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0-dev.6 — software completion work in progress, not published
+
+- Match the compositor's C-locale outer whitespace including vertical tabs,
+  while continuing to preserve custom layouts and reject non-ASCII key aliases.
+- Remaining input/HID, native Windows-CI components and interaction work require
+  their own real acceptance. The score remains 91/95 until those areas qualify.
+
 ## 0.6.0-dev.5 — published and independently verified keyboard follow-up
 
 - Interpret duplicate personal keyboard-layout assignments consistently with

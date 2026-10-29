@@ -10,11 +10,17 @@ use std::{
 // Keep IDs written by published versions stable; removed steps are skipped.
 pub const SETUP_STEP_IDS: [usize; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14];
 
-/// A literal personal XKB assignment, using labwc's whitespace/key semantics.
+fn compositor_space(character: char) -> bool {
+    // C isspace also includes vertical tab; Rust's trim_ascii deliberately does not.
+    character.is_ascii_whitespace() || character == '\u{b}'
+}
+
+/// A literal personal XKB assignment, using labwc's C-locale whitespace/key semantics.
 /// This does not evaluate variables or execute shell input.
 pub fn keyboard_assignment(line: &str) -> Option<&str> {
     let (key, value) = line.split_once('=')?;
-    (key.trim_ascii() == "XKB_DEFAULT_LAYOUT").then(|| value.trim_ascii())
+    (key.trim_matches(compositor_space) == "XKB_DEFAULT_LAYOUT")
+        .then(|| value.trim_matches(compositor_space))
 }
 
 /// Later assignments override earlier ones, including empty/unsupported values.
@@ -294,6 +300,10 @@ mod tests {
         assert_eq!(
             configured_keyboard_layout("\u{a0}XKB_DEFAULT_LAYOUT=us"),
             None
+        );
+        assert_eq!(
+            configured_keyboard_layout("\u{b}XKB_DEFAULT_LAYOUT = \u{b}us\u{b}"),
+            Some("us")
         );
     }
 
