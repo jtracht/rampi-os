@@ -1,7 +1,7 @@
 # Persönliche Tastaturkonfiguration: einheitliche Auswertung
 
-Unveröffentlichter Folgestand nach dev4; noch keine neue Image-Abnahme oder
-zusätzlicher Fortschrittspunkt. Der belegte Gesamtstand bleibt 91/95 = 95,8 %.
+Als [dev5 veröffentlicht und unabhängig geprüft](native-dev5-keyboard-release.md).
+Kein zusätzlicher Fortschrittspunkt für diesen einzelnen Randfall. Der belegte Gesamtstand bleibt 91/95 = 95,8 %.
 
 Die frühere RDP-Auswertung nahm den ersten exakt geschriebenen Layout-Eintrag
 und begrenzte die Datei auf 16 KiB. Die Einstellungsseite wählte ebenfalls den
@@ -34,5 +34,5 @@ Lokale Komponentenprüfung im vorhandenen isolierten Docker-/Wayland-SDK:
 
 Das prüft die Dateiauswertung, nicht sämtliche physische Tastatur-/HID-Eingaben,
 externe `environment.d`-Übersteuerungen oder Shell-Variablenauflösung. Deshalb
-bleibt der Tastaturbereich bei 4/5. Endgültige AMD64-/ARM64-CI und ein frischer
-Release-/Image-Nachweis für den neuen Quellstand stehen noch aus.
+bleibt der Tastaturbereich bei 4/5. Endgültige AMD64-/ARM64-CI und der frische
+Release-/Image-Nachweis sind inzwischen in der verlinkten dev5-Abnahme zugeordnet.

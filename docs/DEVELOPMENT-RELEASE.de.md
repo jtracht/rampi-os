@@ -8,8 +8,8 @@ bleiben unverändert. `0.6.0-dev.3` ist veröffentlicht und unabhängig geprüft
 [Erststart-Abnahme](validation/native-first-account-dev3-release.md).
 `0.6.0-dev.4` ist ebenfalls veröffentlicht und unabhängig geprüft:
 [vollständige Softwarezuordnung](validation/native-dev4-software-acceptance.md).
-Der noch unveröffentlichte Folgestand ist `0.6.0-dev.5` und korrigiert die
-einheitliche Auswertung persönlicher Tastaturkonfigurationen. Die Zwischenveröffentlichungen
+`0.6.0-dev.5` ist als [Tastatur-Folgerelease](validation/native-dev5-keyboard-release.md)
+veröffentlicht und unabhängig geprüft. Die Zwischenveröffentlichungen
 sind vom Nutzer freigegeben; eine laufende Prüfung ist noch keine Veröffentlichung. Ein aktualisierter Versionswert
 oder erfolgreicher Komponentenlauf bestätigt noch keine Veröffentlichung.
 

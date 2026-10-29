@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0-dev.5 — planned keyboard follow-up, not yet published
+## 0.6.0-dev.5 — published and independently verified keyboard follow-up
 
 - Interpret duplicate personal keyboard-layout assignments consistently with
   labwc: the last assignment wins, including whitespace around the key/value.
@@ -9,8 +9,9 @@
   environment settings; do not silently display a different supported layout.
 - Require an actual compositor startup check and GTK/RDP-selection checks.
 
-The published dev4 image remains unchanged. This follow-up needs its own final
-source, image and public-download acceptance. Progress remains 91/95.
+The published dev4 image remains unchanged. The dev5 final-source, fresh-image
+and independent public-download checks passed. Progress remains 91/95; one fixed
+keyboard edge case does not complete all remaining input/HID requirements.
 
 ## 0.6.0-dev.4 — published and independently verified prerelease
 

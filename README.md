@@ -18,11 +18,11 @@ Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. Rust wird mit
 Docker/Wayland, nativer ARM64-CI und anschließend neuen Image-/QEMU-Tests geprüft.
 
 Rampi umfasst drei Hauptmodule: **Kanban**, **Remote Desktop** und **Browser**.
-[v0.6.0-dev.4](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.4) enthält das frisch gebaute native ARM64-Image
+[v0.6.0-dev.5](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.5) enthält das frisch gebaute native ARM64-Image
 mit Streaming, RDP, persönlichen PAM-Schlüsselbünden und DE-/EN-Sitzungssprache.
 Beide Erstkonto-Wege und jeweils ein normaler Neustart bestehen; alle
 28 öffentlichen Dateien wurden unabhängig heruntergeladen und geprüft:
-[Release-Abnahme](docs/validation/native-dev4-software-acceptance.md).
+[Release-Abnahme](docs/validation/native-dev5-keyboard-release.md).
 
 Beim ersten Start wird ein eigener Benutzer mit eigenem Kennwort eingerichtet;
 es gibt kein Standardpasswort. Ältere Releases werden nicht überschrieben.

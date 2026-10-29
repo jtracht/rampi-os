@@ -5,10 +5,10 @@ Python-/QML-Prototyp. Das native Entwicklungsimage hat eine eigene dokumentierte
 Quellrevision und enthält nicht automatisch spätere Änderungen dieses Zweigs.
 
 Die folgende Tabelle beschreibt den aktuellen Entwicklungsstand. Das veröffentlichte
-[dev4-Image](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.4) besteht
+[dev5-Image](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.5) besteht
 einschließlich beider Erstkonto-Wege, normaler Neustarts, persönlicher DE-/EN-Locale
 und unabhängig geprüfter öffentlicher Dateien. Es gibt kein Standardpasswort.
-[Quellen und Abnahmen](validation/native-dev4-software-acceptance.md).
+[Quellen und Abnahmen](validation/native-dev5-keyboard-release.md).
 Die noch nicht vollständig abgenommenen Bereiche bleiben ausdrücklich benannt.
 
 | Bereich | Vorhanden | Abnahmegrenzen und offene Arbeit |
@@ -20,12 +20,12 @@ Die noch nicht vollständig abgenommenen Bereiche bleiben ausdrücklich benannt.
 | WLAN | Eigene integrierte Seite; sichtbare/versteckte SSIDs, Adapter, offen/WPA2/WPA3, private Profile; WPA2, sichtbares/verstecktes WPA3, DHCP und Kontentrennung in frischen AMD64-/ARM64-QEMU-Gästen abgenommen | Unternehmensnetze benötigen vorhandenes NM-Profil; physische Funkqualität ausgeschlossen |
 | Bluetooth | Eigene Seite, Suche, Codes/PIN/Passkey, Vertrauen/Entfernen, Dienstneustart; Mehradapteroberfläche und tatsächliche virtuelle BlueZ-Bindungen auf AMD64/ARM64 abgenommen | Durchgängige HID-/Remote-Eingabeabnahmen; physischer Funk ausgeschlossen |
 | WireGuard/Tailscale | Persönlicher libnm-Import, echte WG-Tunnel; offizieller TS-Dienst, persönliche Anmeldung, privater Kernel-Tunnel mit Rechten/Wiederverbindung softwaregeprüft; manuelle signierte Paketinstallation integriert | Signierte Dienstinstallation und Erhaltung im frischen systemd-Gast sowie getrennte reale Tunnelabnahme bestanden; physische Netze ausgeschlossen |
-| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; NLA-only gegen vorhandenen FreeRDP-/WinPR-Server mit richtigen/falschen Konten, Domain und Kennwörtern softwaregeprüft | Finale Quellenabnahme bestanden; Windows-Testhosts sind ausgeschlossen, daher keine tatsächliche Windows-Host-Zertifizierung |
+| Windows-Host | Persönliche Hosts, OpenSSH-Schlüssel/Trust und integriertes RDP; NLA-only gegen vorhandenen FreeRDP-/WinPR-Server mit richtigen/falschen Konten, Domain und Kennwörtern softwaregeprüft | Finale Quellenabnahme bestanden; zusätzliche native Windows-Komponentenprüfung in isolierter GitHub-CI beauftragt; persönliche und externe Testhosts bleiben ausgeschlossen |
 | Kanban | JSON und sechs Online-Anbieter einschließlich Gitea, Filter, Spalten, privater Offline-Cache; private Repository-, Organisations- und Benutzerprojekte mit echten Gitea-HTTPS-Prüfungen | Finale Quellenabnahme bestanden; persönliche Anbieterzugänge werden vom jeweiligen Benutzer eingerichtet |
 | Browser | WebKit, HTTPS, Navigation, JavaScript, persönliches Profil, Abfragen, Downloads und Datei-/Mehrfachauswahl als Seiten; Mikrofon-/Kamerafreigabe mit realem WebKit und synthetischer Aufnahmequelle geprüft | Finale Quellenabnahme bestanden; synthetische Quelle bestätigt keine physische Kamera oder Mikrofonhardware |
 | RDP/Streaming | Integriertes RDW/IronRDP mit Zertifikat-Pin, echten Frames, Tastatur, Wiederverbindung und Abbruchbehandlung; skalierte Maus, beide Scrollachsen und Unicode-Zwischenablage auf AMD64/ARM64 mit tatsächlichen Serverquittungen abgenommen; eingebettetes Moonlight-/GStreamer-Streaming mit privater Kopplung und Dauerlastprüfung; NLA-only-Komponentenprüfung vorhanden | Finale Quellen-/Protokolleingabeabnahme bestanden; physische HID-/Windows-Eingabe nicht behauptet; Pi-Hardwaredecoder softwareseitig angebunden, aber nicht physisch geprüft; Sunshine gibt über die Kopplung seine Host-Sitzung frei |
 | Installation | ARM64-Binary, Paketprüfung, manuelle atomare Aktivierung, Reparatur/Rückwechsel | Native Pakete und HTTPS-Bootstrap implementiert; Freigabe des regulären nativen Releases offen |
-| Image/Release | Veröffentlichtes v0.6.0-dev.4, vollständige Quellen/Lizenzen, zwei Erstkonto-Verfahren mit normalen Neustarts, grafische PAM-Anmeldung und 28 unabhängig geprüfte öffentliche Dateien | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
+| Image/Release | Veröffentlichtes v0.6.0-dev.5, vollständige Quellen/Lizenzen, zwei Erstkonto-Verfahren mit normalen Neustarts, grafische PAM-Anmeldung und 28 unabhängig geprüfte öffentliche Dateien | Reguläre Freigabe des Gesamtprodukts nach den übrigen Funktionsarbeiten |
 
 ## Fehler eingrenzen
 

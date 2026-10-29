@@ -59,13 +59,21 @@ ist bereits in dev3 behoben; beide Veröffentlichungen bleiben unverändert.
 Es gibt kein Standardpasswort. Die kalte persönliche Sprache und ihre erneute
 PAM-Anmeldung sind nun zusätzlich an die endgültige dev4-Quelle gebunden.
 
+Das zusätzliche [dev5-Release](validation/native-dev5-keyboard-release.md)
+korrigiert die persönliche Tastatur-Dateiauswertung und besteht erneut vollständige
+Quell-/Image-/Downloadprüfungen. Der einzelne Randfall erhöht den Punktestand nicht.
+Der Nutzer hat die Weiterarbeit bis 100 % und Windows-Komponentenprüfungen in
+isolierter GitHub-CI ausdrücklich beauftragt. Persönliche Rechner und externe
+Windows-Testhosts bleiben ausgeschlossen. Weitere Punkte benötigen neue Nachweise.
+
 ## Verbleibende Arbeit
 
 Tastatur-/Layout-Randfälle, durchgängige Bluetooth-HID-/Remote-Eingabe,
 tatsächliche Windows-Host-Randfälle und Fokus-/Bedienungsfeinschliff behalten
 jeweils 4/5. Das vollständige 100-Prozent-Ziel ist nicht abgeschlossen.
-`regular_release` bleibt `false`. Hardwaretests, Windows-Testhosts und
-Modellanfragen sind weiterhin ausgeschlossen.
+`regular_release` bleibt `false`. Hardwaretests, persönliche Rechner, externe
+Windows-Testhosts und Modellanfragen bleiben ausgeschlossen. Isolierte
+Windows-Komponentenprüfungen in GitHub-CI sind ausdrücklich beauftragt.
 
 [Dev4-Abnahme](validation/native-dev4-software-acceptance.md),
 [Dev3-Erststart-Abnahme](validation/native-first-account-dev3-release.md),
