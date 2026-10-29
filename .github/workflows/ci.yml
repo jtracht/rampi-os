@@ -98,6 +98,7 @@ jobs:
           $issues = Invoke-ScriptAnalyzer -Path installer/windows -Recurse -Severity Error
           if ($issues) { $issues | Format-List; exit 1 }
       - name: Real Windows components (disposable hosted runner only)
+        timeout-minutes: 6
         shell: pwsh
         run: ./tests/windows/host-components-ci.ps1
       - name: Verify component evidence against checked-out sources

@@ -6,7 +6,7 @@ if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hoste
     throw 'Disposable GitHub Windows runner required.'
 }
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') { throw 'STA required.' }
-Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing, Microsoft.CSharp -TypeDefinition @'
+Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing, Microsoft.CSharp, System.Core -TypeDefinition @'
 using System;
 using System.Diagnostics;
 using System.ComponentModel;

@@ -90,6 +90,22 @@ function Invoke-FixtureSsh([string]$Name, [string]$Key, [string]$Command) {
     }
     [pscustomobject]@{Code=$process.ExitCode; Output=$stdout.GetAwaiter().GetResult(); Error=$stderr.GetAwaiter().GetResult()}
 }
+function Invoke-FixtureRdp {
+    $start = [Diagnostics.ProcessStartInfo]::new("$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe")
+    $start.UseShellExecute = $false
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    foreach ($argument in @('-NoProfile', '-NonInteractive', '-STA', '-File',
+        (Join-Path $PSScriptRoot 'rdp-client-ci.ps1'))) { $start.ArgumentList.Add($argument) }
+    $process = [Diagnostics.Process]::Start($start)
+    $stdout = $process.StandardOutput.ReadToEndAsync()
+    $stderr = $process.StandardError.ReadToEndAsync()
+    if (-not $process.WaitForExit(90000)) {
+        $process.Kill($true)
+        throw 'Native RDP client timed out; no authentication acceptance.'
+    }
+    [pscustomobject]@{Code=$process.ExitCode; Output=$stdout.GetAwaiter().GetResult(); Error=$stderr.GetAwaiter().GetResult()}
+}
 try {
     foreach ($index in 1..2) {
         $name = 'rampi' + [guid]::NewGuid().ToString('N').Substring(0,10)
@@ -146,6 +162,7 @@ try {
     if ($rejected.Code -ne 255 -or $rejected.Error -notmatch 'Permission denied') {
         throw 'The other user key was not explicitly rejected by OpenSSH.'
     }
+    Write-Output 'RAMPI_WINDOWS_SSH_IDENTITIES_AND_PRIVATE_FILES_OK'
     # The client and server are both existing Microsoft components in this VM.
     if ((Get-Service TermService).Status -ne 'Running') {
         throw 'Actual Windows RDP service is not running after installation.'
@@ -156,6 +173,7 @@ try {
     $certificate = Get-ChildItem 'Cert:\LocalMachine\Remote Desktop', 'Cert:\LocalMachine\My' |
         Where-Object Thumbprint -eq $thumbprint | Select-Object -First 1
     if (-not $certificate) { throw 'Bound RDP server certificate not found.' }
+    Write-Output 'RAMPI_WINDOWS_BOUND_RDP_CERTIFICATE_FOUND'
     $rootStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'CurrentUser')
     $rootStore.Open('ReadWrite')
     $alreadyTrusted = @($rootStore.Certificates | Where-Object Thumbprint -eq $thumbprint).Count -ne 0
@@ -165,16 +183,16 @@ try {
         Add-LocalGroupMember -SID ([Security.Principal.SecurityIdentifier]'S-1-5-32-555') -Member $accounts[0].Name
         $env:RAMPI_CI_RDP_USER = $accounts[0].Name
         $env:RAMPI_CI_RDP_PASSWORD = ([pscredential]::new($accounts[0].Name, $accounts[0].Password)).GetNetworkCredential().Password
-        $clientScript = Join-Path $PSScriptRoot 'rdp-client-ci.ps1'
-        $login = & "$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -NonInteractive -STA -File $clientScript
-        if ($LASTEXITCODE -ne 0 -or $login -notcontains 'login-complete') {
-            throw "Actual Microsoft RDP login failed: $login"
+        $login = Invoke-FixtureRdp
+        if ($login.Code -ne 0 -or $login.Output.Trim() -ne 'login-complete') {
+            throw "Actual Microsoft RDP login failed: $($login.Output) $($login.Error)"
         }
+        Write-Output 'RAMPI_WINDOWS_MICROSOFT_RDP_LOGIN_COMPLETE'
         $env:RAMPI_CI_RDP_PASSWORD = 'Wrong!' + [guid]::NewGuid().ToString('N')
         Write-Output "::add-mask::$env:RAMPI_CI_RDP_PASSWORD"
-        $rejection = & "$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -NonInteractive -STA -File $clientScript
-        if ($LASTEXITCODE -ne 0 -or ($rejection -join '') -notmatch '^disconnected:\d+$') {
-            throw "Actual RDP negative authentication did not complete: $rejection"
+        $rejection = Invoke-FixtureRdp
+        if ($rejection.Code -ne 0 -or $rejection.Output.Trim() -notmatch '^disconnected:\d+$') {
+            throw "Actual RDP negative authentication did not complete: $($rejection.Output) $($rejection.Error)"
         }
     } finally {
         Remove-Item Env:RAMPI_CI_RDP_PASSWORD -ErrorAction SilentlyContinue
