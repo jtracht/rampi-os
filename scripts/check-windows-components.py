@@ -40,6 +40,12 @@ def verify(path: Path, revision: str) -> None:
     for field in ["authentication_acceptance", "complete_product_acceptance"]:
         if proof.get(field) is not False:
             raise ValueError("Component evidence must not claim complete Windows acceptance")
+    denial = proof.get("rdp_negative_server_event", {})
+    if (denial.get("EventId") != 4625 or type(denial.get("RecordId")) is not int
+            or denial["RecordId"] <= 0 or denial.get("Status", "").lower() != "0xc000006d"
+            or denial.get("SubStatus", "").lower() != "0xc000006a"
+            or denial.get("LogonType") not in (3, 10)):
+        raise ValueError("Actual credential-specific Windows server denial missing")
 
 
 if __name__ == "__main__":

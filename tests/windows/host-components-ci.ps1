@@ -90,21 +90,54 @@ function Invoke-FixtureSsh([string]$Name, [string]$Key, [string]$Command) {
     }
     [pscustomobject]@{Code=$process.ExitCode; Output=$stdout.GetAwaiter().GetResult(); Error=$stderr.GetAwaiter().GetResult()}
 }
-function Invoke-FixtureRdp {
+function Find-FixtureBadPassword([string]$UserName, [datetime]$Since) {
+    foreach ($event in @(Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4625; StartTime=$Since} -ErrorAction SilentlyContinue)) {
+        $xml = [xml]$event.ToXml()
+        $fields = @{}
+        foreach ($node in $xml.Event.EventData.Data) { $fields[$node.GetAttribute('Name')] = $node.InnerText }
+        if ($fields['TargetUserName'] -eq $UserName -and $fields['Status'] -eq '0xc000006d' -and
+            $fields['SubStatus'] -eq '0xc000006a' -and $fields['LogonType'] -in @('3','10')) {
+            return [pscustomobject]@{EventId=4625; RecordId=$event.RecordId; Status=$fields['Status']; SubStatus=$fields['SubStatus']; LogonType=[int]$fields['LogonType']}
+        }
+    }
+    return $null
+}
+function Invoke-FixtureRdp([string]$ExpectedRejectedUser = '') {
     $start = [Diagnostics.ProcessStartInfo]::new("$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe")
     $start.UseShellExecute = $false
     $start.RedirectStandardOutput = $true
     $start.RedirectStandardError = $true
     foreach ($argument in @('-NoProfile', '-NonInteractive', '-STA', '-File',
         (Join-Path $PSScriptRoot 'rdp-client-ci.ps1'))) { $start.ArgumentList.Add($argument) }
+    $since = Get-Date
     $process = [Diagnostics.Process]::Start($start)
     $stdout = $process.StandardOutput.ReadToEndAsync()
     $stderr = $process.StandardError.ReadToEndAsync()
-    if (-not $process.WaitForExit(90000)) {
-        $process.Kill($true)
-        throw 'Native RDP client timed out; no authentication acceptance.'
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    $denial = $null
+    $cancelledAfterDenial = $false
+    while (-not $process.WaitForExit(250)) {
+        if ($ExpectedRejectedUser) { $denial = Find-FixtureBadPassword $ExpectedRejectedUser $since }
+        if ($denial) {
+            # A real, credential-specific server denial is the result. Cancel only
+            # this client after observing it; a deadline is never such evidence.
+            $process.Kill($true)
+            if (-not $process.WaitForExit(5000)) { throw 'Controlled RDP client cancellation did not finish.' }
+            $cancelledAfterDenial = $true
+            break
+        }
+        if ($timer.Elapsed.TotalSeconds -ge 90) {
+            $process.Kill($true)
+            throw 'Native RDP client timed out; no authentication acceptance.'
+        }
     }
-    [pscustomobject]@{Code=$process.ExitCode; Output=$stdout.GetAwaiter().GetResult(); Error=$stderr.GetAwaiter().GetResult()}
+    if ($ExpectedRejectedUser -and -not $denial) {
+        for ($attempt=0; $attempt -lt 10 -and -not $denial; $attempt++) {
+            $denial = Find-FixtureBadPassword $ExpectedRejectedUser $since
+            if (-not $denial) { Start-Sleep -Milliseconds 200 }
+        }
+    }
+    [pscustomobject]@{Code=$process.ExitCode; Output=$stdout.GetAwaiter().GetResult(); Error=$stderr.GetAwaiter().GetResult(); Denial=$denial; CancelledAfterDenial=$cancelledAfterDenial}
 }
 try {
     foreach ($index in 1..2) {
@@ -145,7 +178,8 @@ try {
     Start-Service sshd
     foreach ($account in $accounts) {
         $login = Invoke-FixtureSsh $account.Name $account.Key 'whoami /user /fo csv /nh'
-        if ($login.Code -ne 0 -or -not $login.Output.Contains($account.Sid)) {
+        $remoteIdentity = @($login.Output.Trim() | ConvertFrom-Csv -Header Name,Sid)
+        if ($login.Code -ne 0 -or $remoteIdentity.Count -ne 1 -or $remoteIdentity[0].Sid -ne $account.Sid) {
             throw "Real standard-user SSH identity check failed: $($login.Error)"
         }
         $other = @($accounts | Where-Object Sid -ne $account.Sid)[0]
@@ -181,7 +215,14 @@ try {
     $rootStore.Open('ReadWrite')
     $alreadyTrusted = @($rootStore.Certificates | Where-Object Thumbprint -eq $thumbprint).Count -ne 0
     $publicCertificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($certificate.RawData)
+    $auditBackup = Join-Path $fixtureRoot 'audit-policy.csv'
+    $auditBackedUp = $false
     try {
+        & "$env:WINDIR/System32/auditpol.exe" /backup "/file:$auditBackup" | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot preserve disposable VM audit policy.' }
+        $auditBackedUp = $true
+        & "$env:WINDIR/System32/auditpol.exe" /set /subcategory:Logon /success:enable /failure:enable | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot enable actual logon evidence in disposable VM.' }
         if (-not $alreadyTrusted) { $rootStore.Add($publicCertificate) }
         Write-Output 'RAMPI_WINDOWS_OWN_LISTENER_CERTIFICATE_TRUST_READY'
         Add-LocalGroupMember -SID ([Security.Principal.SecurityIdentifier]'S-1-5-32-555') -Member $accounts[0].Name
@@ -204,15 +245,23 @@ try {
         Write-Output 'RAMPI_WINDOWS_RDP_REMOTE_INTERACTIVE_SID_OK'
         $env:RAMPI_CI_RDP_PASSWORD = 'Wrong!' + [guid]::NewGuid().ToString('N')
         Write-Output "::add-mask::$env:RAMPI_CI_RDP_PASSWORD"
-        $rejection = Invoke-FixtureRdp
-        if ($rejection.Code -ne 0 -or $rejection.Output.Trim() -notmatch '^credential-rejected:(0|-1073741715)$') {
+        $rejection = Invoke-FixtureRdp $accounts[0].Name
+        if (-not $rejection.Denial -or $rejection.Denial.RecordId -le 0 -or $rejection.Output.Trim() -eq 'login-complete') {
             throw "Actual RDP negative authentication did not complete: $($rejection.Output) $($rejection.Error)"
         }
+        Write-Output 'RAMPI_WINDOWS_RDP_ACTUAL_BAD_PASSWORD_4625_OK'
     } finally {
-        Remove-Item Env:RAMPI_CI_RDP_PASSWORD -ErrorAction SilentlyContinue
-        Remove-Item Env:RAMPI_CI_RDP_USER -ErrorAction SilentlyContinue
-        if (-not $alreadyTrusted) { $rootStore.Remove($publicCertificate) }
-        $rootStore.Close()
+        try {
+            if ($auditBackedUp) {
+                & "$env:WINDIR/System32/auditpol.exe" /restore "/file:$auditBackup" | Out-Null
+                if ($LASTEXITCODE -ne 0) { throw 'Cannot restore disposable VM audit policy.' }
+            }
+        } finally {
+            Remove-Item Env:RAMPI_CI_RDP_PASSWORD -ErrorAction SilentlyContinue
+            Remove-Item Env:RAMPI_CI_RDP_USER -ErrorAction SilentlyContinue
+            if (-not $alreadyTrusted) { $rootStore.Remove($publicCertificate) }
+            $rootStore.Close()
+        }
     }
 } finally {
     Stop-Service sshd -ErrorAction SilentlyContinue
@@ -248,6 +297,8 @@ New-Item -ItemType Directory -Force $output | Out-Null
     microsoft_rdp_login_complete = $true
     microsoft_rdp_remote_interactive_sid = $true
     microsoft_rdp_wrong_password_rejected = $true
+    rdp_negative_server_event = $rejection.Denial
+    rdp_client_cancelled_after_server_denial = $rejection.CancelledAfterDenial
     authentication_acceptance = $false
     complete_product_acceptance = $false
 } | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $output 'components.json')
