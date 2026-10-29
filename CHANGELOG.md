@@ -4,6 +4,12 @@
 
 - Match the compositor's C-locale outer whitespace including vertical tabs,
   while continuing to preserve custom layouts and reject non-ASCII key aliases.
+- Preserve native GTK button labels, focus and accessibility while adding the
+  same asymmetric four-edge surface motion to settings buttons and categories.
+  Respect reduced motion; do not sound when populating hidden choice lists.
+- Run actual OpenSSH/Windows service checks on disposable GitHub-hosted Windows
+  runners, including separate standard-user keys and private-profile access.
+  This does not certify a Windows 11 Pro machine or complete RDP authentication.
 - Remaining input/HID, native Windows-CI components and interaction work require
   their own real acceptance. The score remains 91/95 until those areas qualify.
 

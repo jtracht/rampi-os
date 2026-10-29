@@ -92,7 +92,7 @@ impl Feedback {
     }
 }
 pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {
-    let b = gtk::Button::with_label(text);
+    let b = crate::liquid_button::LiquidButton::with_settings(text, feedback.settings.clone());
     wire_button(&b, feedback);
     b
 }
@@ -239,16 +239,7 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         let [a, b, c, d] = motion::shape(t, s.get(), impulse, conf.borrow().reduce_motion);
         let (w, h, r) = (width as f64 - 20.0, height as f64 - 20.0, 26.0);
         cr.translate(10.0, 10.0);
-        cr.move_to(r, 0.0);
-        cr.curve_to(w * 0.23, a[0], w * 0.71, a[1], w - r, 0.0);
-        cr.curve_to(w, 0.0, w, 0.0, w, r);
-        cr.curve_to(w + b[0], h * 0.29, w + b[1], h * 0.73, w, h - r);
-        cr.curve_to(w, h, w, h, w - r, h);
-        cr.curve_to(w * 0.68, h + c[0], w * 0.31, h + c[1], r, h);
-        cr.curve_to(0.0, h, 0.0, h, 0.0, h - r);
-        cr.curve_to(d[0], h * 0.64, d[1], h * 0.24, 0.0, r);
-        cr.curve_to(0.0, 0.0, 0.0, 0.0, r, 0.0);
-        cr.close_path();
+        wave_path(cr, w, h, r, [a, b, c, d]);
         let light = if s.get() { 1.1 } else { 1.0 };
         cr.set_source_rgb(
             (color.0 * light).min(1.0),
@@ -299,4 +290,24 @@ pub fn assets() -> PathBuf {
     std::env::var_os("RAMPI_ASSETS")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("/usr/share/rampi"))
+}
+
+pub(crate) fn wave_path(
+    cr: &gtk::cairo::Context,
+    w: f64,
+    h: f64,
+    radius: f64,
+    [a, b, c, d]: [[f64; 2]; 4],
+) {
+    let r = radius.min(w / 2.0).min(h / 2.0);
+    cr.move_to(r, 0.0);
+    cr.curve_to(w * 0.23, a[0], w * 0.71, a[1], w - r, 0.0);
+    cr.curve_to(w, 0.0, w, 0.0, w, r);
+    cr.curve_to(w + b[0], h * 0.29, w + b[1], h * 0.73, w, h - r);
+    cr.curve_to(w, h, w, h, w - r, h);
+    cr.curve_to(w * 0.68, h + c[0], w * 0.31, h + c[1], r, h);
+    cr.curve_to(0.0, h, 0.0, h, 0.0, h - r);
+    cr.curve_to(d[0], h * 0.64, d[1], h * 0.24, 0.0, r);
+    cr.curve_to(0.0, 0.0, 0.0, 0.0, r, 0.0);
+    cr.close_path();
 }

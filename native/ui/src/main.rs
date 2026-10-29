@@ -39,6 +39,8 @@ mod language_checks;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
+mod liquid_button;
+#[cfg(target_os = "linux")]
 mod login_branding;
 #[cfg(target_os = "linux")]
 mod mixed_soak;

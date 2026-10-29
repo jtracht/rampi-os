@@ -13,6 +13,14 @@ if (-not ([Security.Principal.WindowsPrincipal]$identity).IsInRole(
 $installer = Join-Path $PSScriptRoot '../../installer/windows/setup.ps1'
 $rdpKey = 'HKLM:\System\CurrentControlSet\Control\Terminal Server'
 $before = (Get-ItemProperty $rdpKey).fDenyTSConnections
+$edition = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').EditionID
+if ($edition -eq 'Professional') { throw 'This non-target acceptance fixture expects Windows Server.' }
+$rejectedEdition = $false
+try { & $installer | Out-Null } catch {
+    if ($_.Exception.Message -notlike 'Rampi unterstützt zunächst Windows 11 Pro.*') { throw }
+    $rejectedEdition = $true
+}
+if (-not $rejectedEdition) { throw 'Default Windows edition restriction was bypassed.' }
 & $installer -AllowNonTarget -EnableOpenSsh -EnableRdp -WhatIf | Out-Null
 if ((Get-ItemProperty $rdpKey).fDenyTSConnections -ne $before) { throw 'WhatIf changed RDP.' }
 
@@ -155,7 +163,9 @@ New-Item -ItemType Directory -Force $output | Out-Null
     schema_version = 1
     revision = $env:GITHUB_SHA
     installer_sha256 = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+    test_sha256 = (Get-FileHash $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
     runner = $env:ImageOS
+    unsupported_edition_rejected_by_default = $true
     what_if_preserved = $true
     real_openssh_service_running = $true
     repeat_preserved_configuration = $true

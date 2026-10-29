@@ -92,6 +92,22 @@ pub fn run(
             tool("wtype", &["-k", "Down"]).await?;
             delay(180).await;
             capture("settings-categories").await?;
+            tool("wtype", &["-k", "Up", "-k", "Down"]).await?;
+            for (name, pause) in [("control-a", 35), ("control-b", 70), ("control-c", 100), ("control-d", 100)] {
+                delay(pause).await;
+                capture(name).await?;
+                let bounds = category.compute_bounds(&window).context("No native control bounds")?;
+                records.borrow_mut().get_mut(name).unwrap()["control"] = serde_json::json!({"x":bounds.x(),"y":bounds.y(),"width":bounds.width(),"height":bounds.height()});
+            }
+            conf.borrow_mut().reduce_motion = true;
+            category.queue_draw();
+            for name in ["control-reduced-a", "control-reduced-b"] {
+                delay(300).await;
+                capture(name).await?;
+                let bounds = category.compute_bounds(&window).context("No native control bounds")?;
+                records.borrow_mut().get_mut(name).unwrap()["control"] = serde_json::json!({"x":bounds.x(),"y":bounds.y(),"width":bounds.width(),"height":bounds.height()});
+            }
+            conf.borrow_mut().reduce_motion = false;
             tool("wtype", &["-k", "Return"]).await?; delay(150).await;
             ensure!(tabs.visible_child_name().as_deref() == Some("host"));
             let host = tabs.child_by_name("host").unwrap();
