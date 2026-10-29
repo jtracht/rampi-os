@@ -193,10 +193,19 @@ try {
             throw "Actual Microsoft RDP login failed: $($login.Output) $($login.Error)"
         }
         Write-Output 'RAMPI_WINDOWS_MICROSOFT_RDP_LOGIN_COMPLETE'
+        $remoteIdentityFound = $false
+        foreach ($session in @(Get-CimInstance Win32_LogonSession -Filter 'LogonType=10' -OperationTimeoutSec 15)) {
+            $remoteAccounts = @(Get-CimAssociatedInstance -InputObject $session -Association Win32_LoggedOnUser -ResultClassName Win32_Account -OperationTimeoutSec 15)
+            if (@($remoteAccounts | Where-Object SID -eq $accounts[0].Sid).Count) {
+                $remoteIdentityFound = $true
+            }
+        }
+        if (-not $remoteIdentityFound) { throw 'Actual Windows remote-interactive logon SID not found.' }
+        Write-Output 'RAMPI_WINDOWS_RDP_REMOTE_INTERACTIVE_SID_OK'
         $env:RAMPI_CI_RDP_PASSWORD = 'Wrong!' + [guid]::NewGuid().ToString('N')
         Write-Output "::add-mask::$env:RAMPI_CI_RDP_PASSWORD"
         $rejection = Invoke-FixtureRdp
-        if ($rejection.Code -ne 0 -or $rejection.Output.Trim() -notmatch '^disconnected:\d+$') {
+        if ($rejection.Code -ne 0 -or $rejection.Output.Trim() -notmatch '^credential-rejected:(0|-1073741715)$') {
             throw "Actual RDP negative authentication did not complete: $($rejection.Output) $($rejection.Error)"
         }
     } finally {
@@ -237,7 +246,8 @@ New-Item -ItemType Directory -Force $output | Out-Null
     wrong_user_key_rejected = $true
     two_real_private_profile_checks = $true
     microsoft_rdp_login_complete = $true
-    microsoft_rdp_wrong_password_disconnected = $true
+    microsoft_rdp_remote_interactive_sid = $true
+    microsoft_rdp_wrong_password_rejected = $true
     authentication_acceptance = $false
     complete_product_acceptance = $false
 } | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $output 'components.json')

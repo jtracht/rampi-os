@@ -31,7 +31,8 @@ def verify(path: Path, revision: str) -> None:
         "official_sshd_configuration_valid", "rdp_enabled", "nla_required",
         "private_firewall_only", "two_real_standard_user_ssh_logins",
         "wrong_user_key_rejected", "two_real_private_profile_checks",
-        "microsoft_rdp_login_complete", "microsoft_rdp_wrong_password_disconnected",
+        "microsoft_rdp_login_complete", "microsoft_rdp_remote_interactive_sid",
+        "microsoft_rdp_wrong_password_rejected",
     ]:
         if proof.get(field) is not True:
             raise ValueError(f"Actual Windows component check missing: {field}")

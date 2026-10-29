@@ -34,6 +34,7 @@ public static class RampiRdpClientProbe {
     public static string Run(string server, string user, string password) {
         bool loggedIn = false, disconnected = false;
         int reason = 0;
+        int? logonError = null;
         Guid events = new Guid("336d5562-efa8-482e-8cb3-c5c0fc7a7db6");
         using (var form = new Form())
         using (var control = new RampiRdpControl()) {
@@ -60,21 +61,33 @@ public static class RampiRdpClientProbe {
             ((MSTSCLib.IMsRdpClientNonScriptable4)control.Client).PromptForCredsOnClient = false;
             Action login = () => { loggedIn = true; };
             Action<int> disconnect = value => { reason = value; disconnected = true; };
+            Action<int> failedLogon = value => {
+                // Documented credential failures, not Winlogon's continue/reconnect notices.
+                if (value == 0 || value == 1 || value == 2 || value == -1 || value < -1000)
+                    logonError = value;
+            };
+            var logonMethod = typeof(MSTSCLib.IMsTscAxEvents).GetMethod("OnLogonError");
+            if (logonMethod == null) throw new InvalidOperationException("System RDP logon-error event missing.");
+            var logonId = (DispIdAttribute)Attribute.GetCustomAttribute(logonMethod, typeof(DispIdAttribute));
+            if (logonId == null) throw new InvalidOperationException("System RDP logon-error dispatch metadata missing.");
             ComEventsHelper.Combine((object)client, events, 3, login);
             ComEventsHelper.Combine((object)client, events, 4, disconnect);
+            ComEventsHelper.Combine((object)client, events, logonId.Value, failedLogon);
             try {
                 client.Connect();
                 var timer = Stopwatch.StartNew();
-                while (!loggedIn && !disconnected && timer.Elapsed.TotalSeconds < 60) {
+                while (!loggedIn && !disconnected && !logonError.HasValue && timer.Elapsed.TotalSeconds < 60) {
                     Application.DoEvents();
                     Thread.Sleep(20);
                 }
-                if (!loggedIn && !disconnected) throw new TimeoutException("Actual RDP authentication timed out; no acceptance.");
-                return loggedIn ? "login-complete" : "disconnected:" + reason;
+                if (!loggedIn && !disconnected && !logonError.HasValue) throw new TimeoutException("Actual RDP authentication timed out; no acceptance.");
+                return loggedIn ? "login-complete" : logonError.HasValue
+                    ? "credential-rejected:" + logonError.Value : "disconnected:" + reason;
             } finally {
                 if (client.Connected != 0) client.Disconnect();
                 ComEventsHelper.Remove((object)client, events, 3, login);
                 ComEventsHelper.Remove((object)client, events, 4, disconnect);
+                ComEventsHelper.Remove((object)client, events, logonId.Value, failedLogon);
                 form.Close();
             }
         }
