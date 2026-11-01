@@ -211,9 +211,9 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           if [[ "$ARCH" == arm64 ]]; then
-            python3 scripts/check-native-evidence.py artifacts/rust --require-installer
+            docker run --rm --network none -v "$PWD:/src" rampi-rust-dev python3 scripts/check-native-evidence.py artifacts/rust --require-installer
           else
-            python3 scripts/check-native-evidence.py artifacts/rust
+            docker run --rm --network none -v "$PWD:/src" rampi-rust-dev python3 scripts/check-native-evidence.py artifacts/rust
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
