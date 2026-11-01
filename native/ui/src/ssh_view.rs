@@ -186,6 +186,7 @@ fn confirmation(
     let expected = gtk::Entry::builder()
         .placeholder_text(tr("ssh-fingerprint-input", &[]))
         .build();
+    accessible_name(&expected, &tr("ssh-fingerprint-input", &[]));
     expected.set_widget_name("ssh-expected");
     page.append(&expected);
     let no = button(&tr("action-cancel", &[]), f);

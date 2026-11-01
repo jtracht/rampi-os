@@ -593,6 +593,9 @@ if __name__ == "__main__":
         if "--installed-image" not in sys.argv:
             script = SOURCE / "scripts/virtual/test-tailscale-install-guest.py"
             runpy.run_path(str(script))["main"]()
+            # Actual kernel HID input requires the normal libinput VM; image
+            # validation keeps its separate installed-image contract unchanged.
+            runpy.run_path(str(SOURCE / "scripts/virtual/test-hid-guest.py"), run_name="__main__")
     except Exception:
         uid = pwd.getpwnam("_greetd").pw_uid
         log = Path(f"/run/user/{uid}/rampi-greeter.log")

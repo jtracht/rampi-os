@@ -225,6 +225,7 @@ pub async fn register(stack: gtk::Stack, status: gtk::Label, f: Feedback) -> any
             let input = gtk::PasswordEntry::builder()
                 .placeholder_text(tr("pairing-pin", &[]))
                 .build();
+            accessible_name(&input, &tr("pairing-pin", &[]));
             let needs_input = kind == "RequestPinCode" || kind == "RequestPasskey";
             input.set_widget_name("pairing-input");
             input.set_visible(needs_input);

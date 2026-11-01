@@ -16,7 +16,8 @@
     "native_nla_gitea_tailscale_and_languages": "docs/validation/complete-native-development-2026-10-26.md",
     "native_dev4_software_acceptance": "docs/validation/native-dev4-software-acceptance.md",
     "native_keyboard_environment_consistency": "docs/validation/native-dev5-keyboard-release.md",
-    "hosted_windows_ssh_rdp_and_native_interaction": "docs/validation/software-completion-follow-up.md"
+    "hosted_windows_ssh_rdp_and_native_interaction": "docs/validation/software-completion-follow-up.md",
+    "native_dev6_windows_software_acceptance": "docs/validation/native-dev6-windows-software-acceptance.md"
   },
-  "migration": "Rust/GTK4/Wayland, three modules, no direct AI-provider integration. Published dev4 at f0490436d5cadd630f1b5f1487fb470312837d4b passes final native AMD64/ARM64 CI, fresh image, both first-account procedures with normal reboot, private PAM/keyrings, personal DE/EN locales and independent verification of actual public files. Software acceptance is 91/95; remaining input/layout, Bluetooth HID, Windows component integration and interaction-polish limits remain explicit. regular_release stays false; no full product completion or physical/Windows-11-Pro-host certification is claimed. Physical hardware, personal/external Windows hosts and model calls remain excluded. Isolated GitHub-CI Windows component checks are explicitly authorized and their new SSH/RDP evidence awaits final integration."
+  "migration": "Rust/GTK4/Wayland, three modules, no direct AI-provider integration. Published dev6 at 3ae8c2db84eb2f7b96fc87bf9bd75b17bb466d79 passed final AMD64/ARM64 CI, a fresh image, actual graphical login and independent verification of all 28 public assets. The agreed isolated Windows SSH/RDP component acceptance is bound to the exact published installer bytes. Software acceptance is 92/95 (96.8%); input/layout, complete Bluetooth HID and interaction-polish acceptance remain open. regular_release stays false and no full-product or physical Windows-11-Pro certification is claimed. Hardware, personal/external Windows hosts and model calls remain excluded."
 }

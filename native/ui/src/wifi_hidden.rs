@@ -19,6 +19,7 @@ pub fn append(page: &gtk::Box, status: &gtk::Label, f: &Feedback) {
     let ssid = gtk::Entry::builder()
         .placeholder_text(tr("wifi-ssid", &[]))
         .build();
+    accessible_name(&ssid, &tr("wifi-ssid", &[]));
     ssid.set_widget_name("hidden-ssid");
     form.append(&ssid);
     let mode = inline_choices(
@@ -30,6 +31,7 @@ pub fn append(page: &gtk::Box, status: &gtk::Label, f: &Feedback) {
     let password = gtk::PasswordEntry::builder()
         .placeholder_text(tr("wifi-credential-placeholder", &[]))
         .build();
+    accessible_name(&password, &tr("wifi-credential-placeholder", &[]));
     password.set_widget_name("hidden-password");
     form.append(&password);
     let connect = button(&tr("wifi-hidden", &[]), f);

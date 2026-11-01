@@ -88,6 +88,14 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
             find_button(&page, "Verbinden")
                 .context("No profile connection action")?
                 .emit_clicked();
+            for title in ["Verbinden", "Trennen", "Koppeln", "Dauerhaft vertrauen"] {
+                ensure!(
+                    !find_button(&page, title)
+                        .context("Missing Bluetooth action")?
+                        .is_sensitive(),
+                    "Conflicting Bluetooth action stayed enabled during Connect: {title}"
+                );
+            }
             let mut profile_requested = false;
             for _ in 0..100 {
                 let calls = crate::bus::call(

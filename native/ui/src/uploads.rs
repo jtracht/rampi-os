@@ -31,6 +31,7 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, f: &Feedback) {
         .placeholder_text(tr("upload-path", &[]))
         .hexpand(true)
         .build();
+    accessible_name(&path, &tr("upload-location", &[]));
     path.set_widget_name("browser-upload-folder");
     page.append(&path);
     let state = label("");

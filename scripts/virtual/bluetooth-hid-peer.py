@@ -9,20 +9,26 @@ import asyncio
 import json
 import logging
 import os
+import struct
 import subprocess
 import sys
+import time
+import traceback
+from collections import deque
 from pathlib import Path
 
-from bumble import hid, sdp
+from bumble import hid, l2cap, sdp
 from bumble.device import Device
 from bumble.pairing import PairingConfig, PairingDelegate
 from bumble.transport import open_transport
+
+EVENTS = deque(maxlen=40)
 
 
 class Reports(hid.Device.Delegate):
     def __init__(self):
         self.keyboard = bytes([1] + [0] * 8)
-        self.mouse = bytes([2, 0, 0, 0])
+        self.mouse = struct.pack("<BBhhb", 2, 0, 0, 0, 0)
 
     def get_report(self, report_type, report_id):
         if report_type == hid.ReportType.INPUT_REPORT and report_id in (1, 2):
@@ -38,7 +44,7 @@ async def main():
     if os.geteuid() != 0 or not Path("/etc/rampi-acceptance-vm").is_file():
         raise SystemExit("Designated disposable QEMU guest required")
     subprocess.run(["systemd-detect-virt", "--vm", "--quiet"], check=True)
-    async with asyncio.timeout(600):
+    async with asyncio.timeout(1800):
         async with await open_transport("hci-socket:1") as transport:
             device = Device.from_config_file_with_hci(
                 "/run/rampi-bumble-device.json", transport.source, transport.sink
@@ -52,6 +58,33 @@ async def main():
             )
             reports = Reports()
             interface = hid.Device(device, delegate=reports)
+            observed_channels = {}
+
+            def record(event, channel=None):
+                EVENTS.append(
+                    {
+                        "event": event,
+                        "time": round(time.monotonic(), 3),
+                        "channel": observed_channels.get(id(channel)),
+                        "control": observed_channels.get(id(interface.control_channel)),
+                        "interrupt": observed_channels.get(id(interface.interrupt_channel)),
+                    }
+                )
+
+            def connected():
+                for channel in (interface.control_channel, interface.interrupt_channel):
+                    if channel is not None and id(channel) not in observed_channels:
+                        observed_channels[id(channel)] = len(observed_channels) + 1
+                        channel.on(
+                            channel.EVENT_CLOSE, lambda channel=channel: record("close", channel)
+                        )
+                record("connected")
+
+            interface.on(interface.EVENT_CONNECTION, connected)
+            interface.on(interface.EVENT_DISCONNECTION, lambda: record("disconnected"))
+            interface.on(interface.EVENT_SUSPEND, lambda: record("suspend"))
+            interface.on(interface.EVENT_EXIT_SUSPEND, lambda: record("resume"))
+
             device.sdp_service_records = {
                 0x10002: hid.DeviceSdpRecord(
                     service_record_handle=0x10002, report_map=hid.DEFAULT_REPORT_MAP
@@ -103,15 +136,20 @@ async def main():
                 command = json.loads(line)
                 if command["action"] == "state":
                     result = {
-                        "channels": interface.control_channel is not None
-                        and interface.interrupt_channel is not None
+                        "channels": all(
+                            channel is not None and channel.state == l2cap.ClassicChannel.State.OPEN
+                            for channel in (interface.control_channel, interface.interrupt_channel)
+                        ),
+                        "disconnected": interface.control_channel is None
+                        and interface.interrupt_channel is None,
+                        "events": list(EVENTS),
                     }
                 elif command["action"] == "keyboard":
                     if interface.interrupt_channel is None:
                         raise RuntimeError("Real HID interrupt channel missing")
                     usage = command.get("usage", 4)
                     modifiers = command.get("modifiers", 0)
-                    if type(usage) is not int or not 4 <= usage <= 0xE7:
+                    if type(usage) is not int or not 4 <= usage <= 0x94:
                         raise ValueError("Invalid synthetic HID usage")
                     if type(modifiers) is not int or not 0 <= modifiers <= 255:
                         raise ValueError("Invalid synthetic HID modifiers")
@@ -135,8 +173,13 @@ async def main():
                 elif command["action"] == "mouse":
                     if interface.interrupt_channel is None:
                         raise RuntimeError("Real HID interrupt channel missing")
-                    for report in ([2, 0, 8, 250], [2, 1, 0, 0], [2, 0, 0, 0]):
-                        reports.mouse = bytes(report)
+                    dx, dy = command.get("dx", 8), command.get("dy", -6)
+                    if any(type(v) is not int or not -32768 <= v <= 32767 for v in (dx, dy)):
+                        raise ValueError("Invalid synthetic mouse displacement")
+                    # The unchanged SDK report map specifies signed 16-bit X/Y
+                    # and an 8-bit wheel, after its report ID and button byte.
+                    for buttons, x, y in ((0, dx, dy), (1, 0, 0), (0, 0, 0)):
+                        reports.mouse = struct.pack("<BBhhb", 2, buttons, x, y, 0)
                         interface.send_interrupt_data(reports.mouse)
                         await asyncio.sleep(0.15)
                     result = {"sent": "mouse"}
@@ -148,4 +191,26 @@ async def main():
 
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except Exception as error:
+    # Never export the SDK's raw HCI log or exception values (which may contain
+    # packet data). Only classify the failure and its source locations.
+    print(
+        json.dumps(
+            {
+                "error_type": type(error).__name__,
+                "events": list(EVENTS),
+                "frames": [
+                    {
+                        "file": Path(frame.filename).name,
+                        "line": frame.lineno,
+                        "function": frame.name,
+                    }
+                    for frame in traceback.extract_tb(error.__traceback__)
+                ],
+            }
+        ),
+        flush=True,
+    )
+    raise

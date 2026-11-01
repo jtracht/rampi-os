@@ -4,6 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgtk-4-dev libvte-2.91-gtk4-dev libwebkitgtk-6.0-dev libnm-dev \
     labwc libglib2.0-bin dbus-daemon fonts-dejavu-core grim wtype wayland-utils procps shellcheck \
     network-manager bluez wlr-randr libcanberra0 pulseaudio-utils locales \
+    python3-pyatspi at-spi2-core \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 RUN useradd --create-home --uid 1000 rampi

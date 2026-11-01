@@ -25,6 +25,9 @@ if "RAMPI_STREAM_NATIVE_C_LIFECYCLE_OK" not in (directory / "stream-media.log").
 streaming = runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.py")))["check"](
     directory / "streaming-live", require_gtk=True, require_soak=True
 )
+runpy.run_path(str(Path(__file__).with_name("check-accessibility-evidence.py")))["check"](
+    directory, streaming["gtk_client_sha256"]
+)
 runpy.run_path(str(Path(__file__).with_name("check-tailscale-evidence.py")))["check"](
     directory / "tailscale-live", expected_binary=streaming["gtk_client_sha256"]
 )
@@ -57,6 +60,7 @@ for marker in [
         raise SystemExit("Missing actual embedded RDP acceptance: " + marker)
 log = (directory / "wayland.log").read_text(encoding="utf-8")
 markers = [
+    "RAMPI_ACTUAL_GTK_A11Y_TWO_LANGUAGES_OK",
     "RAMPI_LABWC_DUPLICATE_LAYOUT_OK",
     "RAMPI_RUST_FIRST_RUN_KEYBOARD_OK",
     "RAMPI_RUST_LANGUAGE_NAVIGATION_PERSISTENCE_OK",

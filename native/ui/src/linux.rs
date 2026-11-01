@@ -302,8 +302,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     glib::MainContext::default().spawn_local(async move {
         match crate::pairing::register(s, stat.clone(), f).await {
             Ok(value) => *agent.borrow_mut() = Some(value),
-            Err(_) => stat
-                .set_text("Bluetooth-Dienst nicht verfügbar; die übrigen Module bleiben nutzbar."),
+            Err(_) => stat.set_text(&tr("bluetooth-service-unavailable", &[])),
         }
     });
     let keys = gtk::EventControllerKey::new();
@@ -312,6 +311,21 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
     keys.connect_key_pressed(move |_, key, _, mods| {
         if let Some(w) = weak.upgrade() {
             w.set_cursor_from_name(Some("none"));
+            // Text and remote widgets can supply a device cursor of their own.
+            // Apply the keyboard choice after GTK dispatches the current event.
+            let window = w.downgrade();
+            glib::idle_add_local_once(move || {
+                if let Some(window) = window.upgrade()
+                    && let Some(cursor) = window.cursor()
+                    && cursor.name().as_deref() == Some("none")
+                    && let Some(surface) = window.surface()
+                    && let Some(pointer) = gtk::prelude::WidgetExt::display(&window)
+                        .default_seat()
+                        .and_then(|seat| seat.pointer())
+                {
+                    surface.set_device_cursor(&pointer, &cursor);
+                }
+            });
         }
         let page = s.visible_child_name();
         let owns_escape = page.as_deref().is_some_and(|name| {

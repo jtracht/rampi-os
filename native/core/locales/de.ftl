@@ -504,3 +504,7 @@ board-data-invalid = Ungültige Boarddaten
 board-source-column-invalid = Ungültige Quellspalte
 board-card-size-limit = Karte überschreitet das Größenlimit
 board-data-limit = Kanban-Daten sind zu groß
+
+browser-address-label = Webadresse
+
+bluetooth-service-unavailable = Bluetooth-Dienst nicht verfügbar; die übrigen Module bleiben nutzbar.
