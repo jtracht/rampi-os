@@ -47,11 +47,30 @@ def main():
     )
     parser.add_argument("--prepare-cache", action="store_true")
     parser.add_argument(
+        "--output-directory", type=Path, help="New artifact directory inside the workspace"
+    )
+    parser.add_argument(
+        "--rdp-fixtures",
+        type=Path,
+        help="Private generated configuration for isolated Docker RDP/HID fixtures",
+    )
+    parser.add_argument(
         "--resume-development",
         action="store_true",
         help="Debug only: reuse guest and reset fixture keyrings; never acceptance evidence",
     )
     options = parser.parse_args()
+    rdp_fixtures = None
+    if options.rdp_fixtures:
+        if not options.native_session_binary:
+            parser.error("RDP/HID fixtures require the designated graphical session guest")
+        rdp_fixtures = json.loads(options.rdp_fixtures.read_text(encoding="utf-8"))
+        if (
+            rdp_fixtures.get("scope") != "rampi-isolated-hid-rdp"
+            or rdp_fixtures.get("internal_network") is not True
+            or set(rdp_fixtures.get("accounts", {})) != {"rampi-hid-one", "rampi-hid-two"}
+        ):
+            parser.error("Only generated internal Docker RDP/HID fixture configuration is accepted")
     if options.resume_development and not options.native_session_binary:
         raise SystemExit("Only the designated graphical login development guest may be resumed")
     if options.native_session_binary and (
@@ -69,6 +88,11 @@ def main():
     output = root / (
         "artifacts/virtual-login" if options.native_session_binary else "artifacts/virtual-linux"
     )
+    if options.output_directory:
+        requested = options.output_directory.resolve()
+        if not requested.is_relative_to((root / "artifacts").resolve()) or requested.exists():
+            parser.error("An explicit output directory must be new and inside workspace artifacts")
+        output = requested
     cache.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
     if options.native_session_binary:
@@ -195,12 +219,23 @@ def main():
             + (" --debug-keyring-reset; " if options.resume_development else "; ")
             + "result=$?; echo RAMPI_GUEST_EXIT=$result; exit $result"
         )
+    if rdp_fixtures is not None:
+        config["write_files"].append(
+            {
+                "path": "/run/rampi-rdp-test.json",
+                "owner": "root:root",
+                "permissions": "0600",
+                "content": json.dumps(rdp_fixtures),
+            }
+        )
     (output / "user-data").write_text("#cloud-config\n" + yaml.safe_dump(config), encoding="utf-8")
+    (output / "user-data").chmod(0o600)
     (output / "meta-data").write_text(f"instance-id: rampi-{time.time_ns()}\n", encoding="utf-8")
     seed = output / "seed.img"
     if seed.exists():
         seed.unlink()
     run("cloud-localds", str(seed), str(output / "user-data"), str(output / "meta-data"))
+    seed.chmod(0o600)
     overlay = output / "guest.qcow2"
     if options.resume_development and not overlay.is_file():
         raise SystemExit("No existing development guest to resume")

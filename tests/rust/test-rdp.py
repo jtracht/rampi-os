@@ -49,6 +49,10 @@ def server():
         directory = Path(account.pw_dir) / ".rampi-hid-receipts"
         directory.mkdir(mode=0o700)
         os.chown(directory, account.pw_uid, account.pw_gid)
+        nonce = directory / ".rampi-nonce"
+        nonce.write_text(Path("/run/rampi-rdp-probe").read_text())
+        os.chown(nonce, account.pw_uid, account.pw_gid)
+        nonce.chmod(0o600)
         receipts = subprocess.Popen(
             [
                 "runuser",

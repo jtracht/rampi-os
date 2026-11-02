@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import runpy
+import shutil
 import subprocess
 import tempfile
 import time
@@ -61,16 +62,7 @@ def buttons(rows):
 
 
 def click(caption):
-    target = next(
-        (
-            node
-            for node, _ in visible_objects()
-            if node.getRoleName() == "button" and node.name == caption
-        ),
-        None,
-    )
-    if target is None or not target.queryAction().doAction(0):
-        raise RuntimeError("Actual GTK button action unavailable: " + caption)
+    accessibility["activate_control"](caption)
 
 
 def capture(language, page, rows):
@@ -98,6 +90,14 @@ for language in ["de", "en"]:
                     "language": language,
                     "setup_complete": True,
                     "sound_effects": False,
+                    # A stored profile focuses the list first; require a real field click.
+                    "hosts": [
+                        {
+                            "name": "Synthetic fixture",
+                            "address": "fixture.invalid",
+                            "username": "fixture",
+                        }
+                    ],
                 }
             )
         )
@@ -152,12 +152,14 @@ for language in ["de", "en"]:
                 typed = "a11y-" + language
                 # GtkEntry exposes its text through a delegate; its outer accessible
                 # does not implement GrabFocus. Click its actual visible bounds.
-                bounds = field.queryComponent().getExtents(accessibility["pyatspi"].DESKTOP_COORDS)
-                if bounds.width <= 0 or bounds.height <= 0 or bounds.x < 0 or bounds.y < 0:
-                    raise RuntimeError("Actual visible profile bounds unavailable")
+                bounds = accessibility["control_bounds"](profile_caption)
                 for args in [
                     ("move", "-10000", "-10000"),
-                    ("move", str(bounds.x + bounds.width // 2), str(bounds.y + bounds.height // 2)),
+                    (
+                        "move",
+                        str(bounds["x"] + bounds["width"] // 2),
+                        str(bounds["y"] + bounds["height"] // 2),
+                    ),
                     ("click", "left"),
                 ]:
                     subprocess.run(["wlrctl", "pointer", *args], check=True)
@@ -207,6 +209,10 @@ for language in ["de", "en"]:
             finally:
                 app.terminate()
                 app.wait(timeout=10)
+                log.flush()
+                public_log = destination / f"accessibility-{language}-application.log"
+                shutil.copyfile(home / "application.log", public_log)
+                public_log.chmod(0o644)
 
 proof = {
     "schema": 1,

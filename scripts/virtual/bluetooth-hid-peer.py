@@ -44,7 +44,8 @@ async def main():
     if os.geteuid() != 0 or not Path("/etc/rampi-acceptance-vm").is_file():
         raise SystemExit("Designated disposable QEMU guest required")
     subprocess.run(["systemd-detect-virt", "--vm", "--quiet"], check=True)
-    async with asyncio.timeout(1800):
+    # Six PAM sessions plus actual RDP connections; per-request limits stay unchanged.
+    async with asyncio.timeout(2400):
         async with await open_transport("hci-socket:1") as transport:
             device = Device.from_config_file_with_hci(
                 "/run/rampi-bumble-device.json", transport.source, transport.sink
@@ -178,7 +179,13 @@ async def main():
                         raise ValueError("Invalid synthetic mouse displacement")
                     # The unchanged SDK report map specifies signed 16-bit X/Y
                     # and an 8-bit wheel, after its report ID and button byte.
-                    for buttons, x, y in ((0, dx, dy), (1, 0, 0), (0, 0, 0)):
+                    click = command.get("click", True)
+                    if type(click) is not bool:
+                        raise ValueError("Invalid synthetic mouse click flag")
+                    packets = [(0, dx, dy)]
+                    if click:
+                        packets.extend([(1, 0, 0), (0, 0, 0)])
+                    for buttons, x, y in packets:
                         reports.mouse = struct.pack("<BBhhb", 2, buttons, x, y, 0)
                         interface.send_interrupt_data(reports.mouse)
                         await asyncio.sleep(0.15)

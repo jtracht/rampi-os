@@ -15,6 +15,7 @@ SOURCES = [
     "scripts/virtual/bluetooth-hid-peer.py",
     "scripts/virtual/hid-layout-oracle.py",
     "scripts/virtual/hid-accessible-state.py",
+    "scripts/virtual/hid-rdp-stage.py",
 ]
 KEYS = [(4, 0), (28, 0), (29, 0), (31, 2), (8, 64)]
 # Independently read from the installed Debian libxkbcommon, outside Rampi.
@@ -104,6 +105,62 @@ def validate_proof(proof, expected_binary):
     return sessions
 
 
+def check_cursor_images(captures, proof):
+    from PIL import Image
+
+    for session in proof["sessions"]:
+        stem = session["user"] + "-" + session["layout"]
+        for state, key in [("keyboard", "keyboard_cursor"), ("mouse", "mouse_cursor")]:
+            observed = session.get(key, {})
+            names = [stem + "-" + state + suffix for suffix in ["-plain.png", "-cursor.png"]]
+            if [observed.get("plain"), observed.get("overlay")] != names:
+                raise ValueError("Actual cursor image identity missing")
+            area = observed.get("area", [])
+            if len(area) != 4 or any(type(v) is not int for v in area):
+                raise ValueError("Actual cursor bounds missing")
+            with (
+                Image.open(captures / names[0]) as first,
+                Image.open(captures / names[1]) as second,
+            ):
+                a, b = first.convert("RGB"), second.convert("RGB")
+                if a.size != b.size or not (
+                    0 <= area[0] < area[2] <= a.width and 0 <= area[1] < area[3] <= a.height
+                ):
+                    raise ValueError("Actual cursor capture bounds invalid")
+                if area[2] - area[0] != 128 or not 8 <= area[3] - area[1] <= 100:
+                    raise ValueError("Actual cursor field region invalid")
+                count = sum(
+                    sum(
+                        abs(x - y)
+                        for x, y in zip(a.getpixel((px, py)), b.getpixel((px, py)), strict=True)
+                    )
+                    > 60
+                    for px in range(area[0], area[2])
+                    for py in range(area[1], area[3])
+                )
+                reference = area[2] + 32
+                if reference >= b.width:
+                    raise ValueError("Actual cursor reference outside image")
+                visible = sum(
+                    sum(
+                        abs(x - y)
+                        for x, y in zip(
+                            b.getpixel((px, py)), b.getpixel((reference, py)), strict=True
+                        )
+                    )
+                    > 60
+                    for px in range(area[0], area[2])
+                    for py in range(area[1], area[3])
+                )
+            if (
+                count != observed.get("overlay_difference_pixels")
+                or visible != observed.get("pixels")
+                or (state == "keyboard" and visible != 0)
+                or (state == "mouse" and visible < 5)
+            ):
+                raise ValueError("Actual cursor visibility mismatch")
+
+
 def check(directory, expected_binary=None):
     login = runpy.run_path(str(Path(__file__).with_name("check-login-evidence.py")))
     environment = login["check"](directory, expected_binary)
@@ -114,6 +171,7 @@ def check(directory, expected_binary=None):
     captures = directory / "captures/hid"
     proof = json.loads((captures / "hid-proof.json").read_text(encoding="utf-8"))
     sessions = validate_proof(proof, binary)
+    check_cursor_images(captures, proof)
     keycodes = [30, 21, 44, 3, 18]
     for session in sessions:
         stem = session["user"] + "-" + session["layout"]

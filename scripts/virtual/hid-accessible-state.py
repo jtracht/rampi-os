@@ -14,7 +14,7 @@ if __name__ == "__main__":
     subprocess.run(["systemd-detect-virt", "--vm", "--quiet"], check=True)
 
 import pyatspi  # noqa: E402
-from gi.repository import Atspi  # noqa: E402
+from gi.repository import Atspi, GLib  # noqa: E402
 
 # Keep ordinary calls at the library default; bound startup probes of stale
 # optional objects without changing the enclosing page/readiness deadlines.
@@ -44,19 +44,64 @@ def visible_objects():
 
 
 def snapshot():
-    return [
-        {
-            "role": node.getRoleName(),
-            "name": node.name or "",
-            "enabled": state.contains(pyatspi.STATE_ENABLED),
-            "sensitive": state.contains(pyatspi.STATE_SENSITIVE),
-            "states": [str(value) for value in state.getStates()],
-        }
+    try:
+        return [
+            {
+                "role": node.getRoleName(),
+                "name": node.name or "",
+                "enabled": state.contains(pyatspi.STATE_ENABLED),
+                "sensitive": state.contains(pyatspi.STATE_SENSITIVE),
+                "states": [str(value) for value in state.getStates()],
+            }
+            for node, state in visible_objects()
+        ]
+    except GLib.GError:
+        # Reconnecting can invalidate a proxy between enumeration and reading.
+        # Return no required data; the enclosing readiness check must obtain a
+        # complete new snapshot within its unchanged deadline. Never reuse rows.
+        return []
+
+
+def activate_control(caption):
+    matches = [
+        node
         for node, state in visible_objects()
+        if node.getRoleName() == "button"
+        and node.name == caption
+        and state.contains(pyatspi.STATE_SENSITIVE)
     ]
+    if len(matches) != 1 or not matches[0].queryAction().doAction(0):
+        raise RuntimeError("Unique visible GTK button action unavailable: " + caption)
+
+
+def control_bounds(caption):
+    matches = [
+        node
+        for node, _ in visible_objects()
+        if node.name == caption and node.getRoleName() in {"text", "entry", "password text"}
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("Unique visible GTK field unavailable: " + caption)
+    # Wayland does not publish global widget positions (GTK reports 0/0).
+    # The designated Rampi fixture is fullscreen at the output origin.
+    bounds = matches[0].queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+    if bounds.width <= 0 or bounds.height <= 0 or bounds.x < 0 or bounds.y < 0:
+        raise RuntimeError("Actual visible GTK field bounds unavailable")
+    return {key: getattr(bounds, key) for key in ["x", "y", "width", "height"]}
 
 
 def main():
+    if sys.argv[1:]:
+        account = pwd.getpwuid(os.getuid())
+        if account.pw_name not in {"rampi-hid-one", "rampi-hid-two"} or account.pw_uid < 1000:
+            raise SystemExit("Only the designated synthetic HID accounts may control the fixture")
+    if len(sys.argv) == 3 and sys.argv[1] == "--fixture-activate":
+        activate_control(sys.argv[2])
+        print(json.dumps({"activated": True}))
+        return
+    if len(sys.argv) == 3 and sys.argv[1] == "--fixture-control-bounds":
+        print(json.dumps(control_bounds(sys.argv[2])))
+        return
     if sys.argv[1:] == ["--fixture-profile-text"]:
         account = pwd.getpwuid(os.getuid())
         if account.pw_name not in {"rampi-hid-one", "rampi-hid-two"} or account.pw_uid < 1000:

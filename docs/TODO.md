@@ -16,7 +16,23 @@ prüfungen ersetzen weder die vollständige CI noch die Image-Abnahme.
 - [x] Zweiten CI-Fehler auf AMD64 eingrenzen: virtueller Adapter beim Power-Aufruf noch nicht bereit.
 - [x] Zustandsbasierte Bereitschaftsprüfung entwickeln; dauerhaften falschen Zustand
   und beendeten Emulator in Negativkontrollen ausdrücklich ablehnen.
-- [ ] Frische native CI auf AMD64 und ARM64 samt sechs Layouts und zwei PAM-Konten bestehen.
+- [x] Frische native CI für `00af710` auf AMD64 und ARM64 samt sechs Layouts und zwei PAM-Konten bestehen.
+- [x] Heruntergeladene Nachweise für `00af710` unabhängig mit eingefrorenen Prüfern prüfen:
+  beide Programme, PAM/HID/Funk und sieben Paketprüfsummen.
+- [x] PR 53 als `523d3c8` zusammenführen; identischen geprüften Quellbaum bestätigen.
+- [x] Allgemeine und native Push-CI für `523d3c8` bestehen.
+- [x] Ersten lokalen Verbundlauf ausführen und den falschen Testklick mit gespeichertem Screenshot eingrenzen.
+- [x] Globale GTK-Position 0/0 durch tatsächliche Fensterkoordinaten ersetzen;
+  den Randfall mit vorhandenem Hostprofil im Deutsch-/Englisch-Test reproduzieren und korrigieren.
+- [x] Weitere frische Verbundläufe auswerten; TLS-Kaltstart und Mausgerätewechsel eingrenzen.
+- [x] Lokale Audiovorbereitung vor den RDP-Netzaufbau ziehen, TLS-Frist unverändert lassen;
+  tatsächliche isolierte RDP-Kontrollprüfung erneut bestehen.
+- [x] Verzögerte GTK-Cursoränderung nach Bluetooth-Tastatureingabe korrigieren;
+  gezielter lokaler Bildvergleich: unsichtbar nach Tastatur, sichtbar nach Mausbewegung.
+- [ ] Diese Cursorbilder anschließend im vollständigen frischen Verbundlauf bestätigen.
+- [ ] Vollständigen Bluetooth→RDP-Verbundlauf nach den Korrekturen bestehen.
+- [x] Den vollständigen frischen Verbundtest als Pflichtprüfung beider CI-Architekturen einbauen.
+- [ ] Diese neuen CI-Läufe auf dem endgültigen Quellstand bestehen und unabhängig prüfen.
 - [x] Abgeschotteten XRDP-Quittungsserver mit tatsächlichem RDP-Client prüfen:
   empfangene Zeichen, Dashboard-Rückkehr ohne manuelle Fokuskorrektur und Wiederverbindung.
 - [ ] Bluetooth-Eingaben durch die normale integrierte RDP-Oberfläche bis zu einem
@@ -35,3 +51,10 @@ prüfungen ersetzen weder die vollständige CI noch die Image-Abnahme.
 Windows-Komponenten werden ausschließlich in isolierter GitHub-CI geprüft.
 Keine persönlichen oder externen Windows-Testhosts, Hardwaretests oder Modellanfragen.
 Die veröffentlichten Dateien von v0.6.0-dev.6 bleiben unverändert.
+
+Aktueller Zwischenstand: Deutsch und US haben den lokalen verbundenen RDP-Lauf
+mit Maus, Dashboard-Rückkehr und Wiederverbindung bestanden. Beim britischen
+Layout brach eine Oberflächenabfrage während der Wiederverbindung ab. Die
+Abfrage liefert bei einem veralteten Objekt nun keine Daten und wird durch die
+bestehenden Bereitschaftsprüfungen erneut gelesen. Der Negativtest besteht.
+Das ist weiterhin keine vollständige frische Sechs-Layout-Abnahme.
