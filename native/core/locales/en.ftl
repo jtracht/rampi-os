@@ -421,6 +421,7 @@ network-connect = Connect
 network-disconnect = Disconnect
 bluetooth-refresh = Refresh adapters and devices
 bluetooth-trust = Trust permanently
+bluetooth-untrust = Revoke trust
 bluetooth-unpair = Remove pairing
 bluetooth-pair = Pair
 bluetooth-connected = The device is already paired or connected.

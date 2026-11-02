@@ -13,6 +13,11 @@
 - Read actual window-relative accessible control bounds; failed accessibility
   reads provide no page data for the existing readiness predicates. Export
   public fixture logs with readable permissions and retain emulator diagnostics.
+- Identify the selected Bluetooth device or adapter on the confirmation page.
+  Show the actual trust/revoke action after refresh; keep cancellation focused
+  and preserve state when cancelling. Real GTK/private-D-Bus checks pass.
+- Align the whole HID emulator lifetime with the extended joined runner.
+  Individual reply, page and network deadlines remain unchanged.
 - The accepted score remains 92/95 (96.8%). This is not a completed release.
 
 ## 0.6.0-dev.6 — published and independently verified development image

@@ -66,3 +66,16 @@ kurz begrenzt erneut gelesen; Aktionen selbst werden nie wiederholt. Der
 Negativtest für einen unsicheren Klick-Rückgabestatus und doppelte Treffer
 sowie die beiden tatsächlichen Sprach-Kontrollläufe bestehen. Noch keine
 frische vollständige Verbundabnahme.
+
+- [x] Bluetooth-Bestätigung mit gewähltem Gerät/Adapter und eindeutiger
+  Vertrauensaktion entwickeln; Beschriftung folgt dem tatsächlichen BlueZ-Zustand.
+- [x] Den tatsächlichen GTK-/D-Bus-Lauf für Vertrauen, Entziehen und Abbrechen
+  prüfen: Standardfokus auf Abbrechen, keine Zustandsänderung beim Abbrechen,
+  genau ein Fenster.
+- [ ] Diese Verbesserung zusätzlich im vollständigen frischen Eingabelauf abnehmen.
+
+Die bisher längste lokale Wiederholung hat Deutsch, US, Britisch und Französisch
+vollständig durchlaufen. Bei Spanisch endete der Prüfemulator an seiner alten
+40-Minuten-Gesamtgrenze. Seine Gesamtgrenze entspricht jetzt den 6000 Sekunden
+des erweiterten Verbundprüfers; einzelne Antwort-/Verbindungsfristen bleiben
+unverändert. Der gesamte Sechs-Layout-Lauf ist weiterhin nicht abgenommen.

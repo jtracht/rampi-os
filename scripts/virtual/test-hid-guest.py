@@ -532,7 +532,13 @@ try:
                 login.wait(lambda: action_ready("Dauerhaft vertrauen"), "GUI finishes pairing")
                 click(930, 320)
                 capture("trust-confirmation")
-                click(640, 175)
+                login.as_user(
+                    user,
+                    "python3",
+                    "/opt/rampi-source/scripts/virtual/hid-accessible-state.py",
+                    "--fixture-activate",
+                    "Bewusst bestätigen",
+                )
                 login.wait(lambda: prop("Trusted") == "b true", "explicit GUI trust")
                 login.wait(lambda: action_ready("Verbinden"), "GUI finishes explicit trust")
                 click(600, 320)

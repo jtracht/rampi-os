@@ -453,13 +453,13 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             for device in &rows {
                 l.append(&label(&device.label));
             }
-            if let Some(index) = rows
+            let selected_index = rows
                 .iter()
-                .position(|d| Some(&d.path) == selected_device.as_ref())
-            {
+                .position(|d| Some(&d.path) == selected_device.as_ref());
+            *visible.borrow_mut() = rows;
+            if let Some(index) = selected_index {
                 l.select_row(l.row_at_index(index as i32).as_ref());
             }
-            *visible.borrow_mut() = rows;
         })
     };
     let (update, suppressed) = (select.clone(), rebuilding.clone());
@@ -532,22 +532,44 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     controls.set_selection_mode(gtk::SelectionMode::None);
     page.append(&controls);
     let busy = Rc::new(Cell::new(false));
-    let actions = Rc::new(RefCell::new(
-        Vec::<(glib::WeakRef<gtk::Button>, bool)>::new(),
-    ));
+    let actions = Rc::new(RefCell::new(Vec::<(
+        glib::WeakRef<gtk::Button>,
+        &'static str,
+    )>::new()));
     let update_actions: Rc<dyn Fn()> = {
-        let (picker, list, busy, actions) = (
+        let (picker, list, devices, busy, actions) = (
             picker.downgrade(),
             list.downgrade(),
+            devices.clone(),
             busy.clone(),
             actions.clone(),
         );
         Rc::new(move || {
             let adapter = picker.upgrade().is_some_and(|p| p.selected_row().is_some());
-            let device = list.upgrade().is_some_and(|l| l.selected_row().is_some());
-            for (button, is_adapter) in actions.borrow().iter() {
+            let selected = list.upgrade().and_then(|l| {
+                l.selected_row()
+                    .and_then(|r| devices.borrow().get(r.index() as usize).cloned())
+            });
+            for (button, op) in actions.borrow().iter() {
                 if let Some(button) = button.upgrade() {
-                    button.set_sensitive(!busy.get() && if *is_adapter { adapter } else { device });
+                    button.set_sensitive(
+                        !busy.get()
+                            && if *op == "power" {
+                                adapter
+                            } else {
+                                selected.is_some()
+                            },
+                    );
+                    if *op == "trust" {
+                        button.set_label(&tr(
+                            if selected.as_ref().is_some_and(|d| d.trusted) {
+                                "bluetooth-untrust"
+                            } else {
+                                "bluetooth-trust"
+                            },
+                            &[],
+                        ));
+                    }
                 }
             }
         })
@@ -568,7 +590,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         let title = title.to_string();
         let b = button(&title, f);
         controls.insert(&b, -1);
-        actions.borrow_mut().push((b.downgrade(), op == "power"));
+        actions.borrow_mut().push((b.downgrade(), op));
         update_actions();
         let pending = busy.clone();
         let update = update_actions.clone();
@@ -611,6 +633,22 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
                     .and_then(|r| d.borrow().get(r.index() as usize).map(|d| d.path.clone()))
             };
             if let Some(object) = object {
+                let target = if op == "power" {
+                    p.selected_row()
+                        .and_then(|r| a.borrow().get(r.index() as usize).map(|a| a.label.clone()))
+                } else {
+                    selected.as_ref().map(|d| d.label.clone())
+                };
+                let confirmation_title = if op == "trust" && !value {
+                    tr("bluetooth-untrust", &[])
+                } else {
+                    title.clone()
+                };
+                let confirmation_text = format!(
+                    "{}\n\n{}",
+                    target.unwrap_or_default(),
+                    tr("network-systemwide", &[]),
+                );
                 let (stat, pending, update) = (stat.clone(), pending.clone(), update.clone());
                 let execute = move || {
                     if pending.replace(true) {
@@ -630,7 +668,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
                     });
                 };
                 if op == "trust" || op == "remove" || (op == "power" && !value) {
-                    confirm(&s, &title, &tr("network-systemwide", &[]), &f, execute);
+                    confirm(&s, &confirmation_title, &confirmation_text, &f, execute);
                 } else {
                     execute();
                 }

@@ -44,8 +44,9 @@ async def main():
     if os.geteuid() != 0 or not Path("/etc/rampi-acceptance-vm").is_file():
         raise SystemExit("Designated disposable QEMU guest required")
     subprocess.run(["systemd-detect-virt", "--vm", "--quiet"], check=True)
-    # Six PAM sessions plus actual RDP connections; per-request limits stay unchanged.
-    async with asyncio.timeout(2400):
+    # Match the joined runner lifetime: six PAM sessions and RDP reconnects.
+    # Individual 45-second replies and page/network readiness limits stay unchanged.
+    async with asyncio.timeout(6000):
         async with await open_transport("hci-socket:1") as transport:
             device = Device.from_config_file_with_hci(
                 "/run/rampi-bumble-device.json", transport.source, transport.sink

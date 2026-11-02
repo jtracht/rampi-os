@@ -85,6 +85,90 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
                 "ACL fixture must already be connected"
             );
             device_list.select_row(device_list.row_at_index(0).as_ref());
+            ensure!(
+                !connected_device.trusted,
+                "Trust fixture must start untrusted"
+            );
+            for (caption, grant) in [
+                ("Dauerhaft vertrauen", true),
+                ("Vertrauen entziehen", false),
+            ] {
+                let trust = find_button(&page, caption).context("Exact trust action missing")?;
+                // Cancelling the fully contextual page must not change BlueZ.
+                for apply in [false, true] {
+                    trust.emit_clicked();
+                    ensure!(
+                        stack.visible_child_name().as_deref() == Some("confirmation"),
+                        "Trust action did not open the existing full page"
+                    );
+                    let confirmation = stack.child_by_name("confirmation").unwrap();
+                    let heading = confirmation
+                        .first_child()
+                        .and_downcast::<gtk::Label>()
+                        .context("Confirmation heading missing")?;
+                    let context = heading
+                        .next_sibling()
+                        .and_downcast::<gtk::Label>()
+                        .context("Confirmation device context missing")?;
+                    ensure!(
+                        heading.text() == caption
+                            && context.text().contains(&connected_device.label),
+                        "Trust confirmation lost the exact action or selected device identity"
+                    );
+                    let cancel = find_button(&confirmation, "Abbrechen").unwrap();
+                    ensure!(
+                        cancel.is_focus(),
+                        "Cancel is not the default keyboard choice"
+                    );
+                    find_button(
+                        &confirmation,
+                        if apply {
+                            "Bewusst bestätigen"
+                        } else {
+                            "Abbrechen"
+                        },
+                    )
+                    .unwrap()
+                    .emit_clicked();
+                    let mut actual = !grant;
+                    for _ in 0..100 {
+                        actual = crate::bus::bluetooth_snapshot()
+                            .await?
+                            .1
+                            .into_iter()
+                            .find(|d| d.path == connected_device.path)
+                            .context("Selected BlueZ device disappeared")?
+                            .trusted;
+                        if actual == if apply { grant } else { !grant } {
+                            break;
+                        }
+                        glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                    }
+                    ensure!(
+                        actual == if apply { grant } else { !grant },
+                        "Trust or cancellation changed the wrong state"
+                    );
+                    ensure!(
+                        app.windows().len() == 1,
+                        "Trust action opened another window"
+                    );
+                }
+                for _ in 0..150 {
+                    if find_button(
+                        &page,
+                        if grant {
+                            "Vertrauen entziehen"
+                        } else {
+                            "Dauerhaft vertrauen"
+                        },
+                    )
+                    .is_some()
+                    {
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                }
+            }
             find_button(&page, "Verbinden")
                 .context("No profile connection action")?
                 .emit_clicked();
