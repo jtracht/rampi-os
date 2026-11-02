@@ -108,3 +108,10 @@ nun bis zu 15 Sekunden beanspruchen, weiterhin innerhalb der bestehenden
 freigegebener Fehlergrund werden ohne Feldinhalte protokolliert. Die
 Gegenprüfungen und beide tatsächlichen Sprachläufe bestehen erneut. Ein
 vollständiger frischer Nachweis bleibt erforderlich.
+
+Die isolierte Messung der komplexeren Seite liefert bei einem einzelnen
+Durchlauf vollständige 72–80 Zeilen in 17–33 Sekunden. Das begründet nun ein
+45-Sekunden-Einzelbudget innerhalb der unveränderten 60-Sekunden-Aufrufgrenze
+und der 90-Sekunden-Seitenprüfung. Die vorherige 15-Sekunden-Variante bleibt als
+fehlgeschlagener Versuch erhalten. Unvollständige Daten bleiben verworfen;
+die komplette frische Prüfung der endgültigen Variante steht weiterhin aus.

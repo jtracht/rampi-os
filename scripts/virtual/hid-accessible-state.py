@@ -19,7 +19,7 @@ from gi.repository import Atspi, GLib  # noqa: E402
 # Bound library calls separately from a complete read. The enclosing page
 # predicate retains its existing readiness deadline.
 Atspi.set_timeout(800, 2000)
-READ_BUDGET = 15
+READ_BUDGET = 45
 
 
 class TreeReadUnavailable(RuntimeError):
