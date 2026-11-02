@@ -103,6 +103,7 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
         .placeholder_text(tr("wireguard-path", &[]))
         .hexpand(true)
         .build();
+    accessible_name(&filename, &tr("wireguard-path", &[]));
     filename.set_widget_name("vpn-import-path");
     page.append(&filename);
     let import = button(&tr("wireguard-import", &[]), feedback);

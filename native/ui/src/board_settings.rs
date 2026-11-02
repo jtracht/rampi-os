@@ -42,6 +42,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
         .placeholder_text(tr("board-source-input", &[]))
         .text(&conf.borrow().board_source)
         .build();
+    accessible_name(&source, &tr("board-source-input", &[]));
     source.set_widget_name("board-source");
     page.append(&source);
     let hint = label("");
@@ -55,6 +56,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
         .placeholder_text(tr("board-profile-input", &[]))
         .text(&conf.borrow().board_token_key)
         .build();
+    accessible_name(&profile, &tr("board-profile-label", &[]));
     profile.set_widget_name("board-token-profile");
     credentials.append(&label(&tr("board-profile-label", &[])));
     credentials.append(&profile);
@@ -62,12 +64,14 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
         .placeholder_text(tr("board-columns-input", &[]))
         .text(conf.borrow().board_columns.join(", "))
         .build();
+    accessible_name(&columns, &tr("board-columns-label", &[]));
     page.append(&label(&tr("board-columns-label", &[])));
     page.append(&columns);
     let url = gtk::Entry::builder()
         .placeholder_text(tr("browser-home-input", &[]))
         .text(&conf.borrow().browser_url)
         .build();
+    accessible_name(&url, &tr("browser-home-label", &[]));
     page.append(&label(&tr("browser-home-label", &[])));
     page.append(&url);
     let save = button(&tr("board-save", &[]), f);
@@ -111,11 +115,13 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
         .placeholder_text(tr("board-account-input", &[]))
         .show_peek_icon(true)
         .build();
+    accessible_name(&account, &tr("board-account-input", &[]));
     credentials.append(&account);
     let token = gtk::PasswordEntry::builder()
         .placeholder_text(tr("board-token-input", &[]))
         .show_peek_icon(true)
         .build();
+    accessible_name(&token, &tr("board-token-input", &[]));
     token.set_widget_name("board-token-input");
     credentials.append(&token);
     let store = button(&tr("board-store", &[]), f);

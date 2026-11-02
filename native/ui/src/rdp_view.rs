@@ -26,11 +26,13 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
     form.append(&target);
     let port = gtk::Entry::builder().text("3389").build();
     port.set_widget_name("rdp-port");
+    accessible_name(&port, &tr("rdp-port", &[]));
     form.append(&label(&tr("rdp-port", &[])));
     form.append(&port);
     let fingerprint = gtk::Entry::builder()
         .placeholder_text(tr("rdp-fingerprint-placeholder", &[]))
         .build();
+    accessible_name(&fingerprint, &tr("rdp-fingerprint-label", &[]));
     fingerprint.set_widget_name("rdp-certificate-pin");
     form.append(&label(&tr("rdp-fingerprint-label", &[])));
     form.append(&fingerprint);
@@ -38,6 +40,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
         .placeholder_text(tr("rdp-password-placeholder", &[]))
         .show_peek_icon(true)
         .build();
+    accessible_name(&password, &tr("rdp-password-placeholder", &[]));
     password.set_widget_name("rdp-password");
     form.append(&password);
     let connect = button(&tr("rdp-connect", &[]), f);

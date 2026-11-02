@@ -40,6 +40,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
             .width_chars(12)
             .build();
         entry.set_widget_name(name);
+        accessible_name(&entry, &tr(title, &[]));
         group.append(&entry);
         filters.append(&group);
         entry

@@ -1,8 +1,13 @@
 # Software completion follow-up — 29 October 2026
 
 This is development evidence, not a complete release or Raspberry Pi hardware
-certification. The accepted score remains **91/95 (95.8%)**. The published,
-independently verified image remains **v0.6.0-dev.5**; dev.6 is not published.
+certification. The accepted score is now **92/95 (96.8%)** after the separately documented
+[Windows software-area acceptance](native-dev6-windows-software-acceptance.md). The published,
+independently verified image is now **v0.6.0-dev.6** (release run
+`40892544298`, source `3ae8c2db84eb2f7b96fc87bf9bd75b17bb466d79`).
+All 28 public assets, server digests, complete source archives and actual
+graphical image evidence passed independent verification. This does not close
+the remaining complete-area acceptance below.
 
 ## Explicit Windows test boundary
 
@@ -81,17 +86,115 @@ separate captures proving that both the personal and system-wide GTK reduced
 motion preferences freeze the contour. Hidden choice-list setup no
 longer triggers selection sounds.
 
-These are component proofs. Current source must still pass final native CI on
-both architectures and a fresh release image before publication.
+These component proofs are now followed by successful final main CI
+`40880569312` / `40880569440` and fresh release-image run `40892544298` for
+source `3ae8c2db84eb2f7b96fc87bf9bd75b17bb466d79`. The independently downloaded
+Windows package contains the exact tested installer SHA256
+`a9190468edcbed8a47ce68a6ccc977d4389a74b2cf4b65899a30b2dfb77d39ca`.
+This closes the source/package association, while the remaining complete-area
+review below remains explicit.
 
 ## Remaining complete-area acceptance
 
 1. Real virtual Bluetooth HID keyboard/mouse reports through the kernel input
    path, including reconnect/forget and isolation.
 2. Complete input/layout edge cases through that same actual input path.
-3. Integrate the now verified native Windows component evidence after final
-   source-bound CI; personal and external Windows hosts remain excluded.
-4. Complete interaction/accessibility/performance review across supported sizes.
+3. Complete interaction/accessibility/performance review across supported sizes.
+
+The Windows source/package association is now complete in the separate dev6
+software-area record. Personal and external Windows hosts remain excluded.
 
 No AI integrations, model calls, physical tests, external Windows host or new
-recurring task is introduced by this work. No additional score is claimed.
+recurring task is introduced by this work. Native input component trials alone
+claim no additional score; the Windows area increase has its own complete
+source, CI and published-package association above.
+
+## Configurable virtual HID peer follow-up
+
+`scripts/virtual/bluetooth-hid-peer.py` promotes the existing pinned Bumble
+application fixture into a reproducible source file. It accepts bounded HID key
+usages and modifier bytes, always sends a release report, and refuses execution
+outside the designated root QEMU fixture. It reuses the SDK's report map, SDP
+objects and protocol implementation. Its extended fixture lifetime accommodates
+actual GUI navigation without changing product timeouts. The new peer still
+requires real GUI/input integration and fresh source-bound acceptance; no new
+score or complete-area acceptance is claimed.
+
+The configurable peer has passed actual kernel keyboard/mouse press/release,
+reconnect and bond removal in a development guest. Raw libinput traces and
+source hashes were independently rechecked under
+`artifacts/hid-peer-configurable-20261029/component-verified.json`. The guest
+was reused, so this is component evidence only. The joined GUI/HID trial first
+failed because its test coordinates assumed two visible BlueZ adapters; the
+SDK owns the second controller and only one adapter is visible. Failed original
+files remain retained; correcting the driver does not establish product success.
+
+## Explicit profile connection after pairing
+
+The joined real SDK/GUI trial exposed a production shortcut: the UI returned
+without calling BlueZ Connect whenever Device1.Connected was already true.
+Pairing can establish the ACL link while HID control/interrupt channels still
+need connecting. The shortcut has been removed for Connect; repeated pairing
+retains its existing paired-device guard. BlueZ remains responsible for profiles,
+authorization and protocol handling.
+
+The existing executable GTK/BlueZ contract now starts with Connected=true,
+selects the real page's device and invokes its Verbinden action. The test
+requires one actual Connect method call at the fixture service, while existing
+adapter selection and discovery-lifetime assertions remain intact. The new
+regression check passes, as do the local Rust build and Clippy. The subsequent
+real HID/GTK trial remains separate from this contract result. No completed
+Bluetooth area, fresh-image acceptance or additional percentage is claimed.
+
+The joined development trial now passes actual GUI pair/trust/connect, exact
+Bluetooth HID text in a real GTK entry (clipboard readback equals `a`), and an
+actual HID mouse click returning to the category page. Its public PNGs and
+source/program hashes were independently checked under
+`artifacts/bluetooth-hid-ui-joined-mouse-width-20261029/component-verified.json`.
+Earlier mouse reports were too short for the unchanged SDK report map's signed
+16-bit axes; the fixture now packs those fields with the ordinary struct API.
+The old logs proved motion, not the intended displacement or GUI click, and
+remain preserved. This successful joined guest was reused and is still excluded
+from fresh complete-area acceptance. Six-layout/two-user/reconnect/forget work
+is in development; no Bluetooth or keyboard point has been awarded.
+
+
+## Actual GTK accessibility and input follow-up — 1 November 2026
+
+The complete CI and native runs for `316185d0dc18aa92d4c65761cf9fe5016b7070e0`
+passed on both architectures. Downloaded native, PAM/login, radio and seven
+package receipts were independently checked with frozen source under
+`artifacts/acl-profile-ci-316185d/accepted.json`. This closes the component
+regression for explicit profile connection on an existing ACL link, not a
+complete Bluetooth/keyboard area.
+
+The UI now disables mutually conflicting Bluetooth actions during an existing
+operation. The executable GTK/BlueZ contract checks both the actual Connect
+method call and the temporarily disabled controls. Custom dashboard and category
+buttons use GTK's LabelledBy relation to their actual visible captions. Entry
+and password controls have explicit translated accessible names. Actual AT-SPI
+traversal found the previously unnamed radio buttons; updating an unrelated
+string property alone did not fix their computed names. The relation-based fix
+also follows the actual changing visible status.
+
+A new isolated native test opens the actual application in German and English,
+uses its real accessible button actions to navigate Dashboard, categories and
+Host & SSH, and checks all six host field names. Six real rendered screenshots,
+actual process/program hashes and source hashes are independently verified by
+`scripts/check-accessibility-evidence.py`. Deliberately wrong program identity
+and a missing caption were rejected. The native CI requires this test and its
+receipts. Screenshot review also corrected low-contrast selected entry text and
+a German-only Bluetooth error on the English page. These are local development
+components until final fresh source/image acceptance passes.
+
+The six-layout HID trial has exposed and retained unsuccessful original runs.
+The driver now waits for actual BlueZ ACL disconnection and usable GUI controls,
+uses the SDK report map's actual mouse width, and compares only the synthetic
+fixture's real GTK profile text. Clipboard contents cannot prove an empty
+field: Copy may retain a prior value. The installed XKB library identifies an
+unconsumed ordinary Alt shortcut separately from printable AltGr text. The
+fixture requires actual evtest press/release receipts from its designated
+synthetic Bluetooth device, including modifiers, before checking the GTK end.
+No personal input devices or password fields are monitored. All six layouts,
+two real accounts, remote-input completion and final fresh acceptance remain
+outstanding; the accepted score stays **92/95 (96.8%)**.

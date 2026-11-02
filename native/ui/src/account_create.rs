@@ -94,6 +94,7 @@ pub fn open(stack: &gtk::Stack, f: &Feedback) {
     let name = gtk::Entry::builder()
         .placeholder_text(tr("account-new-name", &[]))
         .build();
+    accessible_name(&name, &tr("account-new-name", &[]));
     name.set_widget_name("account-new-name");
     page.append(&name);
     let create = button(&tr("account-start", &[]), f);

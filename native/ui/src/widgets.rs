@@ -96,6 +96,12 @@ impl Feedback {
         }
     }
 }
+/// Name controls whose visible caption is a sibling or a custom button child.
+/// GTK keeps roles, focus, actions and password handling unchanged.
+pub fn accessible_name(widget: &impl IsA<gtk::Accessible>, text: &str) {
+    widget.update_property(&[gtk::accessible::Property::Label(text)]);
+}
+
 pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {
     let b = crate::liquid_button::LiquidButton::with_settings(text, feedback.settings.clone());
     wire_button(&b, feedback);
@@ -123,6 +129,7 @@ pub fn icon_button(text: &str, icon: &str, f: &Feedback) -> gtk::Button {
     text.set_max_width_chars(18);
     content.append(&text);
     b.set_child(Some(&content));
+    b.update_relation(&[gtk::accessible::Relation::LabelledBy(&[text.upcast_ref()])]);
     b.set_valign(gtk::Align::Center);
     b
 }
@@ -220,6 +227,9 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
     content.add_css_class(if dark { "dark-ink" } else { "light-ink" });
     overlay.add_overlay(&content);
     b.set_child(Some(&overlay));
+    b.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
+        heading.upcast_ref()
+    ])]);
     let start = Rc::new(Cell::new(Instant::now()));
     let first_map = Rc::new(Cell::new(true));
     let (clock, first) = (start.clone(), first_map);

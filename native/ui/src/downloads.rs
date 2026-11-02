@@ -45,6 +45,7 @@ pub fn install(session: &webkit6::NetworkSession, stack: &gtk::Stack, f: &Feedba
         let path = gtk::Entry::builder()
             .placeholder_text(tr("downloads-path", &[]))
             .build();
+        accessible_name(&path, &tr("downloads-path", &[]));
         path.set_widget_name("download-path");
         section.append(&path);
         let save = button(&tr("downloads-save", &[]), &feedback);

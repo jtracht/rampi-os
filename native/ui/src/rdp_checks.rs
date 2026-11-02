@@ -304,7 +304,8 @@ pub fn run(app: &gtk::Application, stack: &gtk::Stack, settings: &Shared, feedba
                     crate::rdp_view::open(&stack, &settings, &feedback);
                     until(|| page.is_mapped()).await?;
                     if !std::env::args().any(|a| a == "--mixed-soak-check") {
-                        display.grab_focus();
+                        // Returning through the production page must restore input
+                        // itself; the test must not repair focus on its behalf.
                         type_remote("rampiafterhome").await?;
                         glib::timeout_future(std::time::Duration::from_millis(800)).await;
                     }

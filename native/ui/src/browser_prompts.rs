@@ -23,6 +23,7 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, status: &gtk::Label, 
         let p = page(&s, &tr("browser-message", &[]));
         p.append(&label(dialog.message().as_deref().unwrap_or("")));
         let input = gtk::Entry::new();
+        accessible_name(&input, &tr("browser-message", &[]));
         if dialog.dialog_type() == webkit6::ScriptDialogType::Prompt {
             input.set_text(dialog.prompt_get_default_text().as_deref().unwrap_or(""));
         }
@@ -75,9 +76,11 @@ pub fn install(web: &webkit6::WebView, stack: &gtk::Stack, status: &gtk::Label, 
         let user = gtk::Entry::builder()
             .placeholder_text(tr("browser-username", &[]))
             .build();
+        accessible_name(&user, &tr("browser-username", &[]));
         let password = gtk::PasswordEntry::builder()
             .placeholder_text(tr("browser-credential-placeholder", &[]))
             .build();
+        accessible_name(&password, &tr("browser-credential-placeholder", &[]));
         p.append(&user);
         p.append(&password);
         let no = button(&tr("action-cancel", &[]), &feed);

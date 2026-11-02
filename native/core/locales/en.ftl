@@ -504,3 +504,7 @@ board-data-invalid = The board data is invalid
 board-source-column-invalid = The source column is invalid
 board-card-size-limit = A card exceeds the size limit
 board-data-limit = The Kanban data is too large
+
+browser-address-label = Web address
+
+bluetooth-service-unavailable = Bluetooth service unavailable; the other modules remain usable.

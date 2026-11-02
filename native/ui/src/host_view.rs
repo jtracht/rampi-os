@@ -29,6 +29,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
     ] {
         page.append(&label(name));
         let field = gtk::Entry::new();
+        accessible_name(&field, name);
         field.set_widget_name(&format!("host-{id}"));
         page.append(&field);
         fields.push(field);

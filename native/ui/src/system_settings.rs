@@ -280,6 +280,7 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
     let test = gtk::Entry::builder()
         .placeholder_text(tr("keyboard-test", &[]))
         .build();
+    accessible_name(&test, &tr("keyboard-test", &[]));
     test.set_widget_name("keyboard-try");
     page.append(&test);
     page.append(&label(&tr("display-heading", &[])));

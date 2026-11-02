@@ -45,6 +45,8 @@ fi
 wait "$application_pid" || { cat "$test_home/application.log"; exit 1; }
 cat "$test_home/application.log"
 if grep -q 'Gtk-WARNING' "$test_home/application.log"; then echo 'GTK layout warning in the actual interface.' >&2; exit 1; fi
+# Keep inherited pointer hover from changing this keyboard test's starting tile.
+wlrctl pointer move -10000 -10000
 /build/target/debug/rampi-native --keyboard-test &
 keyboard_pid=$!
 sleep 0.4
@@ -100,6 +102,7 @@ if len(data) < 1000 or peak < 50:
     raise SystemExit(f'Actual native click playback is silent or too quiet: peak={peak}')
 print(f'RAMPI_RUST_SOUND_PCM_OK peak={peak}')
 PY
+python3 tests/rust/test-accessibility.py
 timeout 240 /build/target/debug/rampi-native --performance-test
 if pgrep -x Xorg || pgrep -x Xwayland || pgrep -x startx; then echo 'Unerlaubter X11-Prozess.' >&2; exit 1; fi
 echo RAMPI_WAYLAND_WITHOUT_X11_OK

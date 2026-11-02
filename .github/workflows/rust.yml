@@ -25,7 +25,8 @@ jobs:
           - runner: ubuntu-24.04-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
+    # Includes six additional real PAM/HID layout sessions on both architectures.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: docker build -t rampi-rust-dev -f tests/rust/Dockerfile .
@@ -179,10 +180,11 @@ jobs:
         run: |
           set -euo pipefail
           docker build -f tests/virtual/Dockerfile -t rampi-virtual-tools .
-          docker run --rm --memory=3g --memory-swap=3g --cpus=4 -v "$PWD:/app" -v rampi-rust-build:/build:ro rampi-virtual-tools python3 scripts/test-virtual-linux.py --native-session-binary /build/target/debug/rampi-native --timeout 1800
+          docker run --rm --memory=3g --memory-swap=3g --cpus=4 -v "$PWD:/app" -v rampi-rust-build:/build:ro rampi-virtual-tools python3 scripts/test-virtual-linux.py --native-session-binary /build/target/debug/rampi-native --timeout 3000
           expected=$(docker run --rm -v rampi-rust-build:/build:ro rampi-rust-dev sha256sum /build/target/debug/rampi-native | cut -d ' ' -f 1)
           docker run --rm -v "$PWD:/src:ro" rampi-rust-dev python3 scripts/check-login-evidence.py artifacts/virtual-login --expected-binary "$expected"
           python3 scripts/check-tailscale-install-evidence.py artifacts/virtual-login
+          docker run --rm -v "$PWD:/src:ro" rampi-rust-dev python3 scripts/check-hid-evidence.py artifacts/virtual-login --expected-binary "$expected"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -209,9 +211,9 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           if [[ "$ARCH" == arm64 ]]; then
-            python3 scripts/check-native-evidence.py artifacts/rust --require-installer
+            docker run --rm --network none -v "$PWD:/src" rampi-rust-dev python3 scripts/check-native-evidence.py artifacts/rust --require-installer
           else
-            python3 scripts/check-native-evidence.py artifacts/rust
+            docker run --rm --network none -v "$PWD:/src" rampi-rust-dev python3 scripts/check-native-evidence.py artifacts/rust
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

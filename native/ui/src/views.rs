@@ -125,6 +125,9 @@ pub fn settings(
         content.append(&text);
         content.append(&label("›"));
         choice.set_child(Some(&content));
+        choice.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
+            heading_label.upcast_ref()
+        ])]);
         let pointer = gtk::EventControllerMotion::new();
         let weak_choice = choice.downgrade();
         pointer.connect_motion(move |_, _, _| {
@@ -271,6 +274,7 @@ fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
         .placeholder_text(tr("wifi-credential-placeholder", &[]))
         .show_peek_icon(true)
         .build();
+    accessible_name(&password, &tr("wifi-credential-placeholder", &[]));
     page.append(&password);
     let buttons = row();
     let connect = button(&tr("network-connect", &[]), f);
@@ -527,6 +531,31 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     let controls = gtk::FlowBox::new();
     controls.set_selection_mode(gtk::SelectionMode::None);
     page.append(&controls);
+    let busy = Rc::new(Cell::new(false));
+    let actions = Rc::new(RefCell::new(
+        Vec::<(glib::WeakRef<gtk::Button>, bool)>::new(),
+    ));
+    let update_actions: Rc<dyn Fn()> = {
+        let (picker, list, busy, actions) = (
+            picker.downgrade(),
+            list.downgrade(),
+            busy.clone(),
+            actions.clone(),
+        );
+        Rc::new(move || {
+            let adapter = picker.upgrade().is_some_and(|p| p.selected_row().is_some());
+            let device = list.upgrade().is_some_and(|l| l.selected_row().is_some());
+            for (button, is_adapter) in actions.borrow().iter() {
+                if let Some(button) = button.upgrade() {
+                    button.set_sensitive(!busy.get() && if *is_adapter { adapter } else { device });
+                }
+            }
+        })
+    };
+    let update = update_actions.clone();
+    picker.connect_row_selected(move |_, _| update());
+    let update = update_actions.clone();
+    list.connect_row_selected(move |_, _| update());
     for (title, op, value) in [
         ("Einschalten", "power", true),
         ("Ausschalten", "power", false),
@@ -539,14 +568,10 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         let title = title.to_string();
         let b = button(&title, f);
         controls.insert(&b, -1);
-        b.set_sensitive(false);
-        let selection = if op == "power" { &picker } else { &list };
-        let action = b.downgrade();
-        selection.connect_row_selected(move |_, selected| {
-            if let Some(action) = action.upgrade() {
-                action.set_sensitive(selected.is_some());
-            }
-        });
+        actions.borrow_mut().push((b.downgrade(), op == "power"));
+        update_actions();
+        let pending = busy.clone();
+        let update = update_actions.clone();
         let (a, l, p, d, stat, s, f) = (
             adapters.clone(),
             list.clone(),
@@ -557,11 +582,17 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             f.clone(),
         );
         b.connect_clicked(move |_| {
+            if pending.get() {
+                return;
+            }
             let selected = l
                 .selected_row()
                 .and_then(|r| d.borrow().get(r.index() as usize).cloned());
+            // BlueZ Connected can mean only the ACL link; Connect must still
+            // reach BlueZ so it can establish missing profiles such as HID.
             if let Some(device) = &selected
-                && ((op == "pair" && device.paired) || (op == "connect" && device.connected))
+                && op == "pair"
+                && device.paired
             {
                 stat.set_text(&tr("bluetooth-connected", &[]));
                 return;
@@ -580,11 +611,22 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
                     .and_then(|r| d.borrow().get(r.index() as usize).map(|d| d.path.clone()))
             };
             if let Some(object) = object {
-                let stat = stat.clone();
+                let (stat, pending, update) = (stat.clone(), pending.clone(), update.clone());
                 let execute = move || {
-                    let (stat, object) = (stat.clone(), object.clone());
+                    if pending.replace(true) {
+                        return;
+                    }
+                    update();
+                    let (stat, object, pending, update) = (
+                        stat.clone(),
+                        object.clone(),
+                        pending.clone(),
+                        update.clone(),
+                    );
                     glib::MainContext::default().spawn_local(async move {
                         status_result(&stat, bus::bluetooth_action(op, &object, value).await);
+                        pending.set(false);
+                        update();
                     });
                 };
                 if op == "trust" || op == "remove" || (op == "power" && !value) {
@@ -963,6 +1005,10 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
         .hexpand(true)
         .build();
     address.set_widget_name("browser-address");
+    accessible_name(&address, &tr("browser-address-label", &[]));
+    accessible_name(&back, &tr("browser-back-tooltip", &[]));
+    accessible_name(&forward, &tr("browser-forward-tooltip", &[]));
+    accessible_name(&reload, &tr("browser-reload-tooltip", &[]));
     back.set_tooltip_text(Some(&tr("browser-back-tooltip", &[])));
     forward.set_tooltip_text(Some(&tr("browser-forward-tooltip", &[])));
     reload.set_tooltip_text(Some(&tr("browser-reload-tooltip", &[])));

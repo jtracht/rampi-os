@@ -9,7 +9,7 @@ Prozentwert vergleichbar. Nach Abzug der früheren drei Anbieter-CLI-Punkte
 beträgt die vergleichbare Basis **78/95 = 82,1 %**. Die entfernten fünf möglichen
 Punkte werden nicht auf andere Bereiche verteilt.
 
-Der belegte Stand beträgt jetzt **91/95 = 95,8 %**.
+Der belegte Stand beträgt jetzt **92/95 = 96,8 %**.
 Das veröffentlichte [v0.6.0-dev.4](https://github.com/jtracht/rampi-os/releases/tag/v0.6.0-dev.4)
 besteht die endgültige native Abnahme beider Architekturen, den frischen Imagebau,
 beide Erstkonto-Verfahren mit normalen Neustarts und die unabhängige Kontrolle
@@ -25,7 +25,7 @@ sind einzeln [begründet und zugeordnet](validation/native-dev4-software-accepta
 | WLAN | 5 | 5 |
 | Bluetooth | 4 | 4 |
 | VPN | 4 | 5 |
-| Windows-Host | 4 | 4 |
+| Windows-Host | 4 | 5 |
 | Remote Desktop und Streaming | 3 | 5 |
 | Kanban | 4 | 5 |
 | Browser | 5 | 5 |
@@ -37,7 +37,7 @@ sind einzeln [begründet und zugeordnet](validation/native-dev4-software-accepta
 | Manuelle Updates | 5 | 5 |
 | Dokumentation | 4 | 5 |
 | Performance | 4 | 5 |
-| **Summe** | **78 / 95** | **91 / 95** |
+| **Summe** | **78 / 95** | **92 / 95** |
 
 Die Bewertungsstufen bleiben unverändert: 0 fehlt, 1 Grundlage, 2 teilweise,
 3 wesentliche Funktionen, 4 weitgehend umgesetzt und softwaregeprüft,
@@ -66,11 +66,16 @@ Der Nutzer hat die Weiterarbeit bis 100 % und Windows-Komponentenprüfungen in
 isolierter GitHub-CI ausdrücklich beauftragt. Persönliche Rechner und externe
 Windows-Testhosts bleiben ausgeschlossen. Weitere Punkte benötigen neue Nachweise.
 
+Die [Windows-Softwareabnahme des veröffentlichten dev6-Releases](validation/native-dev6-windows-software-acceptance.md)
+verbindet die tatsächlichen isolierten SSH-/RDP-Nachweise mit der endgültigen
+Quelle und dem unabhängig heruntergeladenen Hostpaket. Sie schließt den Bereich
+Windows-Host im ausdrücklich vereinbarten CI-Abnahmeweg ab. Die Prüfung eines
+physischen Windows-11-Pro-Rechners wird weiterhin nicht behauptet.
+
 ## Verbleibende Arbeit
 
-Tastatur-/Layout-Randfälle, durchgängige Bluetooth-HID-/Remote-Eingabe,
-tatsächliche Windows-Host-Randfälle und Fokus-/Bedienungsfeinschliff behalten
-jeweils 4/5. Das vollständige 100-Prozent-Ziel ist nicht abgeschlossen.
+Tastatur-/Layout-Randfälle, durchgängige Bluetooth-HID-/Remote-Eingabe und
+Fokus-/Bedienungsfeinschliff behalten jeweils 4/5. Das vollständige 100-Prozent-Ziel ist nicht abgeschlossen.
 `regular_release` bleibt `false`. Hardwaretests, persönliche Rechner, externe
 Windows-Testhosts und Modellanfragen bleiben ausgeschlossen. Isolierte
 Windows-Komponentenprüfungen in GitHub-CI sind ausdrücklich beauftragt.
