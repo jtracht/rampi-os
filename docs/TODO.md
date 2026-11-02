@@ -58,3 +58,11 @@ Layout brach eine Oberflächenabfrage während der Wiederverbindung ab. Die
 Abfrage liefert bei einem veralteten Objekt nun keine Daten und wird durch die
 bestehenden Bereitschaftsprüfungen erneut gelesen. Der Negativtest besteht.
 Das ist weiterhin keine vollständige frische Sechs-Layout-Abnahme.
+
+Weitere Wiederholung: Der deutsche Cursor-Bildvergleich besteht auch mit der
+Vorabversionskennung dev.7. Danach brach die Auswahl der RDP-Kachel an einem
+veralteten Oberflächenobjekt ab. Nur lesende Steuerelementabfragen werden nun
+kurz begrenzt erneut gelesen; Aktionen selbst werden nie wiederholt. Der
+Negativtest für einen unsicheren Klick-Rückgabestatus und doppelte Treffer
+sowie die beiden tatsächlichen Sprach-Kontrollläufe bestehen. Noch keine
+frische vollständige Verbundabnahme.

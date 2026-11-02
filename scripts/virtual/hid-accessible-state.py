@@ -62,24 +62,33 @@ def snapshot():
         return []
 
 
+def read_controls(caption, roles, *, sensitive=False):
+    # Retry only read-side stale proxies. Resolve the named control before
+    # performing any action, so a delayed acknowledgement never clicks twice.
+    deadline = time.monotonic() + 5
+    while True:
+        try:
+            return [
+                node
+                for node, state in visible_objects()
+                if node.name == caption
+                and node.getRoleName() in roles
+                and (not sensitive or state.contains(pyatspi.STATE_SENSITIVE))
+            ]
+        except GLib.GError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.1)
+
+
 def activate_control(caption):
-    matches = [
-        node
-        for node, state in visible_objects()
-        if node.getRoleName() == "button"
-        and node.name == caption
-        and state.contains(pyatspi.STATE_SENSITIVE)
-    ]
+    matches = read_controls(caption, {"button"}, sensitive=True)
     if len(matches) != 1 or not matches[0].queryAction().doAction(0):
         raise RuntimeError("Unique visible GTK button action unavailable: " + caption)
 
 
 def control_bounds(caption):
-    matches = [
-        node
-        for node, _ in visible_objects()
-        if node.name == caption and node.getRoleName() in {"text", "entry", "password text"}
-    ]
+    matches = read_controls(caption, {"text", "entry", "password text"})
     if len(matches) != 1:
         raise RuntimeError("Unique visible GTK field unavailable: " + caption)
     # Wayland does not publish global widget positions (GTK reports 0/0).
