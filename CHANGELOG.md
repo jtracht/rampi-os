@@ -21,6 +21,9 @@
 - Bound each accessibility-tree read and deduplicate repeated objects.
   Discard incomplete snapshots; the existing page deadline owns readiness
   retries. Resolve the synthetic profile field through the same unique selector.
+- Collect Linux CI receipts after returning only the newly created test
+  directory to its invoking user, preserving private seed file modes. Resolve
+  both Bluetooth confirmations through their unique visible controls.
 - The accepted score remains 92/95 (96.8%). This is not a completed release.
 
 ## 0.6.0-dev.6 — published and independently verified development image

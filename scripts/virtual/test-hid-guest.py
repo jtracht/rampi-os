@@ -768,7 +768,13 @@ try:
                 click(200, 264)
                 click(1150, 320)
                 capture("forget-confirmation")
-                click(640, 175)
+                login.as_user(
+                    user,
+                    "python3",
+                    "/opt/rampi-source/scripts/virtual/hid-accessible-state.py",
+                    "--fixture-activate",
+                    "Bewusst bestätigen",
+                )
                 login.wait(
                     lambda: not prop("Address") and (not bond.exists()),
                     "GUI removes actual HID bond",

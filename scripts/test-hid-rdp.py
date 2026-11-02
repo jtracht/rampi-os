@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import secrets
 import subprocess
 import time
@@ -12,6 +13,24 @@ from pathlib import Path
 
 def command(*args, data=None, check=True, timeout=120):
     return subprocess.run(args, input=data, capture_output=True, check=check, timeout=timeout)
+
+
+def claim_test_output(output, image):
+    # The QEMU tool runs as container root. Return only its newly created test
+    # directory to the invoking Linux user; never recurse or relax seed modes.
+    if os.name != "posix" or not output.exists():
+        return
+    if output.is_symlink() or not output.is_dir():
+        raise RuntimeError("Owned test output must remain an ordinary directory")
+    if output.stat().st_uid == os.getuid():
+        return
+    command(
+        "docker", "run", "--rm", "--network", "none",
+        "-v", str(output) + ":/proof", image, "python3", "-c",
+        "import os,sys; "
+        "os.chown('/proof', int(sys.argv[1]), int(sys.argv[2]), follow_symlinks=False)",
+        str(os.getuid()), str(os.getgid()),
+    )
 
 
 def main():
@@ -174,6 +193,7 @@ def main():
                 timeout=options.timeout + 300,
             )
         state = json.loads(command("docker", "inspect", guest).stdout)[0]["State"]
+        claim_test_output(output, options.virtual_image)
         for user, name in servers.items():
             destination = output / "server-receipts" / user
             destination.mkdir(parents=True)
@@ -274,6 +294,7 @@ def main():
         if created:
             command("docker", "network", "rm", network, check=False)
         private.unlink(missing_ok=True)
+        claim_test_output(output, options.virtual_image)
         for filename in ["user-data", "seed.img"]:
             (output / filename).unlink(missing_ok=True)
 

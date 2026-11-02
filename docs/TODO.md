@@ -89,3 +89,13 @@ behält ihre bisherige Frist und übernimmt Wiederholungen; verschachtelte
 Teilinformationen, genau einen Leseversuch und nicht doppelt ausgelöste
 Aktionen sowie beide tatsächlichen Sprachläufe bestehen. Die vollständige
 frische Verbundabnahme dieses korrigierten Prüfhelfers steht noch aus.
+
+Die ursprünglichen CI-Rohprotokolle von 64b9de0 sind erhalten: Beide
+Architekturen erreichten nach den sechs Layouts die abschließende Entkopplung,
+führten deren Bestätigung aber noch über eine alte Bildschirmposition aus.
+Diese Bestätigung verwendet jetzt ebenfalls das eindeutige tatsächliche
+Bedienelement. Zusätzlich übernimmt der Linux-Aufrufer nur den neu erzeugten
+Testordner vom Root-Container, damit Serverbelege gesammelt und eigene Seeds
+gelöscht werden können. Ein echter Linux-Dateisystemtest besteht; Verzeichnismodus
+0755, private Dateimodi 0600 und fremde Zugriffsverweigerung bleiben erhalten.
+Keiner dieser fehlgeschlagenen Läufe zählt als vollständige Abnahme.
