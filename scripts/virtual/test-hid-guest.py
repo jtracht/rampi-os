@@ -381,8 +381,20 @@ def input_devices():
 
 
 def visible_nodes():
+    started = time.monotonic()
     result = login.as_user(user, "python3", str(source / "scripts/virtual/hid-accessible-state.py"))
     rows = json.loads(result.stdout)
+    timing = out / "a11y-query-times.jsonl"
+    reasons = {"read-budget", "depth-limit", "node-limit", "stale-object"}
+    read_status = next(
+        (line.split(" ", 1)[1] for line in result.stderr.decode(errors="replace").splitlines()
+         if line.startswith("A11Y_READ_UNAVAILABLE ") and line.split(" ", 1)[1] in reasons),
+        "complete" if rows else "no-current-frame",
+    )
+    with timing.open("a") as stream:
+        stream.write(json.dumps({"elapsed_seconds": round(time.monotonic() - started, 3),
+                                 "row_count": len(rows), "read_status": read_status}) + "\n")
+    timing.chmod(0o644)
     (out / "last-accessible.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n")
     (out / "last-accessible.json").chmod(0o644)
     return rows

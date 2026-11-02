@@ -16,9 +16,10 @@ if __name__ == "__main__":
 import pyatspi  # noqa: E402
 from gi.repository import Atspi, GLib  # noqa: E402
 
-# Keep ordinary calls at the library default; bound startup probes of stale
-# optional objects without changing the enclosing page/readiness deadlines.
+# Bound library calls separately from a complete read. The enclosing page
+# predicate retains its existing readiness deadline.
 Atspi.set_timeout(800, 2000)
+READ_BUDGET = 15
 
 
 class TreeReadUnavailable(RuntimeError):
@@ -26,19 +27,21 @@ class TreeReadUnavailable(RuntimeError):
 
 
 def visible_objects():
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + READ_BUDGET
     seen = set()
 
     def check_budget():
         if time.monotonic() >= deadline:
-            raise TreeReadUnavailable("Accessibility read budget exhausted")
+            raise TreeReadUnavailable("read-budget")
 
     def walk(node, depth=0):
         check_budget()
         if node in seen:
             return
-        if depth > 20 or len(seen) >= 5000:
-            raise TreeReadUnavailable("Accessibility traversal limit reached")
+        if depth > 20:
+            raise TreeReadUnavailable("depth-limit")
+        if len(seen) >= 5000:
+            raise TreeReadUnavailable("node-limit")
         seen.add(node)
         try:
             state = node.getState()
@@ -70,7 +73,9 @@ def snapshot():
             }
             for node, state in visible_objects()
         ]
-    except (GLib.GError, TreeReadUnavailable):
+    except (GLib.GError, TreeReadUnavailable) as error:
+        reason = str(error) if isinstance(error, TreeReadUnavailable) else "stale-object"
+        print("A11Y_READ_UNAVAILABLE " + reason, file=sys.stderr, flush=True)
         # Reconnecting can invalidate a proxy between enumeration and reading.
         # Return no required data; the enclosing readiness check must obtain a
         # complete new snapshot within its unchanged deadline. Never reuse rows.
@@ -80,7 +85,7 @@ def snapshot():
 def read_controls(caption, roles, *, sensitive=False):
     # Retry only read-side stale proxies. Resolve the named control before
     # performing any action, so a delayed acknowledgement never clicks twice.
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + READ_BUDGET
     while True:
         try:
             return [

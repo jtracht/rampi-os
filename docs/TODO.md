@@ -99,3 +99,12 @@ Testordner vom Root-Container, damit Serverbelege gesammelt und eigene Seeds
 gelöscht werden können. Ein echter Linux-Dateisystemtest besteht; Verzeichnismodus
 0755, private Dateimodi 0600 und fremde Zugriffsverweigerung bleiben erhalten.
 Keiner dieser fehlgeschlagenen Läufe zählt als vollständige Abnahme.
+
+Die neue Fünf-Sekunden-Einzelabfrage war im langsamen QEMU-Gast zu knapp:
+Der Screenshot zeigt das gekoppelte Gerät mit verfügbarem Vertrauensknopf,
+aber der Prüfer erhielt leere Daten. Eine einzelne vollständige Abfrage darf
+nun bis zu 15 Sekunden beanspruchen, weiterhin innerhalb der bestehenden
+60-Sekunden-Aufruf- und 90-Sekunden-Seitenfrist. Abfragedauer, Zeilenzahl und
+freigegebener Fehlergrund werden ohne Feldinhalte protokolliert. Die
+Gegenprüfungen und beide tatsächlichen Sprachläufe bestehen erneut. Ein
+vollständiger frischer Nachweis bleibt erforderlich.
