@@ -79,3 +79,13 @@ vollständig durchlaufen. Bei Spanisch endete der Prüfemulator an seiner alten
 40-Minuten-Gesamtgrenze. Seine Gesamtgrenze entspricht jetzt den 6000 Sekunden
 des erweiterten Verbundprüfers; einzelne Antwort-/Verbindungsfristen bleiben
 unverändert. Der gesamte Sechs-Layout-Lauf ist weiterhin nicht abgenommen.
+
+Weitere Eingrenzung: Ein erhaltener Ablaufstapel zeigt eine langsame Zustands-
+abfrage innerhalb des Zugänglichkeitsbaums. Der Prüfhelfer hat jetzt pro
+Lesedurchlauf ein eigenes Budget, besucht identische Objekte nur einmal und
+verwirft bei unvollständiger Abfrage sämtliche Zeilen. Die Seitenprüfung
+behält ihre bisherige Frist und übernimmt Wiederholungen; verschachtelte
+50-fache Leseversuche entfallen. Kontrollierte Gegenprüfungen für Zyklen,
+Teilinformationen, genau einen Leseversuch und nicht doppelt ausgelöste
+Aktionen sowie beide tatsächlichen Sprachläufe bestehen. Die vollständige
+frische Verbundabnahme dieses korrigierten Prüfhelfers steht noch aus.

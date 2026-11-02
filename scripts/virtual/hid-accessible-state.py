@@ -21,21 +21,36 @@ from gi.repository import Atspi, GLib  # noqa: E402
 Atspi.set_timeout(800, 2000)
 
 
+class TreeReadUnavailable(RuntimeError):
+    """A fresh complete accessibility read could not finish within its budget."""
+
+
 def visible_objects():
-    visited = 0
+    deadline = time.monotonic() + 5
+    seen = set()
+
+    def check_budget():
+        if time.monotonic() >= deadline:
+            raise TreeReadUnavailable("Accessibility read budget exhausted")
 
     def walk(node, depth=0):
-        nonlocal visited
-        if depth > 20 or visited >= 5000:
+        check_budget()
+        if node in seen:
             return
-        visited += 1
+        if depth > 20 or len(seen) >= 5000:
+            raise TreeReadUnavailable("Accessibility traversal limit reached")
+        seen.add(node)
         try:
             state = node.getState()
+            check_budget()
             if depth > 1 and not state.contains(pyatspi.STATE_SHOWING):
                 return
             yield node, state
             for child in node:
+                check_budget()
                 yield from walk(child, depth + 1)
+        except TreeReadUnavailable:
+            raise
         except Exception:
             # A disappearing or unsupported subtree cannot supply required data.
             return
@@ -55,7 +70,7 @@ def snapshot():
             }
             for node, state in visible_objects()
         ]
-    except GLib.GError:
+    except (GLib.GError, TreeReadUnavailable):
         # Reconnecting can invalidate a proxy between enumeration and reading.
         # Return no required data; the enclosing readiness check must obtain a
         # complete new snapshot within its unchanged deadline. Never reuse rows.
@@ -75,7 +90,7 @@ def read_controls(caption, roles, *, sensitive=False):
                 and node.getRoleName() in roles
                 and (not sensitive or state.contains(pyatspi.STATE_SENSITIVE))
             ]
-        except GLib.GError:
+        except (GLib.GError, TreeReadUnavailable):
             if time.monotonic() >= deadline:
                 raise
             time.sleep(0.1)
@@ -115,29 +130,22 @@ def main():
         account = pwd.getpwuid(os.getuid())
         if account.pw_name not in {"rampi-hid-one", "rampi-hid-two"} or account.pw_uid < 1000:
             raise SystemExit("Only the designated synthetic HID account field may be read")
-        field = next(
-            (
-                node
-                for node, _ in visible_objects()
-                if node.getRoleName() in {"text", "entry"} and node.name == "Profilname"
-            ),
-            None,
-        )
-        if field is None:
-            raise SystemExit("Actual synthetic profile field unavailable")
+        matches = read_controls("Profilname", {"text", "entry"})
+        if len(matches) != 1:
+            raise SystemExit("Unique actual synthetic profile field unavailable")
+        field = matches[0]
         text = field.queryText()
         print(json.dumps(text.getText(0, text.characterCount), ensure_ascii=False))
         return
     if sys.argv[1:]:
         raise SystemExit("Unsupported accessibility fixture mode")
-    for _ in range(50):
-        rows = snapshot()
-        if any(row["role"] == "frame" and row["name"] == "Rampi" for row in rows):
-            print(json.dumps(rows, ensure_ascii=False))
-            break
-        time.sleep(0.1)
-    else:
-        raise SystemExit("Actual Rampi accessibility tree is missing")
+    # The enclosing page predicate owns readiness and its existing deadline.
+    # One failed read supplies no data; do not nest fifty potentially slow scans
+    # inside a single helper invocation or retain any rows from an earlier scan.
+    rows = snapshot()
+    current_frame = any(row["role"] == "frame" and row["name"] == "Rampi" for row in rows)
+    print(json.dumps(rows if current_frame else [], ensure_ascii=False))
+
 
 
 if __name__ == "__main__":
