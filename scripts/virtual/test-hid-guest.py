@@ -95,38 +95,58 @@ for adapter, address in [("hci0", "00:AA:01:00:00:00"), ("hci1", "00:AA:01:01:00
     else:
         raise RuntimeError("Actual BlueZ fixture adapter not ready: " + adapter)
 subprocess.run(["rfkill", "unblock", "bluetooth"], check=True)
-for adapter in ["hci0", "hci1"]:
-    subprocess.run(
-        [
-            "busctl",
-            "--system",
-            "--timeout=15",
+
+
+def require_power_state(adapter, powered):
+    # The adapter object can appear while BlueZ's automatic enable is pending.
+    # A conflicting Set may fail even though that operation reaches our target.
+    # Actual state, not a successful method return, is the fixture prerequisite.
+    prefix = ["busctl", "--system", "--timeout=15"]
+    target = "/org/bluez/" + adapter
+    desired = "b true" if powered else "b false"
+
+    def observed():
+        result = subprocess.run(
+            prefix + ["get-property", "org.bluez", target, "org.bluez.Adapter1", "Powered"],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        return result.returncode == 0 and result.stdout.strip() == desired
+
+    if observed():
+        return
+    changed = subprocess.run(
+        prefix
+        + [
             "set-property",
             "org.bluez",
-            "/org/bluez/" + adapter,
+            target,
             "org.bluez.Adapter1",
             "Powered",
             "b",
-            "true",
+            "true" if powered else "false",
         ],
-        check=True,
+        capture_output=True,
+        text=True,
+        timeout=20,
     )
-for module in ["uhid"]:
-    subprocess.run(["modprobe", module], check=True)
-subprocess.run(
-    [
-        "busctl",
-        "--system",
-        "set-property",
-        "org.bluez",
-        "/org/bluez/hci1",
-        "org.bluez.Adapter1",
-        "Powered",
-        "b",
-        "false",
-    ],
-    check=True,
-)
+    deadline = time.monotonic() + 45
+    while time.monotonic() < deadline:
+        if peer_emulator.poll() is not None:
+            raise RuntimeError("Virtual controller emulator exited during power initialization")
+        if observed():
+            return
+        time.sleep(0.2)
+    raise RuntimeError(
+        "Actual BlueZ power state not reached: " + adapter + " " + desired + ": " + changed.stderr
+    )
+
+
+require_power_state("hci0", True)
+subprocess.run(["modprobe", "uhid"], check=True)
+# The SDK needs the peer down. Do not first power it on unnecessarily.
+require_power_state("hci1", False)
 if not Path("/opt/rampi-bumble-venv/bin/python").is_file():
     subprocess.run(
         ["apt-get", "install", "-y", "--no-install-recommends", "python3-venv", "git"],

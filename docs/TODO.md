@@ -1,6 +1,6 @@
 # Rampi OS: verbleibende Software-Abnahme
 
-Stand: 1. November 2026. Belegt: **92/95 Punkte (96,8 %)**.
+Stand: 2. November 2026. Belegt: **92/95 Punkte (96,8 %)**.
 Die Liste wird mit tatsächlichen Ergebnissen aktualisiert. Lokale Komponenten-
 prüfungen ersetzen weder die vollständige CI noch die Image-Abnahme.
 
@@ -13,7 +13,12 @@ prüfungen ersetzen weder die vollständige CI noch die Image-Abnahme.
 - [x] Gesamten Nachweisprüfer im vorhandenen SDK mit seiner installierten Bildbibliothek ausführen;
   identische Pflichtprüfungen beibehalten und vorhandene CI-Artefakte damit prüfen.
 - [x] Heruntergeladene frische PAM-/HID-Nachweise beider Architekturen unabhängig prüfen.
+- [x] Zweiten CI-Fehler auf AMD64 eingrenzen: virtueller Adapter beim Power-Aufruf noch nicht bereit.
+- [x] Zustandsbasierte Bereitschaftsprüfung entwickeln; dauerhaften falschen Zustand
+  und beendeten Emulator in Negativkontrollen ausdrücklich ablehnen.
 - [ ] Frische native CI auf AMD64 und ARM64 samt sechs Layouts und zwei PAM-Konten bestehen.
+- [x] Abgeschotteten XRDP-Quittungsserver mit tatsächlichem RDP-Client prüfen:
+  empfangene Zeichen, Dashboard-Rückkehr ohne manuelle Fokuskorrektur und Wiederverbindung.
 - [ ] Bluetooth-Eingaben durch die normale integrierte RDP-Oberfläche bis zu einem
   isolierten Linux-XRDP-Testserver prüfen: Zeichen, Modifikatoren, Maus und Wiederverbindung.
 - [ ] Serverseitig nachweisen, dass reservierte Rampi-Tastenkombinationen nicht weitergeleitet werden.

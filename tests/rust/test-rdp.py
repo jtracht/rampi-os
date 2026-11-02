@@ -38,6 +38,32 @@ def server():
     if options.soak:
         Path("/run/rampi-rdp-soak").touch()
     Path("/run/rampi-rdp-probe").write_text(uuid.uuid4().hex)
+    receipts = None
+    if options.joined_hid:
+        import pwd
+
+        # Only synthetic input, on the controller's internal Docker network.
+        # Reuse the standard read-only file server; publish no host ports.
+        Path("/run/rampi-rdp-hid-receipts").touch()
+        account = pwd.getpwnam("rdpuser")
+        directory = Path(account.pw_dir) / ".rampi-hid-receipts"
+        directory.mkdir(mode=0o700)
+        os.chown(directory, account.pw_uid, account.pw_gid)
+        receipts = subprocess.Popen(
+            [
+                "runuser",
+                "-u",
+                "rdpuser",
+                "--",
+                "python3",
+                "-m",
+                "http.server",
+                "8000",
+                "--directory",
+                str(directory),
+            ],
+            stdout=subprocess.DEVNULL,
+        )
     Path("/run/dbus").mkdir(exist_ok=True)
     run("dbus-daemon", "--system", "--fork")
     run(
@@ -82,6 +108,9 @@ def server():
         subprocess.run(["xrdp", "--nodaemon"], check=True)
     finally:
         sessions.terminate()
+        if receipts is not None:
+            receipts.terminate()
+            receipts.wait(timeout=10)
 
 
 def fixture():
@@ -135,12 +164,18 @@ def desktop_fixture():
         font=("DejaVu Sans", 18),
     ).pack(pady=80)
 
+    def receipt_path(name):
+        directory = Path.home()
+        if Path("/run/rampi-rdp-hid-receipts").exists():
+            directory /= ".rampi-hid-receipts"
+        return directory / name
+
     def record(value):
-        with Path.home().joinpath(".rampi-events.jsonl").open("a", encoding="utf-8") as receipt:
+        with receipt_path(".rampi-events.jsonl").open("a", encoding="utf-8") as receipt:
             receipt.write(json.dumps(value, ensure_ascii=False) + "\n")
 
     def submit(_event):
-        with Path.home().joinpath(".rampi-input").open("a") as receipt:
+        with receipt_path(".rampi-input").open("a", encoding="utf-8") as receipt:
             receipt.write(entry.get() + "\n")
         entry.delete(0, "end")
         return "break"
@@ -461,9 +496,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("--image", default="rampi-rust-rdp")
     parser.add_argument("--server-image", default="rampi-rdp-fixture")
+    parser.add_argument("--joined-hid", action="store_true", help="Isolated synthetic HID receipts")
     parser.add_argument("--build-volume", default="rampi-rust-build")
     parser.add_argument("--artifacts", default="artifacts/rust-rdp")
     options = parser.parse_args()
+    if options.joined_hid and not options.server:
+        parser.error("--joined-hid requires the isolated --server fixture")
     if options.server:
         server()
     elif options.fixture:
