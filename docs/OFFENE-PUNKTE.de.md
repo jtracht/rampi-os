@@ -1,10 +1,10 @@
 # Noch offene Punkte
 
 Stand: 3. November 2026. **92/95 Punkte = 96,8 %**.
-Momentaufnahme für Kandidat `21afbcc` (PR 54), kein Abschlussnachweis.
+Momentaufnahme für Kandidat `43e7465` (PR 54), kein Abschlussnachweis.
 Die vorherige Veröffentlichung wurde wegen der gemeldeten Animationen zurückgehalten.
-405 lokale Python-Tests, 12 übersprungen; vollständiger nativer Wayland- und
-isolierter RDP-Lauf bestanden. Die neue CI-/Image-Abnahme steht aus.
+405 lokale Python-Tests, 12 übersprungen, 24 Rust-Core-Tests; vollständiger nativer Wayland- und
+isolierter RDP-Lauf bestanden. Die Seiten speichern jetzt automatisch ohne Speichern-Knöpfe. Die neue CI-/Image-Abnahme steht aus.
 Die [aktualisierte Galerie](SCREENSHOTS.de.md) wird jetzt automatisch aus
 unveränderten und gegen das tatsächlich ausgeführte Programm geprüften Aufnahmen exportiert.
 
