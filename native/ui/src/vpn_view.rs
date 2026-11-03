@@ -13,7 +13,7 @@ pub fn build(stack: &gtk::Stack, feedback: &Feedback) -> gtk::Box {
     let status = label("");
     status.set_widget_name("vpn-status");
     page.append(&status);
-    let refresh = button(&tr("vpn-refresh", &[]), feedback);
+    let refresh = refresh_button(&tr("vpn-refresh", &[]), feedback);
     page.append(&refresh);
     let list = gtk::ListBox::new();
     list.set_widget_name("vpn-profiles");

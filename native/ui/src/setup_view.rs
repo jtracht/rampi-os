@@ -167,7 +167,7 @@ pub fn diagnostics(stack: &gtk::Stack, conf: &Shared, f: &Feedback) -> gtk::Box 
     result.set_selectable(true);
     result.set_widget_name("diagnostics-result");
     page.append(&result);
-    let check = button("Diagnose aktualisieren", f);
+    let check = refresh_button(&rampi_core::i18n::text("diagnostics-refresh", &[]), f);
     page.append(&check);
     let c = conf.clone();
     check.connect_clicked(move |button| {

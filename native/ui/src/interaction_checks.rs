@@ -257,6 +257,39 @@ pub fn run(
                 ensure!(image.storage_type()==gtk::ImageType::Paintable,
                     "Bundled icon silently fell back to a missing-image symbol: {icon}");
             }
+            tabs.set_visible_child_name("wifi");
+            named(&stack.clone().upcast(), "hidden-network-form").unwrap()
+                .downcast::<gtk::Expander>().unwrap().set_expanded(true);
+            settled(&tabs).await?;
+            tabs.set_visible_child_name("system");
+            // Browser and streaming pages are deliberately created on demand.
+            // Exercise their real controls too, without starting a host connection.
+            crate::stream_view::open(&stack, &conf, &f);
+            crate::views::browser(&stack, &conf, &gtk::Label::new(None), &f);
+            stack.set_visible_child_name("settings");
+            settled(&stack).await?;
+            toggle.grab_focus();
+            fn refresh_controls(widget: &gtk::Widget, found: &mut Vec<gtk::Button>) {
+                if let Ok(button) = widget.clone().downcast::<gtk::Button>()
+                    && button.has_css_class("refresh-icon") { found.push(button); }
+                let mut child = widget.first_child();
+                while let Some(item) = child { refresh_controls(&item, found); child = item.next_sibling(); }
+            }
+            let mut refreshes = vec![];
+            refresh_controls(stack.upcast_ref(), &mut refreshes);
+            let captions: Vec<_> = refreshes.iter().filter_map(|b| b.tooltip_text()).collect();
+            for key in ["board-reload", "diagnostics-refresh", "display-refresh", "tailscale-refresh", "bluetooth-refresh", "vpn-refresh", "wifi-adapters", "browser-reload-tooltip", "stream-load"] {
+                let expected = rampi_core::i18n::text(key, &[]);
+                ensure!(captions.iter().any(|value| value.as_str() == expected), "Refresh icon missing for {key}; found {captions:?}");
+            }
+            for button in refreshes {
+                ensure!(button.label().is_none_or(|s| s.is_empty()), "Refresh icon retained visible text");
+                ensure!(button.tooltip_text().is_some_and(|s| !s.trim().is_empty()), "Refresh purpose is missing");
+                let image = named(button.upcast_ref(), "rampi-icon-refresh-cw").context("Refresh is not a bundled icon")?.downcast::<gtk::Image>().unwrap();
+                ensure!(image.widget_name() == "rampi-icon-refresh-cw" && image.storage_type() == gtk::ImageType::Paintable);
+                ensure!(button.is_focusable(), "Refresh action is not keyboard focusable");
+            }
+            println!("RAMPI_REFRESH_ICONS_AND_ACCESSIBLE_PURPOSE_OK");
             conf.borrow_mut().reduce_motion = false;
             delay(600).await;
             let idle_start = crate::widgets::motion_counts();

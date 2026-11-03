@@ -285,7 +285,7 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
     test.set_widget_name("keyboard-try");
     page.append(&test);
     page.append(&label(&tr("display-heading", &[])));
-    let refresh = button(&tr("display-refresh", &[]), f);
+    let refresh = refresh_button(&tr("display-refresh", &[]), f);
     page.append(&refresh);
     let list = column();
     page.append(&list);

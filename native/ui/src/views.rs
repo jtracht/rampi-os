@@ -410,7 +410,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         owned.borrow_mut().take();
     });
     page.append(&label("Bluetooth · BlueZ"));
-    let refresh = button(&tr("bluetooth-refresh", &[]), f);
+    let refresh = refresh_button(&tr("bluetooth-refresh", &[]), f);
     page.append(&refresh);
     page.append(&label("Adapter"));
     let picker = gtk::ListBox::new();
@@ -1137,7 +1137,7 @@ pub fn browser(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedb
     bar.set_widget_name("browser-toolbar");
     let back = button("←", f);
     let forward = button("→", f);
-    let reload = button("↻", f);
+    let reload = refresh_button(&tr("browser-reload-tooltip", &[]), f);
     let address = gtk::Entry::builder()
         .text(&conf.borrow().browser_url)
         .hexpand(true)

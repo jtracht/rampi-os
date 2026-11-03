@@ -510,3 +510,5 @@ autosave-done = Automatisch gespeichert
 autosave-failed = Nicht gespeichert: { $error }
 autosave-description = Änderungen werden automatisch gespeichert. Ungültige Eingaben ersetzen keine vorhandenen Einstellungen.
 autosave-keyring-description = Zugangsdaten werden beim Verlassen des Tokenfelds oder mit Enter automatisch im persönlichen Schlüsselbund gespeichert.
+
+diagnostics-refresh = Diagnose aktualisieren
