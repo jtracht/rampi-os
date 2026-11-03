@@ -197,12 +197,17 @@ def main():
         for user, name in servers.items():
             destination = output / "server-receipts" / user
             destination.mkdir(parents=True)
-            for filename in [".rampi-input", ".rampi-events.jsonl", ".rampi-nonce"]:
+            for filename, public_name in {
+                ".rampi-input": "input.txt",
+                ".rampi-events.jsonl": "events.jsonl",
+                ".rampi-nonce": "nonce.txt",
+                ".rampi-ready": "ready.txt",
+            }.items():
                 command(
                     "docker",
                     "cp",
                     name + ":/home/rdpuser/.rampi-hid-receipts/" + filename,
-                    str(destination / filename),
+                    str(destination / public_name),
                     check=False,
                 )
             for filename, source_path in {
@@ -218,7 +223,7 @@ def main():
                     check=False,
                 )
         public_text = [output / "serial.log"] + list((output / "captures").rglob("*.json"))
-        public_text.extend((output / "server-receipts").rglob("*.log"))
+        public_text.extend(p for p in (output / "server-receipts").rglob("*") if p.is_file())
         public_text.append(root / "artifacts" / ("hid-rdp-" + suffix + ".log"))
         for filename in public_text:
             if filename.is_file() and any(

@@ -8,11 +8,29 @@ import runpy
 from pathlib import Path
 
 
+def verify_server_receipts(directory, user, transcript, nonce, reported_events):
+    server = directory / "server-receipts" / user
+    if (server / "input.txt").read_text(encoding="utf-8").splitlines() != transcript:
+        raise ValueError("Independent actual server input file differs from guest report")
+    if (server / "nonce.txt").read_text(encoding="utf-8").strip() != nonce:
+        raise ValueError("Independent server nonce differs")
+    if (server / "ready.txt").read_text(encoding="utf-8").strip() != nonce:
+        raise ValueError("Independent server application readiness differs")
+    events = [
+        json.loads(line)
+        for line in (server / "events.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    if any(event.get("key") == "Home" for event in events):
+        raise ValueError("Reserved shortcut leaked in independent server file")
+    if events[: len(reported_events)] != reported_events:
+        raise ValueError("Reported remote mouse/key events differ from independent server file")
+
+
 def component(directory, expected_binary):
     base = runpy.run_path(str(Path(__file__).with_name("check-hid-evidence.py")))
     login = runpy.run_path(str(Path(__file__).with_name("check-login-evidence.py")))
     captures = directory / "captures/hid"
-    proof = json.loads((captures / "hid-proof.json").read_text())
+    proof = json.loads((captures / "hid-proof.json").read_text(encoding="utf-8"))
     sessions = base["validate_proof"](proof, expected_binary)
     base["check_cursor_images"](directory / "captures/hid", proof)
     previous, nonces, reported_events = {}, {}, {}
@@ -20,7 +38,10 @@ def component(directory, expected_binary):
         remote = session.get("rdp") or {}
         if remote.get("complete_product_acceptance") is not False or any(
             remote.get(name) is not True
-            for name in ["actual_mouse", "reserved_shortcut_suppressed", "actual_reconnect"]
+            for name in [
+                "actual_mouse", "reserved_shortcut_suppressed", "actual_reconnect",
+                "actual_server_application_ready",
+            ]
         ):
             raise ValueError("Actual complete remote HID stage missing")
         user, layout = session["user"], session["layout"]
@@ -79,19 +100,8 @@ def component(directory, expected_binary):
     if len(set(nonces.values())) != 2:
         raise ValueError("Two independent actual remote fixtures required")
     for user, transcript in previous.items():
-        server = directory / "server-receipts" / user
-        if (server / ".rampi-input").read_text().splitlines() != transcript:
-            raise ValueError("Independent actual server input file differs from guest report")
-        if (server / ".rampi-nonce").read_text().strip() != nonces[user]:
-            raise ValueError("Independent server nonce differs")
-        events = [
-            json.loads(line) for line in (server / ".rampi-events.jsonl").read_text().splitlines()
-        ]
-        if any(event.get("key") == "Home" for event in events):
-            raise ValueError("Reserved shortcut leaked in independent server file")
-        if events[: len(reported_events[user])] != reported_events[user]:
-            raise ValueError("Reported remote mouse/key events differ from independent server file")
-    metadata = json.loads((directory / "rdp-fixture-metadata.json").read_text())
+        verify_server_receipts(directory, user, transcript, nonces[user], reported_events[user])
+    metadata = json.loads((directory / "rdp-fixture-metadata.json").read_text(encoding="utf-8"))
     if metadata.get("complete_product_acceptance") is not False:
         raise ValueError("Component proof must not claim whole-product acceptance")
     servers = metadata.get("servers", {})
@@ -114,7 +124,7 @@ def component(directory, expected_binary):
 
 
 def check(directory, expected_binary):
-    metadata = json.loads((directory / "rdp-fixture-metadata.json").read_text())
+    metadata = json.loads((directory / "rdp-fixture-metadata.json").read_text(encoding="utf-8"))
     if metadata.get("development_component_only") is not False:
         raise ValueError("Local joined development runs are not fresh acceptance")
     runpy.run_path(str(Path(__file__).with_name("check-hid-evidence.py")))["check"](

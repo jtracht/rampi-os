@@ -108,6 +108,7 @@ pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {
     b
 }
 pub fn wire_button(b: &gtk::Button, feedback: &Feedback) {
+    b.set_cursor_from_name(Some("pointer"));
     let f = feedback.clone();
     b.connect_clicked(move |_| f.play(true));
     let m = gtk::EventControllerMotion::new();
@@ -166,10 +167,43 @@ pub fn scroll(child: &impl IsA<gtk::Widget>) -> gtk::ScrolledWindow {
         .build()
 }
 pub fn status_result(status: &gtk::Label, result: anyhow::Result<()>) {
-    status.set_text(&match result {
-        Ok(()) => rampi_core::i18n::text("action-completed", &[]),
-        Err(e) => e.to_string(),
+    let (message, class) = match result {
+        Ok(()) => (
+            rampi_core::i18n::text("action-completed", &[]),
+            "feedback-success",
+        ),
+        Err(e) => (e.to_string(), "feedback-error"),
+    };
+    status.set_text(&message);
+    status.remove_css_class("feedback-success");
+    status.remove_css_class("feedback-error");
+    status.add_css_class(class);
+}
+
+/// A completed operation belongs to its page; errors remain available to read.
+pub fn clear_completed_feedback(status: &gtk::Label) {
+    if status.has_css_class("feedback-success") {
+        status.set_text("");
+        status.remove_css_class("feedback-success");
+    }
+}
+
+pub fn install_feedback(stack: &gtk::Stack, status: &gtk::Label) {
+    status.set_widget_name("rampi-status");
+    if !status.text().is_empty() {
+        status.add_css_class("has-feedback");
+    }
+    status.connect_label_notify(|label| {
+        label.remove_css_class("feedback-success");
+        label.remove_css_class("feedback-error");
+        if label.text().is_empty() {
+            label.remove_css_class("has-feedback");
+        } else {
+            label.add_css_class("has-feedback");
+        }
     });
+    let status = status.clone();
+    stack.connect_visible_child_name_notify(move |_| clear_completed_feedback(&status));
 }
 pub struct TileSpec<'a> {
     pub title: &'a str,

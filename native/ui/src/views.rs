@@ -29,6 +29,8 @@ pub fn settings(
         .transition_duration(if conf.borrow().reduce_motion { 0 } else { 150 })
         .build();
     let (s, categories) = (stack.clone(), tabs.clone());
+    let page_status = status.clone();
+    tabs.connect_visible_child_name_notify(move |_| clear_completed_feedback(&page_status));
     back.connect_clicked(move |_| {
         let destination = if s
             .child_by_name("setup")
@@ -777,6 +779,9 @@ pub fn confirm(
         .unwrap_or_else(|| "dashboard".into());
     let page = column();
     let heading = label(title);
+    page.add_css_class("confirmation");
+    page.set_valign(gtk::Align::Start);
+    heading.set_max_width_chars(64);
     heading.add_css_class("heading");
     page.append(&heading);
     page.append(&label(text));

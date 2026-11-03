@@ -178,6 +178,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         })
         .build();
     root.append(&stack);
+    install_feedback(&stack, &status);
     let dashboard_action = gio::SimpleAction::new("dashboard", None);
     let route = stack.clone();
     dashboard_action.connect_activate(move |_, _| {

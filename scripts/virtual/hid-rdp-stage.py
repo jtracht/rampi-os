@@ -86,6 +86,10 @@ def run(login, user, layout, fixture, reply, visible_nodes, capture, kernel_log,
     login.wait(lambda: "Mit Windows verbinden" in names(), "normal RDP form")
     fill("Zertifikat-Fingerabdruck · unabhängig auf Windows prüfen", fixture["fingerprint"])
     connect()
+    login.wait(
+        lambda: fetch(".rampi-ready").strip() == fixture["nonce"],
+        "actual remote application mapped with its normal startup focus",
+    )
     first_line = len(lines())
     observed = []
     for case, code in zip(cases, [30, 21, 44, 3, 18], strict=True):
@@ -171,6 +175,7 @@ def run(login, user, layout, fixture, reply, visible_nodes, capture, kernel_log,
         "reserved_shortcut_suppressed": True,
         "actual_reconnect": True,
         "actual_server_nonce": fixture["nonce"],
+        "actual_server_application_ready": True,
         "remote_start_line": first_line,
         "remote_lines": lines(),
         "remote_events": events(),

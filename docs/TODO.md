@@ -1,8 +1,20 @@
 # Rampi OS: verbleibende Software-Abnahme
 
-Stand: 2. November 2026. Belegt: **92/95 Punkte (96,8 %)**.
+Stand: 3. November 2026. Belegt: **92/95 Punkte (96,8 %)**.
 Die Liste wird mit tatsächlichen Ergebnissen aktualisiert. Lokale Komponenten-
 prüfungen ersetzen weder die vollständige CI noch die Image-Abnahme.
+
+Aktueller [Abschluss- und Testplan](validation/completion-test-plan.md):
+
+- [x] 30 schnelle automatische Negativ-/Regressionstests für den tatsächlichen
+  AT-SPI-Testhelfer ergänzen; durch die vorhandene pytest-CI automatisch erfasst.
+- [x] Gesamte lokale Python-Suite: 375 bestanden, 12 übersprungen; Ruff bestanden.
+- [x] Letzten nativen Lauf auswerten: ARM64-Verbund bestanden; AMD64 scheitert
+  an einer tatsächlichen serverseitigen RDP-Zeichenquittung. Veröffentlichung gestoppt.
+- [ ] AMD64-Ursache anhand Kernel, Serverquittungen und Fokuszustand eingrenzen
+  und korrigieren; keine pauschale Fristverlängerung oder erneute Veröffentlichung.
+- [ ] Gemeinsamen endgültigen Kopf auf beiden Architekturen frisch abnehmen,
+  danach Main-CI, frisches Image und tatsächliche öffentliche Dateien prüfen.
 
 - [x] UX-Korrekturen für Beschriftungen, lesbare Textauswahl und Cursorverhalten entwickeln.
 - [x] Tatsächliche GTK-Oberfläche in Deutsch und Englisch prüfen und Screenshots erfassen.
@@ -115,3 +127,20 @@ Durchlauf vollständige 72–80 Zeilen in 17–33 Sekunden. Das begründet nun e
 und der 90-Sekunden-Seitenprüfung. Die vorherige 15-Sekunden-Variante bleibt als
 fehlgeschlagener Versuch erhalten. Unvollständige Daten bleiben verworfen;
 die komplette frische Prüfung der endgültigen Variante steht weiterhin aus.
+
+## Aktueller UX- und RDP-Abschlussstand
+
+- [x] Gemeinsame Eingabefokus-Farben und eindeutigen Mauszeiger für Schaltflächen entwickeln.
+- [x] Erfolg und Fehler unterscheiden; erledigte Meldungen beim Seiten-/Kategoriewechsel entfernen, Fehler erhalten.
+- [x] Bestätigungen als klar abgegrenzte ganze Seite gestalten; Abbrechen bleibt Standard.
+- [x] Tatsächliches Speichern und Verlassen in Deutsch/Englisch testen; Screenshots und vollständige Sichtbarkeit der Rückmeldung prüfen.
+- [x] Echte isolierte RDP-Prüfung mit Maus, Zwischenablage, Eingaben und Wiederverbindung bestehen.
+- [x] Fehlende Bereitschaftsvoraussetzung des RDP-Testprogramms ergänzen: tatsächliches Mapping und beobachteter Startfokus statt alleiniger Handshake.
+- [x] Unabhängige Serverquittungen unter sichtbaren Exportnamen erhalten und UTF-8 explizit auswerten.
+- [x] Gegenprüfungen für fehlende/veränderte Quittungen, Home-Leck, Ereignisreihenfolge und nicht bereites Eingabefeld bestehen.
+- [ ] Diese Revision frisch auf beiden Architekturen prüfen; Ursache des AMD64-Ausfalls damit bestätigen oder weiter eingrenzen.
+- [ ] Endgültige Main-CI, frisches Image und öffentliche Downloads unabhängig abnehmen.
+
+Lokale Nachweise: 375 Python-Tests bestanden, 12 übersprungen; Rust-Build, Formatierung und Clippy bestanden.
+Zwei tatsächliche Sprachläufe einschließlich neuer Feedback-Bildprüfung und reale isolierte RDP-Kontrolle bestehen.
+Diese Komponentenprüfungen erhöhen den akzeptierten Gesamtstand noch nicht.

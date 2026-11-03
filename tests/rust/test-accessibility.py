@@ -10,7 +10,9 @@ import tempfile
 import time
 from pathlib import Path
 
+import pyatspi
 from gi.repository import GLib
+from PIL import Image
 
 if os.environ.get("RAMPI_TEST_CONTAINER") != "1" or os.environ.get("DISPLAY"):
     raise SystemExit("Isolated Wayland test container required")
@@ -198,6 +200,28 @@ for language in ["de", "en"]:
                     )
                     raise
                 capture(language, "host", rows)
+                back = "← Einstellungen" if language == "de" else "← Settings"
+                click(back)
+                read_until(lambda r: "System" in buttons(r))
+                click("System")
+                save = ("Persönliche Einstellungen speichern" if language == "de"
+                        else "Save personal settings")
+                read_until(lambda r, save=save: save in buttons(r))
+                click(save)
+                done = "Vorgang abgeschlossen." if language == "de" else "Done."
+                rows = read_until(lambda r, done=done: done in [n["name"] for n in r])
+                capture(language, "feedback-saved", rows)
+                notice = next(node for node, _ in visible_objects()
+                              if node.getRoleName() == "label" and node.name == done)
+                bounds = notice.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+                image_path = destination / f"accessibility-{language}-feedback-saved.png"
+                with Image.open(image_path) as png:
+                    if not (0 <= bounds.y and bounds.y + bounds.height <= png.height):
+                        raise RuntimeError("Operation feedback is clipped outside the output")
+                click(back)
+                rows = read_until(lambda r, done=done: "Host & SSH" in buttons(r)
+                                  and done not in [n["name"] for n in r])
+                capture(language, "feedback-cleared", rows)
                 sessions.append(
                     {
                         "language": language,

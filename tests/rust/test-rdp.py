@@ -202,6 +202,17 @@ def desktop_fixture():
     root.bind("<Motion>", lambda e: record({"kind": "motion", "x": e.x_root, "y": e.y_root}))
     root.after(200, entry.focus_force)
 
+    def publish_input_ready():
+        # A completed RDP handshake precedes this application's first mapping.
+        # Observe its normal startup focus; never repair focus in this observer.
+        if root.winfo_ismapped() and root.focus_get() is entry:
+            receipt_path(".rampi-ready").write_text(nonce, encoding="utf-8")
+        else:
+            root.after(50, publish_input_ready)
+
+    if Path("/run/rampi-rdp-hid-receipts").exists():
+        root.after_idle(publish_input_ready)
+
     roundtrip = 0
 
     def clipboard():
