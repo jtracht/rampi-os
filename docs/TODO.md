@@ -173,3 +173,14 @@ Icon-Paintables, tatsächlicher Tastaturbedienung, BlueZ-Leistung/Abbrechen,
 Schalterpixeln und automatischem Bildexport. Gemessen: 0 ruhende und 0 reduzierte
 Callbacks sowie 18 Neuzeichnungsanforderungen in rund 600 ms. Keine neue
 Raspberry-Pi-Framerate wird daraus abgeleitet. Die neue CI-/Image-Abnahme steht aus.
+
+Fortsetzung nach der nativen CI von `5fce58e`: Beide Architekturen haben den
+GTK-/RDP-Komponententeil erreicht; der verbundene QEMU-Lauf scheiterte an alten
+festen Bluetooth-Klickpositionen. Der Screenshot-Upload scheiterte zusätzlich
+an einem unter umask 077 erzeugten öffentlichen Exportordner. Die Korrektur
+verwendet tatsächliche aktuelle GTK-Aktionen und Peer-Zeilengrenzen, ohne die
+Bluetooth-/HID-/RDP-Abnahme oder ihre Fristen zu verkürzen. Ausschließlich neue
+öffentliche Exportdateien und -ordner erhalten lesbare Rechte; Quellen und
+bestehende Elternordner bleiben unverändert. 407 Python-Tests bestehen lokal,
+13 sind unter Windows übersprungen; die 26 gezielten Linux-Prüfungen einschließlich
+der tatsächlichen POSIX-Rechte bestehen. Vollständige neue CI weiterhin nötig.

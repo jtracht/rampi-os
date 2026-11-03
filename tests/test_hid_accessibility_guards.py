@@ -194,7 +194,10 @@ def test_field_uses_window_coordinates_not_wayland_global_origin(helper):
     node = Node("Profilname", "text")
     helper.root.children = [node]
     assert helper.scope["control_bounds"]("Profilname") == {
-        "x": 12, "y": 34, "width": 150, "height": 25,
+        "x": 12,
+        "y": 34,
+        "width": 150,
+        "height": 25,
     }
     assert node.coordinates is helper.api.WINDOW_COORDS
 
@@ -222,3 +225,18 @@ def test_cli_reads_once_and_requires_current_frame(helper, monkeypatch, capsys, 
     rows = json.loads(capsys.readouterr().out)
     assert bool(rows) is current_frame
     assert calls == [True]
+
+
+def test_peer_row_uses_current_label_bounds(helper):
+    node = Node("Pinned SDK · 00:AA:01:01:00:01 · Verbunden", "label")
+    helper.root.children = [node]
+    assert helper.scope["peer_bounds"]("00:AA:01:01:00:01")["x"] == 12
+    assert node.coordinates is helper.api.WINDOW_COORDS
+
+
+def test_ambiguous_or_wrong_peer_is_not_selected(helper):
+    helper.root.children = [Node("SDK · 00:AA:01:01:00:01", "label") for _ in range(2)]
+    with pytest.raises(RuntimeError, match="Unique visible"):
+        helper.scope["peer_bounds"]("00:AA:01:01:00:01")
+    with pytest.raises(RuntimeError, match="Only the pinned"):
+        helper.scope["peer_bounds"]("11:22:33:44:55:66")

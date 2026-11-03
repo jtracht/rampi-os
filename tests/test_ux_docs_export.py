@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import runpy
 import zipfile
 from pathlib import Path
@@ -95,8 +96,29 @@ def test_failed_capture_validation_prevents_all_exports(exporter, monkeypatch):
     def reject(*_):
         raise ValueError("Wrong actual executable")
 
-    monkeypatch.setitem(export.__globals__, "runpy", SimpleNamespace(
-        run_path=lambda _: {"check": reject}))
+    monkeypatch.setitem(
+        export.__globals__, "runpy", SimpleNamespace(run_path=lambda _: {"check": reject})
+    )
     with pytest.raises(ValueError, match="Wrong actual executable"):
         export(captures, output, "a" * 64)
     assert not output.exists()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX artifact ownership is checked on Linux")
+def test_public_gallery_is_readable_under_private_umask_without_exposing_sources(exporter):
+    export, captures, output, _ = exporter
+    for source in captures.iterdir():
+        source.chmod(0o600)
+    parent_mode = output.parent.stat().st_mode & 0o777
+    previous = os.umask(0o077)
+    try:
+        export(captures, output, "a" * 64)
+    finally:
+        os.umask(previous)
+    assert output.stat().st_mode & 0o777 == 0o755
+    assert (output / "images").stat().st_mode & 0o777 == 0o755
+    for path in [*output.rglob("*"), Path(str(output) + ".zip")]:
+        if path.is_file():
+            assert path.stat().st_mode & 0o777 == 0o644
+    assert output.parent.stat().st_mode & 0o777 == parent_mode
+    assert all(path.stat().st_mode & 0o777 == 0o600 for path in captures.iterdir())

@@ -387,13 +387,24 @@ def visible_nodes():
     timing = out / "a11y-query-times.jsonl"
     reasons = {"read-budget", "depth-limit", "node-limit", "stale-object"}
     read_status = next(
-        (line.split(" ", 1)[1] for line in result.stderr.decode(errors="replace").splitlines()
-         if line.startswith("A11Y_READ_UNAVAILABLE ") and line.split(" ", 1)[1] in reasons),
+        (
+            line.split(" ", 1)[1]
+            for line in result.stderr.decode(errors="replace").splitlines()
+            if line.startswith("A11Y_READ_UNAVAILABLE ") and line.split(" ", 1)[1] in reasons
+        ),
         "complete" if rows else "no-current-frame",
     )
     with timing.open("a") as stream:
-        stream.write(json.dumps({"elapsed_seconds": round(time.monotonic() - started, 3),
-                                 "row_count": len(rows), "read_status": read_status}) + "\n")
+        stream.write(
+            json.dumps(
+                {
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "row_count": len(rows),
+                    "read_status": read_status,
+                }
+            )
+            + "\n"
+        )
     timing.chmod(0o644)
     (out / "last-accessible.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n")
     (out / "last-accessible.json").chmod(0o644)
@@ -409,6 +420,49 @@ def action_ready(name):
         r["role"] in {"button", "push button"} and r["name"] == name and r["sensitive"]
         for r in visible_nodes()
     )
+
+
+def activate(caption):
+    login.wait(lambda: action_ready(caption), "actual visible action: " + caption)
+    # Exactly one acknowledged GTK action; never replay an uncertain activation.
+    login.as_user(
+        user,
+        "python3",
+        str(source / "scripts/virtual/hid-accessible-state.py"),
+        "--fixture-activate",
+        caption,
+    )
+
+
+def open_bluetooth():
+    def caption():
+        matches = [
+            r["name"]
+            for r in visible_nodes()
+            if r["role"] == "button" and r["name"].startswith("Bluetooth · ") and r["sensitive"]
+        ]
+        return matches[0] if len(matches) == 1 else None
+
+    login.wait(lambda: bool(caption()), "actual dashboard Bluetooth control")
+    activate(caption())
+
+
+def select_peer():
+    address = "00:AA:01:01:00:01"
+    login.wait(
+        lambda: any(address in name for name in visible_names()),
+        "actual visible pinned SDK HID row",
+    )
+    bounds = json.loads(
+        login.as_user(
+            user,
+            "python3",
+            str(source / "scripts/virtual/hid-accessible-state.py"),
+            "--fixture-peer-bounds",
+            address,
+        ).stdout
+    )
+    click(bounds["x"] + bounds["width"] // 2, bounds["y"] + bounds["height"] // 2)
 
 
 def categories():
@@ -532,17 +586,16 @@ try:
                 len(current) == 1 and current[0]["width"] == 1280 and (current[0]["height"] == 720)
             ):
                 raise RuntimeError("Actual HID fixture precondition failed")
-            click(980, 60)
+            open_bluetooth()
             if not sessions:
-                click(110, 334)
+                activate("Geräte suchen")
                 login.wait(lambda: bool(prop("Address")), "GUI discovers pinned SDK HID peer")
-                time.sleep(2)
-                click(200, 264)
-                click(300, 367)
-                click(460, 320)
+                select_peer()
+                activate("Suche beenden")
+                activate("Koppeln")
                 login.wait(lambda: prop("Paired") == "b true", "GUI HID pairing")
                 login.wait(lambda: action_ready("Dauerhaft vertrauen"), "GUI finishes pairing")
-                click(930, 320)
+                activate("Dauerhaft vertrauen")
                 capture("trust-confirmation")
                 login.as_user(
                     user,
@@ -553,7 +606,7 @@ try:
                 )
                 login.wait(lambda: prop("Trusted") == "b true", "explicit GUI trust")
                 login.wait(lambda: action_ready("Verbinden"), "GUI finishes explicit trust")
-                click(600, 320)
+                activate("Verbinden")
             login.wait(lambda: reply({"action": "state"})["channels"], "real HID channels")
             login.wait(
                 lambda: set(input_devices()) == {"keyboard", "mouse"},
@@ -561,8 +614,8 @@ try:
             )
             if not (bond.is_file() and "[LinkKey]" in bond.read_text()):
                 raise RuntimeError("Actual HID fixture precondition failed")
-            click(200, 264)
-            click(743, 320)
+            select_peer()
+            activate("Trennen")
             login.wait(
                 lambda: reply({"action": "state"})["disconnected"],
                 "GUI disconnects both HID channels",
@@ -572,7 +625,7 @@ try:
             login.wait(
                 lambda: action_ready("Verbinden"), "GUI releases the completed Bluetooth action"
             )
-            click(600, 320)
+            activate("Verbinden")
             login.wait(lambda: reply({"action": "state"})["channels"], "GUI reconnects HID")
             login.wait(
                 lambda: set(input_devices()) == {"keyboard", "mouse"},
@@ -581,7 +634,7 @@ try:
             nodes = input_devices()
             login.as_user(user, "wtype", "-k", "Escape")
             time.sleep(0.5)
-            click(200, 150)
+            activate("Host & SSH")
             bounds = json.loads(
                 login.as_user(
                     user,
@@ -776,9 +829,9 @@ try:
                 }
             )
             if layout == "it":
-                click(980, 60)
-                click(200, 264)
-                click(1150, 320)
+                open_bluetooth()
+                select_peer()
+                activate("Kopplung entfernen")
                 capture("forget-confirmation")
                 login.as_user(
                     user,
