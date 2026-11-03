@@ -56,7 +56,11 @@ keyboard_seat_pid=$!
 keyboard_pid=$!
 wait_keyboard_marker() {
     for _ in $(seq 1 100); do
-        [[ -f "$RAMPI_TEST_ARTIFACTS/$1" ]] && return 0
+        if [[ -f "$RAMPI_TEST_ARTIFACTS/$1" && ! -L "$RAMPI_TEST_ARTIFACTS/$1" ]]; then
+            # Only these two public readiness messages leave the private fixture.
+            chmod 644 "$RAMPI_TEST_ARTIFACTS/$1"
+            return 0
+        fi
         if ! kill -0 "$keyboard_pid" 2>/dev/null; then cat "$test_home/keyboard.log"; return 1; fi
         sleep 0.02
     done
