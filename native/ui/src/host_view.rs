@@ -11,13 +11,21 @@ fn persist(conf: &Shared, candidate: rampi_core::config::Settings) -> anyhow::Re
     Ok(())
 }
 
-pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedback) -> gtk::Box {
+pub fn build(
+    stack: &gtk::Stack,
+    navigation: &gtk::Stack,
+    conf: &Shared,
+    status: &gtk::Label,
+    f: &Feedback,
+) -> gtk::Box {
     let page = column();
     page.append(&label(&tr("host-heading", &[])));
     let profiles = gtk::ListBox::new();
     profiles.set_widget_name("host-profiles");
     page.append(&profiles);
     let editing: Rc<Cell<Option<usize>>> = Rc::new(Cell::new(None));
+    let loading = Rc::new(Cell::new(false));
+    page.append(&label(&tr("autosave-description", &[])));
     let mut fields = vec![];
     for (name, id) in [
         (&tr("host-name", &[]), "name"),
@@ -36,8 +44,9 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
     }
     let fields = Rc::new(fields);
     let load: Rc<dyn Fn(&Host)> = {
-        let fields = fields.clone();
+        let (fields, loading) = (fields.clone(), loading.clone());
         Rc::new(move |host| {
+            loading.set(true);
             for (field, value) in fields.iter().zip([
                 host.name.clone(),
                 host.address.clone(),
@@ -48,11 +57,13 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
             ]) {
                 field.set_text(&value);
             }
+            loading.set(false);
         })
     };
     let refresh: Rc<dyn Fn()> = {
-        let (profiles, conf) = (profiles.clone(), conf.clone());
+        let (profiles, conf, loading) = (profiles.clone(), conf.clone(), loading.clone());
         Rc::new(move || {
+            let was_loading = loading.replace(true);
             while let Some(child) = profiles.first_child() {
                 profiles.remove(&child);
             }
@@ -70,15 +81,73 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
                     host.port
                 )));
             }
+            loading.set(was_loading);
         })
     };
-    let (c, e, l) = (conf.clone(), editing.clone(), load.clone());
-    profiles.connect_row_selected(move |_, row| {
+    let autosave = {
+        let (c, e, stat, r, p, fields) = (
+            conf.clone(),
+            editing.clone(),
+            status.clone(),
+            refresh.clone(),
+            profiles.clone(),
+            fields.clone(),
+        );
+        AutoSave::new(loading.clone(), move || {
+            let result = (|| -> anyhow::Result<()> {
+                let project = e
+                    .get()
+                    .and_then(|i| c.borrow().hosts.get(i).map(|h| h.project.clone()))
+                    .unwrap_or_default();
+                let host = Host {
+                    name: fields[0].text().trim().into(),
+                    address: fields[1].text().trim().into(),
+                    username: fields[2].text().trim().into(),
+                    port: fields[3].text().parse()?,
+                    identity: fields[4].text().trim().into(),
+                    project,
+                    resolution: fields[5].text().trim().into(),
+                };
+                let mut candidate = c.borrow().clone();
+                let index = if let Some(i) = e.get() {
+                    candidate.hosts[i] = host;
+                    i
+                } else {
+                    candidate.hosts.push(host);
+                    candidate.hosts.len() - 1
+                };
+                persist(&c, candidate)?;
+                e.set(Some(index));
+                r();
+                p.select_row(p.row_at_index(index as i32).as_ref());
+                Ok(())
+            })();
+            autosave_result(&stat, result)
+        })
+    };
+    let (c, e, l, save) = (
+        conf.clone(),
+        editing.clone(),
+        load.clone(),
+        autosave.clone(),
+    );
+    profiles.connect_row_selected(move |p, row| {
+        if save.loading.get() {
+            return;
+        }
         if let Some(row) = row {
             let index = row.index() as usize;
+            if e.get() == Some(index) {
+                return;
+            }
+            if !save.flush() {
+                p.select_row(e.get().and_then(|i| p.row_at_index(i as i32)).as_ref());
+                return;
+            }
             if let Some(host) = c.borrow().hosts.get(index) {
                 e.set(Some(index));
                 l(host);
+                p.select_row(p.row_at_index(index as i32).as_ref());
             }
         }
     });
@@ -91,14 +160,13 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
     );
     let actions = column();
     let new = button(&tr("host-new", &[]), f);
-    let save = button(&tr("host-save", &[]), f);
     let activate = button(&tr("host-activate", &[]), f);
     let remove = button(&tr("host-remove", &[]), f);
     let confirm = button(&tr("host-remove-confirm", &[]), f);
     let cancel = button(&tr("host-remove-cancel", &[]), f);
     confirm.set_visible(false);
     cancel.set_visible(false);
-    for b in [&new, &save, &activate, &remove, &confirm, &cancel] {
+    for b in [&new, &activate, &remove, &confirm, &cancel] {
         actions.append(b);
     }
     page.append(&actions);
@@ -111,7 +179,11 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         confirm.clone(),
         cancel.clone(),
     );
+    let save = autosave.clone();
     new.connect_clicked(move |_| {
+        if !save.flush() {
+            return;
+        }
         p.unselect_all();
         e.set(None);
         l(&Host::default());
@@ -119,43 +191,8 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         no.set_visible(false);
     });
     let identity_field = fields[4].clone();
-    let (c, e, stat, r, p) = (
-        conf.clone(),
-        editing.clone(),
-        status.clone(),
-        refresh.clone(),
-        profiles.clone(),
-    );
-    save.connect_clicked(move |_| {
-        let result = (|| -> anyhow::Result<()> {
-            let project = e
-                .get()
-                .and_then(|index| c.borrow().hosts.get(index).map(|host| host.project.clone()))
-                .unwrap_or_default();
-            let host = Host {
-                name: fields[0].text().trim().into(),
-                address: fields[1].text().trim().into(),
-                username: fields[2].text().trim().into(),
-                port: fields[3].text().parse()?,
-                identity: fields[4].text().trim().into(),
-                project,
-                resolution: fields[5].text().trim().into(),
-            };
-            let mut candidate = c.borrow().clone();
-            let index = if let Some(index) = e.get() {
-                candidate.hosts[index] = host;
-                index
-            } else {
-                candidate.hosts.push(host);
-                candidate.hosts.len() - 1
-            };
-            persist(&c, candidate)?;
-            r();
-            p.select_row(p.row_at_index(index as i32).as_ref());
-            Ok(())
-        })();
-        status_result(&stat, result);
-    });
+    autosave.watch(&page, &fields);
+    autosave.routes(&[stack.clone(), navigation.clone()]);
     let (c, e, stat, r, p) = (
         conf.clone(),
         editing.clone(),
@@ -206,6 +243,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
         pending,
         cancel,
     );
+    let save = autosave.clone();
     confirm.connect_clicked(move |yes| {
         let result = (|| -> anyhow::Result<()> {
             let index = q
@@ -226,6 +264,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, status: &gtk::Label, f: &Feedbac
                 candidate.active_host
             };
             persist(&c, candidate)?;
+            save.discard();
             e.set(None);
             r();
             p.select_row(p.row_at_index(c.borrow().active_host as i32).as_ref());

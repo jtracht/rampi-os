@@ -77,7 +77,7 @@ ein Modulwechsel startet keinen zweiten Vorgang.
 Verbindungen werden geschlossen; die Windows-Anmeldung wird dadurch nicht beendet.
 Die Klangwiedergabe verwendet den vorhandenen Pulse-kompatiblen Audiodienst.
 
-Auf derselben Systemseite eine persönliche Tastaturbelegung wählen und anwenden. Andere
+Auf derselben Systemseite eine persönliche Tastaturbelegung wählen; sie wird automatisch gespeichert und angewendet. Andere
 persönliche Compositor-Einstellungen bleiben erhalten. Das Eingabefeld dient zum
 sofortigen Prüfen; bei einer fremden Sitzung gilt die Datei gegebenenfalls erst
 nach der nächsten Rampi-Anmeldung. Die Oberfläche bleibt derzeit deutsch.
@@ -92,9 +92,9 @@ Eintrag oder **Neues Hostprofil**. Trage Profilname, Hostname/VPN-IP,
 Windows-Benutzername, SSH-Port, den Pfad eines vorhandenen persönlichen
 SSH-Schlüssels und die Streaming-Auflösung ein. Alte Projektwerte bleiben im Profil erhalten.
 
-**Hostprofil speichern** validiert und speichert. **Ausgewählten Host verwenden**
+Vollständige, gültige Eingaben werden nach kurzer Tipp-Pause und beim Verlassen automatisch validiert und gespeichert. **Ausgewählten Host verwenden**
 setzt den Host für anschließend gestartete Verbindungen. Ein Wechsel der Auswahl
-verwirft ungespeicherte Formularänderungen. Bereits laufende Terminals behalten
+übernimmt vollständige gültige Änderungen automatisch. Ungültige Eingaben ersetzen kein vorhandenes Profil. Bereits laufende Terminals behalten
 ihre bestehende Verbindung. **Entfernen vorbereiten** verlangt anschließend eine
 Bestätigung; dabei werden weder Schlüsseldateien noch Daten auf Windows gelöscht.
 
@@ -108,7 +108,7 @@ Unterhalb der Hostprofile kannst du einen persönlichen Rampi-Schlüssel mit
 OpenSSH erstellen. Die Passphrase wird im eingebetteten Terminal eingegeben.
 Über **Schlüsselerstellung fortsetzen** kehrst du zum selben Prozess zurück;
 vorhandene Schlüssel werden nicht überschrieben. **Rampi-Schlüssel in Formular
-übernehmen** trägt den Pfad ein; anschließend das Hostprofil speichern.
+übernehmen** trägt den Pfad ein; der gültige Pfad wird automatisch im Hostprofil gespeichert.
 Danach **Aktiven SSH-Schlüssel entsperren** wählen. OpenSSH fragt die Passphrase
 im eingebetteten Terminal ab. **SSH-Entsperren fortsetzen** kehrt zum laufenden
 Vorgang zurück. Nach Erfolg können auch die nichtinteraktiven Hostprüfungen den
@@ -187,7 +187,7 @@ Der Browser verwendet WebKitGTK mit persönlichem Profil. Er unterstützt
 Adresszeile, zurück, vorwärts und neu laden. Unterstützte Webseitenabfragen
 erscheinen als Rampi-Seite. HTTPS-Zertifikatsfehler werden abgewiesen. Navigationen verwenden HTTPS.
 **Downloads** öffnet die integrierte Liste. Prüfe den vollständigen Zielpfad und
-wähle **Download speichern** oder **Download abbrechen**. Vorhandene Dateien werden
+wähle **Herunterladen** oder **Download abbrechen**. Vorhandene Dateien werden
 nicht überschrieben und Dateien nicht automatisch geöffnet. Ohne Zielentscheidung
 wird nach einer Minute abgebrochen; nach Abschluss lässt sich die Liste leeren.
 Weitere moderne Webseiten und Geräteberechtigungen bleiben zu prüfen.
@@ -293,3 +293,17 @@ persönliches Profil. Kennwörter gehören nicht in Hostprofile oder Kanban-Date
 Installer und Versionswechsel übernehmen keine fremden Benutzerprofile.
 
 Installation und Wiederherstellung: [NATIVE-OPERATIONS.de.md](NATIVE-OPERATIONS.de.md).
+
+### Automatisches Speichern
+
+Die Einstellungen benötigen keinen Speichern-Knopf. Schalter, Sprache und
+Tastaturauswahl werden sofort gespeichert; Texteingaben nach 450 ms Tipp-Pause
+oder beim Verlassen des Feldes beziehungsweise der Seite. Ein Hostprofil wird
+erst gespeichert, wenn alle notwendigen Felder gültig sind. Eine ungültige Eingabe
+oder ein Schreibfehler überschreibt keine funktionierenden Einstellungen.
+Die Rückmeldung zeigt „Automatisch gespeichert“ oder den Fehler an.
+
+Kanban-Zugangsdaten werden beim Verlassen des Tokenfeldes oder mit Enter im
+persönlichen Schlüsselbund gespeichert. Bei einem Fehler bleibt die Eingabe zur
+Korrektur erhalten. Kennwörter für Linux und RDP werden weiterhin nicht gespeichert.
+Verbindungsaufbau, Löschvorgänge und Sicherheitsbestätigungen bleiben bewusste Aktionen.

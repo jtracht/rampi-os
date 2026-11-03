@@ -302,10 +302,16 @@ pub fn ui(
                 .downcast::<gtk::PasswordEntry>()
                 .unwrap();
             input.set_text(token);
-            let save = find_button(&page, "Zugangsdaten im Schlüsselbund speichern").unwrap();
-            save.emit_clicked();
+            ensure!(find_button(&page, "Zugangsdaten im Schlüsselbund speichern").is_none());
+            let focus = input.observe_controllers();
+            for i in 0..focus.n_items() {
+                if let Some(controller) = focus.item(i).and_downcast::<gtk::EventControllerFocus>()
+                {
+                    controller.emit_by_name::<()>("leave", &[]);
+                }
+            }
             for _ in 0..300 {
-                if save.is_sensitive() {
+                if input.text().is_empty() {
                     break;
                 }
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
@@ -317,9 +323,8 @@ pub fn ui(
                         == token,
                 "UI did not store the actual keyring secret"
             );
-            find_button(&page, "Datenquelle und Startseite speichern")
-                .unwrap()
-                .emit_clicked();
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
+            ensure!(find_button(&page, "Datenquelle und Startseite speichern").is_none());
             ensure!(
                 conf.borrow().board_kind == "github"
                     && conf.borrow().board_token_key == "native-ui",
@@ -378,17 +383,24 @@ pub fn ui(
                     .set_text(value);
             }
             input.set_text(credentials["gitea"]["token"].as_str().unwrap());
-            save.emit_clicked();
+            let controllers = input.observe_controllers();
+            for i in 0..controllers.n_items() {
+                if let Some(controller) = controllers
+                    .item(i)
+                    .and_downcast::<gtk::EventControllerFocus>()
+                {
+                    controller.emit_by_name::<()>("leave", &[]);
+                }
+            }
             for _ in 0..300 {
-                if save.is_sensitive() {
+                if input.text().is_empty() {
                     break;
                 }
                 glib::timeout_future(std::time::Duration::from_millis(20)).await;
             }
             ensure!(input.text().is_empty(), "Gitea token retained in form");
-            find_button(&page, "Datenquelle und Startseite speichern")
-                .unwrap()
-                .emit_clicked();
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
+            ensure!(find_button(&page, "Datenquelle und Startseite speichern").is_none());
             ensure!(
                 conf.borrow().board_kind == "gitea",
                 "Gitea configuration did not persist"

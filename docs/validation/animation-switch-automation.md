@@ -75,3 +75,31 @@ Prüfsumme des tatsächlich ausgeführten Programms und weisen den virtuellen
 Messumfang ausdrücklich aus. Erst die endgültigen CI-/Image-Nachweise dürfen
 für die Release-Abnahme verwendet werden. Subjektives Bewegungsgefühl und echte
 Pi-Frametimes werden durch diese Softwaremessung nicht behauptet.
+
+## Automatisches Speichern ohne zusätzliche Aktion
+
+Die System-, Sprach-, Tastatur-, Host- und Kanban-Einstellungen besitzen keine
+Speichern-Knöpfe mehr. Schalter/Auswahl werden direkt, Texteingaben mit 450-ms-
+Entprellung und bei Feld-/Seitenwechsel gespeichert. Die Navigation meldet den
+Wechsel vor Ende der Überblendung, damit ausstehende Änderungen sofort gesichert
+werden. Programmatisches Laden erzeugt keine neuen Profile oder Schreibvorgänge.
+Atomare Dateiablage, bestehende Validierung und persönliche Rechte bleiben erhalten.
+
+Die reale GTK-Prüfung verlangt nun zusätzlich:
+
+- automatische Profilanlage über tatsächliche Tastatureingabe ohne Save-Aktion;
+- keine doppelten Profile während der Eingabe;
+- unveränderte vorhandene Datei bei ungültigem Port;
+- sofortiges Sichern einer ausstehenden Änderung beim Seitenwechsel;
+- unveränderte Datei/live Schalter und sichtbaren Fehler nach fehlgeschlagenem
+  Schreiben, anschließend erfolgreiche Wiederherstellung;
+- in beiden Sprachen automatisch gespeicherte Schalter sowie Wiederherstellung
+  nach Rückkehr zur Seite;
+- tatsächliche automatische Schlüsselbundablage der Kanban-Zugänge.
+
+Der Native-Nachweisprüfer verlangt den zusätzlichen erfolgreichen
+`RAMPI_AUTOSAVE_VALIDATION_PAGE_FLUSH_AND_WRITE_FAILURE_OK`-Marker aus dem
+tatsächlich ausgeführten Programm. Die isolierte Cloud-/GTK-Prüfung bestätigt
+die automatische Schlüsselbundablage gegen den echten GNOME-Dienst, HTTPS-
+Verträge von sechs Anbietern und private Offline-Caches. Keine persönlichen
+Konten oder Windows-Testhosts werden verwendet.

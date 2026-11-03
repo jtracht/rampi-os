@@ -403,14 +403,10 @@ pub fn run(
                     std::fs::write(&existing, "preserve")?;
                     path.set_text(&existing.to_string_lossy());
                     let row = path.parent().unwrap();
-                    find_button(&row, "Download speichern")
-                        .unwrap()
-                        .emit_clicked();
+                    find_button(&row, "Herunterladen").unwrap().emit_clicked();
                     ensure!(std::fs::read_to_string(&existing)? == "preserve");
                     path.set_text(&destination.to_string_lossy());
-                    find_button(&row, "Download speichern")
-                        .unwrap()
-                        .emit_clicked();
+                    find_button(&row, "Herunterladen").unwrap().emit_clicked();
                 }
                 for _ in 0..300 {
                     if done.get() {

@@ -38,7 +38,7 @@ pub fn run(
             let system = pages.child_by_name("system").context("No system page")?;
             let keyboard = named(&system, "keyboard-layout").context("No inline layouts")?;
             ensure!(keyboard.is::<gtk::ListBox>(), "Keyboard choices opened a popup");
-            ensure!(find_button(&system, "Apply keyboard layout").is_some());
+            ensure!(find_button(&system, "Apply keyboard layout").is_none());
             let invalid_layout = crate::system_settings::save_keyboard("invalid\nlayout");
             ensure!(invalid_layout.is_err_and(|error| error.to_string() == "Unknown keyboard layout"));
             let unavailable_mode = crate::system_settings::apply("missing-output", "99999x99999").await;
@@ -87,7 +87,8 @@ pub fn run(
                 named(&host, &format!("host-{id}")).context("Missing host field")?
                     .downcast::<gtk::Entry>().ok().context("Host field type")?.set_text(value);
             }
-            find_button(&host, "Save host profile").unwrap().emit_clicked();
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
+            ensure!(find_button(&host, "Save host profile").is_none());
             let saved = rampi_core::config::Settings::load(&rampi_core::config::config_dir()?.join("settings.json"))?;
             ensure!(saved.hosts.len() == 1 && saved.hosts[0].port == 2222
                 && saved.hosts[0].address == "host.example", "English editor did not save the actual profile");
@@ -102,7 +103,7 @@ pub fn run(
             let languages = named(&system, "language-choices").unwrap()
                 .downcast::<gtk::ListBox>().unwrap();
             languages.select_row(languages.row_at_index(0).as_ref());
-            find_button(&system, "Save language for the next login").unwrap().emit_clicked();
+            ensure!(find_button(&system, "Save language for the next login").is_none());
             let path = rampi_core::config::config_dir()?.join("settings.json");
             ensure!(rampi_core::config::Settings::load(&path)?.language == "de");
             // A pending choice must not partially translate the running session.

@@ -4,6 +4,15 @@ Stand: 3. November 2026. Belegt: **92/95 Punkte (96,8 %)**.
 Die Liste wird mit tatsächlichen Ergebnissen aktualisiert. Lokale Komponenten-
 prüfungen ersetzen weder die vollständige CI noch die Image-Abnahme.
 
+Zusätzliche Nutzerkorrektur: keine Speichern-Knöpfe. Schalter und Auswahl
+speichern sofort; vollständige gültige Texteingaben nach 450 ms Tipp-Pause oder
+beim Verlassen. Zugangsdaten werden nach Abschluss des Tokenfelds im bestehenden
+Schlüsselbund abgelegt. Ungültige Daten und fehlgeschlagene Schreibvorgänge dürfen
+keine funktionierenden Einstellungen überschreiben. Die reale GTK-Abnahme prüft
+nun auch automatische Profilanlage ohne Duplikate, Seitenwechsel, ungültige
+Eingaben und Wiederherstellung nach einem Schreibfehler. Neue Aufnahmen und
+exakte CI-/Image-Abnahme bleiben für den aktualisierten Kandidaten erforderlich.
+
 Aktuelle Nutzerkorrektur: Ruckelnde Animationen auf dem Raspberry Pi haben
 Vorrang vor der Veröffentlichung des vorherigen Kandidaten. Der alte
 Release-Fortsetzungslauf bleibt deshalb zurückgestellt. Die neue

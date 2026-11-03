@@ -159,9 +159,21 @@ pub fn run(
             ensure!(pointer_name().as_deref() == Some("none"), "Actual entry cursor remained visible during keyboard input");
             tool("wlrctl", &["pointer", "move", "5", "0"]).await?; delay(50).await;
             ensure!(pointer_name().as_deref() != Some("none"), "Actual entry cursor did not return on pointer motion");
-            tool("wtype", &["-M","ctrl","-k","a","-m","ctrl","Keyboard profile","-k","Tab","localhost","-k","Tab","alice","-k","Tab","-M","ctrl","-k","a","-m","ctrl","2222","-k","Tab","-k","Tab","-M","ctrl","-k","a","-m","ctrl","1280x720","-k","Tab","-k","Tab","-k","Return"]).await?;
-            delay(150).await;
-            ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.name == "Keyboard profile" && conf.borrow().host()?.port == 2222, "Actual Tab/typing/Enter did not save host");
+            tool("wtype", &["-M","ctrl","-k","a","-m","ctrl","Keyboard profile","-k","Tab","localhost","-k","Tab","alice","-k","Tab","-M","ctrl","-k","a","-m","ctrl","2222","-k","Tab","-k","Tab","-M","ctrl","-k","a","-m","ctrl","1280x720","-k","Tab"]).await?;
+            delay(550).await;
+            ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.name == "Keyboard profile" && conf.borrow().host()?.port == 2222, "Actual typing/focus-leave did not automatically save host");
+            ensure!(crate::checks::find_button(&host, "Hostprofil speichern").is_none());
+            let config_path = rampi_core::config::config_dir()?.join("settings.json");
+            let saved_bytes = std::fs::read(&config_path)?;
+            let port = named(&host, "host-port").unwrap().downcast::<gtk::Entry>().unwrap();
+            port.set_text("0"); delay(550).await;
+            ensure!(std::fs::read(&config_path)? == saved_bytes && conf.borrow().host()?.port == 2222, "Invalid autosave replaced a valid profile");
+            port.set_text("2200");
+            tabs.set_visible_child_name("categories");
+            ensure!(rampi_core::config::Settings::load(&config_path)?.host()?.port == 2200, "Page exit lost a pending automatic edit");
+            tabs.set_visible_child_name("host"); settled(&tabs).await?;
+            port.set_text("2222"); delay(550).await;
+            ensure!(conf.borrow().hosts.len() == 1, "Typing created duplicate host profiles");
             for category in ["host", "wifi", "bluetooth", "vpn", "board", "system"] {
                 tool("wtype", &["-k", "Escape"]).await?; delay(160).await;
                 ensure!(stack.visible_child_name().as_deref() == Some("settings") && tabs.visible_child_name().as_deref() == Some("categories"), "Back must return to the category overview");
@@ -232,7 +244,6 @@ pub fn run(
             ensure!(app.windows().len() == 1);
             std::fs::write(directory.join("interaction-geometry.json"), serde_json::to_vec_pretty(&*records.borrow())?)?;
             std::fs::set_permissions(directory.join("interaction-geometry.json"), std::fs::Permissions::from_mode(0o644))?;
-            std::fs::remove_file(rampi_core::config::config_dir()?.join("settings.json"))?;
             tool("wlr-randr", &["--output","HEADLESS-1","--custom-mode","1280x720"]).await?;
             stack.set_visible_child_name("settings");
             tabs.set_visible_child_name("system");
@@ -281,6 +292,24 @@ pub fn run(
             std::fs::write(&receipt, serde_json::to_vec_pretty(&animation)?)?;
             std::fs::set_permissions(&receipt, std::fs::Permissions::from_mode(0o644))?;
             println!("RAMPI_ANIMATION_IDLE_AND_PAINT_BUDGET_OK {animation}");
+            let system = tabs.child_by_name("system").context("No system page")?;
+            for caption in ["Persönliche Einstellungen speichern", "Sprache für die nächste Anmeldung speichern", "Tastaturbelegung anwenden"] {
+                ensure!(crate::checks::find_button(&system, caption).is_none(), "Settings retained a save action");
+            }
+            let reduce = named(&system, "settings-motion-switch").unwrap().downcast::<gtk::Switch>().unwrap();
+            let previous = conf.borrow().reduce_motion;
+            let path = rampi_core::config::config_dir()?.join("settings.json");
+            let original = std::fs::read(&path)?;
+            std::fs::write(&path, b"{")?;
+            reduce.set_active(!previous);
+            ensure!(conf.borrow().reduce_motion == previous && reduce.is_active() == previous, "Failed automatic save changed the live switch");
+            ensure!(std::fs::read(&path)? == b"{", "Failed automatic save overwrote an existing unreadable file");
+            std::fs::write(&path, original)?;
+            reduce.set_active(!previous);
+            ensure!(rampi_core::config::Settings::load(&path)?.reduce_motion == !previous, "Switch did not automatically persist after recovery");
+            reduce.set_active(previous);
+            println!("RAMPI_AUTOSAVE_VALIDATION_PAGE_FLUSH_AND_WRITE_FAILURE_OK");
+            std::fs::remove_file(&path)?;
             let _ = f;
             keyboard.force_exit(); let _ = keyboard.wait_future().await;
             println!("RAMPI_RUST_INTERACTION_KEYBOARD_OK");
