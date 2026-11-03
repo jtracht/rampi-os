@@ -509,4 +509,4 @@ bluetooth-power = Bluetooth radio
 autosave-done = Saved automatically
 autosave-failed = Not saved: { $error }
 autosave-description = Changes are saved automatically. Invalid input never replaces existing settings.
-autosave-secret = Credentials are saved in your personal keyring when you leave the token field or press Enter.
+autosave-keyring-description = Credentials are saved in your personal keyring when you leave the token field or press Enter.

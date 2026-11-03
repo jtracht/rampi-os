@@ -142,7 +142,7 @@ pub fn build(
     accessible_name(&token, &tr("board-token-input", &[]));
     token.set_widget_name("board-token-input");
     credentials.append(&token);
-    credentials.append(&label(&tr("autosave-secret", &[])));
+    credentials.append(&label(&tr("autosave-keyring-description", &[])));
     page.insert_child_after(&credentials, Some(&hint));
     let update = {
         let (hint, account, credentials, token) = (

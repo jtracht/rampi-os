@@ -509,4 +509,4 @@ bluetooth-power = Bluetooth-Funk
 autosave-done = Automatisch gespeichert
 autosave-failed = Nicht gespeichert: { $error }
 autosave-description = Änderungen werden automatisch gespeichert. Ungültige Eingaben ersetzen keine vorhandenen Einstellungen.
-autosave-secret = Zugangsdaten werden beim Verlassen des Tokenfelds oder mit Enter automatisch im persönlichen Schlüsselbund gespeichert.
+autosave-keyring-description = Zugangsdaten werden beim Verlassen des Tokenfelds oder mit Enter automatisch im persönlichen Schlüsselbund gespeichert.
