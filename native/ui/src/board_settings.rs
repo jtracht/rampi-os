@@ -2,10 +2,17 @@ use crate::widgets::*;
 use gtk::{glib, prelude::*};
 use rampi_core::config;
 use rampi_core::i18n::text as tr;
+use std::{cell::Cell, rc::Rc};
 const KINDS: [&str; 7] = [
     "json", "github", "trello", "jira", "asana", "notion", "gitea",
 ];
-pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedback) -> gtk::Box {
+pub fn build(
+    stack: &gtk::Stack,
+    navigation: &gtk::Stack,
+    conf: &Shared,
+    _status: &gtk::Label,
+    f: &Feedback,
+) -> gtk::Box {
     let page = column();
     let status = label("");
     status.set_widget_name("board-setup-status");
@@ -74,11 +81,11 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
     accessible_name(&url, &tr("browser-home-label", &[]));
     page.append(&label(&tr("browser-home-label", &[])));
     page.append(&url);
-    let save = button(&tr("board-save", &[]), f);
-    page.append(&save);
+    page.append(&label(&tr("autosave-description", &[])));
     let (c, stat, k, p) = (conf.clone(), status.clone(), kind.clone(), profile.clone());
     let source_for_save = source.clone();
-    save.connect_clicked(move |_| {
+    let cols = columns.clone();
+    let autosave = AutoSave::new(Rc::new(Cell::new(false)), move || {
         let result = (|| -> anyhow::Result<()> {
             let mut candidate = c.borrow().clone();
             candidate.board_kind = KINDS
@@ -96,20 +103,31 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
                     "source-validation".into(),
                 )?;
             }
-            candidate.board_columns = columns
+            candidate.board_columns = cols
                 .text()
                 .split(',')
                 .map(str::trim)
                 .filter(|s| !s.is_empty())
                 .map(String::from)
                 .collect();
-            candidate.browser_url = url.text().to_string();
             candidate.save(&config::config_dir()?.join("settings.json"))?;
             *c.borrow_mut() = candidate;
             Ok(())
         })();
-        status_result(&stat, result);
+        autosave_result(&stat, result)
     });
+    autosave.watch(&page, &[source.clone(), profile.clone(), columns.clone()]);
+    autosave.routes(&[stack.clone(), navigation.clone()]);
+    let save = autosave.clone();
+    kind.connect_row_selected(move |_, _| save.changed());
+    let (c, stat, home) = (conf.clone(), status.clone(), url.clone());
+    let browser_save = AutoSave::new(Rc::new(Cell::new(false)), move || {
+        let mut candidate = c.borrow().clone();
+        candidate.browser_url = home.text().trim().into();
+        persist_settings(&c, candidate, &stat)
+    });
+    browser_save.watch(&page, &[url]);
+    browser_save.routes(&[stack.clone(), navigation.clone()]);
 
     let account = gtk::PasswordEntry::builder()
         .placeholder_text(tr("board-account-input", &[]))
@@ -124,8 +142,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
     accessible_name(&token, &tr("board-token-input", &[]));
     token.set_widget_name("board-token-input");
     credentials.append(&token);
-    let store = button(&tr("board-store", &[]), f);
-    credentials.append(&store);
+    credentials.append(&label(&tr("autosave-keyring-description", &[])));
     page.insert_child_after(&credentials, Some(&hint));
     let update = {
         let (hint, account, credentials, token) = (
@@ -166,37 +183,115 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
     update(choice_index(&kind));
     kind.connect_row_selected(move |k, _| update(choice_index(k)));
 
-    let stat = status.clone();
-    store.connect_clicked(move |b| {
-        let Some(kind) = KINDS.get(choice_index(&kind) as usize) else {
-            return;
-        };
-        let source = source.text().trim().to_string();
-        let (name, account_value, secret) = (
-            profile.text().trim().to_string(),
-            account.text().to_string(),
-            token.text().to_string(),
+    let busy = Rc::new(Cell::new(false));
+    let commit_secret: Rc<dyn Fn()> = {
+        let busy = busy.clone();
+        let (stat, kind, source, profile, account, token, credentials) = (
+            status.clone(),
+            kind.clone(),
+            source.clone(),
+            profile.clone(),
+            account.clone(),
+            token.clone(),
+            credentials.clone(),
         );
-        token.set_text("");
-        account.set_text("");
-        b.set_sensitive(false);
-        let (b, stat) = (b.clone(), stat.clone());
-        glib::MainContext::default().spawn_local(async move {
-            status_result(
-                &stat,
-                crate::secret_service::store(&name, kind, &source, &account_value, &secret).await,
+        Rc::new(move || {
+            if busy.get() || token.text().is_empty() {
+                return;
+            }
+            let Some(kind) = KINDS.get(choice_index(&kind) as usize).copied() else {
+                return;
+            };
+            if kind == "json" {
+                return;
+            }
+            let (source_value, name, account_value, secret) = (
+                source.text().trim().to_string(),
+                profile.text().trim().to_string(),
+                account.text().to_string(),
+                token.text().to_string(),
             );
-            b.set_sensitive(true);
-        });
+            busy.set(true);
+            credentials.set_sensitive(false);
+            let (busy, stat, account, token, credentials) = (
+                busy.clone(),
+                stat.clone(),
+                account.clone(),
+                token.clone(),
+                credentials.clone(),
+            );
+            glib::MainContext::default().spawn_local(async move {
+                match crate::secret_service::store(
+                    &name,
+                    kind,
+                    &source_value,
+                    &account_value,
+                    &secret,
+                )
+                .await
+                {
+                    Ok(()) => {
+                        if token.text().as_str() == secret
+                            && account.text().as_str() == account_value
+                        {
+                            token.set_text("");
+                            account.set_text("");
+                        }
+                        autosave_result(&stat, Ok(()));
+                    }
+                    Err(error) => {
+                        autosave_result(&stat, Err(error));
+                    }
+                }
+                busy.set(false);
+                credentials.set_sensitive(true);
+            });
+        })
+    };
+    let focus = gtk::EventControllerFocus::new();
+    let commit = commit_secret.clone();
+    focus.connect_leave(move |_| commit());
+    token.add_controller(focus);
+    let commit = commit_secret.clone();
+    page.connect_unmap(move |_| commit());
+    let keys = gtk::EventControllerKey::new();
+    let commit = commit_secret.clone();
+    keys.connect_key_pressed(move |_, key, _, _| {
+        if key == gtk::gdk::Key::Return {
+            commit();
+            glib::Propagation::Stop
+        } else {
+            glib::Propagation::Proceed
+        }
     });
+    token.add_controller(keys);
     page.append(&label(&tr("board-check-step", &[])));
     let check = button(&tr("board-check", &[]), f);
     let (c, stat) = (conf.clone(), status.clone());
+    let (save, home_save) = (autosave.clone(), browser_save.clone());
+    let (commit, writing, secret_input) = (commit_secret.clone(), busy.clone(), token.clone());
     check.connect_clicked(move |b| {
+        if !save.flush() || !home_save.flush() {
+            return;
+        }
+        commit();
         b.set_sensitive(false);
-        stat.set_text(&tr("board-checking", &[]));
-        let (b, stat, settings) = (b.clone(), stat.clone(), c.borrow().clone());
+        let (b, stat, settings, writing, secret_input) = (
+            b.clone(),
+            stat.clone(),
+            c.borrow().clone(),
+            writing.clone(),
+            secret_input.clone(),
+        );
         glib::MainContext::default().spawn_local(async move {
+            while writing.get() {
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            if !secret_input.text().is_empty() {
+                b.set_sensitive(true);
+                return;
+            }
+            stat.set_text(&tr("board-checking", &[]));
             match crate::board_data::load(settings).await {
                 Ok(data) => stat.set_text(&tr(
                     "board-checked",
@@ -223,8 +318,33 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, _status: &gtk::Label, f: &Feedba
     page.append(&check);
     page.append(&status);
     let open = button(&tr("board-open", &[]), f);
-    let s = stack.clone();
-    open.connect_clicked(move |_| s.set_visible_child_name("kanban"));
+    let (s, routes) = (stack.clone(), navigation.clone());
+    open.connect_clicked(move |b| {
+        if !autosave.flush() || !browser_save.flush() {
+            return;
+        }
+        commit_secret();
+        let (s, routes, b, writing, secret_input) = (
+            s.clone(),
+            routes.clone(),
+            b.clone(),
+            busy.clone(),
+            token.clone(),
+        );
+        b.set_sensitive(false);
+        glib::MainContext::default().spawn_local(async move {
+            while writing.get() {
+                glib::timeout_future(std::time::Duration::from_millis(20)).await;
+            }
+            b.set_sensitive(true);
+            if secret_input.text().is_empty()
+                && s.visible_child_name().as_deref() == Some("settings")
+                && routes.visible_child_name().as_deref() == Some("board")
+            {
+                s.set_visible_child_name("kanban");
+            }
+        });
+    });
     page.append(&open);
     page.append(&label(&tr("board-privacy", &[])));
     page

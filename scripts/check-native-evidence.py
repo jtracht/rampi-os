@@ -28,6 +28,12 @@ streaming = runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.p
 runpy.run_path(str(Path(__file__).with_name("check-accessibility-evidence.py")))["check"](
     directory, streaming["gtk_client_sha256"]
 )
+runpy.run_path(str(Path(__file__).with_name("check-animation-evidence.py")))["check"](
+    directory, streaming["gtk_client_sha256"]
+)
+runpy.run_path(str(Path(__file__).with_name("check-switch-evidence.py")))["check"](
+    directory, streaming["gtk_client_sha256"]
+)
 runpy.run_path(str(Path(__file__).with_name("check-tailscale-evidence.py")))["check"](
     directory / "tailscale-live", expected_binary=streaming["gtk_client_sha256"]
 )
@@ -83,6 +89,8 @@ markers = [
     "RAMPI_RUST_PAIRING_AGENT_OK",
     "RAMPI_RUST_PAIRING_RESTART_OK",
     "RAMPI_RUST_INTERACTION_KEYBOARD_OK",
+    "RAMPI_AUTOSAVE_VALIDATION_PAGE_FLUSH_AND_WRITE_FAILURE_OK",
+    "RAMPI_REFRESH_ICONS_AND_ACCESSIBLE_PURPOSE_OK",
     "RAMPI_RUST_FOUR_EDGE_VISUAL_OK",
     "RAMPI_RUST_KANBAN_PAGE_OK",
     "RAMPI_RUST_VPN_PAGE_OK",

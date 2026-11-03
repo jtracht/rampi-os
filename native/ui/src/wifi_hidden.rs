@@ -11,7 +11,7 @@ pub fn append(page: &gtk::Box, status: &gtk::Label, f: &Feedback) {
     let form = column();
     expander.set_child(Some(&form));
     page.append(&expander);
-    let refresh = button(&tr("wifi-adapters", &[]), f);
+    let refresh = refresh_button(&tr("wifi-adapters", &[]), f);
     form.append(&refresh);
     let choices = inline_choices(&[], f);
     choices.set_widget_name("hidden-adapter");

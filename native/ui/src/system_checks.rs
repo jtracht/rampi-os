@@ -64,21 +64,18 @@ pub fn run(
                 .context("No keyboard picker")?
                 .downcast::<gtk::ListBox>()
                 .unwrap();
-            choices.select_row(choices.row_at_index(0).as_ref());
-            let save =
-                find_button(&page, "Tastaturbelegung anwenden").context("No keyboard action")?;
-            save.emit_clicked();
+            choices.select_row(choices.row_at_index(1).as_ref());
             for _ in 0..100 {
-                if save.is_sensitive() {
-                    break;
-                }
+                if choices.is_sensitive() { break; }
                 glib::timeout_future(std::time::Duration::from_millis(30)).await;
             }
-            ensure!(
-                save.is_sensitive() && status.text().contains("übergeben"),
-                "Compositor reconfigure failed: {}",
-                status.text()
-            );
+            choices.select_row(choices.row_at_index(0).as_ref());
+            for _ in 0..100 {
+                if choices.is_sensitive() { break; }
+                glib::timeout_future(std::time::Duration::from_millis(30)).await;
+            }
+            ensure!(find_button(&page, "Tastaturbelegung anwenden").is_none());
+            ensure!(choices.is_sensitive() && status.text().contains("übergeben"), "Automatic compositor reconfigure failed: {}", status.text());
             let text = std::fs::read_to_string(&file)?;
             ensure!(
                 text.contains("XCURSOR_SIZE=24")

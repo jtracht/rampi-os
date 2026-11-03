@@ -49,6 +49,10 @@ def server():
         directory = Path(account.pw_dir) / ".rampi-hid-receipts"
         directory.mkdir(mode=0o700)
         os.chown(directory, account.pw_uid, account.pw_gid)
+        nonce = directory / ".rampi-nonce"
+        nonce.write_text(Path("/run/rampi-rdp-probe").read_text())
+        os.chown(nonce, account.pw_uid, account.pw_gid)
+        nonce.chmod(0o600)
         receipts = subprocess.Popen(
             [
                 "runuser",
@@ -197,6 +201,17 @@ def desktop_fixture():
     )
     root.bind("<Motion>", lambda e: record({"kind": "motion", "x": e.x_root, "y": e.y_root}))
     root.after(200, entry.focus_force)
+
+    def publish_input_ready():
+        # A completed RDP handshake precedes this application's first mapping.
+        # Observe its normal startup focus; never repair focus in this observer.
+        if root.winfo_ismapped() and root.focus_get() is entry:
+            receipt_path(".rampi-ready").write_text(nonce, encoding="utf-8")
+        else:
+            root.after(50, publish_input_ready)
+
+    if Path("/run/rampi-rdp-hid-receipts").exists():
+        root.after_idle(publish_input_ready)
 
     roundtrip = 0
 

@@ -4,6 +4,8 @@ umask 077
 if [[ "${RAMPI_TEST_CONTAINER:-}" != 1 ]]; then echo 'Nur im isolierten Testcontainer ausführen.' >&2; exit 2; fi
 if [[ -n "${DISPLAY:-}" ]]; then echo 'Der Test darf keinen X11-Server verwenden.' >&2; exit 1; fi
 test_home="$(mktemp -d /tmp/rampi-wayland.XXXXXX)"
+export RAMPI_TEST_ARTIFACTS="${RAMPI_TEST_ARTIFACTS:-$test_home/artifacts}"
+mkdir -p "$RAMPI_TEST_ARTIFACTS"
 export HOME="$test_home/home" XDG_RUNTIME_DIR="$test_home/runtime" XDG_CONFIG_HOME="$test_home/config" XDG_CACHE_HOME="$test_home/cache"
 mkdir -p "$HOME" "$XDG_RUNTIME_DIR" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_HEADLESS_OUTPUTS=1
@@ -47,14 +49,33 @@ cat "$test_home/application.log"
 if grep -q 'Gtk-WARNING' "$test_home/application.log"; then echo 'GTK layout warning in the actual interface.' >&2; exit 1; fi
 # Keep inherited pointer hover from changing this keyboard test's starting tile.
 wlrctl pointer move -10000 -10000
-/build/target/debug/rampi-native --keyboard-test &
+rm -f "$RAMPI_TEST_ARTIFACTS/keyboard-window.ready" "$RAMPI_TEST_ARTIFACTS/keyboard-kanban.ready"
+wtype -s 5000 &
+keyboard_seat_pid=$!
+/build/target/debug/rampi-native --keyboard-test > "$test_home/keyboard.log" 2>&1 &
 keyboard_pid=$!
-sleep 0.4
+wait_keyboard_marker() {
+    for _ in $(seq 1 100); do
+        if [[ -f "$RAMPI_TEST_ARTIFACTS/$1" && ! -L "$RAMPI_TEST_ARTIFACTS/$1" ]]; then
+            # Only these two public readiness messages leave the private fixture.
+            chmod 644 "$RAMPI_TEST_ARTIFACTS/$1"
+            return 0
+        fi
+        if ! kill -0 "$keyboard_pid" 2>/dev/null; then cat "$test_home/keyboard.log"; return 1; fi
+        sleep 0.02
+    done
+    cat "$test_home/keyboard.log"
+    return 1
+}
+wait_keyboard_marker keyboard-window.ready
 # Wrap left from the first tile and right through all three actual tiles.
 wtype -s 100 -k Left -s 80 -k Right -s 80 -k Right -s 80 -k Right -s 80 -k Right -s 80 -k Return
-sleep 1.2
+wait_keyboard_marker keyboard-kanban.ready
 wtype -s 150 -k Escape
-wait "$keyboard_pid"
+wait "$keyboard_pid" || { cat "$test_home/keyboard.log"; exit 1; }
+cat "$test_home/keyboard.log"
+kill "$keyboard_seat_pid" 2>/dev/null || true
+wait "$keyboard_seat_pid" 2>/dev/null || true
 python3 tests/rust/test-dashboard.py
 timeout 45 python3 tests/rust/test-ssh-agent-session.py
 ssh-agent -- python3 tests/rust/test-ssh-setup.py
@@ -107,6 +128,9 @@ timeout 240 /build/target/debug/rampi-native --performance-test
 if pgrep -x Xorg || pgrep -x Xwayland || pgrep -x startx; then echo 'Unerlaubter X11-Prozess.' >&2; exit 1; fi
 echo RAMPI_WAYLAND_WITHOUT_X11_OK
 if [[ -n "${RAMPI_TEST_ARTIFACTS:-}" ]]; then
+    expected_binary="$(sha256sum /build/target/debug/rampi-native | cut -d ' ' -f1)"
+    python3 scripts/export-ux-docs.py --captures "$RAMPI_TEST_ARTIFACTS" \
+        --output "$RAMPI_TEST_ARTIFACTS/ux-docs" --expected-binary "$expected_binary"
     cat /sys/fs/cgroup/memory.peak > "$RAMPI_TEST_ARTIFACTS/memory-peak-bytes.txt"
     chmod 644 "$RAMPI_TEST_ARTIFACTS/memory-peak-bytes.txt"
 fi

@@ -53,10 +53,20 @@ pub(crate) async fn rdp_run(
     rdp_paste: PasteProgress,
 ) {
     loop {
+        // Cold GStreamer discovery is local preparation, not a TLS round trip.
+        // Finish it before opening the socket so neither network deadline nor
+        // the server's initial negotiation wait is consumed by plugin loading.
+        let snd_backend = match RdwSndBackend::new() {
+            Ok(backend) => backend,
+            Err(error) => {
+                let _ = output_event_tx.send(RdpOutputEvent::Terminated(Err(error)));
+                break;
+            }
+        };
         let cb_backend = CbBackend::new(output_event_tx.clone(), rdp_paste.clone());
         let tls_state = match tokio::time::timeout(
             std::time::Duration::from_secs(20),
-            tls_connect_begin(domain, port, config.clone(), cb_backend),
+            tls_connect_begin(domain, port, config.clone(), cb_backend, snd_backend),
         )
         .await
         .unwrap_or_else(|_| Err(Error::Other("RDP TLS connection timed out".into())))
@@ -132,12 +142,12 @@ async fn tls_connect_begin(
     port: u16,
     config: Config,
     cb_backend: CbBackend,
+    snd_backend: RdwSndBackend,
 ) -> Result<TlsConnectState> {
     let stream = TcpStream::connect((domain, port)).await?;
     let server_addr = stream.peer_addr()?;
 
     let mut framed = ironrdp_tokio::TokioFramed::new(stream);
-    let snd_backend = RdwSndBackend::new()?;
 
     let mut connector = ClientConnector::new(config, server_addr)
         .with_static_channel(

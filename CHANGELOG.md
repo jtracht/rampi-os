@@ -1,6 +1,32 @@
 # Changelog
 
-## 0.6.0-dev.6 — software completion work in progress, not published
+## 0.6.0-dev.7 — development work in progress, not published
+
+- Keep the pointer hidden through GTK text-cursor refreshes during keyboard
+  use, then restore the current cursor on actual mouse movement. Local paired
+  Bluetooth screenshots verify the change; full fresh joined CI remains pending.
+- Prepare the existing RDP audio backend before TCP/TLS negotiation without
+  changing the TLS network deadline. Preserve certificate pin verification.
+- Add joined kernel Bluetooth input through the normal Rampi RDP page, with
+  independent isolated-server receipts, reconnect and reserved-shortcut checks.
+  Require complete fresh evidence on both architectures before acceptance.
+- Read actual window-relative accessible control bounds; failed accessibility
+  reads provide no page data for the existing readiness predicates. Export
+  public fixture logs with readable permissions and retain emulator diagnostics.
+- Identify the selected Bluetooth device or adapter on the confirmation page.
+  Show the actual trust/revoke action after refresh; keep cancellation focused
+  and preserve state when cancelling. Real GTK/private-D-Bus checks pass.
+- Align the whole HID emulator lifetime with the extended joined runner.
+  Individual reply, page and network deadlines remain unchanged.
+- Bound each accessibility-tree read and deduplicate repeated objects.
+  Discard incomplete snapshots; the existing page deadline owns readiness
+  retries. Resolve the synthetic profile field through the same unique selector.
+- Collect Linux CI receipts after returning only the newly created test
+  directory to its invoking user, preserving private seed file modes. Resolve
+  both Bluetooth confirmations through their unique visible controls.
+- The accepted score remains 92/95 (96.8%). This is not a completed release.
+
+## 0.6.0-dev.6 — published and independently verified development image
 
 - Match the compositor's C-locale outer whitespace including vertical tabs,
   while continuing to preserve custom layouts and reject non-ASCII key aliases.

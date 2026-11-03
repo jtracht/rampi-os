@@ -2,7 +2,116 @@ use crate::{views, widgets::*};
 use gtk::{gdk, gio, glib, prelude::*};
 use rampi_core::config::{self, Settings};
 use rampi_core::i18n::text as tr;
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
+
+struct HiddenPointer {
+    widget: glib::WeakRef<gtk::Widget>,
+    original: Option<gdk::Cursor>,
+    notify: glib::SignalHandlerId,
+}
+
+#[derive(Default)]
+struct PointerCursor {
+    position: Cell<Option<(f64, f64)>>,
+    hidden: RefCell<Option<HiddenPointer>>,
+}
+
+impl PointerCursor {
+    fn restore(&self) {
+        let previous = self.hidden.borrow_mut().take();
+        if let Some(previous) = previous
+            && let Some(widget) = previous.widget.upgrade()
+        {
+            widget.disconnect(previous.notify);
+            widget.set_cursor(previous.original.as_ref());
+        }
+    }
+
+    fn keyboard(self: &Rc<Self>, window: &gtk::ApplicationWindow) {
+        window.set_cursor_from_name(Some("none"));
+        let weak = window.downgrade();
+        let pointer = self.clone();
+        glib::idle_add_local_once(move || {
+            if let Some(window) = weak.upgrade()
+                && let Some(cursor) = window.cursor()
+                && cursor.name().as_deref() == Some("none")
+            {
+                pointer.hide(&window);
+            }
+        });
+    }
+
+    fn hide(self: &Rc<Self>, window: &gtk::ApplicationWindow) {
+        let Some(surface) = window.surface() else {
+            return;
+        };
+        let Some(device) = gtk::prelude::WidgetExt::display(window)
+            .default_seat()
+            .and_then(|seat| seat.pointer())
+        else {
+            return;
+        };
+        // Wayland may not expose device_position. GTK motion coordinates are
+        // already relative to this window and identify the hovered child.
+        let position = self
+            .position
+            .get()
+            .or_else(|| surface.device_position(&device).map(|(x, y, _)| (x, y)));
+        if let Some((x, y)) = position {
+            self.position.set(Some((x, y)));
+            if let Some(widget) = window.pick(x, y, gtk::PickFlags::DEFAULT) {
+                let same = self
+                    .hidden
+                    .borrow()
+                    .as_ref()
+                    .and_then(|previous| previous.widget.upgrade())
+                    .is_some_and(|previous| previous == widget);
+                if !same {
+                    self.restore();
+                    let owner = Rc::downgrade(self);
+                    let notify = widget.connect_cursor_notify(move |widget| {
+                        let cursor = widget.cursor();
+                        if cursor.as_ref().and_then(|c| c.name()).as_deref() == Some("none") {
+                            return;
+                        }
+                        let Some(owner) = owner.upgrade() else {
+                            return;
+                        };
+                        let masked = {
+                            let mut hidden = owner.hidden.borrow_mut();
+                            if let Some(hidden) = hidden.as_mut()
+                                && hidden.widget.upgrade().is_some_and(|old| old == *widget)
+                            {
+                                hidden.original = cursor;
+                                true
+                            } else {
+                                false
+                            }
+                        };
+                        // GtkText can refresh its own cursor on a synthesized
+                        // crossing after typing, without actual mouse movement.
+                        if masked {
+                            widget.set_cursor_from_name(Some("none"));
+                        }
+                    });
+                    self.hidden.replace(Some(HiddenPointer {
+                        widget: widget.downgrade(),
+                        original: widget.cursor(),
+                        notify,
+                    }));
+                }
+                // Explicit child cursors take precedence over the window.
+                widget.set_cursor_from_name(Some("none"));
+            }
+        }
+        if let Some(cursor) = window.cursor() {
+            surface.set_device_cursor(&device, &cursor);
+        }
+    }
+}
 
 pub fn run() -> glib::ExitCode {
     let app = gtk::Application::builder()
@@ -69,6 +178,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         })
         .build();
     root.append(&stack);
+    install_feedback(&stack, &status);
     let dashboard_action = gio::SimpleAction::new("dashboard", None);
     let route = stack.clone();
     dashboard_action.connect_activate(move |_, _| {
@@ -306,26 +416,13 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         }
     });
     let keys = gtk::EventControllerKey::new();
+    let pointer_cursor = Rc::new(PointerCursor::default());
+    let keyboard_pointer = pointer_cursor.clone();
     keys.set_propagation_phase(gtk::PropagationPhase::Capture);
     let (s, buttons, weak) = (stack.clone(), tile_buttons.clone(), window.downgrade());
     keys.connect_key_pressed(move |_, key, _, mods| {
-        if let Some(w) = weak.upgrade() {
-            w.set_cursor_from_name(Some("none"));
-            // Text and remote widgets can supply a device cursor of their own.
-            // Apply the keyboard choice after GTK dispatches the current event.
-            let window = w.downgrade();
-            glib::idle_add_local_once(move || {
-                if let Some(window) = window.upgrade()
-                    && let Some(cursor) = window.cursor()
-                    && cursor.name().as_deref() == Some("none")
-                    && let Some(surface) = window.surface()
-                    && let Some(pointer) = gtk::prelude::WidgetExt::display(&window)
-                        .default_seat()
-                        .and_then(|seat| seat.pointer())
-                {
-                    surface.set_device_cursor(&pointer, &cursor);
-                }
-            });
+        if let Some(window) = weak.upgrade() {
+            keyboard_pointer.keyboard(&window);
         }
         let page = s.visible_child_name();
         let owns_escape = page.as_deref().is_some_and(|name| {
@@ -368,10 +465,35 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         }
         glib::Propagation::Proceed
     });
+    let release_window = window.downgrade();
+    let released_pointer = pointer_cursor.clone();
+    keys.connect_key_released(move |_, _, _, _| {
+        // GTK can refresh its text cursor when modifiers/keys are released.
+        // Reapply the keyboard policy after that dispatch as well as on press.
+        if let Some(window) = release_window.upgrade() {
+            released_pointer.keyboard(&window);
+        }
+    });
     window.add_controller(keys);
     let pointer = gtk::EventControllerMotion::new();
+    pointer.set_propagation_phase(gtk::PropagationPhase::Capture);
+    let entering = pointer_cursor.clone();
+    let enter_window = window.downgrade();
+    pointer.connect_enter(move |_, x, y| {
+        entering.position.set(Some((x, y)));
+        entering.restore();
+        if let Some(window) = enter_window.upgrade() {
+            window.set_cursor_from_name(None);
+        }
+    });
     let weak = window.downgrade();
-    pointer.connect_motion(move |_, _, _| {
+    pointer.connect_motion(move |_, x, y| {
+        // GTK can refresh hover at the same location during keyboard edits.
+        // Only a changed pointer position switches back to mouse operation.
+        if pointer_cursor.position.replace(Some((x, y))) == Some((x, y)) {
+            return;
+        }
+        pointer_cursor.restore();
         if let Some(w) = weak.upgrade() {
             w.set_cursor_from_name(None);
         }
@@ -437,7 +559,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         crate::rdp_checks::run(app, &stack, &settings, &feedback);
     }
     if std::env::args().any(|a| a == "--keyboard-test") {
-        crate::checks::keyboard(app, &stack);
+        crate::checks::keyboard(app, &window, &stack);
     }
     if std::env::args().any(|a| a == "--interaction-check") {
         crate::interaction_checks::run(app, &window, &stack, &tabs, &settings, &feedback);

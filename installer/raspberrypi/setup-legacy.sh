@@ -13,8 +13,10 @@ if [[ "${VERSION_CODENAME:-}" != trixie || "$(dpkg --print-architecture)" != arm
 fi
 if [[ "$mode" != --image ]]; then
     model="$(tr -d '\0' </proc/device-tree/model 2>/dev/null || true)"
-    if [[ "$model" != *'Raspberry Pi 3 Model B Plus'* && "$model" != *'Raspberry Pi 3 Model B+'* ]]; then
-        echo "Nicht validierte Zielhardware: $model" >&2; exit 1
+    # shellcheck source=installer/raspberrypi/hardware.sh
+    source "$source_root/installer/raspberrypi/hardware.sh"
+    if ! rampi_supported_model "$model"; then
+        echo "Zielhardware: Raspberry Pi 3 oder neuer (ARM64); erkannt: $model" >&2; exit 1
     fi
 fi
 packages=(python3 python3-gi gir1.2-nm-1.0 libqt6svg6 qt6-svg-plugins python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtqml

@@ -5,7 +5,7 @@ Der aktuelle Entwicklungsstand verwendet **Rust, GTK 4 und Wayland/labwc**.
 Die veröffentlichte Version v0.5.0 gehört zum früheren Python-/QML-Prototyp;
 ein reguläres natives Release ist noch nicht freigegeben.
 
-Ziel ist Raspberry Pi OS Lite Trixie ARM64 auf dem Raspberry Pi 3 B+.
+Ziel ist Raspberry Pi OS Lite Trixie ARM64 auf dem Raspberry Pi 3 und neuer.
 Benutzerkonto, Zeitzone und Tastatur zunächst mit Raspberry Pi Imager einrichten.
 Die erste Bluetooth-Kopplung kann eine USB-Tastatur erfordern.
 
@@ -40,3 +40,6 @@ Integrationen nennt die [native Funktionsmatrix](NATIVE-SUPPORT.de.md).
 Physische Hardwaretests sind auf Nutzerwunsch ausgeschlossen. CI, QEMU und
 Docker liefern Softwarebelege; sie bestätigen keine physische Funk-, HDMI-
 oder GPU-Eigenschaft.
+
+Die aktuelle Zielhardware, Ressourcenstrategie und Nachweisgrenzen stehen in
+[Hardware-Unterstützung](HARDWARE.de.md).

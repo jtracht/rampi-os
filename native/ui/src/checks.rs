@@ -74,6 +74,69 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
                 shown().contains("Rust test keyboard") && device_list.row_at_index(1).is_none(),
                 "Devices from another adapter appeared"
             );
+            let power = named(&page, "bluetooth-power")
+                .context("Missing native power switch")?
+                .downcast::<gtk::Switch>()
+                .unwrap();
+            let adapter = crate::bus::bluetooth_snapshot()
+                .await?
+                .0
+                .into_iter()
+                .next()
+                .context("No power fixture adapter")?;
+            let initial = adapter.powered;
+            power.set_active(!initial);
+            let confirmation = stack
+                .child_by_name("confirmation")
+                .context("Power lacks review page")?;
+            ensure!(stack.visible_child_name().as_deref() == Some("confirmation"));
+            find_button(&confirmation, "Abbrechen")
+                .unwrap()
+                .emit_clicked();
+            ensure!(
+                power.is_active() == initial,
+                "Cancelled power switch did not restore actual state"
+            );
+            ensure!(
+                crate::bus::bluetooth_snapshot()
+                    .await?
+                    .0
+                    .into_iter()
+                    .find(|a| a.path == adapter.path)
+                    .unwrap()
+                    .powered
+                    == initial
+            );
+            for desired in [!initial, initial] {
+                power.set_active(desired);
+                find_button(
+                    &stack.child_by_name("confirmation").unwrap(),
+                    "Bewusst bestätigen",
+                )
+                .unwrap()
+                .emit_clicked();
+                let mut reached = false;
+                for _ in 0..150 {
+                    let actual = crate::bus::bluetooth_snapshot()
+                        .await?
+                        .0
+                        .into_iter()
+                        .find(|a| a.path == adapter.path)
+                        .context("Power adapter disappeared")?
+                        .powered;
+                    if actual == desired && power.is_active() == desired && power.is_sensitive() {
+                        reached = true;
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                }
+                ensure!(reached, "Actual BlueZ state and slide switch differ");
+                ensure!(
+                    app.windows().len() == 1,
+                    "Power change opened another window"
+                );
+            }
+            println!("RAMPI_BLUEZ_POWER_SLIDE_AND_CANCEL_OK");
             let connected_device = crate::bus::bluetooth_snapshot()
                 .await?
                 .1
@@ -85,6 +148,90 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
                 "ACL fixture must already be connected"
             );
             device_list.select_row(device_list.row_at_index(0).as_ref());
+            ensure!(
+                !connected_device.trusted,
+                "Trust fixture must start untrusted"
+            );
+            for (caption, grant) in [
+                ("Dauerhaft vertrauen", true),
+                ("Vertrauen entziehen", false),
+            ] {
+                let trust = find_button(&page, caption).context("Exact trust action missing")?;
+                // Cancelling the fully contextual page must not change BlueZ.
+                for apply in [false, true] {
+                    trust.emit_clicked();
+                    ensure!(
+                        stack.visible_child_name().as_deref() == Some("confirmation"),
+                        "Trust action did not open the existing full page"
+                    );
+                    let confirmation = stack.child_by_name("confirmation").unwrap();
+                    let heading = confirmation
+                        .first_child()
+                        .and_downcast::<gtk::Label>()
+                        .context("Confirmation heading missing")?;
+                    let context = heading
+                        .next_sibling()
+                        .and_downcast::<gtk::Label>()
+                        .context("Confirmation device context missing")?;
+                    ensure!(
+                        heading.text() == caption
+                            && context.text().contains(&connected_device.label),
+                        "Trust confirmation lost the exact action or selected device identity"
+                    );
+                    let cancel = find_button(&confirmation, "Abbrechen").unwrap();
+                    ensure!(
+                        cancel.is_focus(),
+                        "Cancel is not the default keyboard choice"
+                    );
+                    find_button(
+                        &confirmation,
+                        if apply {
+                            "Bewusst bestätigen"
+                        } else {
+                            "Abbrechen"
+                        },
+                    )
+                    .unwrap()
+                    .emit_clicked();
+                    let mut actual = !grant;
+                    for _ in 0..100 {
+                        actual = crate::bus::bluetooth_snapshot()
+                            .await?
+                            .1
+                            .into_iter()
+                            .find(|d| d.path == connected_device.path)
+                            .context("Selected BlueZ device disappeared")?
+                            .trusted;
+                        if actual == if apply { grant } else { !grant } {
+                            break;
+                        }
+                        glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                    }
+                    ensure!(
+                        actual == if apply { grant } else { !grant },
+                        "Trust or cancellation changed the wrong state"
+                    );
+                    ensure!(
+                        app.windows().len() == 1,
+                        "Trust action opened another window"
+                    );
+                }
+                for _ in 0..150 {
+                    if find_button(
+                        &page,
+                        if grant {
+                            "Vertrauen entziehen"
+                        } else {
+                            "Dauerhaft vertrauen"
+                        },
+                    )
+                    .is_some()
+                    {
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                }
+            }
             find_button(&page, "Verbinden")
                 .context("No profile connection action")?
                 .emit_clicked();
@@ -192,7 +339,9 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
 
 pub(crate) fn find_button(widget: &gtk::Widget, title: &str) -> Option<gtk::Button> {
     if let Ok(button) = widget.clone().downcast::<gtk::Button>()
-        && button.label().as_deref() == Some(title)
+        && (button.label().as_deref() == Some(title)
+            || (button.has_css_class("refresh-icon")
+                && button.tooltip_text().as_deref() == Some(title)))
     {
         return Some(button);
     }
@@ -1015,7 +1164,7 @@ pub fn setup(
                 field("address", address)?;
                 field("username", user)?;
                 field("port", "2222")?;
-                click(&host, "Hostprofil speichern")?;
+                glib::timeout_future(std::time::Duration::from_millis(550)).await;
             }
             ensure!(conf.borrow().hosts.len() == 2, "Profiles not saved");
             ensure!(
@@ -1023,15 +1172,39 @@ pub fn setup(
                 "Removed project editor remains"
             );
             conf.borrow_mut().hosts[1].project = "C:\\Existing personal project".into();
-            click(&host, "Hostprofil speichern")?;
+            field("name", "Laptop edited")?;
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
             ensure!(
                 conf.borrow().hosts[1].project == "C:\\Existing personal project",
                 "Editing a host lost its legacy personal data"
             );
+            field("port", "2201")?;
+            let picker = named(&host, "host-profiles")
+                .unwrap()
+                .downcast::<gtk::ListBox>()
+                .unwrap();
+            picker.select_row(picker.row_at_index(0).as_ref());
+            ensure!(
+                conf.borrow().hosts[1].port == 2201
+                    && picker.selected_row().is_some_and(|row| row.index() == 0),
+                "Pending automatic edit moved the selected host back"
+            );
+            ensure!(
+                named(&host, "host-name")
+                    .unwrap()
+                    .downcast::<gtk::Entry>()
+                    .unwrap()
+                    .text()
+                    == "Office",
+                "Selected host and editor diverged"
+            );
+            picker.select_row(picker.row_at_index(1).as_ref());
+            field("port", "2222")?;
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
             click(&host, "Ausgewählten Host verwenden")?;
             ensure!(conf.borrow().host()?.username == "bob");
             field("port", "0")?;
-            click(&host, "Hostprofil speichern")?;
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
             ensure!(
                 conf.borrow().host()?.port == 2222,
                 "Rejected input mutated configuration"
@@ -1389,25 +1562,47 @@ pub fn tailscale(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
     });
 }
 
-pub fn keyboard(app: &gtk::Application, stack: &gtk::Stack) {
-    let s = stack.clone();
-    glib::timeout_add_local_once(std::time::Duration::from_millis(1600), move || {
-        if s.visible_child_name().as_deref() != Some("kanban") {
-            eprintln!(
-                "Wayland arrow/Enter input did not open Kanban: {:?}",
-                s.visible_child_name()
-            );
-            std::process::exit(1);
+pub fn keyboard(app: &gtk::Application, window: &gtk::ApplicationWindow, stack: &gtk::Stack) {
+    assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
+    let directory = std::path::PathBuf::from(std::env::var("RAMPI_TEST_ARTIFACTS").unwrap());
+    let seen = Rc::new(Cell::new(false));
+    let (a, observed, output) = (app.clone(), seen.clone(), directory.clone());
+    stack.connect_visible_child_name_notify(move |stack| {
+        match stack.visible_child_name().as_deref() {
+            Some("kanban") => {
+                observed.set(true);
+                std::fs::write(
+                    output.join("keyboard-kanban.ready"),
+                    b"actual module mapped",
+                )
+                .unwrap();
+            }
+            Some("dashboard") if observed.get() => {
+                println!("RAMPI_RUST_WAYLAND_KEYBOARD_OK");
+                a.quit();
+            }
+            _ => {}
         }
     });
-    let (a, s) = (app.clone(), stack.clone());
-    glib::timeout_add_local_once(std::time::Duration::from_millis(3200), move || {
-        if s.visible_child_name().as_deref() != Some("dashboard") {
-            eprintln!("Wayland Escape did not return to dashboard");
-            std::process::exit(1);
+    let (w, s) = (window.clone(), stack.clone());
+    glib::timeout_add_local(std::time::Duration::from_millis(20), move || {
+        let tile = s
+            .child_by_name("dashboard")
+            .and_then(|page| named(&page, "Kanban Board"));
+        if w.is_mapped() && w.is_active() && tile.is_some_and(|t| t.has_focus()) {
+            std::fs::write(
+                directory.join("keyboard-window.ready"),
+                b"actual window and first tile focused",
+            )
+            .unwrap();
+            glib::ControlFlow::Break
+        } else {
+            glib::ControlFlow::Continue
         }
-        println!("RAMPI_RUST_WAYLAND_KEYBOARD_OK");
-        a.quit();
+    });
+    glib::timeout_add_local_once(std::time::Duration::from_millis(3200), move || {
+        eprintln!("Actual keyboard navigation did not complete its Kanban/return sequence");
+        std::process::exit(1);
     });
 }
 

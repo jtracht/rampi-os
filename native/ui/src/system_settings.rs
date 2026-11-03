@@ -208,21 +208,24 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
         .unwrap_or(0);
     languages.select_row(languages.row_at_index(index as i32).as_ref());
     page.append(&languages);
-    let save_language = button(&messages("language-save", &[]), f);
     let (feedback, stat) = (f.clone(), status.clone());
-    save_language.connect_clicked(move |_| {
-        let Some(selected) = languages.selected_row() else {
+    languages.connect_row_selected(move |_, selected| {
+        let Some(selected) = selected else {
             return;
         };
         let Some((code, _, _)) = rampi_core::i18n::LANGUAGES.get(selected.index() as usize) else {
             return;
         };
         match feedback.save_language(code) {
-            Ok(()) => stat.set_text(&rampi_core::i18n::text("language-saved", &[])),
-            Err(error) => stat.set_text(&error.to_string()),
+            Ok(()) => {
+                autosave_result(&stat, Ok(()));
+                stat.set_text(&rampi_core::i18n::text("language-saved", &[]));
+            }
+            Err(error) => {
+                autosave_result(&stat, Err(error));
+            }
         }
     });
-    page.append(&save_language);
     page.append(&label(&tr("keyboard-heading", &[])));
     let choices = gtk::ListBox::new();
     choices.set_selection_mode(gtk::SelectionMode::Single);
@@ -247,10 +250,9 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
         Ok(None) => {}
     }
     page.append(&choices);
-    let save = button(&tr("keyboard-apply", &[]), f);
     let stat = status.clone();
-    save.connect_clicked(move |b| {
-        let Some(row) = choices.selected_row() else {
+    choices.connect_row_selected(move |choices, selected| {
+        let Some(row) = selected else {
             return;
         };
         let index = row.index() as usize;
@@ -261,8 +263,8 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
             stat.set_text(&e.to_string());
             return;
         }
-        b.set_sensitive(false);
-        let (b, stat) = (b.clone(), stat.clone());
+        choices.set_sensitive(false);
+        let (choices, stat) = (choices.clone(), stat.clone());
         glib::MainContext::default().spawn_local(async move {
             let result = crate::process::output("labwc", &["--reconfigure".into()], 3, 16384).await;
             stat.set_text(&tr(
@@ -273,10 +275,9 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
                 },
                 &[],
             ));
-            b.set_sensitive(true);
+            choices.set_sensitive(true);
         });
     });
-    page.append(&save);
     let test = gtk::Entry::builder()
         .placeholder_text(tr("keyboard-test", &[]))
         .build();
@@ -284,7 +285,7 @@ pub fn append(page: &gtk::Box, stack: &gtk::Stack, status: &gtk::Label, f: &Feed
     test.set_widget_name("keyboard-try");
     page.append(&test);
     page.append(&label(&tr("display-heading", &[])));
-    let refresh = button(&tr("display-refresh", &[]), f);
+    let refresh = refresh_button(&tr("display-refresh", &[]), f);
     page.append(&refresh);
     let list = column();
     page.append(&list);

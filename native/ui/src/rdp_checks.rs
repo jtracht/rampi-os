@@ -110,7 +110,8 @@ async fn mouse_clipboard(
         .display_size()
         .context("No remote desktop dimensions")?;
     let scale = (bounds.width() as f64 / width as f64).min(bounds.height() as f64 / height as f64);
-    let report = serde_json::json!({"schema": 1, "probe": probe, "remote_size": [width, height], "scale": scale, "local_delta": [30, 20], "clipboard_roundtrips": 2, "gtk_scroll_deltas": *scrolls.borrow()});
+    let executable = std::fs::read("/proc/self/exe")?;
+    let report = serde_json::json!({"schema": 1, "native_elf_sha256": glib::compute_checksum_for_data(glib::ChecksumType::Sha256, &executable).unwrap().as_str(), "probe": probe, "remote_size": [width, height], "scale": scale, "local_delta": [30, 20], "clipboard_roundtrips": 2, "gtk_scroll_deltas": *scrolls.borrow()});
     std::fs::write(
         std::path::Path::new(&std::env::var("RAMPI_TEST_ARTIFACTS")?).join("rdp-input.json"),
         serde_json::to_vec_pretty(&report)?,

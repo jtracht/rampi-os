@@ -17,6 +17,10 @@ Build dependencies preserved from upstream submodules:
 
 Local changes to the pinned source:
 
+* 2026-11-02: prepare the existing GStreamer audio backend before opening TCP,
+  so cold local plugin discovery does not consume the unchanged TLS network
+  deadline or the server's initial negotiation wait.
+
 * Minimal workspace and explicit license-file package metadata.
 * Failed/closed connection channels no longer panic during disconnect or
   cancellation; thread joins run through GIO's blocking pool, off the GTK loop.

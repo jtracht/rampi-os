@@ -30,6 +30,9 @@ sudo mount -o ro "${loop}p1" "$work/boot"
 sudo mount -o ro "${loop}p2" "$work/root"
 test -f "$work/boot/kernel8.img"
 test -f "$work/boot/bcm2710-rpi-3-b.dtb"
+for asset in kernel8.img kernel_2712.img bcm2710-rpi-3-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-cm3.dtb bcm2710-rpi-zero-2-w.dtb bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb bcm2711-rpi-cm4s.dtb bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb bcm2712-rpi-cm5-cm5io.dtb; do
+    test -s "$work/boot/$asset"
+done
 test -f "$work/root/opt/rampi/package-manifest.tsv"
 test -f "$work/root/etc/systemd/system/rampi-health.service"
 test -f "$work/boot/bcm2710-rpi-3-b-plus.dtb"

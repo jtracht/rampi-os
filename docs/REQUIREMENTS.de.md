@@ -25,7 +25,7 @@ Du bist ein interdisziplinäres Senior-Entwicklungsteam mit Expertise in:
 - DevOps, Git, GitHub Actions und Release Engineering
 - Softwarequalität, Performanceoptimierung und Testing
 
-Entwickle **Rampi OS**, eine eigenständige, hochperformante Remote-Workstation für den Raspberry Pi 3 Model B+ mit Windows 11 Pro als zunächst unterstütztem Hostbetriebssystem.
+Entwickle **Rampi OS**, eine eigenständige, hochperformante Remote-Workstation für den Raspberry Pi 3 und neuer mit Windows 11 Pro als zunächst unterstütztem Hostbetriebssystem.
 
 Erstelle tatsächliche, funktionsfähige Software, keine bloßen Konzepte, Simulationen oder Mockups.
 
@@ -134,7 +134,7 @@ Jede verwendete Lösung muss technisch geeignet und rechtlich zulässig sein.
 | RDP-Client | FreeRDP |
 | RDP-Host | Microsoft Remote Desktop unter Windows 11 Pro |
 | Desktop-Streaming-Host | Sunshine |
-| Streaming-Client | Moonlight, falls auf Pi 3 B+ kompatibel |
+| Streaming-Client | Moonlight, sofern auf der jeweiligen Zielhardware kompatibel |
 | Terminaldarstellung | Geeignete vorhandene Terminalbibliothek |
 | Windows-Terminals | ConPTY und unterstützte native Schnittstellen |
 | Bootanimation | Plymouth, falls geeignet |
@@ -180,7 +180,7 @@ Auch hier sollen geeignete Bibliotheken und Frameworks verwendet werden.
 
 Rampi bedeutet **Remote Raspberry Pi**.
 
-Rampi ist eine eigenständige, moderne grafische Arbeitsumgebung für den Raspberry Pi 3 Model B+.
+Rampi ist eine eigenständige, moderne grafische Arbeitsumgebung für den Raspberry Pi 3 und neuer.
 
 Der Raspberry Pi wird über HDMI an einen Bildschirm oder Beamer angeschlossen.
 
@@ -382,7 +382,7 @@ Reservierte Rampi-Tastenkombinationen dürfen nicht unbeabsichtigt an die Window
 
 Verwende ein aktuelles, unterstütztes Raspberry Pi OS Lite als Systembasis.
 
-Prüfe dessen tatsächliche Kompatibilität mit dem Raspberry Pi 3 B+.
+Prüfe dessen tatsächliche Kompatibilität mit dem Raspberry Pi 3 und neuer.
 
 Wähle eine schlanke grafische Umgebung.
 
@@ -905,7 +905,7 @@ Keine automatischen Updates auf den Endgeräten.
 
 # 20. Automatisierter Systemimage-Build
 
-Entwickle einen reproduzierbaren Image-Build für den Raspberry Pi 3 Model B+.
+Entwickle einen reproduzierbaren Image-Build für den Raspberry Pi 3 und neuer.
 
 Nutze vorhandene offizielle beziehungsweise etablierte Raspberry-Pi-Image-Build-Werkzeuge, sofern kompatibel.
 
@@ -929,7 +929,7 @@ Das Image wird bei jedem regulären Release automatisch erzeugt.
 
 Beispiel:
 
-`rampi-os-rpi3bplus-vX.Y.Z.img.xz`
+`rampi-os-rpi-arm64-vX.Y.Z.img.xz`
 
 Prüfe automatisch:
 

@@ -1,7 +1,9 @@
 """Real Bluetooth HID to GTK, six XKB layouts and two PAM users; isolated QEMU only."""
 
+import errno
 import hashlib
 import importlib.util
+import ipaddress
 import json
 import os
 import pwd
@@ -21,6 +23,31 @@ subprocess.run(["systemd-detect-virt", "--vm", "--quiet"], check=True)
 # Public Google Bumble source commit, pinned independently by the evidence checker.
 SDK_REVISION = "e1fe43c9b44be0d974a6fd533ac6d494fc50510a"  # pragma: allowlist secret
 source = Path("/opt/rampi-source")
+rdp_accounts = None
+rdp_config = Path("/run/rampi-rdp-test.json")
+if rdp_config.exists():
+    info = rdp_config.lstat()
+    if rdp_config.is_symlink() or info.st_uid != 0 or info.st_mode & 0o777 != 0o600:
+        raise RuntimeError("Disposable RDP configuration must remain private to guest root")
+    configuration = json.loads(rdp_config.read_text())
+    rdp_accounts = configuration.get("accounts", {})
+    if (
+        configuration.get("scope") != "rampi-isolated-hid-rdp"
+        or configuration.get("internal_network") is not True
+        or set(rdp_accounts) != {"rampi-hid-one", "rampi-hid-two"}
+    ):
+        raise RuntimeError("Invalid isolated RDP/HID fixture configuration")
+    for fixture in rdp_accounts.values():
+        address = ipaddress.IPv4Address(fixture["address"])
+        if (
+            not address.is_private
+            or address.is_loopback
+            or address.is_link_local
+            or not re.fullmatch(r"[0-9a-f]{64}", fixture["fingerprint"])
+            or not re.fullmatch(r"[0-9a-f]{32}", fixture["nonce"])
+            or not re.fullmatch(r"[A-Za-z0-9_-]{20,128}", fixture["password"])
+        ):
+            raise RuntimeError("Invalid generated RDP fixture endpoint or identity")
 out = Path("/opt/rampi-captures/hid")
 out.mkdir(mode=0o755, exist_ok=True)
 out.chmod(0o755)
@@ -66,9 +93,12 @@ if subprocess.run(
     subprocess.run(["bash", str(source / "scripts/virtual/ensure-vhci.sh")], check=True)
 else:
     subprocess.run(["modprobe", "hci_vhci"], check=True)
-peer_emulator = subprocess.Popen(
-    ["btvirt", "-l2"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-)
+# Register the emulated controllers before the existing daemon starts probing
+# them. Preserve its startup log so a kernel HCI reset failure is diagnosable.
+subprocess.run(["systemctl", "stop", "bluetooth"], check=True)
+emulator_log = (out / "peer-emulator.log").open("w")
+(out / "peer-emulator.log").chmod(0o644)
+peer_emulator = subprocess.Popen(["btvirt", "-l2"], stdout=emulator_log, stderr=emulator_log)
 subprocess.run(["systemctl", "start", "bluetooth"], check=True)
 for adapter, address in [("hci0", "00:AA:01:00:00:00"), ("hci1", "00:AA:01:01:00:01")]:
     deadline = time.monotonic() + 45
@@ -228,7 +258,17 @@ bond = Path("/var/lib/bluetooth/00:AA:01:00:00:00/00:AA:01:01:00:01/info")
 
 
 def kernel_events(path, start, end=None):
-    data = path.read_bytes()[start:end].decode("utf-8", errors="replace")
+    try:
+        with path.open("rb") as stream:
+            stream.seek(start)
+            data = stream.read(-1 if end is None else end - start).decode("utf-8", errors="replace")
+    except OSError as error:
+        # A growing 9p trace can temporarily report ENODATA on Docker's host
+        # share. No events satisfy the predicate; the existing deadline still
+        # requires the complete press/release bytes and final independent read.
+        if error.errno == errno.ENODATA:
+            return set()
+        raise
     return {
         (int(code), int(value))
         for code, value in re.findall(
@@ -249,6 +289,61 @@ def capture(name):
     login.as_user(user, "grim", str(path))
     shutil.copyfile(path, out / path.name)
     (out / path.name).chmod(0o644)
+
+
+def cursor_capture(user, name, bounds):
+    """Compare cursor overlay with the same empty part of the actual entry."""
+    from PIL import Image
+
+    stem = user + "-" + name
+    paths = []
+    for overlay in (False, True):
+        path = Path(pwd.getpwnam(user).pw_dir) / (
+            stem + ("-cursor.png" if overlay else "-plain.png")
+        )
+        login.as_user(user, "grim", *(["-c"] if overlay else []), str(path))
+        target = out / path.name
+        shutil.copyfile(path, target)
+        target.chmod(0o644)
+        paths.append(path)
+    center = bounds["x"] + bounds["width"] // 2
+    area = [center - 64, bounds["y"] + 8, center + 64, bounds["y"] + bounds["height"] - 8]
+    with Image.open(paths[0]) as first, Image.open(paths[1]) as second:
+        a, b = first.convert("RGB"), second.convert("RGB")
+        if a.size != b.size or not (
+            0 <= area[0] < area[2] <= a.width and 0 <= area[1] < area[3] <= a.height
+        ):
+            raise RuntimeError("Actual cursor image bounds mismatch")
+        pixels = sum(
+            sum(abs(x - y) for x, y in zip(a.getpixel((px, py)), b.getpixel((px, py)), strict=True))
+            > 60
+            for px in range(area[0], area[2])
+            for py in range(area[1], area[3])
+        )
+    # Headless outputs can already composite a software cursor in both PNGs.
+    # Check the actual empty field pixels as well; do not infer hidden from
+    # two identical screenshots. The cursor-visible mouse control must pass.
+    reference = area[2] + 32
+    with Image.open(paths[1]) as source_image:
+        image = source_image.convert("RGB")
+        visible = sum(
+            sum(
+                abs(x - y)
+                for x, y in zip(
+                    image.getpixel((px, py)), image.getpixel((reference, py)), strict=True
+                )
+            )
+            > 60
+            for px in range(area[0], area[2])
+            for py in range(area[1], area[3])
+        )
+    return {
+        "plain": paths[0].name,
+        "overlay": paths[1].name,
+        "area": area,
+        "pixels": visible,
+        "overlay_difference_pixels": pixels,
+    }
 
 
 def prop(name):
@@ -286,8 +381,31 @@ def input_devices():
 
 
 def visible_nodes():
+    started = time.monotonic()
     result = login.as_user(user, "python3", str(source / "scripts/virtual/hid-accessible-state.py"))
     rows = json.loads(result.stdout)
+    timing = out / "a11y-query-times.jsonl"
+    reasons = {"read-budget", "depth-limit", "node-limit", "stale-object"}
+    read_status = next(
+        (
+            line.split(" ", 1)[1]
+            for line in result.stderr.decode(errors="replace").splitlines()
+            if line.startswith("A11Y_READ_UNAVAILABLE ") and line.split(" ", 1)[1] in reasons
+        ),
+        "complete" if rows else "no-current-frame",
+    )
+    with timing.open("a") as stream:
+        stream.write(
+            json.dumps(
+                {
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "row_count": len(rows),
+                    "read_status": read_status,
+                }
+            )
+            + "\n"
+        )
+    timing.chmod(0o644)
     (out / "last-accessible.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n")
     (out / "last-accessible.json").chmod(0o644)
     return rows
@@ -302,6 +420,49 @@ def action_ready(name):
         r["role"] in {"button", "push button"} and r["name"] == name and r["sensitive"]
         for r in visible_nodes()
     )
+
+
+def activate(caption):
+    login.wait(lambda: action_ready(caption), "actual visible action: " + caption)
+    # Exactly one acknowledged GTK action; never replay an uncertain activation.
+    login.as_user(
+        user,
+        "python3",
+        str(source / "scripts/virtual/hid-accessible-state.py"),
+        "--fixture-activate",
+        caption,
+    )
+
+
+def open_bluetooth():
+    def caption():
+        matches = [
+            r["name"]
+            for r in visible_nodes()
+            if r["role"] == "button" and r["name"].startswith("Bluetooth · ") and r["sensitive"]
+        ]
+        return matches[0] if len(matches) == 1 else None
+
+    login.wait(lambda: bool(caption()), "actual dashboard Bluetooth control")
+    activate(caption())
+
+
+def select_peer():
+    address = "00:AA:01:01:00:01"
+    login.wait(
+        lambda: any(address in name for name in visible_names()),
+        "actual visible pinned SDK HID row",
+    )
+    bounds = json.loads(
+        login.as_user(
+            user,
+            "python3",
+            str(source / "scripts/virtual/hid-accessible-state.py"),
+            "--fixture-peer-bounds",
+            address,
+        ).stdout
+    )
+    click(bounds["x"] + bounds["width"] // 2, bounds["y"] + bounds["height"] // 2)
 
 
 def categories():
@@ -337,7 +498,23 @@ try:
             path.chmod(0o700)
         settings = home / ".config/rampi/settings.json"
         settings.write_text(
-            json.dumps({"language": "de", "setup_complete": True, "sound_effects": False})
+            json.dumps(
+                {
+                    "language": "de",
+                    "setup_complete": True,
+                    "sound_effects": False,
+                    "hosts": [
+                        {
+                            "name": "Isolated XRDP fixture",
+                            "address": rdp_accounts[name]["address"],
+                            "username": "rdpuser",
+                            "resolution": "1280x720",
+                        }
+                    ]
+                    if rdp_accounts is not None
+                    else [],
+                }
+            )
         )
         os.chown(settings, account.pw_uid, account.pw_gid)
         settings.chmod(0o600)
@@ -409,22 +586,27 @@ try:
                 len(current) == 1 and current[0]["width"] == 1280 and (current[0]["height"] == 720)
             ):
                 raise RuntimeError("Actual HID fixture precondition failed")
-            click(980, 60)
+            open_bluetooth()
             if not sessions:
-                click(110, 334)
+                activate("Geräte suchen")
                 login.wait(lambda: bool(prop("Address")), "GUI discovers pinned SDK HID peer")
-                time.sleep(2)
-                click(200, 264)
-                click(300, 367)
-                click(460, 320)
+                select_peer()
+                activate("Suche beenden")
+                activate("Koppeln")
                 login.wait(lambda: prop("Paired") == "b true", "GUI HID pairing")
                 login.wait(lambda: action_ready("Dauerhaft vertrauen"), "GUI finishes pairing")
-                click(930, 320)
+                activate("Dauerhaft vertrauen")
                 capture("trust-confirmation")
-                click(640, 175)
+                login.as_user(
+                    user,
+                    "python3",
+                    "/opt/rampi-source/scripts/virtual/hid-accessible-state.py",
+                    "--fixture-activate",
+                    "Bewusst bestätigen",
+                )
                 login.wait(lambda: prop("Trusted") == "b true", "explicit GUI trust")
                 login.wait(lambda: action_ready("Verbinden"), "GUI finishes explicit trust")
-                click(600, 320)
+                activate("Verbinden")
             login.wait(lambda: reply({"action": "state"})["channels"], "real HID channels")
             login.wait(
                 lambda: set(input_devices()) == {"keyboard", "mouse"},
@@ -432,8 +614,8 @@ try:
             )
             if not (bond.is_file() and "[LinkKey]" in bond.read_text()):
                 raise RuntimeError("Actual HID fixture precondition failed")
-            click(200, 264)
-            click(743, 320)
+            select_peer()
+            activate("Trennen")
             login.wait(
                 lambda: reply({"action": "state"})["disconnected"],
                 "GUI disconnects both HID channels",
@@ -443,17 +625,32 @@ try:
             login.wait(
                 lambda: action_ready("Verbinden"), "GUI releases the completed Bluetooth action"
             )
-            click(600, 320)
+            activate("Verbinden")
             login.wait(lambda: reply({"action": "state"})["channels"], "GUI reconnects HID")
             login.wait(
                 lambda: set(input_devices()) == {"keyboard", "mouse"},
                 "reconnected kernel HID devices classified by udev",
             )
             nodes = input_devices()
-            login.as_user(user, "wtype", "-k", "Escape")
-            time.sleep(0.5)
-            click(200, 150)
-            click(200, 185)
+            # This is preparation, not the later real HID Escape/shortcut proof.
+            # A reconnect can change seat focus: use the acknowledged GTK back
+            # action, then require its actual category page before proceeding.
+            activate("← Einstellungen")
+            login.wait(categories, "Bluetooth back action maps settings categories")
+            activate("Host & SSH")
+            bounds = json.loads(
+                login.as_user(
+                    user,
+                    "python3",
+                    str(source / "scripts/virtual/hid-accessible-state.py"),
+                    "--fixture-control-bounds",
+                    "Profilname",
+                ).stdout
+            )
+            click(bounds["x"] + bounds["width"] // 2, bounds["y"] + bounds["height"] // 2)
+            # Position with the existing tool, then hand pointer ownership to
+            # the persistent real kernel Bluetooth mouse before keyboard input.
+            reply({"action": "mouse", "dx": 1, "dy": 1})
             print(
                 "RAMPI_HID_STATE_BEFORE_TEXT "
                 + json.dumps(
@@ -484,7 +681,18 @@ try:
                 (8, 18, 64),
             ]:
                 login.as_user(
-                    user, "wtype", "-M", "ctrl", "-k", "a", "-m", "ctrl", "-k", "BackSpace"
+                    user,
+                    "wtype",
+                    "-s",
+                    "100",
+                    "-M",
+                    "ctrl",
+                    "-k",
+                    "a",
+                    "-m",
+                    "ctrl",
+                    "-k",
+                    "BackSpace",
                 )
 
                 def profile_text(user=user):
@@ -551,6 +759,16 @@ try:
             metadata.write_text(json.dumps(accessible, ensure_ascii=False, indent=2) + "\n")
             metadata.chmod(0o644)
             capture(user + "-" + layout + "-hid-text")
+            hidden_cursor = cursor_capture(user, layout + "-keyboard", bounds)
+            if hidden_cursor["pixels"]:
+                raise RuntimeError(
+                    "Persistent Bluetooth pointer remains visible after keyboard input"
+                )
+            reply({"action": "mouse", "dx": 8, "dy": 5, "click": False})
+            time.sleep(0.3)
+            restored_cursor = cursor_capture(user, layout + "-mouse", bounds)
+            if restored_cursor["pixels"] < 5:
+                raise RuntimeError("Bluetooth mouse movement did not restore the pointer")
             login.as_user(user, "wlrctl", "pointer", "move", "-10000", "-10000")
             login.as_user(user, "wlrctl", "pointer", "move", "100", "44")
             reply({"action": "mouse"})
@@ -575,6 +793,20 @@ try:
             metadata.write_text(json.dumps(visible_nodes(), ensure_ascii=False, indent=2) + "\n")
             metadata.chmod(0o644)
             capture(user + "-" + layout + "-hid-shortcut")
+            remote_proof = None
+            if rdp_accounts is not None:
+                stage = runpy.run_path(str(source / "scripts/virtual/hid-rdp-stage.py"))
+                remote_proof = stage["run"](
+                    login,
+                    user,
+                    layout,
+                    rdp_accounts[user],
+                    reply,
+                    visible_nodes,
+                    capture,
+                    kernel_log,
+                    observed,
+                )
             if not (
                 keyboard.stat().st_mode & 0o777 == 0o600
                 and keyboard.stat().st_uid == account.pw_uid
@@ -590,18 +822,27 @@ try:
                     "layout": layout,
                     "keys": observed,
                     "mouse_back": True,
+                    "keyboard_cursor": hidden_cursor,
+                    "mouse_cursor": restored_cursor,
                     "accessible_field_name": True,
                     "reserved_shortcut": True,
                     "actual_reconnect": True,
                     "kernel_bluetooth_input_nodes": nodes,
+                    "rdp": remote_proof,
                 }
             )
             if layout == "it":
-                click(980, 60)
-                click(200, 264)
-                click(1150, 320)
+                open_bluetooth()
+                select_peer()
+                activate("Kopplung entfernen")
                 capture("forget-confirmation")
-                click(640, 175)
+                login.as_user(
+                    user,
+                    "python3",
+                    "/opt/rampi-source/scripts/virtual/hid-accessible-state.py",
+                    "--fixture-activate",
+                    "Bewusst bestätigen",
+                )
                 login.wait(
                     lambda: not prop("Address") and (not bond.exists()),
                     "GUI removes actual HID bond",
@@ -628,6 +869,7 @@ try:
                 "scripts/virtual/bluetooth-hid-peer.py",
                 "scripts/virtual/hid-layout-oracle.py",
                 "scripts/virtual/hid-accessible-state.py",
+                "scripts/virtual/hid-rdp-stage.py",
             ]
         },
         "sessions": sessions,

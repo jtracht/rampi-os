@@ -4,12 +4,15 @@ import hashlib
 import json
 import os
 import runpy
+import shutil
 import subprocess
 import tempfile
 import time
 from pathlib import Path
 
+import pyatspi
 from gi.repository import GLib
+from PIL import Image
 
 if os.environ.get("RAMPI_TEST_CONTAINER") != "1" or os.environ.get("DISPLAY"):
     raise SystemExit("Isolated Wayland test container required")
@@ -61,16 +64,7 @@ def buttons(rows):
 
 
 def click(caption):
-    target = next(
-        (
-            node
-            for node, _ in visible_objects()
-            if node.getRoleName() == "button" and node.name == caption
-        ),
-        None,
-    )
-    if target is None or not target.queryAction().doAction(0):
-        raise RuntimeError("Actual GTK button action unavailable: " + caption)
+    accessibility["activate_control"](caption)
 
 
 def capture(language, page, rows):
@@ -98,6 +92,14 @@ for language in ["de", "en"]:
                     "language": language,
                     "setup_complete": True,
                     "sound_effects": False,
+                    # A stored profile focuses the list first; require a real field click.
+                    "hosts": [
+                        {
+                            "name": "Synthetic fixture",
+                            "address": "fixture.invalid",
+                            "username": "fixture",
+                        }
+                    ],
                 }
             )
         )
@@ -152,12 +154,14 @@ for language in ["de", "en"]:
                 typed = "a11y-" + language
                 # GtkEntry exposes its text through a delegate; its outer accessible
                 # does not implement GrabFocus. Click its actual visible bounds.
-                bounds = field.queryComponent().getExtents(accessibility["pyatspi"].DESKTOP_COORDS)
-                if bounds.width <= 0 or bounds.height <= 0 or bounds.x < 0 or bounds.y < 0:
-                    raise RuntimeError("Actual visible profile bounds unavailable")
+                bounds = accessibility["control_bounds"](profile_caption)
                 for args in [
                     ("move", "-10000", "-10000"),
-                    ("move", str(bounds.x + bounds.width // 2), str(bounds.y + bounds.height // 2)),
+                    (
+                        "move",
+                        str(bounds["x"] + bounds["width"] // 2),
+                        str(bounds["y"] + bounds["height"] // 2),
+                    ),
                     ("click", "left"),
                 ]:
                     subprocess.run(["wlrctl", "pointer", *args], check=True)
@@ -196,6 +200,114 @@ for language in ["de", "en"]:
                     )
                     raise
                 capture(language, "host", rows)
+                back = "← Einstellungen" if language == "de" else "← Settings"
+                click(back)
+                read_until(lambda r: "System" in buttons(r))
+                saved_host = json.loads((config / "settings.json").read_text())["hosts"]
+                if len(saved_host) != 1 or saved_host[0]["name"] != typed:
+                    raise RuntimeError("Page change lost the automatically saved host name")
+                click("System")
+                read_until(
+                    lambda r: any(n["role"] in {"toggle button", "switch", "check box"} for n in r)
+                )
+                if any(
+                    "speichern" in name.lower() or "save" in name.lower()
+                    for name in buttons(snapshot())
+                ):
+                    raise RuntimeError("System settings still contain a save action")
+                # Use the actual localized accessible switch captions from the widget tree.
+                capture(language, "system", snapshot())
+                switches = [
+                    node
+                    for node, _ in visible_objects()
+                    if node.getRoleName() in {"toggle button", "switch", "check box"}
+                ]
+                if len(switches) != 2 or any(not node.name.strip() for node in switches):
+                    raise RuntimeError("Two named native slide switches required")
+                for active in [True, False]:
+                    for node in switches:
+                        state = node.getState().contains(pyatspi.STATE_CHECKED)
+                        if state != active:
+                            for _ in range(24):
+                                if node.getState().contains(pyatspi.STATE_FOCUSED):
+                                    break
+                                subprocess.run(["wtype", "-s", "100", "-k", "Tab"], check=True)
+                                time.sleep(0.03)
+                            else:
+                                raise RuntimeError("Native slide switch is not keyboard reachable")
+                            subprocess.run(["wtype", "-s", "100", "-k", "space"], check=True)
+                        read_until(
+                            lambda r, node=node, active=active: (
+                                node.getState().contains(pyatspi.STATE_CHECKED) == active
+                            )
+                        )
+                    mode = "on" if active else "off"
+                    capture(language, f"switches-{mode}", snapshot())
+                    geometry = []
+                    image_path = destination / f"accessibility-{language}-switches-{mode}.png"
+                    with Image.open(image_path) as im:
+                        for node in switches:
+                            b = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+                            geometry.append(
+                                {
+                                    "name": node.name,
+                                    "x": b.x,
+                                    "y": b.y,
+                                    "width": b.width,
+                                    "height": b.height,
+                                }
+                            )
+                            region = im.convert("RGB").crop(
+                                (b.x, b.y, b.x + b.width, b.y + b.height)
+                            )
+                            green = sum(
+                                g > r + 30 and g > blue + 20 for r, g, blue in region.getdata()
+                            )
+                            if (active and green < 80) or (not active and green > 10):
+                                raise RuntimeError("Slide switch track does not show actual state")
+                    receipt = destination / (
+                        f"accessibility-{language}-switches-{mode}-geometry.json"
+                    )
+                    receipt.write_text(json.dumps(geometry, ensure_ascii=False), encoding="utf-8")
+                    receipt.chmod(0o644)
+                persisted = json.loads((config / "settings.json").read_text())
+                if persisted["reduce_motion"] or persisted["sound_effects"]:
+                    raise RuntimeError("Native switches did not automatically persist")
+                done = "Automatisch gespeichert" if language == "de" else "Saved automatically"
+                rows = read_until(lambda r, done=done: done in [n["name"] for n in r])
+                capture(language, "feedback-saved", rows)
+                notice = next(
+                    node
+                    for node, _ in visible_objects()
+                    if node.getRoleName() == "label" and node.name == done
+                )
+                bounds = notice.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+                image_path = destination / f"accessibility-{language}-feedback-saved.png"
+                with Image.open(image_path) as png:
+                    if not (0 <= bounds.y and bounds.y + bounds.height <= png.height):
+                        raise RuntimeError("Operation feedback is clipped outside the output")
+                click(back)
+                read_until(lambda r: "System" in buttons(r))
+                click("System")
+                read_until(
+                    lambda r: (
+                        len([n for n in r if n["role"] in {"toggle button", "switch", "check box"}])
+                        == 2
+                    )
+                )
+                if any(
+                    node.getState().contains(pyatspi.STATE_CHECKED)
+                    for node, _ in visible_objects()
+                    if node.getRoleName() in {"toggle button", "switch", "check box"}
+                ):
+                    raise RuntimeError("Page return lost the automatically saved switches")
+                click(back)
+                rows = read_until(
+                    lambda r, done=done: (
+                        "Host & SSH" in buttons(r) and done not in [n["name"] for n in r]
+                    )
+                )
+                capture(language, "feedback-cleared", rows)
                 sessions.append(
                     {
                         "language": language,
@@ -207,6 +319,10 @@ for language in ["de", "en"]:
             finally:
                 app.terminate()
                 app.wait(timeout=10)
+                log.flush()
+                public_log = destination / f"accessibility-{language}-application.log"
+                shutil.copyfile(home / "application.log", public_log)
+                public_log.chmod(0o644)
 
 proof = {
     "schema": 1,

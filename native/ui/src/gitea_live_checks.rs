@@ -76,20 +76,21 @@ pub fn ui(
                 .downcast::<gtk::PasswordEntry>()
                 .unwrap();
             input.set_text(token);
-            let save = find_button(&page, "Zugangsdaten im Schlüsselbund speichern").unwrap();
-            save.emit_clicked();
-            wait_for(
-                || save.is_sensitive() && input.text().is_empty(),
-                "Gitea credential not stored",
-            )
-            .await?;
+            ensure!(find_button(&page, "Zugangsdaten im Schlüsselbund speichern").is_none());
+            let focus = input.observe_controllers();
+            for i in 0..focus.n_items() {
+                if let Some(controller) = focus.item(i).and_downcast::<gtk::EventControllerFocus>()
+                {
+                    controller.emit_by_name::<()>("leave", &[]);
+                }
+            }
+            wait_for(|| input.text().is_empty(), "Gitea credential not stored").await?;
             ensure!(
                 crate::secret_service::load("live-gitea", "gitea", source).await? == token,
                 "Keyring mismatch"
             );
-            find_button(&page, "Datenquelle und Startseite speichern")
-                .unwrap()
-                .emit_clicked();
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
+            ensure!(find_button(&page, "Datenquelle und Startseite speichern").is_none());
             find_button(&page, "Board öffnen →").unwrap().emit_clicked();
             let board = stack
                 .child_by_name("kanban")

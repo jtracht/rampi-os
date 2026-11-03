@@ -14,28 +14,46 @@ if __name__ == "__main__":
     subprocess.run(["systemd-detect-virt", "--vm", "--quiet"], check=True)
 
 import pyatspi  # noqa: E402
-from gi.repository import Atspi  # noqa: E402
+from gi.repository import Atspi, GLib  # noqa: E402
 
-# Keep ordinary calls at the library default; bound startup probes of stale
-# optional objects without changing the enclosing page/readiness deadlines.
+# Bound library calls separately from a complete read. The enclosing page
+# predicate retains its existing readiness deadline.
 Atspi.set_timeout(800, 2000)
+READ_BUDGET = 45
+
+
+class TreeReadUnavailable(RuntimeError):
+    """A fresh complete accessibility read could not finish within its budget."""
 
 
 def visible_objects():
-    visited = 0
+    deadline = time.monotonic() + READ_BUDGET
+    seen = set()
+
+    def check_budget():
+        if time.monotonic() >= deadline:
+            raise TreeReadUnavailable("read-budget")
 
     def walk(node, depth=0):
-        nonlocal visited
-        if depth > 20 or visited >= 5000:
+        check_budget()
+        if node in seen:
             return
-        visited += 1
+        if depth > 20:
+            raise TreeReadUnavailable("depth-limit")
+        if len(seen) >= 5000:
+            raise TreeReadUnavailable("node-limit")
+        seen.add(node)
         try:
             state = node.getState()
+            check_budget()
             if depth > 1 and not state.contains(pyatspi.STATE_SHOWING):
                 return
             yield node, state
             for child in node:
+                check_budget()
                 yield from walk(child, depth + 1)
+        except TreeReadUnavailable:
+            raise
         except Exception:
             # A disappearing or unsupported subtree cannot supply required data.
             return
@@ -44,46 +62,116 @@ def visible_objects():
 
 
 def snapshot():
-    return [
-        {
-            "role": node.getRoleName(),
-            "name": node.name or "",
-            "enabled": state.contains(pyatspi.STATE_ENABLED),
-            "sensitive": state.contains(pyatspi.STATE_SENSITIVE),
-            "states": [str(value) for value in state.getStates()],
-        }
-        for node, state in visible_objects()
+    try:
+        return [
+            {
+                "role": node.getRoleName(),
+                "name": node.name or "",
+                "enabled": state.contains(pyatspi.STATE_ENABLED),
+                "sensitive": state.contains(pyatspi.STATE_SENSITIVE),
+                "states": [str(value) for value in state.getStates()],
+            }
+            for node, state in visible_objects()
+        ]
+    except (GLib.GError, TreeReadUnavailable) as error:
+        reason = str(error) if isinstance(error, TreeReadUnavailable) else "stale-object"
+        print("A11Y_READ_UNAVAILABLE " + reason, file=sys.stderr, flush=True)
+        # Reconnecting can invalidate a proxy between enumeration and reading.
+        # Return no required data; the enclosing readiness check must obtain a
+        # complete new snapshot within its unchanged deadline. Never reuse rows.
+        return []
+
+
+def read_controls(caption, roles, *, sensitive=False):
+    # Retry only read-side stale proxies. Resolve the named control before
+    # performing any action, so a delayed acknowledgement never clicks twice.
+    deadline = time.monotonic() + READ_BUDGET
+    while True:
+        try:
+            return [
+                node
+                for node, state in visible_objects()
+                if node.name == caption
+                and node.getRoleName() in roles
+                and (not sensitive or state.contains(pyatspi.STATE_SENSITIVE))
+            ]
+        except (GLib.GError, TreeReadUnavailable):
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.1)
+
+
+def activate_control(caption):
+    matches = read_controls(caption, {"button"}, sensitive=True)
+    if len(matches) != 1 or not matches[0].queryAction().doAction(0):
+        raise RuntimeError("Unique visible GTK button action unavailable: " + caption)
+
+
+def control_bounds(caption):
+    matches = read_controls(caption, {"text", "entry", "password text"})
+    if len(matches) != 1:
+        raise RuntimeError("Unique visible GTK field unavailable: " + caption)
+    return bounds_of(matches[0])
+
+
+def bounds_of(node):
+    # Wayland does not publish global widget positions (GTK reports 0/0).
+    # The designated Rampi fixture is fullscreen at the output origin.
+    bounds = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+    if bounds.width <= 0 or bounds.height <= 0 or bounds.x < 0 or bounds.y < 0:
+        raise RuntimeError("Actual visible GTK field bounds unavailable")
+    return {key: getattr(bounds, key) for key in ["x", "y", "width", "height"]}
+
+
+def peer_bounds(address):
+    if address != "00:AA:01:01:00:01":
+        raise RuntimeError("Only the pinned SDK HID peer may be selected")
+    matches = [
+        node
+        for node, _ in visible_objects()
+        if node.getRoleName() == "label"
+        and len(node.name.split(" · ")) > 1
+        and node.name.split(" · ")[1] == address
     ]
+    if len(matches) != 1:
+        raise RuntimeError("Unique visible pinned HID peer row unavailable")
+    return bounds_of(matches[0])
 
 
 def main():
+    if sys.argv[1:]:
+        account = pwd.getpwuid(os.getuid())
+        if account.pw_name not in {"rampi-hid-one", "rampi-hid-two"} or account.pw_uid < 1000:
+            raise SystemExit("Only the designated synthetic HID accounts may control the fixture")
+    if len(sys.argv) == 3 and sys.argv[1] == "--fixture-activate":
+        activate_control(sys.argv[2])
+        print(json.dumps({"activated": True}))
+        return
+    if len(sys.argv) == 3 and sys.argv[1] == "--fixture-control-bounds":
+        print(json.dumps(control_bounds(sys.argv[2])))
+        return
+    if len(sys.argv) == 3 and sys.argv[1] == "--fixture-peer-bounds":
+        print(json.dumps(peer_bounds(sys.argv[2])))
+        return
     if sys.argv[1:] == ["--fixture-profile-text"]:
         account = pwd.getpwuid(os.getuid())
         if account.pw_name not in {"rampi-hid-one", "rampi-hid-two"} or account.pw_uid < 1000:
             raise SystemExit("Only the designated synthetic HID account field may be read")
-        field = next(
-            (
-                node
-                for node, _ in visible_objects()
-                if node.getRoleName() in {"text", "entry"} and node.name == "Profilname"
-            ),
-            None,
-        )
-        if field is None:
-            raise SystemExit("Actual synthetic profile field unavailable")
+        matches = read_controls("Profilname", {"text", "entry"})
+        if len(matches) != 1:
+            raise SystemExit("Unique actual synthetic profile field unavailable")
+        field = matches[0]
         text = field.queryText()
         print(json.dumps(text.getText(0, text.characterCount), ensure_ascii=False))
         return
     if sys.argv[1:]:
         raise SystemExit("Unsupported accessibility fixture mode")
-    for _ in range(50):
-        rows = snapshot()
-        if any(row["role"] == "frame" and row["name"] == "Rampi" for row in rows):
-            print(json.dumps(rows, ensure_ascii=False))
-            break
-        time.sleep(0.1)
-    else:
-        raise SystemExit("Actual Rampi accessibility tree is missing")
+    # The enclosing page predicate owns readiness and its existing deadline.
+    # One failed read supplies no data; do not nest fifty potentially slow scans
+    # inside a single helper invocation or retain any rows from an earlier scan.
+    rows = snapshot()
+    current_frame = any(row["role"] == "frame" and row["name"] == "Rampi" for row in rows)
+    print(json.dumps(rows if current_frame else [], ensure_ascii=False))
 
 
 if __name__ == "__main__":

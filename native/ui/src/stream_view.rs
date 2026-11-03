@@ -82,7 +82,7 @@ pub fn open(stack: &gtk::Stack, conf: &Shared, f: &Feedback) {
     let controls = row();
     let pair = button(&tr("stream-pair", &[]), f);
     pair.set_widget_name("stream-pair");
-    let load = button(&tr("stream-load", &[]), f);
+    let load = refresh_button(&tr("stream-load", &[]), f);
     load.set_widget_name("stream-load");
     controls.append(&pair);
     controls.append(&load);

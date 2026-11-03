@@ -159,9 +159,21 @@ pub fn run(
             ensure!(pointer_name().as_deref() == Some("none"), "Actual entry cursor remained visible during keyboard input");
             tool("wlrctl", &["pointer", "move", "5", "0"]).await?; delay(50).await;
             ensure!(pointer_name().as_deref() != Some("none"), "Actual entry cursor did not return on pointer motion");
-            tool("wtype", &["-M","ctrl","-k","a","-m","ctrl","Keyboard profile","-k","Tab","localhost","-k","Tab","alice","-k","Tab","-M","ctrl","-k","a","-m","ctrl","2222","-k","Tab","-k","Tab","-M","ctrl","-k","a","-m","ctrl","1280x720","-k","Tab","-k","Tab","-k","Return"]).await?;
-            delay(150).await;
-            ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.name == "Keyboard profile" && conf.borrow().host()?.port == 2222, "Actual Tab/typing/Enter did not save host");
+            tool("wtype", &["-M","ctrl","-k","a","-m","ctrl","Keyboard profile","-k","Tab","localhost","-k","Tab","alice","-k","Tab","-M","ctrl","-k","a","-m","ctrl","2222","-k","Tab","-k","Tab","-M","ctrl","-k","a","-m","ctrl","1280x720","-k","Tab"]).await?;
+            delay(550).await;
+            ensure!(conf.borrow().hosts.len() == 1 && conf.borrow().host()?.name == "Keyboard profile" && conf.borrow().host()?.port == 2222, "Actual typing/focus-leave did not automatically save host");
+            ensure!(crate::checks::find_button(&host, "Hostprofil speichern").is_none());
+            let config_path = rampi_core::config::config_dir()?.join("settings.json");
+            let saved_bytes = std::fs::read(&config_path)?;
+            let port = named(&host, "host-port").unwrap().downcast::<gtk::Entry>().unwrap();
+            port.set_text("0"); delay(550).await;
+            ensure!(std::fs::read(&config_path)? == saved_bytes && conf.borrow().host()?.port == 2222, "Invalid autosave replaced a valid profile");
+            port.set_text("2200");
+            tabs.set_visible_child_name("categories");
+            ensure!(rampi_core::config::Settings::load(&config_path)?.host()?.port == 2200, "Page exit lost a pending automatic edit");
+            tabs.set_visible_child_name("host"); settled(&tabs).await?;
+            port.set_text("2222"); delay(550).await;
+            ensure!(conf.borrow().hosts.len() == 1, "Typing created duplicate host profiles");
             for category in ["host", "wifi", "bluetooth", "vpn", "board", "system"] {
                 tool("wtype", &["-k", "Escape"]).await?; delay(160).await;
                 ensure!(stack.visible_child_name().as_deref() == Some("settings") && tabs.visible_child_name().as_deref() == Some("categories"), "Back must return to the category overview");
@@ -210,7 +222,15 @@ pub fn run(
                 }
                 if tab == "bluetooth" {
                     let page = tabs.child_by_name("bluetooth").context("Missing Bluetooth page")?;
-                    for title in ["Einschalten", "Ausschalten", "Koppeln", "Verbinden", "Trennen", "Geräte suchen"] {
+                    ensure!(!named(&page, "bluetooth-power").context("Missing Bluetooth slide switch")?.is_sensitive(), "Power enabled without a selected adapter");
+                    let actions = named(&page, "bluetooth-actions").context("Missing Bluetooth actions")?;
+                    let mut cell = actions.first_child();
+                    while let Some(item) = cell {
+                        ensure!(!item.is_focusable(), "Empty action wrappers must not receive keyboard focus");
+                        cell = item.next_sibling();
+                    }
+
+                    for title in ["Koppeln", "Verbinden", "Trennen", "Geräte suchen"] {
                         ensure!(!find_button(&page, title).context("Missing Bluetooth action")?.is_sensitive(), "Bluetooth action without a selected adapter/device: {title}");
                     }
                 }
@@ -224,8 +244,105 @@ pub fn run(
             ensure!(app.windows().len() == 1);
             std::fs::write(directory.join("interaction-geometry.json"), serde_json::to_vec_pretty(&*records.borrow())?)?;
             std::fs::set_permissions(directory.join("interaction-geometry.json"), std::fs::Permissions::from_mode(0o644))?;
-            std::fs::remove_file(rampi_core::config::config_dir()?.join("settings.json"))?;
             tool("wlr-randr", &["--output","HEADLESS-1","--custom-mode","1280x720"]).await?;
+            stack.set_visible_child_name("settings");
+            tabs.set_visible_child_name("system");
+            tool("wlrctl", &["pointer", "move", "-10000", "-10000"]).await?;
+            let toggle = named(&stack.clone().upcast(), "settings-motion-switch")
+                .context("No motion slide switch")?.downcast::<gtk::Switch>().unwrap();
+            toggle.grab_focus();
+            for icon in ["accessibility", "volume-2", "monitor", "wifi", "bluetooth", "shield-check", "columns-3", "settings"] {
+                let image = named(&stack.clone().upcast(), &format!("rampi-icon-{icon}"))
+                    .context("Bundled navigation icon missing")?.downcast::<gtk::Image>().unwrap();
+                ensure!(image.storage_type()==gtk::ImageType::Paintable,
+                    "Bundled icon silently fell back to a missing-image symbol: {icon}");
+            }
+            tabs.set_visible_child_name("wifi");
+            named(&stack.clone().upcast(), "hidden-network-form").unwrap()
+                .downcast::<gtk::Expander>().unwrap().set_expanded(true);
+            settled(&tabs).await?;
+            tabs.set_visible_child_name("system");
+            // Browser and streaming pages are deliberately created on demand.
+            // Exercise their real controls too, without starting a host connection.
+            crate::stream_view::open(&stack, &conf, &f);
+            crate::views::browser(&stack, &conf, &gtk::Label::new(None), &f);
+            stack.set_visible_child_name("settings");
+            settled(&stack).await?;
+            toggle.grab_focus();
+            fn refresh_controls(widget: &gtk::Widget, found: &mut Vec<gtk::Button>) {
+                if let Ok(button) = widget.clone().downcast::<gtk::Button>()
+                    && button.has_css_class("refresh-icon") { found.push(button); }
+                let mut child = widget.first_child();
+                while let Some(item) = child { refresh_controls(&item, found); child = item.next_sibling(); }
+            }
+            let mut refreshes = vec![];
+            refresh_controls(stack.upcast_ref(), &mut refreshes);
+            let captions: Vec<_> = refreshes.iter().filter_map(|b| b.tooltip_text()).collect();
+            for key in ["board-reload", "diagnostics-refresh", "display-refresh", "tailscale-refresh", "bluetooth-refresh", "vpn-refresh", "wifi-adapters", "browser-reload-tooltip", "stream-load"] {
+                let expected = rampi_core::i18n::text(key, &[]);
+                ensure!(captions.iter().any(|value| value.as_str() == expected), "Refresh icon missing for {key}; found {captions:?}");
+            }
+            for button in refreshes {
+                ensure!(button.label().is_none_or(|s| s.is_empty()), "Refresh icon retained visible text");
+                ensure!(button.tooltip_text().is_some_and(|s| !s.trim().is_empty()), "Refresh purpose is missing");
+                let image = named(button.upcast_ref(), "rampi-icon-refresh-cw").context("Refresh is not a bundled icon")?.downcast::<gtk::Image>().unwrap();
+                ensure!(image.widget_name() == "rampi-icon-refresh-cw" && image.storage_type() == gtk::ImageType::Paintable);
+                ensure!(button.is_focusable(), "Refresh action is not keyboard focusable");
+            }
+            println!("RAMPI_REFRESH_ICONS_AND_ACCESSIBLE_PURPOSE_OK");
+            conf.borrow_mut().reduce_motion = false;
+            delay(600).await;
+            let idle_start = crate::widgets::motion_counts();
+            delay(600).await;
+            let idle_end = crate::widgets::motion_counts();
+            ensure!(idle_start == idle_end, "Idle controls kept a frame callback alive");
+            tabs.set_visible_child_name("categories");
+            named(&stack.clone().upcast(), "settings-category-host").unwrap().grab_focus();
+            delay(600).await;
+            let active_start = crate::widgets::motion_counts();
+            let active_wall = std::time::Instant::now();
+            delay(600).await;
+            let active_end = crate::widgets::motion_counts();
+            let active_paints = active_end.1 - active_start.1;
+            let active_ms = active_wall.elapsed().as_secs_f64() * 1000.0;
+            ensure!(active_paints >= 2 && active_paints as f64 <= (active_ms * 31.0 / 1000.0).ceil() + 2.0, "Active surface paint budget exceeded: {active_paints}");
+            conf.borrow_mut().reduce_motion = true;
+            window.queue_draw();
+            delay(400).await;
+            let reduced_start = crate::widgets::motion_counts();
+            delay(600).await;
+            let reduced_end = crate::widgets::motion_counts();
+            ensure!(reduced_start == reduced_end, "Reduced motion retained a frame callback");
+            conf.borrow_mut().reduce_motion = false;
+            let executable = std::fs::read("/proc/self/exe")?;
+            let animation = serde_json::json!({"schema":1,
+                "scope":"actual GTK frame callbacks in headless Wayland; not Raspberry Pi timing",
+                "idle_ticks":idle_end.0-idle_start.0,"reduced_ticks":reduced_end.0-reduced_start.0,
+                "active_paints":active_paints,"active_window_ms":active_ms,"native_elf_sha256":
+                glib::compute_checksum_for_data(glib::ChecksumType::Sha256,&executable).unwrap().as_str(),
+                "single_window":app.windows().len()==1,"complete_product_acceptance":false});
+            let receipt = directory.join("animation-scheduling.json");
+            std::fs::write(&receipt, serde_json::to_vec_pretty(&animation)?)?;
+            std::fs::set_permissions(&receipt, std::fs::Permissions::from_mode(0o644))?;
+            println!("RAMPI_ANIMATION_IDLE_AND_PAINT_BUDGET_OK {animation}");
+            let system = tabs.child_by_name("system").context("No system page")?;
+            for caption in ["Persönliche Einstellungen speichern", "Sprache für die nächste Anmeldung speichern", "Tastaturbelegung anwenden"] {
+                ensure!(crate::checks::find_button(&system, caption).is_none(), "Settings retained a save action");
+            }
+            let reduce = named(&system, "settings-motion-switch").unwrap().downcast::<gtk::Switch>().unwrap();
+            let previous = conf.borrow().reduce_motion;
+            let path = rampi_core::config::config_dir()?.join("settings.json");
+            let original = std::fs::read(&path)?;
+            std::fs::write(&path, b"{")?;
+            reduce.set_active(!previous);
+            ensure!(conf.borrow().reduce_motion == previous && reduce.is_active() == previous, "Failed automatic save changed the live switch");
+            ensure!(std::fs::read(&path)? == b"{", "Failed automatic save overwrote an existing unreadable file");
+            std::fs::write(&path, original)?;
+            reduce.set_active(!previous);
+            ensure!(rampi_core::config::Settings::load(&path)?.reduce_motion == !previous, "Switch did not automatically persist after recovery");
+            reduce.set_active(previous);
+            println!("RAMPI_AUTOSAVE_VALIDATION_PAGE_FLUSH_AND_WRITE_FAILURE_OK");
+            std::fs::remove_file(&path)?;
             let _ = f;
             keyboard.force_exit(); let _ = keyboard.wait_future().await;
             println!("RAMPI_RUST_INTERACTION_KEYBOARD_OK");

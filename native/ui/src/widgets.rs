@@ -7,10 +7,185 @@ use std::{
     time::Instant,
 };
 pub type Shared = Rc<RefCell<Settings>>;
+/// Personal settings are committed atomically; failed writes leave live state unchanged.
+pub(crate) fn persist_settings(
+    settings: &Shared,
+    candidate: Settings,
+    status: &gtk::Label,
+) -> bool {
+    let result =
+        rampi_core::config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
+    if result.is_ok() {
+        *settings.borrow_mut() = candidate;
+    }
+    autosave_result(status, result)
+}
+pub(crate) fn autosave_result(status: &gtk::Label, result: anyhow::Result<()>) -> bool {
+    status.remove_css_class("feedback-success");
+    status.remove_css_class("feedback-error");
+    match result {
+        Ok(()) => {
+            status.set_text(&rampi_core::i18n::text("autosave-done", &[]));
+            status.add_css_class("feedback-success");
+            true
+        }
+        Err(error) => {
+            status.set_text(&rampi_core::i18n::text(
+                "autosave-failed",
+                &[("error", &error.to_string())],
+            ));
+            status.add_css_class("feedback-error");
+            false
+        }
+    }
+}
+
+/// Coalesce typing, flush before leaving, and never save programmatic form population.
+pub(crate) struct AutoSave {
+    pending: RefCell<Option<glib::SourceId>>,
+    dirty: Cell<bool>,
+    pub loading: Rc<Cell<bool>>,
+    commit: Box<dyn Fn() -> bool>,
+}
+impl AutoSave {
+    pub fn new(loading: Rc<Cell<bool>>, commit: impl Fn() -> bool + 'static) -> Rc<Self> {
+        Rc::new(Self {
+            pending: RefCell::new(None),
+            dirty: Cell::new(false),
+            loading,
+            commit: Box::new(commit),
+        })
+    }
+    pub fn flush(&self) -> bool {
+        if let Some(timer) = self.pending.borrow_mut().take() {
+            timer.remove();
+        }
+        if !self.dirty.replace(false) {
+            return true;
+        }
+        let ok = (self.commit)();
+        self.dirty.set(!ok);
+        ok
+    }
+    pub fn discard(&self) {
+        if let Some(timer) = self.pending.borrow_mut().take() {
+            timer.remove();
+        }
+        self.dirty.set(false);
+    }
+    pub fn changed(self: &Rc<Self>) {
+        if self.loading.get() {
+            return;
+        }
+        self.dirty.set(true);
+        if let Some(timer) = self.pending.borrow_mut().take() {
+            timer.remove();
+        }
+        let weak = Rc::downgrade(self);
+        *self.pending.borrow_mut() = Some(glib::timeout_add_local_once(
+            std::time::Duration::from_millis(450),
+            move || {
+                if let Some(save) = weak.upgrade() {
+                    save.pending.borrow_mut().take();
+                    save.flush();
+                }
+            },
+        ));
+    }
+    pub fn routes(self: &Rc<Self>, stacks: &[gtk::Stack]) {
+        for stack in stacks {
+            let weak = Rc::downgrade(self);
+            stack.connect_visible_child_notify(move |_| {
+                if let Some(save) = weak.upgrade() {
+                    save.flush();
+                }
+            });
+        }
+    }
+    pub fn watch(self: &Rc<Self>, page: &gtk::Box, entries: &[gtk::Entry]) {
+        for entry in entries {
+            let save = self.clone();
+            entry.connect_changed(move |_| save.changed());
+            let focus = gtk::EventControllerFocus::new();
+            let save = self.clone();
+            focus.connect_leave(move |_| {
+                save.flush();
+            });
+            entry.add_controller(focus);
+        }
+        let save = self.clone();
+        page.connect_unmap(move |_| {
+            save.flush();
+        });
+    }
+}
+thread_local! {
+    static MOTION_TICKS: Cell<u64> = const { Cell::new(0) };
+    static MOTION_PAINTS: Cell<u64> = const { Cell::new(0) };
+}
+pub(crate) fn motion_counts() -> (u64, u64) {
+    (MOTION_TICKS.get(), MOTION_PAINTS.get())
+}
 
 pub(crate) fn motion_reduced(settings: &Shared) -> bool {
     settings.borrow().reduce_motion
         || gtk::Settings::default().is_some_and(|s| !s.is_gtk_enable_animations())
+}
+
+/// Register a GTK frame callback only while this particular surface is moving.
+/// No timer per idle button, and no work for widgets on another page.
+pub(crate) fn animate_surface(
+    widget: &impl IsA<gtk::Widget>,
+    running: Rc<Cell<bool>>,
+    settings: Shared,
+    moving: impl Fn() -> bool + 'static,
+) {
+    if running.replace(true) {
+        return;
+    }
+    let pacer = RefCell::new(motion::FramePacer::default());
+    widget.add_tick_callback(move |widget, clock| {
+        MOTION_TICKS.set(MOTION_TICKS.get() + 1);
+        if !widget.is_mapped() || motion_reduced(&settings) || !moving() {
+            running.set(false);
+            widget.queue_draw();
+            return glib::ControlFlow::Break;
+        }
+        if pacer.borrow_mut().due(clock.frame_time()) {
+            MOTION_PAINTS.set(MOTION_PAINTS.get() + 1);
+            widget.queue_draw();
+        }
+        glib::ControlFlow::Continue
+    });
+}
+
+pub fn switch_row(
+    title: &str,
+    icon: &str,
+    active: bool,
+    feedback: &Feedback,
+) -> (gtk::Box, gtk::Switch) {
+    let line = row();
+    line.add_css_class("switch-row");
+    let image = icon_image(icon, 24);
+    line.append(&image);
+    let caption = label(title);
+    caption.set_hexpand(true);
+    line.append(&caption);
+    let toggle = gtk::Switch::builder()
+        .active(active)
+        .valign(gtk::Align::Center)
+        .build();
+    accessible_name(&toggle, title);
+    toggle.set_cursor_from_name(Some("pointer"));
+    let f = feedback.clone();
+    toggle.connect_active_notify(move |toggle| {
+        if toggle.is_mapped() && toggle.has_focus() {
+            f.play(true);
+        }
+    });
+    line.append(&toggle);
+    (line, toggle)
 }
 
 /// Existing GTK focus/selection with all choices in the current page, no popover.
@@ -107,7 +282,29 @@ pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {
     wire_button(&b, feedback);
     b
 }
+/// One recognizable refresh action, with its localized purpose exposed to assistive tools.
+pub fn refresh_button(caption: &str, feedback: &Feedback) -> gtk::Button {
+    let b = button("", feedback);
+    b.add_css_class("refresh-icon");
+    b.add_css_class("compact");
+    let content = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    content.append(&icon_image("refresh-cw", 24));
+    let purpose = label(caption);
+    purpose.set_visible(false);
+    content.append(&purpose);
+    b.set_child(Some(&content));
+    b.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
+        purpose.upcast_ref()
+    ])]);
+    accessible_name(&b, caption);
+    b.set_tooltip_text(Some(caption));
+    b.set_size_request(44, 44);
+    b.set_halign(gtk::Align::Start);
+    b.set_valign(gtk::Align::Center);
+    b
+}
 pub fn wire_button(b: &gtk::Button, feedback: &Feedback) {
+    b.set_cursor_from_name(Some("pointer"));
     let f = feedback.clone();
     b.connect_clicked(move |_| f.play(true));
     let m = gtk::EventControllerMotion::new();
@@ -133,7 +330,7 @@ pub fn icon_button(text: &str, icon: &str, f: &Feedback) -> gtk::Button {
     b.set_valign(gtk::Align::Center);
     b
 }
-fn icon_image(name: &str, size: i32) -> gtk::Image {
+pub(crate) fn icon_image(name: &str, size: i32) -> gtk::Image {
     let image = match gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(
         assets().join("icons").join(format!("{name}.svg")),
         size,
@@ -144,6 +341,7 @@ fn icon_image(name: &str, size: i32) -> gtk::Image {
         Err(_) => gtk::Image::from_icon_name("image-missing-symbolic"),
     };
     image.set_pixel_size(size);
+    image.set_widget_name(&format!("rampi-icon-{name}"));
     image
 }
 pub fn label(text: &str) -> gtk::Label {
@@ -166,10 +364,43 @@ pub fn scroll(child: &impl IsA<gtk::Widget>) -> gtk::ScrolledWindow {
         .build()
 }
 pub fn status_result(status: &gtk::Label, result: anyhow::Result<()>) {
-    status.set_text(&match result {
-        Ok(()) => rampi_core::i18n::text("action-completed", &[]),
-        Err(e) => e.to_string(),
+    let (message, class) = match result {
+        Ok(()) => (
+            rampi_core::i18n::text("action-completed", &[]),
+            "feedback-success",
+        ),
+        Err(e) => (e.to_string(), "feedback-error"),
+    };
+    status.set_text(&message);
+    status.remove_css_class("feedback-success");
+    status.remove_css_class("feedback-error");
+    status.add_css_class(class);
+}
+
+/// A completed operation belongs to its page; errors remain available to read.
+pub fn clear_completed_feedback(status: &gtk::Label) {
+    if status.has_css_class("feedback-success") {
+        status.set_text("");
+        status.remove_css_class("feedback-success");
+    }
+}
+
+pub fn install_feedback(stack: &gtk::Stack, status: &gtk::Label) {
+    status.set_widget_name("rampi-status");
+    if !status.text().is_empty() {
+        status.add_css_class("has-feedback");
+    }
+    status.connect_label_notify(|label| {
+        label.remove_css_class("feedback-success");
+        label.remove_css_class("feedback-error");
+        if label.text().is_empty() {
+            label.remove_css_class("has-feedback");
+        } else {
+            label.add_css_class("has-feedback");
+        }
     });
+    let status = status.clone();
+    stack.connect_visible_child_name_notify(move |_| clear_completed_feedback(&status));
 }
 pub struct TileSpec<'a> {
     pub title: &'a str,
@@ -247,8 +478,16 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         settings.clone(),
         start.clone(),
     );
-    area.set_draw_func(move |_, cr, width, height| {
+    let running = Rc::new(Cell::new(false));
+    area.set_draw_func(move |area, cr, width, height| {
         let t = clock.get().elapsed().as_secs_f64();
+        if !motion_reduced(&conf) && (s.get() || t < delay + 0.3 || t - p.get() < 0.3) {
+            let (selected, pulse, start) = (s.clone(), p.clone(), clock.clone());
+            animate_surface(area, running.clone(), conf.clone(), move || {
+                let t = start.get().elapsed().as_secs_f64();
+                selected.get() || t < delay + 0.3 || t - pulse.get() < 0.3
+            });
+        }
         let impulse = if t < delay + 0.24 && t >= delay {
             Some(t - delay)
         } else {
@@ -290,18 +529,6 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         }
     });
     b.add_controller(hover);
-    let previous_reduced = Cell::new(motion_reduced(&settings));
-    area.add_tick_callback(move |area, _| {
-        let t = start.get().elapsed().as_secs_f64();
-        let reduced = motion_reduced(&settings);
-        if previous_reduced.replace(reduced) != reduced {
-            area.queue_draw();
-        }
-        if !reduced && (selected.get() || t < delay + 0.3 || t - pulse.get() < 0.3) {
-            area.queue_draw();
-        }
-        glib::ControlFlow::Continue
-    });
     b
 }
 pub fn assets() -> PathBuf {
