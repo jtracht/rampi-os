@@ -310,3 +310,11 @@ Kanban-Zugangsdaten werden beim Verlassen des Tokenfeldes oder mit Enter im
 persönlichen Schlüsselbund gespeichert. Bei einem Fehler bleibt die Eingabe zur
 Korrektur erhalten. Kennwörter für Linux und RDP werden weiterhin nicht gespeichert.
 Verbindungsaufbau, Löschvorgänge und Sicherheitsbestätigungen bleiben bewusste Aktionen.
+
+### Einheitliche Aktualisieren-Symbole
+
+Aktualisieren und Neu laden werden überall durch dasselbe Kreispfeil-Symbol
+dargestellt: bei Adaptern, VPN, Tailscale, Diagnose, Bildschirmen, Kanban, Browser
+und der Streaming-Anwendungsliste. Ein Hinweis beim Darüberfahren nennt den
+Zweck; Bildschirmleser erhalten dieselbe Bezeichnung. Tab und Enter bleiben
+verwendbar. Während einer laufenden Abfrage wird der Knopf vorübergehend deaktiviert.

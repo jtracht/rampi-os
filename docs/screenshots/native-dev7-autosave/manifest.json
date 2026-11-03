@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "capture_kind": "actual native GTK/Wayland local component run",
-  "exported_utc": "2026-11-03T11:11:46.190293+00:00",
-  "declared_source_revision": "867e792b771c8dd2cfb85e0ff760433a2a4dd231",
-  "native_elf_sha256": "665a98d5b919bd59f737073d9975ddb6eb0344a7227bdb5dc484377fbc19613e",
+  "exported_utc": "2026-11-03T11:45:00.031193+00:00",
+  "declared_source_revision": "6a745ca6f8e13ca83601cca650ce525ba37a4223",
+  "native_elf_sha256": "d95739fd561b25376f0306605917c6f4536ea96e11173334121f922171d3839a",
   "images_modified": false,
   "release_image_capture": false,
   "complete_product_acceptance": false,
@@ -13,49 +13,49 @@
       "caption": "Einrichtung – zwölf geführte Schritte",
       "width": 1280,
       "height": 720,
-      "sha256": "132ac7a8d81725a55b173bde0f6d00249074fed657496903f8fb60f3fc326f08"
+      "sha256": "9fae796763a316130dd448663339a0d3d2fd7561836bbb3d9e574b7908a9b25d"
     },
     {
       "file": "images/dashboard.png",
       "caption": "Dashboard – drei Hauptmodule",
       "width": 1280,
       "height": 720,
-      "sha256": "d5bc90b1e769feb97c947f82c2967abf2ad615712bcdbd8a2571e7203c14a607"
+      "sha256": "ce011cfcb22484ae2051f6d4d330b18fe8c2dcd5f48375c2839467499ef02466"
     },
     {
       "file": "images/dashboard-1920.png",
       "caption": "Dashboard bei 1920 × 1080",
       "width": 1920,
       "height": 1080,
-      "sha256": "00211e721a5e793cba3a7e1a4db5e8fa837ba54db5fc441ed677dab9eaa6646d"
+      "sha256": "2784b9598c2d64a44f84ca9b206e87a6cb4f2d121d047cf723ed1187d6913bef"
     },
     {
       "file": "images/einstellungen.png",
       "caption": "Eine Seite je Kategorie",
       "width": 1280,
       "height": 720,
-      "sha256": "12acd4a5740e8d6b201324bd309cf651fa5db5fb3608a39da81d078428024070"
+      "sha256": "4ad85ec7baf2d3dc0c7d6a3d806ce74f2d3a8a2900da51fc75e5d09b9a43425f"
     },
     {
       "file": "images/hostprofil.png",
       "caption": "Persönliches synthetisches Hostprofil",
       "width": 1280,
       "height": 720,
-      "sha256": "f509a928fec9f716a6b31e0fd36617a77039603d5063aebba7270a2468a03682"
+      "sha256": "2d37a2c7c747475b2848a39f5ee21c623c4fb9fb7dd40852d41d5ec0aed001ad"
     },
     {
       "file": "images/wlan.png",
       "caption": "WLAN – native Schalter und integrierte Suche",
       "width": 1600,
       "height": 900,
-      "sha256": "53ee0f7867393c78bf02c69db8eb177ecb234aa42fc080df7f0ec384d5bb0605"
+      "sha256": "5f7ced9492f2e3e91201adbf38575bdb34cbeea4e6d7711555f4b4f41f2be340"
     },
     {
       "file": "images/bluetooth.png",
       "caption": "Bluetooth – Adapter und native Schalter",
       "width": 1600,
       "height": 900,
-      "sha256": "e5504cd079a3becf56f26f6b785d9e797d94bb7a6abbe59fc9b36eacebd77bc8"
+      "sha256": "c9731d6f3ca1a70714899dbb7f0df9d6d5f8336079e9484eebaf00f1a365a44a"
     },
     {
       "file": "images/schalter-ein.png",
@@ -83,14 +83,14 @@
       "caption": "Englische Oberfläche",
       "width": 1280,
       "height": 720,
-      "sha256": "a4e4a992d049062e9687bd6b1b04ce7da749ec842da24f2a90dec94764cd3461"
+      "sha256": "f06bd3926377b1345cf8f76f559984c53bbee941b98cbecfc3d780da43b8f10c"
     },
     {
       "file": "images/rdp.png",
       "caption": "Echter RDP-Client mit Linux-XRDP-Testserver",
       "width": 1280,
       "height": 720,
-      "sha256": "19ed41b6d215aba026006126e4b0b68eaffb6783147fb6f118f04c144cb2069d"
+      "sha256": "7ceee3584c8029c438ab71c4facba6a6b75174eb70cd7c47f0bc74f4ae038234"
     }
   ]
 }
