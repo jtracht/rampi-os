@@ -7,10 +7,73 @@ use std::{
     time::Instant,
 };
 pub type Shared = Rc<RefCell<Settings>>;
+thread_local! {
+    static MOTION_TICKS: Cell<u64> = const { Cell::new(0) };
+    static MOTION_PAINTS: Cell<u64> = const { Cell::new(0) };
+}
+pub(crate) fn motion_counts() -> (u64, u64) {
+    (MOTION_TICKS.get(), MOTION_PAINTS.get())
+}
 
 pub(crate) fn motion_reduced(settings: &Shared) -> bool {
     settings.borrow().reduce_motion
         || gtk::Settings::default().is_some_and(|s| !s.is_gtk_enable_animations())
+}
+
+/// Register a GTK frame callback only while this particular surface is moving.
+/// No timer per idle button, and no work for widgets on another page.
+pub(crate) fn animate_surface(
+    widget: &impl IsA<gtk::Widget>,
+    running: Rc<Cell<bool>>,
+    settings: Shared,
+    moving: impl Fn() -> bool + 'static,
+) {
+    if running.replace(true) {
+        return;
+    }
+    let pacer = RefCell::new(motion::FramePacer::default());
+    widget.add_tick_callback(move |widget, clock| {
+        MOTION_TICKS.set(MOTION_TICKS.get() + 1);
+        if !widget.is_mapped() || motion_reduced(&settings) || !moving() {
+            running.set(false);
+            widget.queue_draw();
+            return glib::ControlFlow::Break;
+        }
+        if pacer.borrow_mut().due(clock.frame_time()) {
+            MOTION_PAINTS.set(MOTION_PAINTS.get() + 1);
+            widget.queue_draw();
+        }
+        glib::ControlFlow::Continue
+    });
+}
+
+pub fn switch_row(
+    title: &str,
+    icon: &str,
+    active: bool,
+    feedback: &Feedback,
+) -> (gtk::Box, gtk::Switch) {
+    let line = row();
+    line.add_css_class("switch-row");
+    let image = icon_image(icon, 24);
+    line.append(&image);
+    let caption = label(title);
+    caption.set_hexpand(true);
+    line.append(&caption);
+    let toggle = gtk::Switch::builder()
+        .active(active)
+        .valign(gtk::Align::Center)
+        .build();
+    accessible_name(&toggle, title);
+    toggle.set_cursor_from_name(Some("pointer"));
+    let f = feedback.clone();
+    toggle.connect_active_notify(move |toggle| {
+        if toggle.is_mapped() && toggle.has_focus() {
+            f.play(true);
+        }
+    });
+    line.append(&toggle);
+    (line, toggle)
 }
 
 /// Existing GTK focus/selection with all choices in the current page, no popover.
@@ -134,7 +197,7 @@ pub fn icon_button(text: &str, icon: &str, f: &Feedback) -> gtk::Button {
     b.set_valign(gtk::Align::Center);
     b
 }
-fn icon_image(name: &str, size: i32) -> gtk::Image {
+pub(crate) fn icon_image(name: &str, size: i32) -> gtk::Image {
     let image = match gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(
         assets().join("icons").join(format!("{name}.svg")),
         size,
@@ -145,6 +208,7 @@ fn icon_image(name: &str, size: i32) -> gtk::Image {
         Err(_) => gtk::Image::from_icon_name("image-missing-symbolic"),
     };
     image.set_pixel_size(size);
+    image.set_widget_name(&format!("rampi-icon-{name}"));
     image
 }
 pub fn label(text: &str) -> gtk::Label {
@@ -281,8 +345,16 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         settings.clone(),
         start.clone(),
     );
-    area.set_draw_func(move |_, cr, width, height| {
+    let running = Rc::new(Cell::new(false));
+    area.set_draw_func(move |area, cr, width, height| {
         let t = clock.get().elapsed().as_secs_f64();
+        if !motion_reduced(&conf) && (s.get() || t < delay + 0.3 || t - p.get() < 0.3) {
+            let (selected, pulse, start) = (s.clone(), p.clone(), clock.clone());
+            animate_surface(area, running.clone(), conf.clone(), move || {
+                let t = start.get().elapsed().as_secs_f64();
+                selected.get() || t < delay + 0.3 || t - pulse.get() < 0.3
+            });
+        }
         let impulse = if t < delay + 0.24 && t >= delay {
             Some(t - delay)
         } else {
@@ -324,18 +396,6 @@ pub fn tile(spec: TileSpec<'_>, settings: &Shared, feedback: &Feedback) -> gtk::
         }
     });
     b.add_controller(hover);
-    let previous_reduced = Cell::new(motion_reduced(&settings));
-    area.add_tick_callback(move |area, _| {
-        let t = start.get().elapsed().as_secs_f64();
-        let reduced = motion_reduced(&settings);
-        if previous_reduced.replace(reduced) != reduced {
-            area.queue_draw();
-        }
-        if !reduced && (selected.get() || t < delay + 0.3 || t - pulse.get() < 0.3) {
-            area.queue_draw();
-        }
-        glib::ControlFlow::Continue
-    });
     b
 }
 pub fn assets() -> PathBuf {

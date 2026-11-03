@@ -1,12 +1,17 @@
 //! GTK keeps button semantics, focus, sizing and accessibility; Cairo paints the surface.
 use gtk::{glib, prelude::*, subclass::prelude::*};
-use std::{cell::RefCell, time::Instant};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    time::Instant,
+};
 
 mod imp {
     use super::*;
     #[derive(Default)]
     pub struct LiquidButton {
         pub state: RefCell<Option<(crate::widgets::Shared, Instant, Instant)>>,
+        pub running: Rc<Cell<bool>>,
     }
     #[glib::object_subclass]
     impl ObjectSubclass for LiquidButton {
@@ -22,6 +27,24 @@ mod imp {
             if let Some((settings, start, pulse)) = state.as_ref() {
                 let flags = object.state_flags();
                 let selected = object.surface_selected();
+                if !crate::widgets::motion_reduced(settings)
+                    && (selected || pulse.elapsed().as_millis() < 250)
+                {
+                    let weak = object.downgrade();
+                    crate::widgets::animate_surface(
+                        &*object,
+                        self.running.clone(),
+                        settings.clone(),
+                        move || {
+                            weak.upgrade().is_some_and(|object| {
+                                object.surface_selected()
+                                    || object.imp().state.borrow().as_ref().is_some_and(
+                                        |(_, _, pulse)| pulse.elapsed().as_millis() < 250,
+                                    )
+                            })
+                        },
+                    );
+                }
                 let category = object.has_css_class("settings-category");
                 if !category || selected {
                     let reduced = crate::widgets::motion_reduced(settings);
@@ -39,14 +62,6 @@ mod imp {
                     let width = object.width() as f64;
                     let height = object.height() as f64;
                     if width > 8.0 && height > 8.0 {
-                        let cr = snapshot.append_cairo(&gtk::graphene::Rect::new(
-                            0.0,
-                            0.0,
-                            width as f32,
-                            height as f32,
-                        ));
-                        cr.translate(4.0, 4.0);
-                        crate::widgets::wave_path(&cr, width - 8.0, height - 8.0, 8.0, edges);
                         let color = if category {
                             (0.07, 0.33, 0.54)
                         } else if flags.contains(gtk::StateFlags::ACTIVE) {
@@ -56,8 +71,37 @@ mod imp {
                         } else {
                             (0.125, 0.216, 0.275)
                         };
-                        cr.set_source_rgb(color.0, color.1, color.2);
-                        let _ = cr.fill();
+                        if edges.iter().flatten().all(|edge| *edge == 0.0) {
+                            let bounds = gtk::graphene::Rect::new(
+                                4.0,
+                                4.0,
+                                (width - 8.0) as f32,
+                                (height - 8.0) as f32,
+                            );
+                            snapshot
+                                .push_rounded_clip(&gtk::gsk::RoundedRect::from_rect(bounds, 8.0));
+                            snapshot.append_color(
+                                &gtk::gdk::RGBA::new(
+                                    color.0 as f32,
+                                    color.1 as f32,
+                                    color.2 as f32,
+                                    1.0,
+                                ),
+                                &bounds,
+                            );
+                            snapshot.pop();
+                        } else {
+                            let cr = snapshot.append_cairo(&gtk::graphene::Rect::new(
+                                0.0,
+                                0.0,
+                                width as f32,
+                                height as f32,
+                            ));
+                            cr.translate(4.0, 4.0);
+                            crate::widgets::wave_path(&cr, width - 8.0, height - 8.0, 8.0, edges);
+                            cr.set_source_rgb(color.0, color.1, color.2);
+                            let _ = cr.fill();
+                        }
                     }
                 }
             }
@@ -106,26 +150,15 @@ impl LiquidButton {
         object.connect_state_flags_changed(|object, previous| {
             let now = object.state_flags();
             if now != previous {
-                if let Some((_, _, pulse)) = object.imp().state.borrow_mut().as_mut() {
+                let interaction =
+                    gtk::StateFlags::FOCUSED | gtk::StateFlags::PRELIGHT | gtk::StateFlags::ACTIVE;
+                if now.intersection(interaction) != previous.intersection(interaction)
+                    && let Some((_, _, pulse)) = object.imp().state.borrow_mut().as_mut()
+                {
                     *pulse = Instant::now();
                 }
                 object.queue_draw();
             }
-        });
-        let previous_reduced = std::cell::Cell::new(false);
-        object.add_tick_callback(move |object, _| {
-            if let Some((settings, _, pulse)) = object.imp().state.borrow().as_ref() {
-                let selected = object.surface_selected();
-                let reduced = crate::widgets::motion_reduced(settings);
-                if previous_reduced.replace(reduced) != reduced {
-                    object.queue_draw();
-                }
-                if object.is_mapped() && !reduced && (selected || pulse.elapsed().as_millis() < 250)
-                {
-                    object.queue_draw();
-                }
-            }
-            glib::ControlFlow::Continue
         });
         object.upcast()
     }

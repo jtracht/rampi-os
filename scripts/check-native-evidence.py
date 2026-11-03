@@ -28,6 +28,12 @@ streaming = runpy.run_path(str(Path(__file__).with_name("check-stream-evidence.p
 runpy.run_path(str(Path(__file__).with_name("check-accessibility-evidence.py")))["check"](
     directory, streaming["gtk_client_sha256"]
 )
+runpy.run_path(str(Path(__file__).with_name("check-animation-evidence.py")))["check"](
+    directory, streaming["gtk_client_sha256"]
+)
+runpy.run_path(str(Path(__file__).with_name("check-switch-evidence.py")))["check"](
+    directory, streaming["gtk_client_sha256"]
+)
 runpy.run_path(str(Path(__file__).with_name("check-tailscale-evidence.py")))["check"](
     directory / "tailscale-live", expected_binary=streaming["gtk_client_sha256"]
 )

@@ -559,7 +559,7 @@ fn build(app: &gtk::Application, launched: std::time::Instant) {
         crate::rdp_checks::run(app, &stack, &settings, &feedback);
     }
     if std::env::args().any(|a| a == "--keyboard-test") {
-        crate::checks::keyboard(app, &stack);
+        crate::checks::keyboard(app, &window, &stack);
     }
     if std::env::args().any(|a| a == "--interaction-check") {
         crate::interaction_checks::run(app, &window, &stack, &tabs, &settings, &feedback);

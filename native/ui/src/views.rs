@@ -76,45 +76,39 @@ pub fn settings(
             "host",
             "category-host",
             "category-host-description",
-            "computer-symbolic",
+            "monitor",
         ),
-        (
-            "wifi",
-            "category-wifi",
-            "category-wifi-description",
-            "network-wireless-symbolic",
-        ),
+        ("wifi", "category-wifi", "category-wifi-description", "wifi"),
         (
             "bluetooth",
             "category-bluetooth",
             "category-bluetooth-description",
-            "bluetooth-symbolic",
+            "bluetooth",
         ),
         (
             "vpn",
             "category-vpn",
             "category-vpn-description",
-            "network-vpn-symbolic",
+            "shield-check",
         ),
         (
             "board",
             "category-board",
             "category-board-description",
-            "view-list-symbolic",
+            "columns-3",
         ),
         (
             "system",
             "category-system",
             "category-system-description",
-            "preferences-system-symbolic",
+            "settings",
         ),
     ] {
         let choice = button("", f);
         choice.set_widget_name(&format!("settings-category-{name}"));
         choice.add_css_class("settings-category");
         let content = row();
-        let image = gtk::Image::from_icon_name(icon);
-        image.set_pixel_size(28);
+        let image = icon_image(icon, 28);
         content.append(&image);
         let text = gtk::Box::new(gtk::Orientation::Vertical, 3);
         text.set_hexpand(true);
@@ -213,21 +207,31 @@ pub fn settings(
         "Host & SSH",
     );
     let system = column();
-    let reduce = gtk::CheckButton::with_label(&tr("settings-reduce-motion", &[]));
-    reduce.set_active(conf.borrow().reduce_motion);
-    system.append(&reduce);
-    let sound = gtk::CheckButton::with_label(&tr("settings-sound", &[]));
-    sound.set_active(conf.borrow().sound_effects);
-    system.append(&sound);
+    let (line, reduce) = switch_row(
+        &tr("settings-reduce-motion", &[]),
+        "accessibility",
+        conf.borrow().reduce_motion,
+        f,
+    );
+    reduce.set_widget_name("settings-motion-switch");
+    system.append(&line);
+    let (line, sound) = switch_row(
+        &tr("settings-sound", &[]),
+        "volume-2",
+        conf.borrow().sound_effects,
+        f,
+    );
+    sound.set_widget_name("settings-sound-switch");
+    system.append(&line);
     let (c, s) = (conf.clone(), stack.clone());
     let navigation = tabs.clone();
-    reduce.connect_toggled(move |b| {
+    reduce.connect_active_notify(move |b| {
         c.borrow_mut().reduce_motion = b.is_active();
         s.set_transition_duration(if b.is_active() { 0 } else { 150 });
         navigation.set_transition_duration(if b.is_active() { 0 } else { 150 });
     });
     let c = conf.clone();
-    sound.connect_toggled(move |b| c.borrow_mut().sound_effects = b.is_active());
+    sound.connect_active_notify(move |b| c.borrow_mut().sound_effects = b.is_active());
     let save = button(&tr("settings-save", &[]), f);
     let (c, stat) = (conf.clone(), status.clone());
     save.connect_clicked(move |_| {
@@ -264,6 +268,8 @@ fn wifi(status: &gtk::Label, f: &Feedback) -> gtk::Box {
     let controls = row();
     let scan = button(&tr("wifi-scan", &[]), f);
     let radio = gtk::Switch::new();
+    accessible_name(&radio, &tr("wifi-heading", &[]));
+    radio.set_widget_name("wifi-radio");
     let state = label(&tr("network-unchecked", &[]));
     controls.append(&scan);
     controls.append(&radio);
@@ -531,6 +537,7 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         });
     });
     let controls = gtk::FlowBox::new();
+    controls.set_widget_name("bluetooth-actions");
     controls.set_selection_mode(gtk::SelectionMode::None);
     page.append(&controls);
     let busy = Rc::new(Cell::new(false));
@@ -538,30 +545,53 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         glib::WeakRef<gtk::Button>,
         &'static str,
     )>::new()));
-    let update_actions: Rc<dyn Fn()> = {
-        let (picker, list, devices, busy, actions) = (
+    let (power_row, power) = switch_row(&tr("bluetooth-power", &[]), "bluetooth", false, f);
+    power.set_widget_name("bluetooth-power");
+    page.insert_child_after(&power_row, Some(&picker));
+    let syncing = Rc::new(Cell::new(false));
+    let sync_power: Rc<dyn Fn()> = {
+        let (radio, picker, adapters, pending, syncing) = (
+            power.downgrade(),
             picker.downgrade(),
+            adapters.clone(),
+            busy.clone(),
+            syncing.clone(),
+        );
+        Rc::new(move || {
+            let Some(radio) = radio.upgrade() else {
+                return;
+            };
+            let selected = picker
+                .upgrade()
+                .and_then(|p| p.selected_row())
+                .and_then(|r| adapters.borrow().get(r.index() as usize).cloned());
+            syncing.set(true);
+            let active = selected.as_ref().is_some_and(|a| a.powered);
+            radio.set_state(active);
+            radio.set_active(active);
+            radio.set_sensitive(selected.is_some() && !pending.get());
+            syncing.set(false);
+        })
+    };
+    let sync = sync_power.clone();
+    page.connect_map(move |_| sync());
+    let update_actions: Rc<dyn Fn()> = {
+        let (list, devices, busy, actions, sync_power) = (
             list.downgrade(),
             devices.clone(),
             busy.clone(),
             actions.clone(),
+            sync_power.clone(),
         );
         Rc::new(move || {
-            let adapter = picker.upgrade().is_some_and(|p| p.selected_row().is_some());
+            sync_power();
             let selected = list.upgrade().and_then(|l| {
                 l.selected_row()
                     .and_then(|r| devices.borrow().get(r.index() as usize).cloned())
             });
             for (button, op) in actions.borrow().iter() {
                 if let Some(button) = button.upgrade() {
-                    button.set_sensitive(
-                        !busy.get()
-                            && if *op == "power" {
-                                adapter
-                            } else {
-                                selected.is_some()
-                            },
-                    );
+                    button.set_sensitive(!busy.get() && selected.is_some());
                     if *op == "trust" {
                         button.set_label(&tr(
                             if selected.as_ref().is_some_and(|d| d.trusted) {
@@ -580,9 +610,68 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     picker.connect_row_selected(move |_, _| update());
     let update = update_actions.clone();
     list.connect_row_selected(move |_, _| update());
+    let (root, picker_power, adapters_power, pending, update_power, stat, refresh_power, review) = (
+        stack.downgrade(),
+        picker.downgrade(),
+        adapters.clone(),
+        busy.clone(),
+        update_actions.clone(),
+        status.clone(),
+        refresh.downgrade(),
+        f.clone(),
+    );
+    power.connect_state_set(move |radio, desired| {
+        if syncing.get() || pending.get() {
+            return glib::Propagation::Stop;
+        }
+        let adapter = picker_power
+            .upgrade()
+            .and_then(|p| p.selected_row())
+            .and_then(|r| adapters_power.borrow().get(r.index() as usize).cloned());
+        if let (Some(root), Some(adapter)) = (root.upgrade(), adapter) {
+            // Keep the display authoritative while the full-page review is open.
+            // Cancellation cannot depend on when a crossfade unmaps the page.
+            syncing.set(true);
+            radio.set_state(adapter.powered);
+            radio.set_active(adapter.powered);
+            syncing.set(false);
+            let (pending, update, stat, refresh) = (
+                pending.clone(),
+                update_power.clone(),
+                stat.clone(),
+                refresh_power.clone(),
+            );
+            let heading = format!(
+                "{} · {}",
+                tr("bluetooth-power", &[]),
+                tr(if desired { "power-on" } else { "power-off" }, &[])
+            );
+            let message = format!("{} · {}", adapter.label, tr("network-systemwide", &[]));
+            confirm(&root, &heading, &message, &review, move || {
+                if pending.replace(true) {
+                    return;
+                }
+                update();
+                let (pending, update, stat, refresh, path) = (
+                    pending.clone(),
+                    update.clone(),
+                    stat.clone(),
+                    refresh.clone(),
+                    adapter.path.clone(),
+                );
+                glib::MainContext::default().spawn_local(async move {
+                    status_result(&stat, bus::bluetooth_action("power", &path, desired).await);
+                    pending.set(false);
+                    update();
+                    if let Some(refresh) = refresh.upgrade() {
+                        refresh.emit_clicked();
+                    }
+                });
+            });
+        }
+        glib::Propagation::Stop
+    });
     for (title, op, value) in [
-        ("Einschalten", "power", true),
-        ("Ausschalten", "power", false),
         (&tr("bluetooth-pair", &[]), "pair", false),
         (&tr("network-connect", &[]), "connect", false),
         (&tr("network-disconnect", &[]), "disconnect", false),
@@ -592,14 +681,15 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
         let title = title.to_string();
         let b = button(&title, f);
         controls.insert(&b, -1);
+        if let Some(cell) = b.parent().and_downcast::<gtk::FlowBoxChild>() {
+            cell.set_focusable(false);
+        }
         actions.borrow_mut().push((b.downgrade(), op));
         update_actions();
         let pending = busy.clone();
         let update = update_actions.clone();
-        let (a, l, p, d, stat, s, f) = (
-            adapters.clone(),
+        let (l, d, stat, s, f) = (
             list.clone(),
-            picker.clone(),
             devices.clone(),
             status.clone(),
             stack.clone(),
@@ -626,21 +716,9 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
             } else {
                 value
             };
-            let object = if op == "power" {
-                a.borrow()
-                    .get(p.selected_row().map_or(usize::MAX, |r| r.index() as usize))
-                    .map(|a| a.path.clone())
-            } else {
-                l.selected_row()
-                    .and_then(|r| d.borrow().get(r.index() as usize).map(|d| d.path.clone()))
-            };
+            let object = selected.as_ref().map(|device| device.path.clone());
             if let Some(object) = object {
-                let target = if op == "power" {
-                    p.selected_row()
-                        .and_then(|r| a.borrow().get(r.index() as usize).map(|a| a.label.clone()))
-                } else {
-                    selected.as_ref().map(|d| d.label.clone())
-                };
+                let target = selected.as_ref().map(|device| device.label.clone());
                 let confirmation_title = if op == "trust" && !value {
                     tr("bluetooth-untrust", &[])
                 } else {
@@ -680,7 +758,13 @@ fn bluetooth(stack: &gtk::Stack, status: &gtk::Label, f: &Feedback) -> gtk::Box 
     let search = button(&tr("bluetooth-search", &[]), f);
     let stop = button(&tr("bluetooth-stop", &[]), f);
     controls.insert(&search, -1);
+    if let Some(cell) = search.parent().and_downcast::<gtk::FlowBoxChild>() {
+        cell.set_focusable(false);
+    }
     controls.insert(&stop, -1);
+    if let Some(cell) = stop.parent().and_downcast::<gtk::FlowBoxChild>() {
+        cell.set_focusable(false);
+    }
     search.set_sensitive(false);
     let action = search.downgrade();
     picker.connect_row_selected(move |_, selected| {

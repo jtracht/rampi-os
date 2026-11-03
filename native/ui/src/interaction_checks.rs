@@ -210,7 +210,15 @@ pub fn run(
                 }
                 if tab == "bluetooth" {
                     let page = tabs.child_by_name("bluetooth").context("Missing Bluetooth page")?;
-                    for title in ["Einschalten", "Ausschalten", "Koppeln", "Verbinden", "Trennen", "Geräte suchen"] {
+                    ensure!(!named(&page, "bluetooth-power").context("Missing Bluetooth slide switch")?.is_sensitive(), "Power enabled without a selected adapter");
+                    let actions = named(&page, "bluetooth-actions").context("Missing Bluetooth actions")?;
+                    let mut cell = actions.first_child();
+                    while let Some(item) = cell {
+                        ensure!(!item.is_focusable(), "Empty action wrappers must not receive keyboard focus");
+                        cell = item.next_sibling();
+                    }
+
+                    for title in ["Koppeln", "Verbinden", "Trennen", "Geräte suchen"] {
                         ensure!(!find_button(&page, title).context("Missing Bluetooth action")?.is_sensitive(), "Bluetooth action without a selected adapter/device: {title}");
                     }
                 }
@@ -226,6 +234,53 @@ pub fn run(
             std::fs::set_permissions(directory.join("interaction-geometry.json"), std::fs::Permissions::from_mode(0o644))?;
             std::fs::remove_file(rampi_core::config::config_dir()?.join("settings.json"))?;
             tool("wlr-randr", &["--output","HEADLESS-1","--custom-mode","1280x720"]).await?;
+            stack.set_visible_child_name("settings");
+            tabs.set_visible_child_name("system");
+            tool("wlrctl", &["pointer", "move", "-10000", "-10000"]).await?;
+            let toggle = named(&stack.clone().upcast(), "settings-motion-switch")
+                .context("No motion slide switch")?.downcast::<gtk::Switch>().unwrap();
+            toggle.grab_focus();
+            for icon in ["accessibility", "volume-2", "monitor", "wifi", "bluetooth", "shield-check", "columns-3", "settings"] {
+                let image = named(&stack.clone().upcast(), &format!("rampi-icon-{icon}"))
+                    .context("Bundled navigation icon missing")?.downcast::<gtk::Image>().unwrap();
+                ensure!(image.storage_type()==gtk::ImageType::Paintable,
+                    "Bundled icon silently fell back to a missing-image symbol: {icon}");
+            }
+            conf.borrow_mut().reduce_motion = false;
+            delay(600).await;
+            let idle_start = crate::widgets::motion_counts();
+            delay(600).await;
+            let idle_end = crate::widgets::motion_counts();
+            ensure!(idle_start == idle_end, "Idle controls kept a frame callback alive");
+            tabs.set_visible_child_name("categories");
+            named(&stack.clone().upcast(), "settings-category-host").unwrap().grab_focus();
+            delay(600).await;
+            let active_start = crate::widgets::motion_counts();
+            let active_wall = std::time::Instant::now();
+            delay(600).await;
+            let active_end = crate::widgets::motion_counts();
+            let active_paints = active_end.1 - active_start.1;
+            let active_ms = active_wall.elapsed().as_secs_f64() * 1000.0;
+            ensure!(active_paints >= 2 && active_paints as f64 <= (active_ms * 31.0 / 1000.0).ceil() + 2.0, "Active surface paint budget exceeded: {active_paints}");
+            conf.borrow_mut().reduce_motion = true;
+            window.queue_draw();
+            delay(400).await;
+            let reduced_start = crate::widgets::motion_counts();
+            delay(600).await;
+            let reduced_end = crate::widgets::motion_counts();
+            ensure!(reduced_start == reduced_end, "Reduced motion retained a frame callback");
+            conf.borrow_mut().reduce_motion = false;
+            let executable = std::fs::read("/proc/self/exe")?;
+            let animation = serde_json::json!({"schema":1,
+                "scope":"actual GTK frame callbacks in headless Wayland; not Raspberry Pi timing",
+                "idle_ticks":idle_end.0-idle_start.0,"reduced_ticks":reduced_end.0-reduced_start.0,
+                "active_paints":active_paints,"active_window_ms":active_ms,"native_elf_sha256":
+                glib::compute_checksum_for_data(glib::ChecksumType::Sha256,&executable).unwrap().as_str(),
+                "single_window":app.windows().len()==1,"complete_product_acceptance":false});
+            let receipt = directory.join("animation-scheduling.json");
+            std::fs::write(&receipt, serde_json::to_vec_pretty(&animation)?)?;
+            std::fs::set_permissions(&receipt, std::fs::Permissions::from_mode(0o644))?;
+            println!("RAMPI_ANIMATION_IDLE_AND_PAINT_BUDGET_OK {animation}");
             let _ = f;
             keyboard.force_exit(); let _ = keyboard.wait_future().await;
             println!("RAMPI_RUST_INTERACTION_KEYBOARD_OK");

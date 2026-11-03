@@ -509,3 +509,5 @@ board-data-limit = Kanban-Daten sind zu groß
 browser-address-label = Webadresse
 
 bluetooth-service-unavailable = Bluetooth-Dienst nicht verfügbar; die übrigen Module bleiben nutzbar.
+
+bluetooth-power = Bluetooth-Funk

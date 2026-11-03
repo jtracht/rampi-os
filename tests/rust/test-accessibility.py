@@ -207,6 +207,44 @@ for language in ["de", "en"]:
                 save = ("Persönliche Einstellungen speichern" if language == "de"
                         else "Save personal settings")
                 read_until(lambda r, save=save: save in buttons(r))
+                # Use the actual localized accessible switch captions from the widget tree.
+                capture(language, "system", snapshot())
+                switches = [node for node, _ in visible_objects()
+                            if node.getRoleName() in {"toggle button", "switch", "check box"}]
+                if len(switches) != 2 or any(not node.name.strip() for node in switches):
+                    raise RuntimeError("Two named native slide switches required")
+                for active in [True, False]:
+                    for node in switches:
+                        state = node.getState().contains(pyatspi.STATE_CHECKED)
+                        if state != active:
+                            for _ in range(24):
+                                if node.getState().contains(pyatspi.STATE_FOCUSED):
+                                    break
+                                subprocess.run(["wtype", "-s", "100", "-k", "Tab"], check=True)
+                                time.sleep(0.03)
+                            else:
+                                raise RuntimeError("Native slide switch is not keyboard reachable")
+                            subprocess.run(["wtype", "-s", "100", "-k", "space"], check=True)
+                        read_until(lambda r, node=node, active=active:
+                                   node.getState().contains(pyatspi.STATE_CHECKED) == active)
+                    mode = "on" if active else "off"
+                    capture(language, f"switches-{mode}", snapshot())
+                    geometry = []
+                    image_path = destination / f"accessibility-{language}-switches-{mode}.png"
+                    with Image.open(image_path) as im:
+                        for node in switches:
+                            b = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+                            geometry.append({"name": node.name, "x": b.x, "y": b.y,
+                                             "width": b.width, "height": b.height})
+                            region = im.convert("RGB").crop((b.x, b.y, b.x+b.width, b.y+b.height))
+                            green = sum(g > r + 30 and g > blue + 20
+                                        for r, g, blue in region.getdata())
+                            if (active and green < 80) or (not active and green > 10):
+                                raise RuntimeError("Slide switch track does not show actual state")
+                    receipt = destination / (
+                        f"accessibility-{language}-switches-{mode}-geometry.json")
+                    receipt.write_text(json.dumps(geometry, ensure_ascii=False), encoding="utf-8")
+                    receipt.chmod(0o644)
                 click(save)
                 done = "Vorgang abgeschlossen." if language == "de" else "Done."
                 rows = read_until(lambda r, done=done: done in [n["name"] for n in r])
