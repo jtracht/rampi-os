@@ -111,12 +111,31 @@ def control_bounds(caption):
     matches = read_controls(caption, {"text", "entry", "password text"})
     if len(matches) != 1:
         raise RuntimeError("Unique visible GTK field unavailable: " + caption)
+    return bounds_of(matches[0])
+
+
+def bounds_of(node):
     # Wayland does not publish global widget positions (GTK reports 0/0).
     # The designated Rampi fixture is fullscreen at the output origin.
-    bounds = matches[0].queryComponent().getExtents(pyatspi.WINDOW_COORDS)
+    bounds = node.queryComponent().getExtents(pyatspi.WINDOW_COORDS)
     if bounds.width <= 0 or bounds.height <= 0 or bounds.x < 0 or bounds.y < 0:
         raise RuntimeError("Actual visible GTK field bounds unavailable")
     return {key: getattr(bounds, key) for key in ["x", "y", "width", "height"]}
+
+
+def peer_bounds(address):
+    if address != "00:AA:01:01:00:01":
+        raise RuntimeError("Only the pinned SDK HID peer may be selected")
+    matches = [
+        node
+        for node, _ in visible_objects()
+        if node.getRoleName() == "label"
+        and len(node.name.split(" · ")) > 1
+        and node.name.split(" · ")[1] == address
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("Unique visible pinned HID peer row unavailable")
+    return bounds_of(matches[0])
 
 
 def main():
@@ -130,6 +149,9 @@ def main():
         return
     if len(sys.argv) == 3 and sys.argv[1] == "--fixture-control-bounds":
         print(json.dumps(control_bounds(sys.argv[2])))
+        return
+    if len(sys.argv) == 3 and sys.argv[1] == "--fixture-peer-bounds":
+        print(json.dumps(peer_bounds(sys.argv[2])))
         return
     if sys.argv[1:] == ["--fixture-profile-text"]:
         account = pwd.getpwuid(os.getuid())
@@ -150,7 +172,6 @@ def main():
     rows = snapshot()
     current_frame = any(row["role"] == "frame" and row["name"] == "Rampi" for row in rows)
     print(json.dumps(rows if current_frame else [], ensure_ascii=False))
-
 
 
 if __name__ == "__main__":
