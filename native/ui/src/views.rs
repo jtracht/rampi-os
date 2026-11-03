@@ -1,10 +1,7 @@
 use crate::{bus, widgets::*};
 use gtk::{gio, glib, prelude::*};
 use rampi_core::i18n::text as tr;
-use rampi_core::{
-    board::Board,
-    config::{self},
-};
+use rampi_core::{board::Board, config};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -202,11 +199,12 @@ pub fn settings(
     });
     page.append(&tabs);
     tabs.add_titled(
-        &scroll(&crate::host_view::build(stack, conf, status, f)),
+        &scroll(&crate::host_view::build(stack, &tabs, conf, status, f)),
         Some("host"),
         "Host & SSH",
     );
     let system = column();
+    system.append(&label(&tr("autosave-description", &[])));
     let (line, reduce) = switch_row(
         &tr("settings-reduce-motion", &[]),
         "accessibility",
@@ -223,24 +221,37 @@ pub fn settings(
     );
     sound.set_widget_name("settings-sound-switch");
     system.append(&line);
-    let (c, s) = (conf.clone(), stack.clone());
-    let navigation = tabs.clone();
+    let (c, s, navigation, stat) = (conf.clone(), stack.clone(), tabs.clone(), status.clone());
+    let updating = Rc::new(Cell::new(false));
     reduce.connect_active_notify(move |b| {
-        c.borrow_mut().reduce_motion = b.is_active();
-        s.set_transition_duration(if b.is_active() { 0 } else { 150 });
-        navigation.set_transition_duration(if b.is_active() { 0 } else { 150 });
+        if updating.get() {
+            return;
+        }
+        let mut candidate = c.borrow().clone();
+        candidate.reduce_motion = b.is_active();
+        if persist_settings(&c, candidate, &stat) {
+            s.set_transition_duration(if b.is_active() { 0 } else { 150 });
+            navigation.set_transition_duration(if b.is_active() { 0 } else { 150 });
+        } else {
+            updating.set(true);
+            b.set_active(c.borrow().reduce_motion);
+            updating.set(false);
+        }
     });
-    let c = conf.clone();
-    sound.connect_active_notify(move |b| c.borrow_mut().sound_effects = b.is_active());
-    let save = button(&tr("settings-save", &[]), f);
     let (c, stat) = (conf.clone(), status.clone());
-    save.connect_clicked(move |_| {
-        status_result(
-            &stat,
-            config::config_dir().and_then(|p| c.borrow().save(&p.join("settings.json"))),
-        )
+    let updating = Rc::new(Cell::new(false));
+    sound.connect_active_notify(move |b| {
+        if updating.get() {
+            return;
+        }
+        let mut candidate = c.borrow().clone();
+        candidate.sound_effects = b.is_active();
+        if !persist_settings(&c, candidate, &stat) {
+            updating.set(true);
+            b.set_active(c.borrow().sound_effects);
+            updating.set(false);
+        }
     });
-    system.append(&save);
     crate::system_settings::append(&system, stack, status, f);
     crate::account_view::append(&system, stack, status, f);
     tabs.add_titled(&scroll(&system), Some("system"), "System");
@@ -256,7 +267,7 @@ pub fn settings(
         "VPN",
     );
     tabs.add_titled(
-        &scroll(&crate::board_settings::build(stack, conf, status, f)),
+        &scroll(&crate::board_settings::build(stack, &tabs, conf, status, f)),
         Some("board"),
         "Kanban & Browser",
     );

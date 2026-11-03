@@ -1162,7 +1162,7 @@ pub fn setup(
                 field("address", address)?;
                 field("username", user)?;
                 field("port", "2222")?;
-                click(&host, "Hostprofil speichern")?;
+                glib::timeout_future(std::time::Duration::from_millis(550)).await;
             }
             ensure!(conf.borrow().hosts.len() == 2, "Profiles not saved");
             ensure!(
@@ -1170,15 +1170,39 @@ pub fn setup(
                 "Removed project editor remains"
             );
             conf.borrow_mut().hosts[1].project = "C:\\Existing personal project".into();
-            click(&host, "Hostprofil speichern")?;
+            field("name", "Laptop edited")?;
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
             ensure!(
                 conf.borrow().hosts[1].project == "C:\\Existing personal project",
                 "Editing a host lost its legacy personal data"
             );
+            field("port", "2201")?;
+            let picker = named(&host, "host-profiles")
+                .unwrap()
+                .downcast::<gtk::ListBox>()
+                .unwrap();
+            picker.select_row(picker.row_at_index(0).as_ref());
+            ensure!(
+                conf.borrow().hosts[1].port == 2201
+                    && picker.selected_row().is_some_and(|row| row.index() == 0),
+                "Pending automatic edit moved the selected host back"
+            );
+            ensure!(
+                named(&host, "host-name")
+                    .unwrap()
+                    .downcast::<gtk::Entry>()
+                    .unwrap()
+                    .text()
+                    == "Office",
+                "Selected host and editor diverged"
+            );
+            picker.select_row(picker.row_at_index(1).as_ref());
+            field("port", "2222")?;
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
             click(&host, "Ausgewählten Host verwenden")?;
             ensure!(conf.borrow().host()?.username == "bob");
             field("port", "0")?;
-            click(&host, "Hostprofil speichern")?;
+            glib::timeout_future(std::time::Duration::from_millis(550)).await;
             ensure!(
                 conf.borrow().host()?.port == 2222,
                 "Rejected input mutated configuration"

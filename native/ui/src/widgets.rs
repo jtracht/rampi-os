@@ -7,6 +7,118 @@ use std::{
     time::Instant,
 };
 pub type Shared = Rc<RefCell<Settings>>;
+/// Personal settings are committed atomically; failed writes leave live state unchanged.
+pub(crate) fn persist_settings(
+    settings: &Shared,
+    candidate: Settings,
+    status: &gtk::Label,
+) -> bool {
+    let result =
+        rampi_core::config::config_dir().and_then(|p| candidate.save(&p.join("settings.json")));
+    if result.is_ok() {
+        *settings.borrow_mut() = candidate;
+    }
+    autosave_result(status, result)
+}
+pub(crate) fn autosave_result(status: &gtk::Label, result: anyhow::Result<()>) -> bool {
+    status.remove_css_class("feedback-success");
+    status.remove_css_class("feedback-error");
+    match result {
+        Ok(()) => {
+            status.set_text(&rampi_core::i18n::text("autosave-done", &[]));
+            status.add_css_class("feedback-success");
+            true
+        }
+        Err(error) => {
+            status.set_text(&rampi_core::i18n::text(
+                "autosave-failed",
+                &[("error", &error.to_string())],
+            ));
+            status.add_css_class("feedback-error");
+            false
+        }
+    }
+}
+
+/// Coalesce typing, flush before leaving, and never save programmatic form population.
+pub(crate) struct AutoSave {
+    pending: RefCell<Option<glib::SourceId>>,
+    dirty: Cell<bool>,
+    pub loading: Rc<Cell<bool>>,
+    commit: Box<dyn Fn() -> bool>,
+}
+impl AutoSave {
+    pub fn new(loading: Rc<Cell<bool>>, commit: impl Fn() -> bool + 'static) -> Rc<Self> {
+        Rc::new(Self {
+            pending: RefCell::new(None),
+            dirty: Cell::new(false),
+            loading,
+            commit: Box::new(commit),
+        })
+    }
+    pub fn flush(&self) -> bool {
+        if let Some(timer) = self.pending.borrow_mut().take() {
+            timer.remove();
+        }
+        if !self.dirty.replace(false) {
+            return true;
+        }
+        let ok = (self.commit)();
+        self.dirty.set(!ok);
+        ok
+    }
+    pub fn discard(&self) {
+        if let Some(timer) = self.pending.borrow_mut().take() {
+            timer.remove();
+        }
+        self.dirty.set(false);
+    }
+    pub fn changed(self: &Rc<Self>) {
+        if self.loading.get() {
+            return;
+        }
+        self.dirty.set(true);
+        if let Some(timer) = self.pending.borrow_mut().take() {
+            timer.remove();
+        }
+        let weak = Rc::downgrade(self);
+        *self.pending.borrow_mut() = Some(glib::timeout_add_local_once(
+            std::time::Duration::from_millis(450),
+            move || {
+                if let Some(save) = weak.upgrade() {
+                    save.pending.borrow_mut().take();
+                    save.flush();
+                }
+            },
+        ));
+    }
+    pub fn routes(self: &Rc<Self>, stacks: &[gtk::Stack]) {
+        for stack in stacks {
+            let weak = Rc::downgrade(self);
+            stack.connect_visible_child_notify(move |_| {
+                if let Some(save) = weak.upgrade() {
+                    save.flush();
+                }
+            });
+        }
+    }
+    pub fn watch(self: &Rc<Self>, page: &gtk::Box, entries: &[gtk::Entry]) {
+        for entry in entries {
+            let save = self.clone();
+            entry.connect_changed(move |_| save.changed());
+            let focus = gtk::EventControllerFocus::new();
+            let save = self.clone();
+            focus.connect_leave(move |_| {
+                save.flush();
+            });
+            entry.add_controller(focus);
+        }
+        let save = self.clone();
+        page.connect_unmap(move |_| {
+            save.flush();
+        });
+    }
+}
 thread_local! {
     static MOTION_TICKS: Cell<u64> = const { Cell::new(0) };
     static MOTION_PAINTS: Cell<u64> = const { Cell::new(0) };
