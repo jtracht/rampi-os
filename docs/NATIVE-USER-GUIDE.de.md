@@ -1,7 +1,10 @@
 # Rampi mit Rust und Wayland bedienen
 
+[Ansichten der aktuellen Entwicklungsoberfläche](SCREENSHOTS.de.md) ·
+[Noch offene Punkte](OFFENE-PUNKTE.de.md)
+
 Diese Anleitung gilt für den Entwicklungszweig mit `rampi-native`. Das veröffentlichte native
-Entwicklungsrelease v0.6.0-dev.5 liegt diesem Zweig vorausgehend zugrunde. Neuere
+Entwicklungsrelease v0.6.0-dev.6 liegt diesem Zweig vorausgehend zugrunde. Neuere
 Änderungen sind erst nach einem weiteren Release in dessen Image enthalten. Physische Hardwaretests sind auf Wunsch ausgeschlossen.
 
 ## Erster Start und Anmeldung
