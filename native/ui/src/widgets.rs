@@ -282,6 +282,19 @@ pub fn button(text: &str, feedback: &Feedback) -> gtk::Button {
     wire_button(&b, feedback);
     b
 }
+/// One recognizable refresh action, with its localized purpose exposed to assistive tools.
+pub fn refresh_button(caption: &str, feedback: &Feedback) -> gtk::Button {
+    let b = button("", feedback);
+    b.add_css_class("refresh-icon");
+    b.add_css_class("compact");
+    b.set_child(Some(&icon_image("refresh-cw", 24)));
+    accessible_name(&b, caption);
+    b.set_tooltip_text(Some(caption));
+    b.set_size_request(44, 44);
+    b.set_halign(gtk::Align::Start);
+    b.set_valign(gtk::Align::Center);
+    b
+}
 pub fn wire_button(b: &gtk::Button, feedback: &Feedback) {
     b.set_cursor_from_name(Some("pointer"));
     let f = feedback.clone();

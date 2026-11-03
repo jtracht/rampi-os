@@ -14,7 +14,7 @@ pub fn build(stack: &gtk::Stack, conf: &Shared, feedback: &Feedback) -> gtk::Box
     let back = button(&tr("back-dashboard", &[]), feedback);
     let route = stack.clone();
     back.connect_clicked(move |_| route.set_visible_child_name("dashboard"));
-    let reload = button(&tr("board-reload", &[]), feedback);
+    let reload = refresh_button(&tr("board-reload", &[]), feedback);
     let title = label(&tr("board-title", &[]));
     title.add_css_class("heading");
     toolbar.append(&back);

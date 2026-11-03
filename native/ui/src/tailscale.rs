@@ -56,7 +56,7 @@ pub fn view(feedback: &crate::widgets::Feedback) -> gtk::Box {
     let output = crate::widgets::label(&tr("tailscale-loading", &[]));
     output.set_widget_name("tailscale-status");
     page.append(&output);
-    let refresh = crate::widgets::button(&tr("tailscale-refresh", &[]), feedback);
+    let refresh = crate::widgets::refresh_button(&tr("tailscale-refresh", &[]), feedback);
     let weak_output = output.downgrade();
     refresh.connect_clicked(move |button| {
         if !button.is_sensitive() {

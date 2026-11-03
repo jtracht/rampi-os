@@ -339,7 +339,9 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
 
 pub(crate) fn find_button(widget: &gtk::Widget, title: &str) -> Option<gtk::Button> {
     if let Ok(button) = widget.clone().downcast::<gtk::Button>()
-        && button.label().as_deref() == Some(title)
+        && (button.label().as_deref() == Some(title)
+            || (button.has_css_class("refresh-icon")
+                && button.tooltip_text().as_deref() == Some(title)))
     {
         return Some(button);
     }

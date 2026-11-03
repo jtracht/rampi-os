@@ -184,3 +184,11 @@ Bluetooth-/HID-/RDP-Abnahme oder ihre Fristen zu verkürzen. Ausschließlich neu
 bestehende Elternordner bleiben unverändert. 407 Python-Tests bestehen lokal,
 13 sind unter Windows übersprungen; die 26 gezielten Linux-Prüfungen einschließlich
 der tatsächlichen POSIX-Rechte bestehen. Vollständige neue CI weiterhin nötig.
+
+Nutzerkorrektur: Alle neun Aktualisieren-/Neu-laden-Aktionen verwenden jetzt
+dasselbe gebündelte Refresh-Icon statt sichtbarer Textknöpfe. Die Bedeutung
+bleibt als lokalisierter zugänglicher Name und Tooltip erhalten; Tastatur,
+Klickklang und bestehende asynchrone Funktionen bleiben angebunden. Die reale
+GTK-Prüfung öffnet auch eingeklappte und erst bei Bedarf erzeugte Seiten und
+verlangt für alle neun Zwecke ein tatsächlich geladenes, fokussierbares Icon.
+Eine neue exakte CI-/Image-Abnahme ist vor Veröffentlichung erforderlich.

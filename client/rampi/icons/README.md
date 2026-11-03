@@ -9,3 +9,5 @@ The only modification is replacing
 `currentColor` with the corresponding Rampi foreground color. Copyright and
 ISC/Feather-MIT license notices are preserved in LICENSE. These are neutral
 module and system icons. Unused provider-module and preview assets were removed.
+
+The refresh-cw geometry is used consistently for native refresh/reload actions.
