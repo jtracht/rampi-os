@@ -1,7 +1,9 @@
 # Noch offene Punkte
 
 Stand: 3. November 2026. **92/95 Punkte = 96,8 %**.
-Momentaufnahme für Kandidat `43e7465` (PR 54), kein Abschlussnachweis.
+Momentaufnahme für Kandidat `5fce58e` (PR 54), kein Abschlussnachweis.
+Die unveränderten Bildschirmaufnahmen sind mit dem tatsächlich geprüften
+Oberflächenstand `43e7465` und dessen Programmprüfsumme verbunden.
 Die vorherige Veröffentlichung wurde wegen der gemeldeten Animationen zurückgehalten.
 405 lokale Python-Tests, 12 übersprungen, 24 Rust-Core-Tests; vollständiger nativer Wayland- und
 isolierter RDP-Lauf bestanden. Die Seiten speichern jetzt automatisch ohne Speichern-Knöpfe. Die neue CI-/Image-Abnahme steht aus.
