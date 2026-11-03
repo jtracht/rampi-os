@@ -285,7 +285,7 @@ pub fn run(
             for button in refreshes {
                 ensure!(button.label().is_none_or(|s| s.is_empty()), "Refresh icon retained visible text");
                 ensure!(button.tooltip_text().is_some_and(|s| !s.trim().is_empty()), "Refresh purpose is missing");
-                let image = button.child().and_downcast::<gtk::Image>().context("Refresh is not a bundled icon")?;
+                let image = named(button.upcast_ref(), "rampi-icon-refresh-cw").context("Refresh is not a bundled icon")?.downcast::<gtk::Image>().unwrap();
                 ensure!(image.widget_name() == "rampi-icon-refresh-cw" && image.storage_type() == gtk::ImageType::Paintable);
                 ensure!(button.is_focusable(), "Refresh action is not keyboard focusable");
             }

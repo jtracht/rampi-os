@@ -287,7 +287,15 @@ pub fn refresh_button(caption: &str, feedback: &Feedback) -> gtk::Button {
     let b = button("", feedback);
     b.add_css_class("refresh-icon");
     b.add_css_class("compact");
-    b.set_child(Some(&icon_image("refresh-cw", 24)));
+    let content = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    content.append(&icon_image("refresh-cw", 24));
+    let purpose = label(caption);
+    purpose.set_visible(false);
+    content.append(&purpose);
+    b.set_child(Some(&content));
+    b.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
+        purpose.upcast_ref()
+    ])]);
     accessible_name(&b, caption);
     b.set_tooltip_text(Some(caption));
     b.set_size_request(44, 44);
