@@ -1,6 +1,6 @@
 # Native Installation, Updates und Wiederherstellung
 
-Zielsystem ist Raspberry Pi OS Lite Trixie ARM64 auf dem Pi 3 B+.
+Zielsystem ist Raspberry Pi OS Lite Trixie ARM64 auf Raspberry Pi 3 und neuer.
 Der Installer verwendet ein vorab gebautes ARM64-Rust-Programm. Eine kompatible
 vorhandene Moonlight-C-Bibliothek bleibt erhalten; fehlt sie, baut der Installer
 das geprüfte offizielle Bibliotheksziel aus den festgelegten Quellen.
@@ -97,3 +97,6 @@ vereinbarungsgemäß ausgeschlossen.
 
 Der Freigabestatus unter `packaging/readiness.json` bleibt gesperrt, bis der
 gesamte native Umfang und die erforderlichen Nachweise vorliegen.
+
+Die aktuelle Zielhardware, Ressourcenstrategie und Nachweisgrenzen stehen in
+[Hardware-Unterstützung](HARDWARE.de.md).

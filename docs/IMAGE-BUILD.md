@@ -40,3 +40,6 @@ Paketmanifest wird im Image unter `/opt/rampi/package-manifest.tsv` gespeichert.
 Der Buildpfad ist wiederholbar, aber wegen veränderlicher Paketquellen und
 Zeitstempel noch nicht bitweise reproduzierbar. Paket-Snapshots und festgelegte
 Rootfs-/Containerquellen sind vor regulärer Freigabe nachzurüsten.
+
+Die aktuelle Zielhardware, Ressourcenstrategie und Nachweisgrenzen stehen in
+[Hardware-Unterstützung](HARDWARE.de.md).

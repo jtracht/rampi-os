@@ -10,6 +10,9 @@ test -e "$root/boot/firmware/config.txt"
 test -e "$root/boot/firmware/cmdline.txt"
 test -e "$root/boot/firmware/kernel8.img"
 test -e "$root/boot/firmware/bcm2710-rpi-3-b-plus.dtb"
+for asset in kernel8.img kernel_2712.img bcm2710-rpi-3-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-cm3.dtb bcm2710-rpi-zero-2-w.dtb bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb bcm2711-rpi-cm4s.dtb bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb bcm2712-rpi-cm5-cm5io.dtb; do
+    test -s "$root/boot/firmware/$asset"
+done
 test -x "$root/usr/local/libexec/rampi-first-user-complete"
 test -x "$root/usr/local/libexec/rampi-tailscale-install"
 test -f "$root/usr/share/rampi/tailscale-archive-keyring.gpg"

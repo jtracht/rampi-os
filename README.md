@@ -1,6 +1,6 @@
 # Rampi OS
 
-Native Remote-Arbeitsumgebung für Raspberry Pi 3 Model B+ und Windows 11 Pro.
+Native Remote-Arbeitsumgebung für Raspberry Pi 3 und neuer und Windows 11 Pro.
 Die native Anwendung und ihre Oberfläche verwenden **Rust / GTK 4 / Wayland**.
 Die neue Sitzung verwendet labwc und benötigt kein `startx`. Terminals und Browser
 werden über VTE und WebKitGTK integriert. Netzwerk und Anmeldung verwenden
@@ -58,7 +58,7 @@ vorgetäuscht.
 
 ## Raspberry Pi
 
-Raspberry Pi OS Lite Trixie **arm64**, Ziel Pi 3 B+, 1 GB RAM:
+Raspberry Pi OS Lite Trixie **arm64**, Ziel Raspberry Pi 3 und neuer, sparsames 1-GB-Basisprofil:
 Der native Checkout benötigt ein dazu gebautes ARM64-Programm unter
 `native/bin/rampi-native` oder über `RAMPI_NATIVE_BINARY`.
 [Nativer Betriebsleitfaden](docs/NATIVE-OPERATIONS.de.md).
@@ -139,3 +139,6 @@ Weitere Dokumentation: [Architektur](docs/ARCHITECTURE.md),
 [bestehende Dienste](docs/EXISTING-SERVICES.md),
 [Konfiguration](docs/CONFIGURATION.md), [Tests](docs/TESTING.md),
 [Image-Build](docs/IMAGE-BUILD.md), [Release-Prozess](docs/RELEASING.md).
+
+Die aktuelle Zielhardware, Ressourcenstrategie und Nachweisgrenzen stehen in
+[Hardware-Unterstützung](docs/HARDWARE.de.md).

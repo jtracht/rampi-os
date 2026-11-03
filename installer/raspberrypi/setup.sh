@@ -9,7 +9,11 @@ source /etc/os-release
 if [[ "${VERSION_CODENAME:-}" != trixie || "$(dpkg --print-architecture)" != arm64 ]]; then echo 'Ziel: Raspberry Pi OS Lite Trixie arm64.' >&2; exit 1; fi
 if [[ "$mode" != --image ]]; then
     model="$(tr -d '\0' </proc/device-tree/model 2>/dev/null || true)"
-    if [[ "$model" != *'Raspberry Pi 3 Model B Plus'* && "$model" != *'Raspberry Pi 3 Model B+'* ]]; then echo "Nicht validierte Zielhardware: $model" >&2; exit 1; fi
+    # shellcheck source=installer/raspberrypi/hardware.sh
+    source "$source_root/installer/raspberrypi/hardware.sh"
+    if ! rampi_supported_model "$model"; then
+        echo "Zielhardware: Raspberry Pi 3 oder neuer (ARM64); erkannt: $model" >&2; exit 1
+    fi
 fi
 packages=(libgtk-4-1 libvte-2.91-gtk4-0 libwebkitgtk-6.0-4 libgtk-4-media-gstreamer librsvg2-common
     gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav libcurl4t64 gstreamer1.0-pulseaudio libcanberra0 libcanberra-pulse labwc greetd wlgreet dbus-user-session

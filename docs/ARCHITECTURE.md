@@ -133,3 +133,6 @@ Quellen, geprüft 19.10.2026:
 - https://packages.debian.org/trixie/python3-pyside6.qtquick
 - https://github.com/psmux/psmux
 - https://github.com/RPi-Distro/pi-gen/tree/arm64
+
+Die aktuelle Zielhardware, Ressourcenstrategie und Nachweisgrenzen stehen in
+[Hardware-Unterstützung](HARDWARE.de.md).
