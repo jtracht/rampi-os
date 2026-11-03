@@ -1,8 +1,12 @@
 # Noch offene Punkte
 
 Stand: 3. November 2026. **92/95 Punkte = 96,8 %**.
-Momentaufnahme für Kandidat `8a23b9e` (PR 54), kein Abschlussnachweis.
-Die allgemeine CI `41591450648` besteht; native CI `41591450680` läuft noch.
+Momentaufnahme für Kandidat `21afbcc` (PR 54), kein Abschlussnachweis.
+Die vorherige Veröffentlichung wurde wegen der gemeldeten Animationen zurückgehalten.
+405 lokale Python-Tests, 12 übersprungen; vollständiger nativer Wayland- und
+isolierter RDP-Lauf bestanden. Die neue CI-/Image-Abnahme steht aus.
+Die [aktualisierte Galerie](SCREENSHOTS.de.md) wird jetzt automatisch aus
+unveränderten und gegen das tatsächlich ausgeführte Programm geprüften Aufnahmen exportiert.
 
 ## Die drei noch nicht vollständig abgenommenen Produktbereiche
 

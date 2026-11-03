@@ -1,66 +1,57 @@
-# Screenshots der nativen Rampi-Oberfläche
+# Screenshots der nativen Entwicklungsoberfläche
 
-Stand: 3. November 2026, Entwicklungsoberfläche für **v0.6.0-dev.7**.
-Die Bilder wurden aus der tatsächlich laufenden Rust-/GTK4-/Wayland-Anwendung
-aufgenommen. Sie sind unverändert; keine Mockups und keine generierten Grafiken.
-Sie zeigen einen lokalen Entwicklungsbuild, noch kein veröffentlichtes dev.7-Image.
+Echte, unveränderte GTK-/Wayland-Aufnahmen; keine Mockups.
+Die Profile und Server sind synthetische Testdaten, keine Standardzugänge.
+Funkadapter können in dieser isolierten Umgebung fehlen. Ein vorhandenes
+RDP-Bild zeigt einen Linux-XRDP-Testserver, keinen persönlichen Windows-PC.
+Diese Bilder sind keine Image- oder Raspberry-Pi-Hardwareabnahme.
 
-Die Profile und Server sind synthetische Testdaten. `fixture` und `alice` sind
-keine Standardbenutzer und keine Zugangsdaten für ein Rampi-Image. Fehlende
-Funkadapter in der isolierten Umgebung werden sichtbar als nicht verfügbar
-angezeigt. Der Remote-Desktop-Screenshot zeigt einen echten Linux-XRDP-Testserver,
-keinen persönlichen oder externen Windows-Testhost.
+## Einrichtung – zwölf geführte Schritte
 
-Die Bilder sind keine zusätzliche Funktions- oder Hardwareabnahme. Der belegte
-Produktstand bleibt **96,8 %**. [Noch offene Punkte](OFFENE-PUNKTE.de.md).
+![Einrichtung – zwölf geführte Schritte](screenshots/native-dev7-motion/images/einrichtung.png)
 
-## Einrichtung: erster von zwölf Schritten
+## Dashboard – drei Hauptmodule
 
-![Einrichtung: erster von zwölf Schritten](screenshots/native-dev7/einrichtung.png)
+![Dashboard – drei Hauptmodule](screenshots/native-dev7-motion/images/dashboard.png)
 
-## Dashboard mit drei Modulen; synthetisches Hostprofil
+## Dashboard bei 1920 × 1080
 
-![Dashboard mit drei Modulen; synthetisches Hostprofil](screenshots/native-dev7/dashboard.png)
+![Dashboard bei 1920 × 1080](screenshots/native-dev7-motion/images/dashboard-1920.png)
 
-## Dashboard bei 1920 × 1080; leere Kanban-Datenquelle
+## Eine Seite je Kategorie
 
-![Dashboard bei 1920 × 1080; leere Kanban-Datenquelle](screenshots/native-dev7/dashboard-1920.png)
+![Eine Seite je Kategorie](screenshots/native-dev7-motion/images/einstellungen.png)
 
-## Einstellungen: eine Seite je Kategorie
+## Persönliches synthetisches Hostprofil
 
-![Einstellungen: eine Seite je Kategorie](screenshots/native-dev7/einstellungen.png)
+![Persönliches synthetisches Hostprofil](screenshots/native-dev7-motion/images/hostprofil.png)
 
-## Persönliches Beispielprofil fixture@fixture.invalid, keine Standardzugangsdaten
+## WLAN – native Schalter und integrierte Suche
 
-![Persönliches Beispielprofil fixture@fixture.invalid, keine Standardzugangsdaten](screenshots/native-dev7/hostprofil.png)
+![WLAN – native Schalter und integrierte Suche](screenshots/native-dev7-motion/images/wlan.png)
 
-## WLAN-Seite ohne Funkadapter in dieser Testumgebung
+## Bluetooth – Adapter und native Schalter
 
-![WLAN-Seite ohne Funkadapter in dieser Testumgebung](screenshots/native-dev7/wlan.png)
+![Bluetooth – Adapter und native Schalter](screenshots/native-dev7-motion/images/bluetooth.png)
 
-## Bluetooth-Seite ohne Funkadapter in dieser Testumgebung
+## Eingeschaltete Schiebeschalter
 
-![Bluetooth-Seite ohne Funkadapter in dieser Testumgebung](screenshots/native-dev7/bluetooth.png)
+![Eingeschaltete Schiebeschalter](screenshots/native-dev7-motion/images/schalter-ein.png)
 
-## Persönliche Einstellungen: sichtbare Erfolgsrückmeldung
+## Ausgeschaltete Schiebeschalter
 
-![Persönliche Einstellungen: sichtbare Erfolgsrückmeldung](screenshots/native-dev7/system-rueckmeldung.png)
+![Ausgeschaltete Schiebeschalter](screenshots/native-dev7-motion/images/schalter-aus.png)
 
-## Echter eingebetteter RDP-Client mit isoliertem Linux-XRDP-Testserver; kein Windows-Rechner
+## Sichtbare Erfolgsrückmeldung
 
-![Echter eingebetteter RDP-Client mit isoliertem Linux-XRDP-Testserver; kein Windows-Rechner](screenshots/native-dev7/rdp.png)
+![Sichtbare Erfolgsrückmeldung](screenshots/native-dev7-motion/images/rueckmeldung.png)
 
-## Tatsächliche englische Oberfläche
+## Englische Oberfläche
 
-![Tatsächliche englische Oberfläche](screenshots/native-dev7/dashboard-en.png)
+![Englische Oberfläche](screenshots/native-dev7-motion/images/dashboard-en.png)
 
-## Herkunft und Verwendung
+## Echter RDP-Client mit Linux-XRDP-Testserver
 
-PNG-Dateien in Originalauflösung, SHA-256-Prüfsummen und Aufnahmezuordnung stehen
-im [Bildmanifest](screenshots/native-dev7/manifest.json). Die zusätzliche frische
-Deutsch-/Englisch-Aufnahme besteht den tatsächlichen Speichern-/Zurückwechseltest
-und die Prüfung der sichtbaren Rückmeldung innerhalb der Bildschirmgrenzen.
+![Echter RDP-Client mit Linux-XRDP-Testserver](screenshots/native-dev7-motion/images/rdp.png)
 
-Die Galerie liegt bewusst in einem getrennten Dokumentationszweig. Dadurch bleibt
-der bereits laufende Release-Kandidat unverändert. Vor einer Übernahme in die
-Dokumentation eines veröffentlichten Images ist dessen Versionsstand abzugleichen.
+[Herkunft und SHA-256-Prüfsummen](manifest.json)

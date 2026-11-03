@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "capture_kind": "actual native GTK/Wayland local component run",
+  "exported_utc": "2026-11-03T08:46:46.819909+00:00",
+  "declared_source_revision": "21afbcc7c14ea69476b41b5bb81e2f473aecaf33",
+  "native_elf_sha256": "bfc816562a5baf8f79cdfa9fd8a77f96fc809e58be5049ff6008f9a5bb517419",
+  "images_modified": false,
+  "release_image_capture": false,
+  "complete_product_acceptance": false,
+  "screenshots": [
+    {
+      "file": "images/einrichtung.png",
+      "caption": "Einrichtung – zwölf geführte Schritte",
+      "width": 1280,
+      "height": 720,
+      "sha256": "d691385536729380982ee401fec9d4f67fe3a647d490c5efac41fae2d0616a8d"
+    },
+    {
+      "file": "images/dashboard.png",
+      "caption": "Dashboard – drei Hauptmodule",
+      "width": 1280,
+      "height": 720,
+      "sha256": "4f3264316ae4e3c8207d4a896148d1dbd3734edbb9a4ccdd4017e08a79a8cf02"
+    },
+    {
+      "file": "images/dashboard-1920.png",
+      "caption": "Dashboard bei 1920 × 1080",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "9a90ba1e393942edf8f018e24e28bb255bc9d639cd049fc656369a8f042158c1"
+    },
+    {
+      "file": "images/einstellungen.png",
+      "caption": "Eine Seite je Kategorie",
+      "width": 1280,
+      "height": 720,
+      "sha256": "9ccc5e72c61bd5cf8f595d47e1e3f52591f0fe70a03d81f019c401fbcd1a9705"
+    },
+    {
+      "file": "images/hostprofil.png",
+      "caption": "Persönliches synthetisches Hostprofil",
+      "width": 1280,
+      "height": 720,
+      "sha256": "17a8fb96f04e7b3cf90d76214bb42df738e15f5e16b4430108a55a1f08d87d9f"
+    },
+    {
+      "file": "images/wlan.png",
+      "caption": "WLAN – native Schalter und integrierte Suche",
+      "width": 1600,
+      "height": 900,
+      "sha256": "40ce3f902e0d161c8a460415153c1ca70e4d67fb595261e672bad01eae686654"
+    },
+    {
+      "file": "images/bluetooth.png",
+      "caption": "Bluetooth – Adapter und native Schalter",
+      "width": 1600,
+      "height": 900,
+      "sha256": "d39de1162d6adbca3b834be4298afa282222a0747fea5a341a57463520c189d9"
+    },
+    {
+      "file": "images/schalter-ein.png",
+      "caption": "Eingeschaltete Schiebeschalter",
+      "width": 1280,
+      "height": 720,
+      "sha256": "a746411b9a10073cc4c70f13cbbdc4011f7df19bc3ff9e92596b850fc1c897d7"
+    },
+    {
+      "file": "images/schalter-aus.png",
+      "caption": "Ausgeschaltete Schiebeschalter",
+      "width": 1280,
+      "height": 720,
+      "sha256": "5b891c9a6a9cf30f078f043300f072db843228242a99a851268ac4bf02862dbb"
+    },
+    {
+      "file": "images/rueckmeldung.png",
+      "caption": "Sichtbare Erfolgsrückmeldung",
+      "width": 1280,
+      "height": 720,
+      "sha256": "28c0df034f0a160aa2466bd5b9a14de7d34811b412a4e195044dad7779d09931"
+    },
+    {
+      "file": "images/dashboard-en.png",
+      "caption": "Englische Oberfläche",
+      "width": 1280,
+      "height": 720,
+      "sha256": "d7cb39154943c38dc85b1fcd022dfee721bc3a0c21d73583298c7fe7ebefd525"
+    },
+    {
+      "file": "images/rdp.png",
+      "caption": "Echter RDP-Client mit Linux-XRDP-Testserver",
+      "width": 1280,
+      "height": 720,
+      "sha256": "8863a1fdbcddd35c4e5cde936cb38527555d6db8756a38b4a55ebc2891d616e7"
+    }
+  ]
+}
