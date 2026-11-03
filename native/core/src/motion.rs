@@ -1,5 +1,22 @@
 //! Unequal edge harmonics; rendering and frame scheduling remain GTK/Cairo's job.
 use std::f64::consts::TAU;
+
+/// Cap costly software surface paints; GTK still owns frame scheduling.
+#[derive(Default)]
+pub struct FramePacer(Option<i64>);
+impl FramePacer {
+    pub fn due(&mut self, frame_time_us: i64) -> bool {
+        if self
+            .0
+            .is_none_or(|last| frame_time_us < last || frame_time_us - last >= 33_000)
+        {
+            self.0 = Some(frame_time_us);
+            true
+        } else {
+            false
+        }
+    }
+}
 pub fn edges(seconds: f64, selected: bool, impulse_age: Option<f64>, reduced: bool) -> [f64; 4] {
     if reduced {
         return [0.0; 4];
@@ -40,6 +57,16 @@ pub fn shape(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn software_paints_are_capped_without_losing_first_frame() {
+        let mut pacer = FramePacer::default();
+        let paints = (0..=120).filter(|n| pacer.due(n * 8_333)).count();
+        assert!((30..=31).contains(&paints));
+        assert!(
+            pacer.due(0),
+            "A replacement frame clock must restart immediately"
+        );
+    }
     #[test]
     fn waves_are_asymmetric_bounded_and_stoppable() {
         for i in 0..1000 {

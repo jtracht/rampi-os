@@ -4,6 +4,7 @@ Source: https://github.com/lucide-icons/lucide
 Pinned commit: 02eb9161b57917ccaa262f1bf070507cddde3b08
 
 Only the module and system geometries still used by Rampi are included.
+The accessibility and volume-2 icons identify the native system slide switches.
 The only modification is replacing
 `currentColor` with the corresponding Rampi foreground color. Copyright and
 ISC/Feather-MIT license notices are preserved in LICENSE. These are neutral

@@ -74,6 +74,69 @@ pub fn bluetooth(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
                 shown().contains("Rust test keyboard") && device_list.row_at_index(1).is_none(),
                 "Devices from another adapter appeared"
             );
+            let power = named(&page, "bluetooth-power")
+                .context("Missing native power switch")?
+                .downcast::<gtk::Switch>()
+                .unwrap();
+            let adapter = crate::bus::bluetooth_snapshot()
+                .await?
+                .0
+                .into_iter()
+                .next()
+                .context("No power fixture adapter")?;
+            let initial = adapter.powered;
+            power.set_active(!initial);
+            let confirmation = stack
+                .child_by_name("confirmation")
+                .context("Power lacks review page")?;
+            ensure!(stack.visible_child_name().as_deref() == Some("confirmation"));
+            find_button(&confirmation, "Abbrechen")
+                .unwrap()
+                .emit_clicked();
+            ensure!(
+                power.is_active() == initial,
+                "Cancelled power switch did not restore actual state"
+            );
+            ensure!(
+                crate::bus::bluetooth_snapshot()
+                    .await?
+                    .0
+                    .into_iter()
+                    .find(|a| a.path == adapter.path)
+                    .unwrap()
+                    .powered
+                    == initial
+            );
+            for desired in [!initial, initial] {
+                power.set_active(desired);
+                find_button(
+                    &stack.child_by_name("confirmation").unwrap(),
+                    "Bewusst bestätigen",
+                )
+                .unwrap()
+                .emit_clicked();
+                let mut reached = false;
+                for _ in 0..150 {
+                    let actual = crate::bus::bluetooth_snapshot()
+                        .await?
+                        .0
+                        .into_iter()
+                        .find(|a| a.path == adapter.path)
+                        .context("Power adapter disappeared")?
+                        .powered;
+                    if actual == desired && power.is_active() == desired && power.is_sensitive() {
+                        reached = true;
+                        break;
+                    }
+                    glib::timeout_future(std::time::Duration::from_millis(20)).await;
+                }
+                ensure!(reached, "Actual BlueZ state and slide switch differ");
+                ensure!(
+                    app.windows().len() == 1,
+                    "Power change opened another window"
+                );
+            }
+            println!("RAMPI_BLUEZ_POWER_SLIDE_AND_CANCEL_OK");
             let connected_device = crate::bus::bluetooth_snapshot()
                 .await?
                 .1
@@ -1473,25 +1536,47 @@ pub fn tailscale(app: &gtk::Application, stack: &gtk::Stack, tabs: &gtk::Stack) 
     });
 }
 
-pub fn keyboard(app: &gtk::Application, stack: &gtk::Stack) {
-    let s = stack.clone();
-    glib::timeout_add_local_once(std::time::Duration::from_millis(1600), move || {
-        if s.visible_child_name().as_deref() != Some("kanban") {
-            eprintln!(
-                "Wayland arrow/Enter input did not open Kanban: {:?}",
-                s.visible_child_name()
-            );
-            std::process::exit(1);
+pub fn keyboard(app: &gtk::Application, window: &gtk::ApplicationWindow, stack: &gtk::Stack) {
+    assert_eq!(std::env::var("RAMPI_TEST_CONTAINER").as_deref(), Ok("1"));
+    let directory = std::path::PathBuf::from(std::env::var("RAMPI_TEST_ARTIFACTS").unwrap());
+    let seen = Rc::new(Cell::new(false));
+    let (a, observed, output) = (app.clone(), seen.clone(), directory.clone());
+    stack.connect_visible_child_name_notify(move |stack| {
+        match stack.visible_child_name().as_deref() {
+            Some("kanban") => {
+                observed.set(true);
+                std::fs::write(
+                    output.join("keyboard-kanban.ready"),
+                    b"actual module mapped",
+                )
+                .unwrap();
+            }
+            Some("dashboard") if observed.get() => {
+                println!("RAMPI_RUST_WAYLAND_KEYBOARD_OK");
+                a.quit();
+            }
+            _ => {}
         }
     });
-    let (a, s) = (app.clone(), stack.clone());
-    glib::timeout_add_local_once(std::time::Duration::from_millis(3200), move || {
-        if s.visible_child_name().as_deref() != Some("dashboard") {
-            eprintln!("Wayland Escape did not return to dashboard");
-            std::process::exit(1);
+    let (w, s) = (window.clone(), stack.clone());
+    glib::timeout_add_local(std::time::Duration::from_millis(20), move || {
+        let tile = s
+            .child_by_name("dashboard")
+            .and_then(|page| named(&page, "Kanban Board"));
+        if w.is_mapped() && w.is_active() && tile.is_some_and(|t| t.has_focus()) {
+            std::fs::write(
+                directory.join("keyboard-window.ready"),
+                b"actual window and first tile focused",
+            )
+            .unwrap();
+            glib::ControlFlow::Break
+        } else {
+            glib::ControlFlow::Continue
         }
-        println!("RAMPI_RUST_WAYLAND_KEYBOARD_OK");
-        a.quit();
+    });
+    glib::timeout_add_local_once(std::time::Duration::from_millis(3200), move || {
+        eprintln!("Actual keyboard navigation did not complete its Kanban/return sequence");
+        std::process::exit(1);
     });
 }
 

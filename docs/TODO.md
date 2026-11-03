@@ -4,6 +4,18 @@ Stand: 3. November 2026. Belegt: **92/95 Punkte (96,8 %)**.
 Die Liste wird mit tatsächlichen Ergebnissen aktualisiert. Lokale Komponenten-
 prüfungen ersetzen weder die vollständige CI noch die Image-Abnahme.
 
+Aktuelle Nutzerkorrektur: Ruckelnde Animationen auf dem Raspberry Pi haben
+Vorrang vor der Veröffentlichung des vorherigen Kandidaten. Der alte
+Release-Fortsetzungslauf bleibt deshalb zurückgestellt. Die neue
+[Animations-/Schalter-Abnahme](validation/animation-switch-automation.md) ergänzt:
+
+- [x] Permanente ruhende Frame-Callbacks entfernen und aktive Flächen takten.
+- [x] Statische Flächen über GTK/GSK statt laufender Cairo-Wellenarbeit zeichnen.
+- [x] Native farbige Schiebeschalter und einheitliche gebündelte Icons integrieren.
+- [x] Neue Mess-, Pixel-, Tastatur-, BlueZ-, Icon- und Exportprüfungen automatisieren.
+- [x] Endgültigen lokalen langen Rundlauf und automatischen Dokumentationsexport prüfen.
+- [ ] Aktualisierte Galerie übernehmen und neue CI-/Image-Abnahme abschließen.
+
 Aktueller [Abschluss- und Testplan](validation/completion-test-plan.md):
 
 - [x] 30 schnelle automatische Negativ-/Regressionstests für den tatsächlichen
@@ -144,3 +156,11 @@ die komplette frische Prüfung der endgültigen Variante steht weiterhin aus.
 Lokale Nachweise: 375 Python-Tests bestanden, 12 übersprungen; Rust-Build, Formatierung und Clippy bestanden.
 Zwei tatsächliche Sprachläufe einschließlich neuer Feedback-Bildprüfung und reale isolierte RDP-Kontrolle bestehen.
 Diese Komponentenprüfungen erhöhen den akzeptierten Gesamtstand noch nicht.
+
+Die zusätzlichen Animations-/Schalter-/Exportprüfungen bestehen lokal:
+405 Python-Tests bestanden, 12 übersprungen; Rust-Core-Tests, Build, fmt und Clippy
+bestanden. Der vollständige native Wayland-Lauf unter 1-GiB-Grenze besteht samt
+Icon-Paintables, tatsächlicher Tastaturbedienung, BlueZ-Leistung/Abbrechen,
+Schalterpixeln und automatischem Bildexport. Gemessen: 0 ruhende und 0 reduzierte
+Callbacks sowie 18 Neuzeichnungsanforderungen in rund 600 ms. Keine neue
+Raspberry-Pi-Framerate wird daraus abgeleitet. Die neue CI-/Image-Abnahme steht aus.

@@ -18,6 +18,13 @@ entry selection, passwordentry selection { background: #12538a; color: #ffffff; 
 entry:focus-within, passwordentry:focus-within { background: #243f51; outline: none; box-shadow: none; }
 entry:disabled, passwordentry:disabled { color: #9eb6c8; }
 checkbutton, switch { min-height: 32px; }
+switch { min-width: 48px; min-height: 28px; padding: 3px; border: none; border-radius: 18px; background: #425462; color: #edf3fa; box-shadow: none; outline: none; }
+switch:checked { background: #13855a; color: #061b13; }
+switch:focus { background: #58768b; }
+switch:checked:focus { background: #20965f; }
+switch slider { min-width: 22px; min-height: 22px; border: none; border-radius: 14px; background: #edf3fa; box-shadow: none; }
+switch:disabled { opacity: .55; }
+.switch-row { padding: 8px 4px; }
 checkbutton:focus { background: #203746; border-radius: 8px; outline: none; }
 .has-feedback { background: #101e28; border-radius: 8px; }
 .feedback-success { color: #73e3ac; }
@@ -44,3 +51,5 @@ listview.upload-files, listview.upload-files row { background: #101e28; color: #
 listview.upload-files row:selected { background: #12538a; }
 
 button.liquid, button.liquid:hover, button.liquid:focus, button.liquid:active { background: transparent; padding: 0; transition: none; }
+
+#bluetooth-actions flowboxchild { outline: none; border: none; box-shadow: none; }
