@@ -632,8 +632,11 @@ try:
                 "reconnected kernel HID devices classified by udev",
             )
             nodes = input_devices()
-            login.as_user(user, "wtype", "-k", "Escape")
-            time.sleep(0.5)
+            # This is preparation, not the later real HID Escape/shortcut proof.
+            # A reconnect can change seat focus: use the acknowledged GTK back
+            # action, then require its actual category page before proceeding.
+            activate("← Einstellungen")
+            login.wait(categories, "Bluetooth back action maps settings categories")
             activate("Host & SSH")
             bounds = json.loads(
                 login.as_user(
